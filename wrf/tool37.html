@@ -1,0 +1,1130 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文本去重 & 字数统计工具</title>
+    <style>
+        :root {
+            --bg: #f0f4f8;
+            --card-bg: #ffffff;
+            --primary: #4a6cf7;
+            --primary-hover: #3651d5;
+            --primary-light: #eef1ff;
+            --accent: #6c5ce7;
+            --success: #10b981;
+            --success-light: #d1fae5;
+            --warning: #f59e0b;
+            --warning-light: #fef3c7;
+            --danger: #ef4444;
+            --danger-light: #fee2e2;
+            --text: #1e293b;
+            --text-secondary: #64748b;
+            --text-muted: #94a3b8;
+            --border: #e2e8f0;
+            --border-focus: #a5b4fc;
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.07), 0 2px 4px rgba(0, 0, 0, 0.05);
+            --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.1), 0 4px 10px rgba(0, 0, 0, 0.06);
+            --radius: 12px;
+            --radius-sm: 8px;
+            --radius-xs: 6px;
+            --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            line-height: 1.6;
+            padding: 16px;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            top: -200px;
+            right: -200px;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(74, 108, 247, 0.04) 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 0;
+        }
+        body::after {
+            content: '';
+            position: fixed;
+            bottom: -150px;
+            left: -150px;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(108, 92, 231, 0.03) 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .app-container {
+            position: relative;
+            z-index: 1;
+            max-width: 1300px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .header .logo {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: var(--primary);
+            letter-spacing: -0.02em;
+        }
+        .header .logo .icon-circle {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 42px;
+            height: 42px;
+            background: var(--primary);
+            color: #fff;
+            border-radius: 12px;
+            font-size: 1.3rem;
+            box-shadow: 0 4px 12px rgba(74, 108, 247, 0.3);
+        }
+        .header .subtitle {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+
+        /* 选项面板容器 - 两个面板并排 */
+        .options-wrapper {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 18px;
+        }
+        @media (max-width: 768px) {
+            .options-wrapper {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+        }
+
+        /* 独立的选项卡片 */
+        .options-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 18px 20px;
+            transition: var(--transition);
+        }
+        .options-card:hover {
+            box-shadow: var(--shadow-lg);
+        }
+        .options-card .options-card-title {
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: var(--text);
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .options-card .options-card-title::before {
+            content: '';
+            width: 4px;
+            height: 18px;
+            border-radius: 2px;
+            flex-shrink: 0;
+        }
+        .options-card.dedup-card .options-card-title::before {
+            background: var(--primary);
+        }
+        .options-card.stats-card .options-card-title::before {
+            background: var(--success);
+        }
+        .options-card .options-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+            gap: 10px 12px;
+        }
+        @media (max-width: 600px) {
+            .options-card .options-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 8px;
+            }
+        }
+
+        /* 主布局 */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 18px;
+            margin-bottom: 18px;
+        }
+        @media (max-width: 900px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* 卡片 */
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            transition: var(--transition);
+        }
+        .card:hover {
+            box-shadow: var(--shadow-lg);
+        }
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--border);
+            background: #fafbfc;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .card-header .card-title {
+            font-weight: 600;
+            font-size: 0.95rem;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+        }
+        .card-header .card-title .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            flex-shrink: 0;
+        }
+        .dot-input { background: #4a6cf7; }
+        .dot-output { background: #10b981; }
+        .card-body { padding: 0; }
+        .card-body textarea {
+            width: 100%;
+            border: none;
+            outline: none;
+            resize: vertical;
+            padding: 16px 18px;
+            font-family: 'SF Mono', 'Cascadia Code', 'Consolas', 'Monaco', 'PingFang SC', 'Microsoft YaHei', monospace;
+            font-size: 0.9rem;
+            line-height: 1.7;
+            color: var(--text);
+            background: #fff;
+            min-height: 340px;
+            transition: var(--transition);
+            tab-size: 4;
+        }
+        .card-body textarea::placeholder { color: #c0c8d4; }
+        .card-body textarea:focus {
+            background: #fefefe;
+            box-shadow: inset 0 0 0 3px rgba(74, 108, 247, 0.06);
+        }
+        .card-body textarea#outputText { background: #fcfdfd; }
+        .card-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 18px;
+            border-top: 1px solid var(--border);
+            background: #fafbfc;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .card-footer .line-info { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+        .badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.78rem;
+            letter-spacing: 0.01em;
+        }
+        .badge-original { background: #eef1ff; color: #4a6cf7; }
+        .badge-deduped { background: #d1fae5; color: #059669; }
+        .badge-removed { background: #fee2e2; color: #dc2626; }
+
+        /* 自定义开关 */
+        .toggle-label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            user-select: none;
+            font-size: 0.88rem;
+            color: var(--text);
+            padding: 8px 12px;
+            border-radius: var(--radius-xs);
+            transition: var(--transition);
+            background: #f8fafc;
+            border: 1px solid transparent;
+            white-space: nowrap;
+        }
+        .toggle-label:hover { background: #f1f5f9; border-color: #e2e8f0; }
+        .toggle-label input[type="checkbox"] {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 40px;
+            height: 22px;
+            background: #cbd5e1;
+            border-radius: 22px;
+            position: relative;
+            cursor: pointer;
+            transition: var(--transition);
+            flex-shrink: 0;
+            outline: none;
+            border: 2px solid transparent;
+        }
+        .toggle-label input[type="checkbox"]::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 16px;
+            height: 16px;
+            background: #fff;
+            border-radius: 50%;
+            transition: var(--transition);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+        }
+        .toggle-label input[type="checkbox"]:checked {
+            background: var(--primary);
+            border-color: var(--primary);
+        }
+        .toggle-label input[type="checkbox"]:checked::after {
+            left: 20px;
+            box-shadow: 0 1px 3px rgba(74, 108, 247, 0.4);
+        }
+        .toggle-label .toggle-icon { font-size: 1rem; flex-shrink: 0; }
+
+        /* 按钮 */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 9px 16px;
+            border-radius: var(--radius-xs);
+            font-size: 0.88rem;
+            font-weight: 500;
+            cursor: pointer;
+            border: 1px solid transparent;
+            transition: var(--transition);
+            white-space: nowrap;
+            font-family: inherit;
+            letter-spacing: 0.01em;
+            text-decoration: none;
+            user-select: none;
+        }
+        .btn:active { transform: scale(0.97); }
+        .btn-primary { background: var(--primary); color: #fff; border-color: var(--primary); box-shadow: 0 2px 8px rgba(74, 108, 247, 0.25); }
+        .btn-primary:hover { background: var(--primary-hover); border-color: var(--primary-hover); box-shadow: 0 4px 14px rgba(74, 108, 247, 0.35); }
+        .btn-outline { background: #fff; color: var(--text); border-color: #d1d5db; }
+        .btn-outline:hover { background: #f9fafb; border-color: #9ca3af; box-shadow: var(--shadow-sm); }
+        .btn-success { background: var(--success); color: #fff; border-color: var(--success); box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25); }
+        .btn-success:hover { background: #059669; border-color: #059669; box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35); }
+        .btn-warning { background: #fff; color: #d97706; border-color: #fcd34d; }
+        .btn-warning:hover { background: #fffbeb; border-color: #f59e0b; box-shadow: 0 2px 8px rgba(245, 158, 11, 0.2); }
+        .btn-sm { padding: 6px 12px; font-size: 0.78rem; border-radius: 6px; }
+        .btn-group { display: flex; gap: 8px; flex-wrap: wrap; }
+
+        /* 统计面板 */
+        .stats-panel {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 18px 20px;
+            margin-bottom: 18px;
+        }
+        .stats-panel .stats-title {
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: var(--text);
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .stats-panel .stats-title::before { content: '📊'; font-size: 1rem; }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 10px;
+        }
+        @media (max-width: 600px) { .stats-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; } }
+        @media (max-width: 420px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
+        .stat-card {
+            background: #f8fafc;
+            border: 1px solid #e8ecf1;
+            border-radius: var(--radius-sm);
+            padding: 13px 14px;
+            text-align: center;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+        .stat-card:hover { border-color: #c8d2e0; box-shadow: var(--shadow-sm); transform: translateY(-1px); }
+        .stat-card .stat-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            letter-spacing: -0.03em;
+            line-height: 1.1;
+            color: var(--text);
+            min-height: 2rem;
+            transition: var(--transition);
+        }
+        .stat-card .stat-value.blank {
+            color: #cbd5e1;
+            font-size: 1.2rem;
+            font-weight: 400;
+        }
+        .stat-card .stat-label { font-size: 0.75rem; color: var(--text-secondary); margin-top: 4px; letter-spacing: 0.02em; }
+        .stat-card.stat-chinese .stat-value { color: #e5464f; }
+        .stat-card.stat-english .stat-value { color: #3b82f6; }
+        .stat-card.stat-number .stat-value { color: #f59e0b; }
+        .stat-card.stat-punctuation .stat-value { color: #8b5cf6; }
+        .stat-card.stat-space .stat-value { color: #6b7280; }
+        .stat-card.stat-total .stat-value { color: #1e293b; font-size: 2rem; }
+        .stat-card.stat-paragraph .stat-value { color: #059669; }
+        .stat-card .stat-indicator { position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+        .stat-card.stat-chinese .stat-indicator { background: #e5464f; }
+        .stat-card.stat-english .stat-indicator { background: #3b82f6; }
+        .stat-card.stat-number .stat-indicator { background: #f59e0b; }
+        .stat-card.stat-punctuation .stat-indicator { background: #8b5cf6; }
+        .stat-card.stat-space .stat-indicator { background: #6b7280; }
+        .stat-card.stat-total .stat-indicator { background: #1e293b; }
+        .stat-card.stat-paragraph .stat-indicator { background: #059669; }
+
+        /* 禁用状态的卡片 */
+        .stat-card.disabled-stat .stat-indicator { background: #d1d5db; }
+        .stat-card.disabled-stat .stat-label { color: #b0b8c4; }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-120px);
+            background: #1e293b;
+            color: #fff;
+            padding: 10px 22px;
+            border-radius: 30px;
+            font-size: 0.88rem;
+            font-weight: 500;
+            z-index: 1000;
+            pointer-events: none;
+            transition: transform 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+            letter-spacing: 0.02em;
+        }
+        .toast.show { transform: translateX(-50%) translateY(0); }
+        .toast.success { background: #059669; }
+
+        @keyframes pulse-stat {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.04); }
+        }
+        .stat-card.pulse { animation: pulse-stat 0.5s ease; }
+
+        .hint-text { font-size: 0.75rem; color: var(--text-muted); font-style: italic; }
+
+        @media (max-width: 768px) {
+            .card-body textarea { min-height: 220px; font-size: 0.82rem; padding: 12px 14px; }
+            .stat-card .stat-value { font-size: 1.4rem; }
+            .stat-card { padding: 10px 8px; }
+            .header .logo { font-size: 1.3rem; }
+            .btn { padding: 7px 12px; font-size: 0.8rem; }
+        }
+        @media (max-width: 420px) {
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .options-card .options-grid { grid-template-columns: 1fr; }
+            .btn-group { flex-direction: column; }
+            .btn-group .btn { justify-content: center; }
+            .card-footer { flex-direction: column; align-items: flex-start; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="header">
+            <div class="logo">
+                <span class="icon-circle">⊞</span>
+                文本去重 & 字数统计
+            </div>
+            <p class="subtitle">按行去重 · 智能统计 · 实时处理</p>
+        </div>
+
+        <!-- 选项面板：去重选项 与 统计设置 完全分开 -->
+        <div class="options-wrapper">
+            <!-- 去重选项面板 -->
+            <div class="options-card dedup-card">
+                <div class="options-card-title">🔍 去重选项</div>
+                <div class="options-grid">
+                    <label class="toggle-label" title="去重时忽略行首尾的空格，同时输出也会去掉首尾空格">
+                        <input type="checkbox" id="optTrim" checked>
+                        <span class="toggle-icon">✂️</span> 去掉首尾空格
+                    </label>
+                    <label class="toggle-label" title="去重前先移除所有空行（trim后为空的行）">
+                        <input type="checkbox" id="optRemoveEmpty" checked>
+                        <span class="toggle-icon">🚫</span> 移除空行
+                    </label>
+                    <label class="toggle-label" title="比较时忽略英文大小写差异（如Hello与hello视为重复）">
+                        <input type="checkbox" id="optIgnoreCase">
+                        <span class="toggle-icon">🔤</span> 忽略大小写
+                    </label>
+                    <label class="toggle-label" title="输入文本变化时自动实时去重处理">
+                        <input type="checkbox" id="optAutoProcess" checked>
+                        <span class="toggle-icon">⚡</span> 自动处理
+                    </label>
+                </div>
+            </div>
+
+            <!-- 统计设置面板 -->
+            <div class="options-card stats-card">
+                <div class="options-card-title">📐 统计设置</div>
+                <div class="options-grid">
+                    <label class="toggle-label" title="在总字符数中计入空格，并在下方显示空格数量">
+                        <input type="checkbox" id="optCountSpace" checked>
+                        <span class="toggle-icon">⬜</span> 统计空格
+                    </label>
+                    <label class="toggle-label" title="在总字符数中计入换行符；未选中时段落数也显示空白">
+                        <input type="checkbox" id="optCountNewline">
+                        <span class="toggle-icon">↩️</span> 统计换行符
+                    </label>
+                    <label class="toggle-label" title="在总字符数中计入标点符号，并在下方显示">
+                        <input type="checkbox" id="optCountPunctuation" checked>
+                        <span class="toggle-icon">✏️</span> 统计标点符号
+                    </label>
+                    <label class="toggle-label" title="在总字符数中计入数字，并在下方显示">
+                        <input type="checkbox" id="optCountDigits" checked>
+                        <span class="toggle-icon">🔢</span> 统计数字
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- 主布局：输入和输出 -->
+        <div class="main-grid">
+            <div class="card" id="inputCard">
+                <div class="card-header">
+                    <span class="card-title"><span class="dot dot-input"></span> 📥 输入文本</span>
+                    <button class="btn btn-outline btn-sm" onclick="clearInput()">🗑️ 清空</button>
+                </div>
+                <div class="card-body">
+                    <textarea id="inputText" placeholder="在此粘贴或输入文本...&#10;每行作为一条记录进行去重&#10;&#10;示例：&#10;Hello World&#10;你好世界&#10;hello world&#10;  你好世界  &#10;&#10;空行分隔段落"></textarea>
+                </div>
+                <div class="card-footer">
+                    <span class="line-info">📋 原始行数：<span class="badge badge-original" id="inputLineCount">0</span></span>
+                    <span class="hint-text">每行一条记录</span>
+                </div>
+            </div>
+
+            <div class="card" id="outputCard">
+                <div class="card-header">
+                    <span class="card-title"><span class="dot dot-output"></span> 📤 去重结果</span>
+                    <div class="btn-group">
+                        <button class="btn btn-success btn-sm" onclick="copyOutput()">📋 复制</button>
+                        <button class="btn btn-warning btn-sm" onclick="removeSpacesFromOutput()">🧹 去除空格</button>
+                        <button class="btn btn-outline btn-sm" onclick="swapTexts()">🔄 交换</button>
+                        <button class="btn btn-outline btn-sm" onclick="clearOutput()">🗑️</button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <textarea id="outputText" placeholder="去重后的结果将显示在这里..." readonly></textarea>
+                </div>
+                <div class="card-footer">
+                    <span class="line-info">
+                        📋 去重后行数：<span class="badge badge-deduped" id="outputLineCount">0</span>
+                        &nbsp;|&nbsp;
+                        🗑️ 去除重复：<span class="badge badge-removed" id="removedCount">0</span> 行
+                    </span>
+                    <span class="hint-text" id="dedupStatus">等待处理...</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 统计面板 -->
+        <div class="stats-panel">
+            <div class="stats-title">📊 字数统计（基于去重结果）</div>
+            <div class="stats-grid">
+                <div class="stat-card stat-total" id="statTotalCard">
+                    <div class="stat-indicator"></div>
+                    <div class="stat-value" id="statTotal">0</div>
+                    <div class="stat-label">📐 总字符数</div>
+                </div>
+                <div class="stat-card stat-chinese" id="statChineseCard">
+                    <div class="stat-indicator"></div>
+                    <div class="stat-value" id="statChinese">0</div>
+                    <div class="stat-label">🀄 中文字符</div>
+                </div>
+                <div class="stat-card stat-english" id="statEnglishCard">
+                    <div class="stat-indicator"></div>
+                    <div class="stat-value" id="statEnglish">0</div>
+                    <div class="stat-label">🔤 英文字符</div>
+                </div>
+                <div class="stat-card stat-number" id="statNumberCard">
+                    <div class="stat-indicator"></div>
+                    <div class="stat-value" id="statNumber">0</div>
+                    <div class="stat-label">🔢 数字</div>
+                </div>
+                <div class="stat-card stat-punctuation" id="statPunctCard">
+                    <div class="stat-indicator"></div>
+                    <div class="stat-value" id="statPunctuation">0</div>
+                    <div class="stat-label">✏️ 标点符号</div>
+                </div>
+                <div class="stat-card stat-space" id="statSpaceCard">
+                    <div class="stat-indicator"></div>
+                    <div class="stat-value" id="statSpace">0</div>
+                    <div class="stat-label">⬜ 空格数</div>
+                </div>
+                <div class="stat-card stat-paragraph" id="statParagraphCard">
+                    <div class="stat-indicator"></div>
+                    <div class="stat-value" id="statParagraph">0</div>
+                    <div class="stat-label">📄 段落数</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 底部操作栏 -->
+        <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:4px;">
+            <button class="btn btn-primary" onclick="manualDedup()">🔄 立即去重</button>
+            <button class="btn btn-outline" onclick="loadSample()">💡 加载示例</button>
+            <button class="btn btn-outline" onclick="resetAll()">🔃 全部重置</button>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        (function() {
+            // DOM 引用
+            const inputText = document.getElementById('inputText');
+            const outputText = document.getElementById('outputText');
+            const optTrim = document.getElementById('optTrim');
+            const optRemoveEmpty = document.getElementById('optRemoveEmpty');
+            const optIgnoreCase = document.getElementById('optIgnoreCase');
+            const optAutoProcess = document.getElementById('optAutoProcess');
+            const optCountSpace = document.getElementById('optCountSpace');
+            const optCountNewline = document.getElementById('optCountNewline');
+            const optCountPunctuation = document.getElementById('optCountPunctuation');
+            const optCountDigits = document.getElementById('optCountDigits');
+            const inputLineCount = document.getElementById('inputLineCount');
+            const outputLineCount = document.getElementById('outputLineCount');
+            const removedCount = document.getElementById('removedCount');
+            const dedupStatus = document.getElementById('dedupStatus');
+            const toast = document.getElementById('toast');
+
+            const statTotal = document.getElementById('statTotal');
+            const statChinese = document.getElementById('statChinese');
+            const statEnglish = document.getElementById('statEnglish');
+            const statNumber = document.getElementById('statNumber');
+            const statPunctuation = document.getElementById('statPunctuation');
+            const statSpace = document.getElementById('statSpace');
+            const statParagraph = document.getElementById('statParagraph');
+            const statNumberCard = document.getElementById('statNumberCard');
+            const statPunctCard = document.getElementById('statPunctCard');
+            const statSpaceCard = document.getElementById('statSpaceCard');
+            const statParagraphCard = document.getElementById('statParagraphCard');
+            const allStatCards = [
+                document.getElementById('statTotalCard'),
+                document.getElementById('statChineseCard'),
+                document.getElementById('statEnglishCard'),
+                statNumberCard,
+                statPunctCard,
+                statSpaceCard,
+                statParagraphCard,
+            ];
+
+            // 防抖
+            let debounceTimer = null;
+            function debounce(fn, delay = 300) {
+                return function(...args) {
+                    clearTimeout(debounceTimer);
+                    debounceTimer = setTimeout(() => fn.apply(this, args), delay);
+                };
+            }
+
+            // Toast
+            let toastTimer = null;
+            function showToast(message, type = '') {
+                clearTimeout(toastTimer);
+                toast.textContent = message;
+                toast.className = 'toast ' + type + ' show';
+                toastTimer = setTimeout(() => toast.classList.remove('show'), 1800);
+            }
+
+            // 字符判断函数
+            function isChineseChar(char) {
+                const code = char.codePointAt(0);
+                if (code === undefined) return false;
+                return (code >= 0x4E00 && code <= 0x9FFF) ||
+                    (code >= 0x3400 && code <= 0x4DBF) ||
+                    (code >= 0xF900 && code <= 0xFAFF) ||
+                    (code >= 0x20000 && code <= 0x2A6DF) ||
+                    (code >= 0x2A700 && code <= 0x2B73F) ||
+                    (code >= 0x2B740 && code <= 0x2B81F) ||
+                    (code >= 0x2B820 && code <= 0x2CEAF);
+            }
+            function isEnglishChar(char) {
+                const code = char.codePointAt(0);
+                if (code === undefined) return false;
+                return (code >= 0x41 && code <= 0x5A) || (code >= 0x61 && code <= 0x7A);
+            }
+            function isDigitChar(char) {
+                const code = char.codePointAt(0);
+                if (code === undefined) return false;
+                return code >= 0x30 && code <= 0x39;
+            }
+            function isPunctuationChar(char) {
+                const code = char.codePointAt(0);
+                if (code === undefined) return false;
+                if ((code >= 0x21 && code <= 0x2F) ||
+                    (code >= 0x3A && code <= 0x40) ||
+                    (code >= 0x5B && code <= 0x60) ||
+                    (code >= 0x7B && code <= 0x7E)) return true;
+                if (code >= 0x3000 && code <= 0x303F) {
+                    if (code === 0x3000) return false;
+                    return true;
+                }
+                if (code >= 0xFF00 && code <= 0xFFEF) {
+                    if ((code >= 0xFF01 && code <= 0xFF0F) ||
+                        (code >= 0xFF1A && code <= 0xFF20) ||
+                        (code >= 0xFF3B && code <= 0xFF40) ||
+                        (code >= 0xFF5B && code <= 0xFF65)) return true;
+                    return false;
+                }
+                if ((code >= 0x2000 && code <= 0x206F) ||
+                    (code >= 0x2010 && code <= 0x2027) ||
+                    (code >= 0x2030 && code <= 0x205E)) {
+                    if (code === 0x2000 || code === 0x2001 || code === 0x2002 || code === 0x2003 ||
+                        code === 0x2004 || code === 0x2005 || code === 0x2006 || code === 0x2007 ||
+                        code === 0x2008 || code === 0x2009 || code === 0x200A || code === 0x200B) return false;
+                    return true;
+                }
+                if (code === 0x2026 || code === 0x2014 || code === 0x2013 || code === 0xFF5E ||
+                    code === 0x30FB || code === 0x00B7 || code === 0x2022) return true;
+                if (code === 0x00A1 || code === 0x00BF || code === 0x00AB || code === 0x00BB) return true;
+                return false;
+            }
+            function isSpaceChar(char) {
+                const code = char.codePointAt(0);
+                if (code === undefined) return false;
+                return code === 0x20 || code === 0x09 || code === 0x0B || code === 0x0C ||
+                    code === 0x3000 || code === 0x00A0 ||
+                    (code >= 0x2000 && code <= 0x200B) || code === 0x202F || code === 0x205F;
+            }
+            function isNewlineChar(char) {
+                return char === '\n' || char === '\r';
+            }
+
+            // 统计所有字符分类（总是全量统计，不参与过滤）
+            function countAllCharacters(text) {
+                let chinese = 0, english = 0, digits = 0, punctuation = 0, spaces = 0, newlines = 0;
+                for (const char of text) {
+                    if (isNewlineChar(char)) { newlines++; continue; }
+                    if (isSpaceChar(char)) { spaces++; continue; }
+                    if (isChineseChar(char)) { chinese++; continue; }
+                    if (isEnglishChar(char)) { english++; continue; }
+                    if (isDigitChar(char)) { digits++; continue; }
+                    if (isPunctuationChar(char)) { punctuation++; continue; }
+                    punctuation++;
+                }
+                return { chinese, english, digits, punctuation, spaces, newlines };
+            }
+
+            function countParagraphs(text) {
+                if (!text || text.trim() === '') return 0;
+                const lines = text.split('\n');
+                let count = 0;
+                let inParagraph = false;
+                for (const line of lines) {
+                    if (line.trim() !== '') {
+                        if (!inParagraph) { count++; inParagraph = true; }
+                    } else {
+                        inParagraph = false;
+                    }
+                }
+                return count;
+            }
+
+            // 更新统计面板（根据选项显示或隐藏数值）
+            function updateStats(text) {
+                const counts = countAllCharacters(text);
+                const paragraphs = countParagraphs(text);
+
+                const showSpace = optCountSpace.checked;
+                const showNewline = optCountNewline.checked;
+                const showPunct = optCountPunctuation.checked;
+                const showDigits = optCountDigits.checked;
+
+                // 总字符数计算
+                let total = counts.chinese + counts.english;
+                if (showDigits) total += counts.digits;
+                if (showPunct) total += counts.punctuation;
+                if (showSpace) total += counts.spaces;
+                if (showNewline) total += counts.newlines;
+
+                statTotal.textContent = total;
+                statChinese.textContent = counts.chinese;
+                statEnglish.textContent = counts.english;
+
+                // 段落数：根据统计换行符开关决定是否显示
+                if (showNewline) {
+                    statParagraph.textContent = paragraphs;
+                    statParagraph.classList.remove('blank');
+                    statParagraphCard.classList.remove('disabled-stat');
+                } else {
+                    statParagraph.textContent = '';
+                    statParagraph.classList.add('blank');
+                    statParagraphCard.classList.add('disabled-stat');
+                }
+
+                // 数字显示控制
+                if (showDigits) {
+                    statNumber.textContent = counts.digits;
+                    statNumber.classList.remove('blank');
+                    statNumberCard.classList.remove('disabled-stat');
+                } else {
+                    statNumber.textContent = '';
+                    statNumber.classList.add('blank');
+                    statNumberCard.classList.add('disabled-stat');
+                }
+
+                // 标点显示控制
+                if (showPunct) {
+                    statPunctuation.textContent = counts.punctuation;
+                    statPunctuation.classList.remove('blank');
+                    statPunctCard.classList.remove('disabled-stat');
+                } else {
+                    statPunctuation.textContent = '';
+                    statPunctuation.classList.add('blank');
+                    statPunctCard.classList.add('disabled-stat');
+                }
+
+                // 空格显示控制
+                if (showSpace) {
+                    statSpace.textContent = counts.spaces;
+                    statSpace.classList.remove('blank');
+                    statSpaceCard.classList.remove('disabled-stat');
+                } else {
+                    statSpace.textContent = '';
+                    statSpace.classList.add('blank');
+                    statSpaceCard.classList.add('disabled-stat');
+                }
+
+                // 动画
+                allStatCards.forEach(card => {
+                    card.classList.remove('pulse');
+                    void card.offsetWidth;
+                    card.classList.add('pulse');
+                });
+            }
+
+            // 去重核心逻辑
+            function deduplicateText(text, options) {
+                const { trimLines, removeEmpty, ignoreCase } = options;
+                let lines = text.split('\n');
+                let workingLines = removeEmpty ? lines.filter(line => line.trim() !== '') : [...lines];
+                const seen = new Set();
+                const uniqueLines = [];
+                for (const line of workingLines) {
+                    let processedLine = trimLines ? line.trim() : line;
+                    let comparisonKey = processedLine;
+                    if (ignoreCase) comparisonKey = comparisonKey.toLowerCase();
+                    if (!seen.has(comparisonKey)) {
+                        seen.add(comparisonKey);
+                        uniqueLines.push(processedLine);
+                    }
+                }
+                const originalLineCount = workingLines.length;
+                const uniqueLineCount = uniqueLines.length;
+                const duplicateCount = originalLineCount - uniqueLineCount;
+                return {
+                    resultText: uniqueLines.join('\n'),
+                    originalLineCount,
+                    uniqueLineCount,
+                    duplicateCount,
+                };
+            }
+
+            // 执行去重并更新UI
+            function performDedup() {
+                const text = inputText.value;
+                const options = {
+                    trimLines: optTrim.checked,
+                    removeEmpty: optRemoveEmpty.checked,
+                    ignoreCase: optIgnoreCase.checked,
+                };
+                const result = deduplicateText(text, options);
+                outputText.value = result.resultText;
+                inputLineCount.textContent = result.originalLineCount;
+                outputLineCount.textContent = result.uniqueLineCount;
+                removedCount.textContent = result.duplicateCount;
+
+                if (result.duplicateCount > 0) {
+                    dedupStatus.textContent = '✅ 已去除 ' + result.duplicateCount + ' 行重复';
+                    dedupStatus.style.color = '#059669';
+                } else if (result.originalLineCount === 0) {
+                    dedupStatus.textContent = '⏳ 等待输入...';
+                    dedupStatus.style.color = '#94a3b8';
+                } else {
+                    dedupStatus.textContent = '✨ 无重复行';
+                    dedupStatus.style.color = '#64748b';
+                }
+                updateStats(result.resultText);
+                return result;
+            }
+            const debouncedPerformDedup = debounce(performDedup, 300);
+
+            // 去除输出文本中所有空格
+            function removeSpacesFromOutput() {
+                const text = outputText.value;
+                if (!text || text.trim() === '') {
+                    showToast('⚠️ 输出为空，无法去除空格', '');
+                    return;
+                }
+                let result = '';
+                let removed = 0;
+                for (const char of text) {
+                    if (isSpaceChar(char)) removed++;
+                    else result += char;
+                }
+                if (removed === 0) {
+                    showToast('ℹ️ 文本中没有空格字符', '');
+                    return;
+                }
+                outputText.value = result;
+                outputLineCount.textContent = result.split('\n').length;
+                updateStats(result);
+                dedupStatus.textContent = '🧹 已去除 ' + removed + ' 个空格字符';
+                dedupStatus.style.color = '#d97706';
+                showToast('✅ 已去除 ' + removed + ' 个空格字符', 'success');
+            }
+
+            function manualDedup() {
+                const result = performDedup();
+                if (inputText.value.trim() === '') showToast('⚠️ 请输入文本后再去重', '');
+                else if (result.duplicateCount > 0) showToast('✅ 成功去除 ' + result.duplicateCount + ' 行重复！', 'success');
+                else showToast('✨ 没有发现重复行', 'success');
+            }
+
+            function copyOutput() {
+                const text = outputText.value;
+                if (!text || text.trim() === '') { showToast('⚠️ 输出为空，无法复制', ''); return; }
+                navigator.clipboard.writeText(text).then(() => showToast('📋 已复制到剪贴板！', 'success'))
+                    .catch(() => { outputText.select(); document.execCommand('copy'); showToast('📋 已复制到剪贴板！', 'success'); });
+            }
+
+            function swapTexts() {
+                const tmp = inputText.value;
+                inputText.value = outputText.value;
+                outputText.value = tmp;
+                if (optAutoProcess.checked) performDedup();
+                else {
+                    updateStats(outputText.value);
+                    const lines = outputText.value.split('\n');
+                    outputLineCount.textContent = lines.length;
+                    inputLineCount.textContent = lines.length;
+                    removedCount.textContent = '0';
+                    dedupStatus.textContent = '🔄 已交换，点击"立即去重"处理';
+                    dedupStatus.style.color = '#64748b';
+                }
+                showToast('🔄 输入输出已交换', 'success');
+            }
+
+            function clearInput() {
+                inputText.value = '';
+                outputText.value = '';
+                inputLineCount.textContent = '0';
+                outputLineCount.textContent = '0';
+                removedCount.textContent = '0';
+                dedupStatus.textContent = '等待处理...';
+                dedupStatus.style.color = '#94a3b8';
+                updateStats('');
+                showToast('🗑️ 输入已清空', '');
+            }
+
+            function clearOutput() {
+                outputText.value = '';
+                outputLineCount.textContent = '0';
+                removedCount.textContent = '0';
+                dedupStatus.textContent = '输出已清空';
+                dedupStatus.style.color = '#94a3b8';
+                updateStats('');
+                showToast('🗑️ 输出已清空', '');
+            }
+
+            function loadSample() {
+                const sample = [
+                    'Hello World',
+                    '你好世界',
+                    'hello world',
+                    '  你好世界  ',
+                    '',
+                    '  你好世界  ',
+                    '',
+                    '这是第一段内容',
+                    '这也是第一段的一部分',
+                    '',
+                    '这是第二段',
+                    '',
+                    '',
+                    '第三段来了',
+                    'Hello World',
+                    'Python编程',
+                    'JavaScript开发',
+                    'python编程',
+                    '    ',
+                    '最后一行',
+                    '最后一行',
+                ].join('\n');
+                inputText.value = sample;
+                if (optAutoProcess.checked) performDedup();
+                else {
+                    inputLineCount.textContent = optRemoveEmpty.checked ?
+                        sample.split('\n').filter(l => l.trim() !== '').length : sample.split('\n').length;
+                    dedupStatus.textContent = '💡 请点击"立即去重"查看结果';
+                    dedupStatus.style.color = '#64748b';
+                    updateStats('');
+                }
+                showToast('💡 示例文本已加载', 'success');
+            }
+
+            function resetAll() {
+                inputText.value = '';
+                outputText.value = '';
+                optTrim.checked = true;
+                optRemoveEmpty.checked = true;
+                optIgnoreCase.checked = false;
+                optAutoProcess.checked = true;
+                optCountSpace.checked = true;
+                optCountNewline.checked = false;
+                optCountPunctuation.checked = true;
+                optCountDigits.checked = true;
+                inputLineCount.textContent = '0';
+                outputLineCount.textContent = '0';
+                removedCount.textContent = '0';
+                dedupStatus.textContent = '等待处理...';
+                dedupStatus.style.color = '#94a3b8';
+                // 重置卡片样式
+                statNumber.classList.remove('blank');
+                statNumberCard.classList.remove('disabled-stat');
+                statPunctuation.classList.remove('blank');
+                statPunctCard.classList.remove('disabled-stat');
+                statSpace.classList.remove('blank');
+                statSpaceCard.classList.remove('disabled-stat');
+                statParagraph.classList.add('blank'); // 因为换行符默认关闭，段落应显示空白
+                statParagraphCard.classList.add('disabled-stat');
+                updateStats('');
+                showToast('🔃 已全部重置', 'success');
+            }
+
+            // 事件监听
+            inputText.addEventListener('input', function() {
+                const lines = inputText.value.split('\n');
+                const workingLines = optRemoveEmpty.checked ? lines.filter(l => l.trim() !== '') : lines;
+                inputLineCount.textContent = workingLines.length;
+                if (optAutoProcess.checked) debouncedPerformDedup();
+                else {
+                    dedupStatus.textContent = '⏳ 自动处理已关闭，请手动点击"立即去重"';
+                    dedupStatus.style.color = '#f59e0b';
+                }
+            });
+
+            [optTrim, optRemoveEmpty, optIgnoreCase, optAutoProcess].forEach(opt => {
+                opt.addEventListener('change', function() {
+                    if (optAutoProcess.checked && inputText.value.trim() !== '') performDedup();
+                    else if (!optAutoProcess.checked && opt === optAutoProcess) {
+                        dedupStatus.textContent = '⏳ 自动处理已关闭，请手动点击"立即去重"';
+                        dedupStatus.style.color = '#f59e0b';
+                    }
+                    const lines = inputText.value.split('\n');
+                    inputLineCount.textContent = optRemoveEmpty.checked ?
+                        lines.filter(l => l.trim() !== '').length : lines.length;
+                });
+            });
+
+            [optCountSpace, optCountNewline, optCountPunctuation, optCountDigits].forEach(opt => {
+                opt.addEventListener('change', function() {
+                    const targetText = outputText.value || inputText.value;
+                    updateStats(targetText);
+                });
+            });
+
+            outputText.addEventListener('input', function() {
+                if (!optAutoProcess.checked) {
+                    updateStats(outputText.value);
+                    outputLineCount.textContent = outputText.value.split('\n').length;
+                }
+            });
+
+            document.addEventListener('keydown', function(e) {
+                if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); manualDedup(); }
+                if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'C') { e.preventDefault(); copyOutput(); }
+                if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'S') { e.preventDefault(); removeSpacesFromOutput(); }
+            });
+
+            // 初始化
+            function init() {
+                inputLineCount.textContent = '0';
+                outputLineCount.textContent = '0';
+                removedCount.textContent = '0';
+                dedupStatus.textContent = '等待处理...';
+                dedupStatus.style.color = '#94a3b8';
+                // 初始时换行符关闭，段落应空白
+                statParagraph.classList.add('blank');
+                statParagraphCard.classList.add('disabled-stat');
+                updateStats('');
+                if (optAutoProcess.checked) outputText.setAttribute('readonly', 'readonly');
+            }
+            optAutoProcess.addEventListener('change', function() {
+                if (optAutoProcess.checked) outputText.setAttribute('readonly', 'readonly');
+                else outputText.removeAttribute('readonly');
+            });
+            init();
+
+            // 暴露全局函数
+            window.manualDedup = manualDedup;
+            window.copyOutput = copyOutput;
+            window.removeSpacesFromOutput = removeSpacesFromOutput;
+            window.swapTexts = swapTexts;
+            window.clearInput = clearInput;
+            window.clearOutput = clearOutput;
+            window.loadSample = loadSample;
+            window.resetAll = resetAll;
+
+            console.log('✅ 文本去重 & 字数统计工具已就绪');
+            console.log('🔍 去重选项：去掉首尾空格(默认开) | 移除空行 | 忽略大小写 | 自动处理');
+            console.log('📐 统计设置：空格/换行/标点/数字 可独立开关，关闭时对应卡片显示空白');
+            console.log('🧹 新增功能：去除文中所有空格');
+        })();
+    </script>
+</body>
+</html>

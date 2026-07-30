@@ -1,0 +1,2365 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>全球国家地区品牌查询系统</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#ecfdf5',
+                            100: '#d1fae5',
+                            200: '#a7f3d0',
+                            300: '#6ee7b7',
+                            400: '#34d399',
+                            500: '#07C160',
+                            600: '#059669',
+                            700: '#047857',
+                            800: '#065f46',
+                            900: '#064e3b',
+                        },
+                        eu: '#003399',
+                        asia: '#f59e0b',
+                        africa: '#ef4444',
+                        americas: '#8b5cf6',
+                        oceania: '#06b6d4',
+                        europe: '#3b82f6',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.3s ease-out',
+                        'slide-up': 'slideUp 0.3s ease-out',
+                        'slide-in-left': 'slideInLeft 0.3s ease-out',
+                        'pulse-soft': 'pulseSoft 2s infinite',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        },
+                        slideUp: {
+                            '0%': { opacity: '0', transform: 'translateY(10px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        },
+                        slideInLeft: {
+                            '0%': { opacity: '0', transform: 'translateX(-20px)' },
+                            '100%': { opacity: '1', transform: 'translateX(0)' },
+                        },
+                        pulseSoft: {
+                            '0%, 100%': { opacity: '1' },
+                            '50%': { opacity: '0.7' },
+                        },
+                    },
+                },
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .scrollbar-thin::-webkit-scrollbar {
+                width: 6px;
+                height: 6px;
+            }
+            .scrollbar-thin::-webkit-scrollbar-track {
+                background: transparent;
+            }
+            .scrollbar-thin::-webkit-scrollbar-thumb {
+                background: #d1d5db;
+                border-radius: 3px;
+            }
+            .dark .scrollbar-thin::-webkit-scrollbar-thumb {
+                background: #4b5563;
+            }
+            .glass-effect {
+                backdrop-filter: blur(10px);
+                -webkit-backdrop-filter: blur(10px);
+            }
+            .line-clamp-2 {
+                display: -webkit-box;
+                -webkit-line-clamp: 2;
+                -webkit-box-orient: vertical;
+                overflow: hidden;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 min-h-screen font-sans text-gray-800 dark:text-gray-200 transition-colors duration-300">
+    
+    <!-- 侧边栏 -->
+    <aside id="sidebar" class="fixed left-0 top-0 h-full w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 z-40 transform -translate-x-full lg:translate-x-0 transition-transform duration-300">
+        <div class="flex flex-col h-full">
+            <!-- Logo区域 -->
+            <div class="p-5 border-b border-gray-200 dark:border-gray-700">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center">
+                        <i class="fa fa-globe text-white text-lg"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-base dark:text-white">全球查询系统</h1>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Country & Brand Explorer</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 导航菜单 -->
+            <nav class="flex-1 p-3 space-y-1 overflow-y-auto scrollbar-thin">
+                <div class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider px-3 py-2">主导航</div>
+                
+                <button data-page="dashboard" class="nav-item w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-left transition-all duration-200 bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400">
+                    <i class="fa fa-tachometer w-5 text-center"></i>
+                    <span class="text-sm font-medium">仪表盘</span>
+                </button>
+                
+                <button data-page="search" class="nav-item w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-left transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
+                    <i class="fa fa-search w-5 text-center"></i>
+                    <span class="text-sm font-medium">搜索查询</span>
+                </button>
+                
+                <button data-page="regions" class="nav-item w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-left transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
+                    <i class="fa fa-map w-5 text-center"></i>
+                    <span class="text-sm font-medium">地区浏览</span>
+                </button>
+                
+                <button data-page="brands" class="nav-item w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-left transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
+                    <i class="fa fa-tags w-5 text-center"></i>
+                    <span class="text-sm font-medium">品牌管理</span>
+                </button>
+                
+                <button data-page="favorites" class="nav-item w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-left transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
+                    <i class="fa fa-star w-5 text-center"></i>
+                    <span class="text-sm font-medium">我的收藏</span>
+                    <span id="fav-count" class="ml-auto bg-primary-500 text-white text-xs px-2 py-0.5 rounded-full">0</span>
+                </button>
+                
+                <button data-page="history" class="nav-item w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-left transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
+                    <i class="fa fa-history w-5 text-center"></i>
+                    <span class="text-sm font-medium">搜索历史</span>
+                </button>
+                
+                <div class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider px-3 py-2 mt-4">快捷筛选</div>
+                
+                <button data-region="all" class="region-btn w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400">
+                    <span class="w-2 h-2 rounded-full bg-gray-400"></span>
+                    <span class="text-sm">全部国家/地区</span>
+                </button>
+                
+                <button data-region="asia" class="region-btn w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400">
+                    <span class="w-2 h-2 rounded-full bg-asia"></span>
+                    <span class="text-sm">亚洲 Asia</span>
+                </button>
+                
+                <button data-region="europe" class="region-btn w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400">
+                    <span class="w-2 h-2 rounded-full bg-europe"></span>
+                    <span class="text-sm">欧洲 Europe</span>
+                </button>
+                
+                <button data-region="africa" class="region-btn w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400">
+                    <span class="w-2 h-2 rounded-full bg-africa"></span>
+                    <span class="text-sm">非洲 Africa</span>
+                </button>
+                
+                <button data-region="americas" class="region-btn w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400">
+                    <span class="w-2 h-2 rounded-full bg-americas"></span>
+                    <span class="text-sm">美洲 Americas</span>
+                </button>
+                
+                <button data-region="oceania" class="region-btn w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400">
+                    <span class="w-2 h-2 rounded-full bg-oceania"></span>
+                    <span class="text-sm">大洋洲 Oceania</span>
+                </button>
+                
+                <button data-region="eu" class="region-btn w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400">
+                    <span class="w-2 h-2 rounded-full bg-eu"></span>
+                    <span class="text-sm">欧盟 EU</span>
+                </button>
+            </nav>
+            
+            <!-- 底部设置 -->
+            <div class="p-3 border-t border-gray-200 dark:border-gray-700">
+                <button id="settings-btn" class="w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400">
+                    <i class="fa fa-cog w-5 text-center"></i>
+                    <span class="text-sm">设置</span>
+                    <i class="fa fa-chevron-right ml-auto text-xs"></i>
+                </button>
+            </div>
+        </div>
+    </aside>
+    
+    <!-- 遮罩层（移动端侧边栏） -->
+    <div id="sidebar-overlay" class="fixed inset-0 bg-black/50 z-30 hidden lg:hidden" onclick="toggleSidebar()"></div>
+    
+    <!-- 主内容区 -->
+    <div class="lg:ml-64 min-h-screen flex flex-col">
+        
+        <!-- 顶部工具栏 -->
+        <header class="sticky top-0 z-20 bg-white/80 dark:bg-gray-800/80 glass-effect border-b border-gray-200 dark:border-gray-700">
+            <div class="flex items-center justify-between px-4 lg:px-6 py-3">
+                <div class="flex items-center space-x-4">
+                    <button onclick="toggleSidebar()" class="lg:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                        <i class="fa fa-bars text-gray-600 dark:text-gray-400"></i>
+                    </button>
+                    <h2 id="page-title" class="text-lg font-semibold dark:text-white">仪表盘</h2>
+                </div>
+                
+                <div class="flex items-center space-x-2">
+                    <!-- 全局搜索 -->
+                    <div class="relative hidden md:block">
+                        <input 
+                            type="text" 
+                            id="quick-search" 
+                            placeholder="快速搜索... (Ctrl+K)" 
+                            class="w-64 py-2 pl-10 pr-4 text-sm bg-gray-100 dark:bg-gray-700 border-0 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none transition-all dark:text-white placeholder-gray-400"
+                        >
+                        <i class="fa fa-search absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                        <div id="autocomplete-dropdown" class="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 max-h-64 overflow-y-auto scrollbar-thin hidden z-50"></div>
+                    </div>
+                    
+                    <button onclick="toggleTheme()" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" title="切换主题">
+                        <i id="theme-icon" class="fa fa-moon-o text-gray-600 dark:text-yellow-400"></i>
+                    </button>
+                    
+                    <button onclick="toggleFullscreen()" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" title="全屏">
+                        <i class="fa fa-expand text-gray-600 dark:text-gray-400"></i>
+                    </button>
+                    
+                    <button onclick="showHelp()" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" title="帮助">
+                        <i class="fa fa-question-circle text-gray-600 dark:text-gray-400"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+        
+        <!-- 页面内容 -->
+        <main class="flex-1 p-4 lg:p-6">
+            
+            <!-- 仪表盘页面 -->
+            <div id="page-dashboard" class="page-content animate-fade-in">
+                <!-- 统计卡片 -->
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                    <div class="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="w-10 h-10 rounded-lg bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center">
+                                <i class="fa fa-globe text-primary-600 dark:text-primary-400"></i>
+                            </div>
+                            <span class="text-xs text-green-500 bg-green-50 dark:bg-green-900/30 px-2 py-1 rounded-full">+0</span>
+                        </div>
+                        <div class="text-2xl font-bold dark:text-white" id="stat-countries">0</div>
+                        <div class="text-sm text-gray-500 dark:text-gray-400 mt-1">国家/地区总数</div>
+                    </div>
+                    
+                    <div class="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                                <i class="fa fa-flag text-blue-600 dark:text-blue-400"></i>
+                            </div>
+                            <span class="text-xs text-blue-500 bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded-full">27国</span>
+                        </div>
+                        <div class="text-2xl font-bold dark:text-white" id="stat-eu">27</div>
+                        <div class="text-sm text-gray-500 dark:text-gray-400 mt-1">欧盟成员国</div>
+                    </div>
+                    
+                    <div class="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="w-10 h-10 rounded-lg bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center">
+                                <i class="fa fa-star text-yellow-600 dark:text-yellow-400"></i>
+                            </div>
+                            <span class="text-xs text-yellow-500 bg-yellow-50 dark:bg-yellow-900/30 px-2 py-1 rounded-full">已收藏</span>
+                        </div>
+                        <div class="text-2xl font-bold dark:text-white" id="stat-favorites">0</div>
+                        <div class="text-sm text-gray-500 dark:text-gray-400 mt-1">收藏数量</div>
+                    </div>
+                    
+                    <div class="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                                <i class="fa fa-tags text-purple-600 dark:text-purple-400"></i>
+                            </div>
+                            <span class="text-xs text-purple-500 bg-purple-50 dark:bg-purple-900/30 px-2 py-1 rounded-full">品牌</span>
+                        </div>
+                        <div class="text-2xl font-bold dark:text-white" id="stat-brands">0</div>
+                        <div class="text-sm text-gray-500 dark:text-gray-400 mt-1">品牌数量</div>
+                    </div>
+                </div>
+                
+                <!-- 地区分布图表 + 快捷操作 -->
+                <div class="grid lg:grid-cols-3 gap-6 mb-6">
+                    <!-- 地区分布 -->
+                    <div class="lg:col-span-2 bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-100 dark:border-gray-700">
+                        <h3 class="font-semibold text-base mb-4 dark:text-white">
+                            <i class="fa fa-pie-chart text-primary-500 mr-2"></i>地区分布
+                        </h3>
+                        <div id="region-stats" class="space-y-3">
+                            <!-- 动态生成 -->
+                        </div>
+                    </div>
+                    
+                    <!-- 快捷操作 -->
+                    <div class="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-100 dark:border-gray-700">
+                        <h3 class="font-semibold text-base mb-4 dark:text-white">
+                            <i class="fa fa-bolt text-primary-500 mr-2"></i>快捷操作
+                        </h3>
+                        <div class="space-y-2">
+                            <button onclick="navigateTo('search')" class="w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-left">
+                                <div class="w-8 h-8 rounded-lg bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center">
+                                    <i class="fa fa-search text-primary-600 dark:text-primary-400 text-sm"></i>
+                                </div>
+                                <span class="text-sm dark:text-white">高级搜索</span>
+                            </button>
+                            <button onclick="navigateTo('regions')" class="w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-left">
+                                <div class="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                                    <i class="fa fa-map text-blue-600 dark:text-blue-400 text-sm"></i>
+                                </div>
+                                <span class="text-sm dark:text-white">浏览地区</span>
+                            </button>
+                            <button onclick="navigateTo('brands')" class="w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-left">
+                                <div class="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                                    <i class="fa fa-plus text-purple-600 dark:text-purple-400 text-sm"></i>
+                                </div>
+                                <span class="text-sm dark:text-white">添加品牌</span>
+                            </button>
+                            <button onclick="exportData('csv')" class="w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-left">
+                                <div class="w-8 h-8 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                                    <i class="fa fa-download text-green-600 dark:text-green-400 text-sm"></i>
+                                </div>
+                                <span class="text-sm dark:text-white">导出数据</span>
+                            </button>
+                            <button onclick="showRandomCountry()" class="w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-left">
+                                <div class="w-8 h-8 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
+                                    <i class="fa fa-random text-orange-600 dark:text-orange-400 text-sm"></i>
+                                </div>
+                                <span class="text-sm dark:text-white">随机国家</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 最近搜索 + 热门国家 -->
+                <div class="grid lg:grid-cols-2 gap-6">
+                    <div class="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-100 dark:border-gray-700">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="font-semibold text-base dark:text-white">
+                                <i class="fa fa-history text-primary-500 mr-2"></i>最近搜索
+                            </h3>
+                            <button onclick="clearHistory(); navigateTo('history')" class="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">清空</button>
+                        </div>
+                        <div id="recent-searches-dashboard" class="space-y-2">
+                            <p class="text-sm text-gray-400 text-center py-4">暂无搜索记录</p>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-100 dark:border-gray-700">
+                        <h3 class="font-semibold text-base mb-4 dark:text-white">
+                            <i class="fa fa-fire text-primary-500 mr-2"></i>热门国家
+                        </h3>
+                        <div id="hot-countries" class="grid grid-cols-2 gap-2">
+                            <!-- 动态生成 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 搜索页面 -->
+            <div id="page-search" class="page-content hidden animate-fade-in">
+                <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700 mb-6">
+                    <h3 class="font-semibold text-lg mb-4 dark:text-white">高级搜索</h3>
+                    
+                    <!-- 搜索框 -->
+                    <div class="relative mb-4">
+                        <input 
+                            type="text" 
+                            id="main-search-input" 
+                            placeholder="输入简称、中文名称、英文名称..." 
+                            class="w-full py-3.5 pl-12 pr-32 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 outline-none transition-all dark:text-white text-base"
+                        >
+                        <i class="fa fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-lg"></i>
+                        <div class="absolute right-3 top-1/2 -translate-y-1/2 flex items-center space-x-2">
+                            <select id="search-type" class="text-sm bg-white dark:bg-gray-600 border border-gray-200 dark:border-gray-500 rounded-lg px-2 py-1.5 outline-none focus:border-primary-500 dark:text-white">
+                                <option value="all">全部</option>
+                                <option value="code">代码</option>
+                                <option value="cn">中文名</option>
+                                <option value="en">英文名</option>
+                            </select>
+                            <button id="main-search-btn" class="bg-primary-500 hover:bg-primary-600 text-white px-4 py-1.5 rounded-lg transition-colors text-sm font-medium">
+                                搜索
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- 筛选选项 -->
+                    <div class="flex flex-wrap items-center gap-4">
+                        <div class="flex items-center space-x-2">
+                            <span class="text-sm text-gray-500 dark:text-gray-400">地区:</span>
+                            <select id="filter-region" class="text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-1.5 outline-none focus:border-primary-500 dark:text-white">
+                                <option value="all">全部地区</option>
+                                <option value="asia">亚洲</option>
+                                <option value="europe">欧洲</option>
+                                <option value="africa">非洲</option>
+                                <option value="americas">美洲</option>
+                                <option value="oceania">大洋洲</option>
+                                <option value="eu">欧盟</option>
+                            </select>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-sm text-gray-500 dark:text-gray-400">排序:</span>
+                            <select id="sort-by" class="text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-1.5 outline-none focus:border-primary-500 dark:text-white">
+                                <option value="code">按代码</option>
+                                <option value="cn">按中文名</option>
+                                <option value="en">按英文名</option>
+                            </select>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-sm text-gray-500 dark:text-gray-400">每页:</span>
+                            <select id="page-size" class="text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-1.5 outline-none focus:border-primary-500 dark:text-white">
+                                <option value="20">20条</option>
+                                <option value="50">50条</option>
+                                <option value="100">100条</option>
+                                <option value="9999">全部</option>
+                            </select>
+                        </div>
+                        <div class="flex-1"></div>
+                        <button onclick="selectAllResults()" class="text-sm text-gray-500 hover:text-primary-500 dark:text-gray-400 transition-colors">
+                            <i class="fa fa-check-square-o mr-1"></i>全选
+                        </button>
+                        <button onclick="exportSelected('csv')" class="text-sm text-gray-500 hover:text-primary-500 dark:text-gray-400 transition-colors">
+                            <i class="fa fa-download mr-1"></i>导出选中
+                        </button>
+                        <button onclick="copySelected()" class="text-sm text-gray-500 hover:text-primary-500 dark:text-gray-400 transition-colors">
+                            <i class="fa fa-copy mr-1"></i>批量复制
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- 搜索结果 -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+                    <div class="px-5 py-3 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+                        <div class="text-sm text-gray-500 dark:text-gray-400">
+                            共 <span id="result-total" class="font-semibold text-gray-700 dark:text-gray-300">0</span> 条结果
+                            <span id="selected-count" class="hidden ml-2">已选 <span id="selected-num" class="text-primary-500 font-medium">0</span> 条</span>
+                        </div>
+                        <div id="results-toolbar" class="flex items-center space-x-2">
+                            <!-- 工具栏 -->
+                        </div>
+                    </div>
+                    
+                    <div id="search-results" class="p-5 min-h-[300px]">
+                        <div class="flex flex-col items-center justify-center py-16 text-gray-400">
+                            <i class="fa fa-search text-5xl mb-4 opacity-30"></i>
+                            <p>输入关键词开始搜索</p>
+                        </div>
+                    </div>
+                    
+                    <!-- 分页 -->
+                    <div id="pagination" class="px-5 py-3 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between hidden">
+                        <div class="text-sm text-gray-500 dark:text-gray-400">
+                            第 <span id="page-current">1</span> / <span id="page-total">1</span> 页
+                        </div>
+                        <div class="flex items-center space-x-1">
+                            <button onclick="goToPage(1)" class="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-sm">
+                                <i class="fa fa-angle-double-left"></i>
+                            </button>
+                            <button onclick="prevPage()" class="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-sm">
+                                <i class="fa fa-angle-left"></i>
+                            </button>
+                            <div id="page-numbers" class="flex items-center space-x-1">
+                                <!-- 动态生成 -->
+                            </div>
+                            <button onclick="nextPage()" class="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-sm">
+                                <i class="fa fa-angle-right"></i>
+                            </button>
+                            <button onclick="goToPage(totalPages)" class="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-sm">
+                                <i class="fa fa-angle-double-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 地区浏览页面 -->
+            <div id="page-regions" class="page-content hidden animate-fade-in">
+                <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+                    <div onclick="showRegionCountries('asia')" class="region-card cursor-pointer bg-gradient-to-br from-yellow-500 to-orange-500 rounded-xl p-6 text-white hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
+                        <div class="flex items-center justify-between mb-4">
+                            <i class="fa fa-map text-4xl opacity-80"></i>
+                            <span class="text-3xl font-bold" id="asia-count">0</span>
+                        </div>
+                        <h3 class="text-xl font-bold mb-1">亚洲</h3>
+                        <p class="text-sm opacity-80">Asia</p>
+                    </div>
+                    
+                    <div onclick="showRegionCountries('europe')" class="region-card cursor-pointer bg-gradient-to-br from-blue-500 to-indigo-500 rounded-xl p-6 text-white hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
+                        <div class="flex items-center justify-between mb-4">
+                            <i class="fa fa-map text-4xl opacity-80"></i>
+                            <span class="text-3xl font-bold" id="europe-count">0</span>
+                        </div>
+                        <h3 class="text-xl font-bold mb-1">欧洲</h3>
+                        <p class="text-sm opacity-80">Europe</p>
+                    </div>
+                    
+                    <div onclick="showRegionCountries('africa')" class="region-card cursor-pointer bg-gradient-to-br from-red-500 to-pink-500 rounded-xl p-6 text-white hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
+                        <div class="flex items-center justify-between mb-4">
+                            <i class="fa fa-map text-4xl opacity-80"></i>
+                            <span class="text-3xl font-bold" id="africa-count">0</span>
+                        </div>
+                        <h3 class="text-xl font-bold mb-1">非洲</h3>
+                        <p class="text-sm opacity-80">Africa</p>
+                    </div>
+                    
+                    <div onclick="showRegionCountries('americas')" class="region-card cursor-pointer bg-gradient-to-br from-purple-500 to-violet-500 rounded-xl p-6 text-white hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
+                        <div class="flex items-center justify-between mb-4">
+                            <i class="fa fa-map text-4xl opacity-80"></i>
+                            <span class="text-3xl font-bold" id="americas-count">0</span>
+                        </div>
+                        <h3 class="text-xl font-bold mb-1">美洲</h3>
+                        <p class="text-sm opacity-80">Americas</p>
+                    </div>
+                    
+                    <div onclick="showRegionCountries('oceania')" class="region-card cursor-pointer bg-gradient-to-br from-cyan-500 to-teal-500 rounded-xl p-6 text-white hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
+                        <div class="flex items-center justify-between mb-4">
+                            <i class="fa fa-map text-4xl opacity-80"></i>
+                            <span class="text-3xl font-bold" id="oceania-count">0</span>
+                        </div>
+                        <h3 class="text-xl font-bold mb-1">大洋洲</h3>
+                        <p class="text-sm opacity-80">Oceania</p>
+                    </div>
+                    
+                    <div onclick="showRegionCountries('eu')" class="region-card cursor-pointer bg-gradient-to-br from-blue-700 to-blue-900 rounded-xl p-6 text-white hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
+                        <div class="flex items-center justify-between mb-4">
+                            <i class="fa fa-flag text-4xl opacity-80"></i>
+                            <span class="text-3xl font-bold">27</span>
+                        </div>
+                        <h3 class="text-xl font-bold mb-1">欧洲联盟</h3>
+                        <p class="text-sm opacity-80">European Union</p>
+                    </div>
+                </div>
+                
+                <!-- 字母索引 -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-100 dark:border-gray-700 mb-6">
+                    <h3 class="font-semibold text-base mb-4 dark:text-white">
+                        <i class="fa fa-sort-alpha-asc text-primary-500 mr-2"></i>字母索引
+                    </h3>
+                    <div id="alphabet-index" class="flex flex-wrap gap-2">
+                        <!-- 动态生成字母 -->
+                    </div>
+                </div>
+                
+                <!-- 地区国家列表 -->
+                <div id="region-countries" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+                    <div class="px-5 py-3 border-b border-gray-100 dark:border-gray-700">
+                        <h3 class="font-semibold dark:text-white" id="region-title">选择一个地区查看国家</h3>
+                    </div>
+                    <div class="p-5">
+                        <div class="flex flex-col items-center justify-center py-12 text-gray-400">
+                            <i class="fa fa-hand-pointer-o text-4xl mb-4 opacity-30"></i>
+                            <p>点击上方地区卡片开始浏览</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 品牌管理页面 -->
+            <div id="page-brands" class="page-content hidden animate-fade-in">
+                <div class="flex items-center justify-between mb-6">
+                    <div>
+                        <h3 class="font-semibold text-lg dark:text-white">品牌管理</h3>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">管理自定义品牌和地区代码</p>
+                    </div>
+                    <button onclick="showAddBrandModal()" class="bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 rounded-lg transition-colors text-sm font-medium flex items-center space-x-2">
+                        <i class="fa fa-plus"></i>
+                        <span>添加品牌</span>
+                    </button>
+                </div>
+                
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead class="bg-gray-50 dark:bg-gray-700/50">
+                                <tr>
+                                    <th class="px-5 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">代码</th>
+                                    <th class="px-5 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">英文名称</th>
+                                    <th class="px-5 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">中文名称</th>
+                                    <th class="px-5 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">类型</th>
+                                    <th class="px-5 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="brand-table" class="divide-y divide-gray-100 dark:divide-gray-700">
+                                <!-- 动态生成 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 收藏页面 -->
+            <div id="page-favorites" class="page-content hidden animate-fade-in">
+                <div class="flex items-center justify-between mb-6">
+                    <div>
+                        <h3 class="font-semibold text-lg dark:text-white">我的收藏</h3>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">收藏的国家/地区和品牌</p>
+                    </div>
+                    <button onclick="exportFavorites()" class="text-sm text-primary-500 hover:text-primary-600 transition-colors flex items-center space-x-1">
+                        <i class="fa fa-download"></i>
+                        <span>导出收藏</span>
+                    </button>
+                </div>
+                
+                <div id="favorites-list" class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <!-- 动态生成 -->
+                </div>
+            </div>
+            
+            <!-- 搜索历史页面 -->
+            <div id="page-history" class="page-content hidden animate-fade-in">
+                <div class="flex items-center justify-between mb-6">
+                    <div>
+                        <h3 class="font-semibold text-lg dark:text-white">搜索历史</h3>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">最近的搜索记录</p>
+                    </div>
+                    <button onclick="clearHistory()" class="text-sm text-red-500 hover:text-red-600 transition-colors flex items-center space-x-1">
+                        <i class="fa fa-trash"></i>
+                        <span>清空历史</span>
+                    </button>
+                </div>
+                
+                <div id="history-list" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+                    <div class="divide-y divide-gray-100 dark:divide-gray-700">
+                        <!-- 动态生成 -->
+                    </div>
+                </div>
+            </div>
+            
+        </main>
+        
+        <!-- 页脚 -->
+        <footer class="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 py-4 px-6">
+            <div class="flex flex-col md:flex-row items-center justify-between text-sm text-gray-500 dark:text-gray-400">
+                <p>@2025 全球国家地区品牌查询系统</p>
+                <div class="flex items-center space-x-4 mt-2 md:mt-0">
+                    <span>快捷键: Ctrl+K 搜索</span>
+                    <span>|</span>
+                    <button onclick="showKeyboardShortcuts()" class="hover:text-primary-500 transition-colors">键盘快捷键</button>
+                </div>
+            </div>
+        </footer>
+    </div>
+    
+    <!-- 国家详情模态框 -->
+    <div id="detail-modal" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="closeDetailModal()"></div>
+        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl m-4 animate-slide-up">
+                <div class="p-6 border-b border-gray-100 dark:border-gray-700">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <div class="flex items-center space-x-3 mb-2">
+                                <span id="detail-code" class="bg-primary-100 dark:bg-primary-900/40 text-primary-600 dark:text-primary-400 text-lg font-bold px-4 py-1 rounded-lg"></span>
+                                <span id="detail-region" class="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full"></span>
+                            </div>
+                            <h3 id="detail-cn" class="text-xl font-bold dark:text-white"></h3>
+                            <p id="detail-en" class="text-gray-500 dark:text-gray-400"></p>
+                        </div>
+                        <button onclick="closeDetailModal()" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                            <i class="fa fa-times text-gray-400"></i>
+                        </button>
+                    </div>
+                </div>
+                <div id="detail-body" class="p-6">
+                    <!-- 详情内容 -->
+                </div>
+                <div class="p-6 border-t border-gray-100 dark:border-gray-700 flex items-center justify-end space-x-3">
+                    <button onclick="toggleFavoriteFromDetail()" id="detail-fav-btn" class="px-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg text-sm transition-colors hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-white">
+                        <i class="fa fa-star-o mr-1"></i>收藏
+                    </button>
+                    <button onclick="copyDetail()" class="px-4 py-2 bg-primary-500 text-white rounded-lg text-sm transition-colors hover:bg-primary-600">
+                        <i class="fa fa-copy mr-1"></i>复制信息
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 添加品牌模态框 -->
+    <div id="add-brand-modal" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="closeAddBrandModal()"></div>
+        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl m-4 animate-slide-up">
+                <div class="p-6 border-b border-gray-100 dark:border-gray-700">
+                    <h3 class="text-lg font-bold dark:text-white">添加自定义品牌</h3>
+                </div>
+                <div class="p-6 space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">代码 (简称)</label>
+                        <input type="text" id="new-brand-code" class="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 dark:text-white outline-none focus:border-primary-500 transition-colors" placeholder="例如: PRO">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">英文名称</label>
+                        <input type="text" id="new-brand-en" class="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 dark:text-white outline-none focus:border-primary-500 transition-colors" placeholder="例如: PROORAL">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">中文名称</label>
+                        <input type="text" id="new-brand-cn" class="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 dark:text-white outline-none focus:border-primary-500 transition-colors" placeholder="例如: 博皓">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">类型</label>
+                        <select id="new-brand-type" class="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 dark:text-white outline-none focus:border-primary-500 transition-colors">
+                            <option value="brand">品牌</option>
+                            <option value="standard">标准</option>
+                            <option value="other">其他</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="p-6 border-t border-gray-100 dark:border-gray-700 flex items-center justify-end space-x-3">
+                    <button onclick="closeAddBrandModal()" class="px-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg text-sm transition-colors hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-white">取消</button>
+                    <button onclick="saveBrand()" class="px-4 py-2 bg-primary-500 text-white rounded-lg text-sm transition-colors hover:bg-primary-600">保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 帮助模态框 -->
+    <div id="help-modal" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="closeHelpModal()"></div>
+        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg max-h-[80vh] overflow-y-auto">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl m-4 animate-slide-up">
+                <div class="p-6 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+                    <h3 class="text-lg font-bold dark:text-white">
+                        <i class="fa fa-question-circle text-primary-500 mr-2"></i>使用帮助
+                    </h3>
+                    <button onclick="closeHelpModal()" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                        <i class="fa fa-times text-gray-400"></i>
+                    </button>
+                </div>
+                <div class="p-6 space-y-4 text-sm dark:text-gray-300">
+                    <div>
+                        <h4 class="font-semibold mb-2 dark:text-white">基本功能</h4>
+                        <ul class="space-y-1 text-gray-600 dark:text-gray-400 list-disc list-inside">
+                            <li>支持按代码、中文名、英文名搜索国家/地区</li>
+                            <li>搜索"欧盟"或"EU"可查看所有欧盟成员国</li>
+                            <li>点击国家卡片可查看详细信息</li>
+                            <li>支持收藏常用国家/地区</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold mb-2 dark:text-white">键盘快捷键</h4>
+                        <div class="space-y-2 text-gray-600 dark:text-gray-400">
+                            <div class="flex justify-between">
+                                <span>全局搜索</span>
+                                <kbd class="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-xs">Ctrl + K</kbd>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>切换深色模式</span>
+                                <kbd class="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-xs">Ctrl + D</kbd>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>切换侧边栏</span>
+                                <kbd class="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-xs">Ctrl + B</kbd>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>关闭弹窗</span>
+                                <kbd class="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-xs">Esc</kbd>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold mb-2 dark:text-white">数据说明</h4>
+                        <p class="text-gray-600 dark:text-gray-400">国家代码采用ISO 3166-1三位字母代码标准，部分常用双字母代码也支持搜索。数据仅供参考。</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Toast通知 -->
+    <div id="toast-container" class="fixed top-5 right-5 z-50 space-y-2"></div>
+    
+    <!-- 选中项浮动工具栏 -->
+    <div id="floating-toolbar" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 px-4 py-3 z-40 hidden animate-slide-up">
+        <div class="flex items-center space-x-4">
+            <span class="text-sm text-gray-500 dark:text-gray-400">
+                已选择 <span id="float-selected-count" class="font-semibold text-primary-500">0</span> 项
+            </span>
+            <div class="h-4 w-px bg-gray-200 dark:bg-gray-600"></div>
+            <button onclick="copySelected()" class="text-sm text-gray-600 dark:text-gray-300 hover:text-primary-500 transition-colors flex items-center space-x-1">
+                <i class="fa fa-copy"></i>
+                <span>复制</span>
+            </button>
+            <button onclick="exportSelected('csv')" class="text-sm text-gray-600 dark:text-gray-300 hover:text-primary-500 transition-colors flex items-center space-x-1">
+                <i class="fa fa-download"></i>
+                <span>导出</span>
+            </button>
+            <button onclick="toggleSelectAllFavorites()" class="text-sm text-gray-600 dark:text-gray-300 hover:text-primary-500 transition-colors flex items-center space-x-1">
+                <i class="fa fa-star"></i>
+                <span>收藏</span>
+            </button>
+            <button onclick="clearSelection()" class="text-sm text-gray-600 dark:text-gray-300 hover:text-red-500 transition-colors flex items-center space-x-1">
+                <i class="fa fa-times"></i>
+                <span>取消</span>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // 数据定义
+        // ============================================
+        const euMemberStates = [
+            "奥地利", "比利时", "保加利亚", "塞浦路斯", "捷克", "克罗地亚", 
+            "丹麦", "爱沙尼亚", "芬兰", "法国", "德国", "希腊", "匈牙利", 
+            "爱尔兰", "意大利", "拉脱维亚", "罗马尼亚", "立陶宛", "卢森堡", 
+            "马耳他", "荷兰", "波兰", "葡萄牙", "斯洛伐克", "斯洛文尼亚", 
+            "西班牙", "瑞典"
+        ];
+        
+        // 国家地区数据 - 增加更多详情字段
+        const countriesData = [
+            { code: "CHN", en: "China", cn: "中国（内地）", region: "asia", capital: "北京", population: "14.1亿", currency: "人民币 (CNY)", timezone: "UTC+8", continent: "亚洲" },
+            { code: "HKG", en: "Hong Kong", cn: "香港", region: "asia", capital: "香港", population: "745万", currency: "港币 (HKD)", timezone: "UTC+8", continent: "亚洲" },
+            { code: "MAC", en: "Macao", cn: "澳门", region: "asia", capital: "澳门", population: "68万", currency: "澳门元 (MOP)", timezone: "UTC+8", continent: "亚洲" },
+            { code: "TWN", en: "Taiwan,Province of China", cn: "台湾", region: "asia", capital: "台北", population: "2360万", currency: "新台币 (TWD)", timezone: "UTC+8", continent: "亚洲" },
+            { code: "TPE", en: "Taiwan,Province of China", cn: "台湾", region: "asia", capital: "台北", population: "2360万", currency: "新台币 (TWD)", timezone: "UTC+8", continent: "亚洲" },
+            { code: "JPN", en: "Japan", cn: "日本", region: "asia", capital: "东京", population: "1.26亿", currency: "日元 (JPY)", timezone: "UTC+9", continent: "亚洲" },
+            { code: "JAN", en: "Japan", cn: "日本", region: "asia", capital: "东京", population: "1.26亿", currency: "日元 (JPY)", timezone: "UTC+9", continent: "亚洲" },
+            { code: "KOR", en: "South Korea", cn: "韩国", region: "asia", capital: "首尔", population: "5200万", currency: "韩元 (KRW)", timezone: "UTC+9", continent: "亚洲" },
+            { code: "PRK", en: "North Korea", cn: "朝鲜", region: "asia", capital: "平壤", population: "2580万", currency: "朝鲜元 (KPW)", timezone: "UTC+9", continent: "亚洲" },
+            { code: "MNG", en: "Mongolia", cn: "蒙古国", region: "asia", capital: "乌兰巴托", population: "330万", currency: "图格里克 (MNT)", timezone: "UTC+8", continent: "亚洲" },
+            { code: "VNM", en: "Vietnam", cn: "越南", region: "asia", capital: "河内", population: "9700万", currency: "越南盾 (VND)", timezone: "UTC+7", continent: "亚洲" },
+            { code: "VIM", en: "Vietnam", cn: "越南", region: "asia", capital: "河内", population: "9700万", currency: "越南盾 (VND)", timezone: "UTC+7", continent: "亚洲" },
+            { code: "LAO", en: "Laos", cn: "老挝", region: "asia", capital: "万象", population: "730万", currency: "基普 (LAK)", timezone: "UTC+7", continent: "亚洲" },
+            { code: "KHM", en: "Cambodia", cn: "柬埔寨", region: "asia", capital: "金边", population: "1670万", currency: "瑞尔 (KHR)", timezone: "UTC+7", continent: "亚洲" },
+            { code: "MMR", en: "Myanmar(Burma)", cn: "缅甸", region: "asia", capital: "内比都", population: "5400万", currency: "缅元 (MMK)", timezone: "UTC+6:30", continent: "亚洲" },
+            { code: "THA", en: "Thailand", cn: "泰国", region: "asia", capital: "曼谷", population: "7000万", currency: "泰铢 (THB)", timezone: "UTC+7", continent: "亚洲" },
+            { code: "MYS", en: "Malaysia", cn: "马来西亚", region: "asia", capital: "吉隆坡", population: "3200万", currency: "令吉 (MYR)", timezone: "UTC+8", continent: "亚洲" },
+            { code: "MAL", en: "Malaysia", cn: "马来西亚", region: "asia", capital: "吉隆坡", population: "3200万", currency: "令吉 (MYR)", timezone: "UTC+8", continent: "亚洲" },
+            { code: "SGP", en: "Singapore", cn: "新加坡", region: "asia", capital: "新加坡", population: "580万", currency: "新加坡元 (SGD)", timezone: "UTC+8", continent: "亚洲" },
+            { code: "BRN", en: "Brunei", cn: "文莱", region: "asia", capital: "斯里巴加湾", population: "43万", currency: "文莱元 (BND)", timezone: "UTC+8", continent: "亚洲" },
+            { code: "PHL", en: "The Philippines", cn: "菲律宾", region: "asia", capital: "马尼拉", population: "1.09亿", currency: "比索 (PHP)", timezone: "UTC+8", continent: "亚洲" },
+            { code: "IDN", en: "Indonesia", cn: "印尼", region: "asia", capital: "雅加达", population: "2.74亿", currency: "印尼盾 (IDR)", timezone: "UTC+7 ~ UTC+9", continent: "亚洲" },
+            { code: "TLS", en: "Timor-Leste(East Timor)", cn: "东帝汶", region: "asia", capital: "帝力", population: "130万", currency: "美元 (USD)", timezone: "UTC+9", continent: "亚洲" },
+            { code: "IND", en: "India", cn: "印度", region: "asia", capital: "新德里", population: "13.8亿", currency: "卢比 (INR)", timezone: "UTC+5:30", continent: "亚洲" },
+            { code: "PAK", en: "Pakistan", cn: "巴基斯坦", region: "asia", capital: "伊斯兰堡", population: "2.2亿", currency: "卢比 (PKR)", timezone: "UTC+5", continent: "亚洲" },
+            { code: "BGD", en: "Bangladesh", cn: "孟加拉", region: "asia", capital: "达卡", population: "1.65亿", currency: "塔卡 (BDT)", timezone: "UTC+6", continent: "亚洲" },
+            { code: "LKA", en: "Sri Lanka", cn: "斯里兰卡", region: "asia", capital: "科伦坡", population: "2200万", currency: "卢比 (LKR)", timezone: "UTC+5:30", continent: "亚洲" },
+            { code: "MDV", en: "Maldives", cn: "马尔代夫", region: "asia", capital: "马累", population: "55万", currency: "拉菲亚 (MVR)", timezone: "UTC+5", continent: "亚洲" },
+            { code: "NPL", en: "Nepal", cn: "尼泊尔", region: "asia", capital: "加德满都", population: "2900万", currency: "卢比 (NPR)", timezone: "UTC+5:45", continent: "亚洲" },
+            { code: "BTN", en: "Bhutan", cn: "不丹", region: "asia", capital: "廷布", population: "75万", currency: "努尔特鲁姆 (BTN)", timezone: "UTC+6", continent: "亚洲" },
+            { code: "AFG", en: "Afghanistan", cn: "阿富汗", region: "asia", capital: "喀布尔", population: "3890万", currency: "阿富汗尼 (AFN)", timezone: "UTC+4:30", continent: "亚洲" },
+            { code: "IRN", en: "Iran", cn: "伊朗", region: "asia", capital: "德黑兰", population: "8300万", currency: "里亚尔 (IRR)", timezone: "UTC+3:30", continent: "亚洲" },
+            { code: "IRQ", en: "Iraq", cn: "伊拉克", region: "asia", capital: "巴格达", population: "4000万", currency: "第纳尔 (IQD)", timezone: "UTC+3", continent: "亚洲" },
+            { code: "SYR", en: "Syria", cn: "叙利亚", region: "asia", capital: "大马士革", population: "1750万", currency: "镑 (SYP)", timezone: "UTC+3", continent: "亚洲" },
+            { code: "JOR", en: "Jordan", cn: "约旦", region: "asia", capital: "安曼", population: "1000万", currency: "第纳尔 (JOD)", timezone: "UTC+2", continent: "亚洲" },
+            { code: "LBN", en: "Lebanon", cn: "黎巴嫩", region: "asia", capital: "贝鲁特", population: "680万", currency: "镑 (LBP)", timezone: "UTC+2", continent: "亚洲" },
+            { code: "ISR", en: "Israel", cn: "以色列", region: "asia", capital: "耶路撒冷", population: "900万", currency: "新谢克尔 (ILS)", timezone: "UTC+2", continent: "亚洲" },
+            { code: "PSE", en: "Palestinian territories", cn: "巴勒斯坦", region: "asia", capital: "拉姆安拉", population: "500万", currency: "新谢克尔 (ILS)", timezone: "UTC+2", continent: "亚洲" },
+            { code: "SAU", en: "Saudi Arabia", cn: "沙特阿拉伯", region: "asia", capital: "利雅得", population: "3400万", currency: "里亚尔 (SAR)", timezone: "UTC+3", continent: "亚洲" },
+            { code: "YEM", en: "Yemen", cn: "也门", region: "asia", capital: "萨那", population: "2980万", currency: "里亚尔 (YER)", timezone: "UTC+3", continent: "亚洲" },
+            { code: "OMN", en: "Oman", cn: "阿曼", region: "asia", capital: "马斯喀特", population: "490万", currency: "里亚尔 (OMR)", timezone: "UTC+4", continent: "亚洲" },
+            { code: "ARE", en: "United Arab Emirates", cn: "阿联酋", region: "asia", capital: "阿布扎比", population: "990万", currency: "迪拉姆 (AED)", timezone: "UTC+4", continent: "亚洲" },
+            { code: "QAT", en: "Qatar", cn: "卡塔尔", region: "asia", capital: "多哈", population: "280万", currency: "里亚尔 (QAR)", timezone: "UTC+3", continent: "亚洲" },
+            { code: "KWT", en: "Kuwait", cn: "科威特", region: "asia", capital: "科威特城", population: "420万", currency: "第纳尔 (KWD)", timezone: "UTC+3", continent: "亚洲" },
+            { code: "KUW", en: "Kuwait", cn: "科威特", region: "asia", capital: "科威特城", population: "420万", currency: "第纳尔 (KWD)", timezone: "UTC+3", continent: "亚洲" },
+            { code: "BHR", en: "Bahrain", cn: "巴林", region: "asia", capital: "麦纳麦", population: "150万", currency: "第纳尔 (BHD)", timezone: "UTC+3", continent: "亚洲" },
+            { code: "TUR", en: "Turkey", cn: "土耳其", region: "asia", capital: "安卡拉", population: "8400万", currency: "里拉 (TRY)", timezone: "UTC+3", continent: "亚洲" },
+            { code: "CYP", en: "Cyprus", cn: "塞浦路斯", region: "europe", capital: "尼科西亚", population: "120万", currency: "欧元 (EUR)", timezone: "UTC+2", continent: "欧洲" },
+            { code: "GEO", en: "Georgia", cn: "格鲁吉亚", region: "asia", capital: "第比利斯", population: "370万", currency: "拉里 (GEL)", timezone: "UTC+4", continent: "亚洲" },
+            { code: "ARM", en: "Armenia", cn: "亚美尼亚", region: "asia", capital: "埃里温", population: "290万", currency: "德拉姆 (AMD)", timezone: "UTC+4", continent: "亚洲" },
+            { code: "AZE", en: "Azerbaijan", cn: "阿塞拜疆", region: "asia", capital: "巴库", population: "1000万", currency: "马纳特 (AZN)", timezone: "UTC+4", continent: "亚洲" },
+            { code: "KAZ", en: "Kazakhstan", cn: "哈萨克斯坦", region: "asia", capital: "努尔苏丹", population: "1870万", currency: "坚戈 (KZT)", timezone: "UTC+5 ~ UTC+6", continent: "亚洲" },
+            { code: "UZB", en: "Uzbekistan", cn: "乌兹别克斯坦", region: "asia", capital: "塔什干", population: "3400万", currency: "苏姆 (UZS)", timezone: "UTC+5", continent: "亚洲" },
+            { code: "TKM", en: "Turkmenistan", cn: "土库曼斯坦", region: "asia", capital: "阿什哈巴德", population: "580万", currency: "马纳特 (TMT)", timezone: "UTC+5", continent: "亚洲" },
+            { code: "TJK", en: "Tajikistan", cn: "塔吉克斯坦", region: "asia", capital: "杜尚别", population: "950万", currency: "索莫尼 (TJS)", timezone: "UTC+5", continent: "亚洲" },
+            { code: "KGZ", en: "Kyrgyzstan", cn: "吉尔吉斯斯坦", region: "asia", capital: "比什凯克", population: "650万", currency: "索姆 (KGS)", timezone: "UTC+6", continent: "亚洲" },
+            { code: "AUT", en: "Austria", cn: "奥地利", region: "europe", capital: "维也纳", population: "890万", currency: "欧元 (EUR)", timezone: "UTC+1", continent: "欧洲" },
+            { code: "BEL", en: "Belgium", cn: "比利时", region: "europe", capital: "布鲁塞尔", population: "1150万", currency: "欧元 (EUR)", timezone: "UTC+1", continent: "欧洲" },
+            { code: "BGR", en: "Bulgaria", cn: "保加利亚", region: "europe", capital: "索非亚", population: "700万", currency: "列弗 (BGN)", timezone: "UTC+2", continent: "欧洲" },
+            { code: "HRV", en: "Croatia", cn: "克罗地亚", region: "europe", capital: "萨格勒布", population: "410万", currency: "欧元 (EUR)", timezone: "UTC+1", continent: "欧洲" },
+            { code: "CZE", en: "Czech Republic", cn: "捷克", region: "europe", capital: "布拉格", population: "1070万", currency: "克朗 (CZK)", timezone: "UTC+1", continent: "欧洲" },
+            { code: "DNK", en: "Denmark", cn: "丹麦", region: "europe", capital: "哥本哈根", population: "580万", currency: "克朗 (DKK)", timezone: "UTC+1", continent: "欧洲" },
+            { code: "EST", en: "Estonia", cn: "爱沙尼亚", region: "europe", capital: "塔林", population: "130万", currency: "欧元 (EUR)", timezone: "UTC+2", continent: "欧洲" },
+            { code: "FIN", en: "Finland", cn: "芬兰", region: "europe", capital: "赫尔辛基", population: "550万", currency: "欧元 (EUR)", timezone: "UTC+2", continent: "欧洲" },
+            { code: "FRA", en: "France", cn: "法国", region: "europe", capital: "巴黎", population: "6700万", currency: "欧元 (EUR)", timezone: "UTC+1", continent: "欧洲" },
+            { code: "FRN", en: "France", cn: "法国", region: "europe", capital: "巴黎", population: "6700万", currency: "欧元 (EUR)", timezone: "UTC+1", continent: "欧洲" },
+            { code: "DEU", en: "Germany", cn: "德国", region: "europe", capital: "柏林", population: "8300万", currency: "欧元 (EUR)", timezone: "UTC+1", continent: "欧洲" },
+            { code: "GER", en: "Germany", cn: "德国", region: "europe", capital: "柏林", population: "8300万", currency: "欧元 (EUR)", timezone: "UTC+1", continent: "欧洲" },
+            { code: "GRC", en: "Greece", cn: "希腊", region: "europe", capital: "雅典", population: "1070万", currency: "欧元 (EUR)", timezone: "UTC+2", continent: "欧洲" },
+            { code: "HUN", en: "Hungary", cn: "匈牙利", region: "europe", capital: "布达佩斯", population: "970万", currency: "福林 (HUF)", timezone: "UTC+1", continent: "欧洲" },
+            { code: "IRL", en: "Ireland", cn: "爱尔兰", region: "europe", capital: "都柏林", population: "490万", currency: "欧元 (EUR)", timezone: "UTC+0", continent: "欧洲" },
+            { code: "ITA", en: "Italy", cn: "意大利", region: "europe", capital: "罗马", population: "6000万", currency: "欧元 (EUR)", timezone: "UTC+1", continent: "欧洲" },
+            { code: "LVA", en: "Latvia", cn: "拉脱维亚", region: "europe", capital: "里加", population: "190万", currency: "欧元 (EUR)", timezone: "UTC+2", continent: "欧洲" },
+            { code: "LTU", en: "Lithuania", cn: "立陶宛", region: "europe", capital: "维尔纽斯", population: "280万", currency: "欧元 (EUR)", timezone: "UTC+2", continent: "欧洲" },
+            { code: "LUX", en: "Luxembourg", cn: "卢森堡", region: "europe", capital: "卢森堡市", population: "63万", currency: "欧元 (EUR)", timezone: "UTC+1", continent: "欧洲" },
+            { code: "MLT", en: "Malta", cn: "马耳他", region: "europe", capital: "瓦莱塔", population: "50万", currency: "欧元 (EUR)", timezone: "UTC+1", continent: "欧洲" },
+            { code: "NLD", en: "Netherlands", cn: "荷兰", region: "europe", capital: "阿姆斯特丹", population: "1740万", currency: "欧元 (EUR)", timezone: "UTC+1", continent: "欧洲" },
+            { code: "NED", en: "Netherlands", cn: "荷兰", region: "europe", capital: "阿姆斯特丹", population: "1740万", currency: "欧元 (EUR)", timezone: "UTC+1", continent: "欧洲" },
+            { code: "POL", en: "Poland", cn: "波兰", region: "europe", capital: "华沙", population: "3800万", currency: "兹罗提 (PLN)", timezone: "UTC+1", continent: "欧洲" },
+            { code: "PRT", en: "Portugal", cn: "葡萄牙", region: "europe", capital: "里斯本", population: "1030万", currency: "欧元 (EUR)", timezone: "UTC+0", continent: "欧洲" },
+            { code: "POR", en: "Portugal", cn: "葡萄牙", region: "europe", capital: "里斯本", population: "1030万", currency: "欧元 (EUR)", timezone: "UTC+0", continent: "欧洲" },
+            { code: "ROU", en: "Romania", cn: "罗马尼亚", region: "europe", capital: "布加勒斯特", population: "1950万", currency: "列伊 (RON)", timezone: "UTC+2", continent: "欧洲" },
+            { code: "ROM", en: "Romania", cn: "罗马尼亚", region: "europe", capital: "布加勒斯特", population: "1950万", currency: "列伊 (RON)", timezone: "UTC+2", continent: "欧洲" },
+            { code: "SVK", en: "Slovakia", cn: "斯洛伐克", region: "europe", capital: "布拉迪斯拉发", population: "550万", currency: "欧元 (EUR)", timezone: "UTC+1", continent: "欧洲" },
+            { code: "SVN", en: "Slovenia", cn: "斯洛文尼亚", region: "europe", capital: "卢布尔雅那", population: "210万", currency: "欧元 (EUR)", timezone: "UTC+1", continent: "欧洲" },
+            { code: "ESP", en: "Spain", cn: "西班牙", region: "europe", capital: "马德里", population: "4700万", currency: "欧元 (EUR)", timezone: "UTC+1", continent: "欧洲" },
+            { code: "SPN", en: "Spain", cn: "西班牙", region: "europe", capital: "马德里", population: "4700万", currency: "欧元 (EUR)", timezone: "UTC+1", continent: "欧洲" },
+            { code: "SWE", en: "Sweden", cn: "瑞典", region: "europe", capital: "斯德哥尔摩", population: "1030万", currency: "克朗 (SEK)", timezone: "UTC+1", continent: "欧洲" },
+            { code: "GBR", en: "Great Britain", cn: "英国", region: "europe", capital: "伦敦", population: "6700万", currency: "英镑 (GBP)", timezone: "UTC+0", continent: "欧洲" },
+            { code: "UKM", en: "Great Britain", cn: "英国", region: "europe", capital: "伦敦", population: "6700万", currency: "英镑 (GBP)", timezone: "UTC+0", continent: "欧洲" },
+            { code: "CHE", en: "Switzerland", cn: "瑞士", region: "europe", capital: "伯尔尼", population: "860万", currency: "法郎 (CHF)", timezone: "UTC+1", continent: "欧洲" },
+            { code: "SUI", en: "Switzerland", cn: "瑞士", region: "europe", capital: "伯尔尼", population: "860万", currency: "法郎 (CHF)", timezone: "UTC+1", continent: "欧洲" },
+            { code: "NOR", en: "Norway", cn: "挪威", region: "europe", capital: "奥斯陆", population: "540万", currency: "克朗 (NOK)", timezone: "UTC+1", continent: "欧洲" },
+            { code: "ISL", en: "Iceland", cn: "冰岛", region: "europe", capital: "雷克雅未克", population: "36万", currency: "克朗 (ISK)", timezone: "UTC+0", continent: "欧洲" },
+            { code: "BLR", en: "Belarus", cn: "白俄罗斯", region: "europe", capital: "明斯克", population: "940万", currency: "卢布 (BYN)", timezone: "UTC+3", continent: "欧洲" },
+            { code: "UKR", en: "Ukraine", cn: "乌克兰", region: "europe", capital: "基辅", population: "4200万", currency: "格里夫纳 (UAH)", timezone: "UTC+2", continent: "欧洲" },
+            { code: "MDA", en: "Moldova", cn: "摩尔多瓦", region: "europe", capital: "基希讷乌", population: "260万", currency: "列伊 (MDL)", timezone: "UTC+2", continent: "欧洲" },
+            { code: "MOL", en: "Moldova", cn: "摩尔多瓦", region: "europe", capital: "基希讷乌", population: "260万", currency: "列伊 (MDL)", timezone: "UTC+2", continent: "欧洲" },
+            { code: "RUS", en: "Russian Federation", cn: "俄罗斯", region: "europe", capital: "莫斯科", population: "1.44亿", currency: "卢布 (RUB)", timezone: "UTC+2 ~ UTC+12", continent: "欧洲" },
+            { code: "ALB", en: "Albania", cn: "阿尔巴尼亚", region: "europe", capital: "地拉那", population: "280万", currency: "列克 (ALL)", timezone: "UTC+1", continent: "欧洲" },
+            { code: "MKD", en: "North Macedonia", cn: "北马其顿", region: "europe", capital: "斯科普里", population: "208万", currency: "第纳尔 (MKD)", timezone: "UTC+1", continent: "欧洲" },
+            { code: "SRB", en: "Serbia", cn: "塞尔维亚", region: "europe", capital: "贝尔格莱德", population: "700万", currency: "第纳尔 (RSD)", timezone: "UTC+1", continent: "欧洲" },
+            { code: "MNE", en: "Montenegro", cn: "黑山", region: "europe", capital: "波德戈里察", population: "62万", currency: "欧元 (EUR)", timezone: "UTC+1", continent: "欧洲" },
+            { code: "BIH", en: "Bosnia and Herzegovina", cn: "波黑", region: "europe", capital: "萨拉热窝", population: "350万", currency: "马克 (BAM)", timezone: "UTC+1", continent: "欧洲" },
+            { code: "SMR", en: "San Marino", cn: "圣马力诺", region: "europe", capital: "圣马力诺", population: "3.4万", currency: "欧元 (EUR)", timezone: "UTC+1", continent: "欧洲" },
+            { code: "MCO", en: "Monaco", cn: "摩纳哥", region: "europe", capital: "摩纳哥城", population: "3.9万", currency: "欧元 (EUR)", timezone: "UTC+1", continent: "欧洲" },
+            { code: "MNC", en: "Monaco", cn: "摩纳哥", region: "europe", capital: "摩纳哥城", population: "3.9万", currency: "欧元 (EUR)", timezone: "UTC+1", continent: "欧洲" },
+            { code: "VAT", en: "Vatican City", cn: "梵蒂冈", region: "europe", capital: "梵蒂冈城", population: "825", currency: "欧元 (EUR)", timezone: "UTC+1", continent: "欧洲" },
+            { code: "LIE", en: "Liechtenstein", cn: "列支敦士登", region: "europe", capital: "瓦杜兹", population: "3.8万", currency: "法郎 (CHF)", timezone: "UTC+1", continent: "欧洲" },
+            { code: "AND", en: "Andorra", cn: "安道尔", region: "europe", capital: "安道尔城", population: "7.7万", currency: "欧元 (EUR)", timezone: "UTC+1", continent: "欧洲" },
+            { code: "EGY", en: "Egypt", cn: "埃及", region: "africa", capital: "开罗", population: "1亿", currency: "镑 (EGP)", timezone: "UTC+2", continent: "非洲" },
+            { code: "LBY", en: "Libya", cn: "利比亚", region: "africa", capital: "的黎波里", population: "680万", currency: "第纳尔 (LYD)", timezone: "UTC+2", continent: "非洲" },
+            { code: "TUN", en: "Tunisia", cn: "突尼斯", region: "africa", capital: "突尼斯", population: "1180万", currency: "第纳尔 (TND)", timezone: "UTC+1", continent: "非洲" },
+            { code: "DZA", en: "Algeria", cn: "阿尔及利亚", region: "africa", capital: "阿尔及尔", population: "4400万", currency: "第纳尔 (DZD)", timezone: "UTC+1", continent: "非洲" },
+            { code: "MAR", en: "Morocco", cn: "摩洛哥", region: "africa", capital: "拉巴特", population: "3600万", currency: "迪拉姆 (MAD)", timezone: "UTC+0", continent: "非洲" },
+            { code: "SDN", en: "Sudan", cn: "苏丹", region: "africa", capital: "喀土穆", population: "4400万", currency: "镑 (SDG)", timezone: "UTC+2", continent: "非洲" },
+            { code: "SSD", en: "South Sudan", cn: "南苏丹", region: "africa", capital: "朱巴", population: "1100万", currency: "镑 (SSP)", timezone: "UTC+3", continent: "非洲" },
+            { code: "ETH", en: "Ethiopia", cn: "埃塞俄比亚", region: "africa", capital: "亚的斯亚贝巴", population: "1.18亿", currency: "比尔 (ETB)", timezone: "UTC+3", continent: "非洲" },
+            { code: "ERI", en: "Eritrea", cn: "厄立特里亚", region: "africa", capital: "阿斯马拉", population: "350万", currency: "纳克法 (ERN)", timezone: "UTC+3", continent: "非洲" },
+            { code: "DJI", en: "Djibouti", cn: "吉布提", region: "africa", capital: "吉布提", population: "99万", currency: "法郎 (DJF)", timezone: "UTC+3", continent: "非洲" },
+            { code: "SOM", en: "Somalia", cn: "索马里", region: "africa", capital: "摩加迪沙", population: "1500万", currency: "先令 (SOS)", timezone: "UTC+3", continent: "非洲" },
+            { code: "KEN", en: "Kenya", cn: "肯尼亚", region: "africa", capital: "内罗毕", population: "5400万", currency: "先令 (KES)", timezone: "UTC+3", continent: "非洲" },
+            { code: "UGA", en: "Uganda", cn: "乌干达", region: "africa", capital: "坎帕拉", population: "4500万", currency: "先令 (UGX)", timezone: "UTC+3", continent: "非洲" },
+            { code: "TZA", en: "Tanzania", cn: "坦桑尼亚", region: "africa", capital: "多多马", population: "5900万", currency: "先令 (TZS)", timezone: "UTC+3", continent: "非洲" },
+            { code: "RWA", en: "Rwanda", cn: "卢旺达", region: "africa", capital: "基加利", population: "1300万", currency: "法郎 (RWF)", timezone: "UTC+2", continent: "非洲" },
+            { code: "BDI", en: "Burundi", cn: "布隆迪", region: "africa", capital: "布琼布拉", population: "1200万", currency: "法郎 (BIF)", timezone: "UTC+2", continent: "非洲" },
+            { code: "COD", en: "DR Congo", cn: "刚果(金)", region: "africa", capital: "金沙萨", population: "9000万", currency: "法郎 (CDF)", timezone: "UTC+1 ~ UTC+2", continent: "非洲" },
+            { code: "COG", en: "Congo", cn: "刚果(布)", region: "africa", capital: "布拉柴维尔", population: "550万", currency: "法郎 (XAF)", timezone: "UTC+1", continent: "非洲" },
+            { code: "GAB", en: "Gabon", cn: "加蓬", region: "africa", capital: "利伯维尔", population: "220万", currency: "法郎 (XAF)", timezone: "UTC+1", continent: "非洲" },
+            { code: "CMR", en: "Cameroon", cn: "喀麦隆", region: "africa", capital: "雅温得", population: "2600万", currency: "法郎 (XAF)", timezone: "UTC+1", continent: "非洲" },
+            { code: "GNQ", en: "Equatorial Guinea", cn: "赤道几内亚", region: "africa", capital: "马拉博", population: "140万", currency: "法郎 (XAF)", timezone: "UTC+1", continent: "非洲" },
+            { code: "STP", en: "Sao Tome and Principe", cn: "圣多美和普林西比", region: "africa", capital: "圣多美", population: "22万", currency: "多布拉 (STN)", timezone: "UTC+0", continent: "非洲" },
+            { code: "CAF", en: "Central African Republic", cn: "中非", region: "africa", capital: "班吉", population: "480万", currency: "法郎 (XAF)", timezone: "UTC+1", continent: "非洲" },
+            { code: "TCD", en: "Chad", cn: "乍得", region: "africa", capital: "恩贾梅纳", population: "1600万", currency: "法郎 (XAF)", timezone: "UTC+1", continent: "非洲" },
+            { code: "NER", en: "Niger", cn: "尼日尔", region: "africa", capital: "尼亚美", population: "2400万", currency: "法郎 (XOF)", timezone: "UTC+1", continent: "非洲" },
+            { code: "NGA", en: "Nigeria", cn: "尼日利亚", region: "africa", capital: "阿布贾", population: "2.06亿", currency: "奈拉 (NGN)", timezone: "UTC+1", continent: "非洲" },
+            { code: "BEN", en: "Benin", cn: "贝宁", region: "africa", capital: "波多诺伏", population: "1200万", currency: "法郎 (XOF)", timezone: "UTC+1", continent: "非洲" },
+            { code: "TGO", en: "Togo", cn: "多哥", region: "africa", capital: "洛美", population: "800万", currency: "法郎 (XOF)", timezone: "UTC+0", continent: "非洲" },
+            { code: "GHA", en: "Ghana", cn: "加纳", region: "africa", capital: "阿克拉", population: "3100万", currency: "塞地 (GHS)", timezone: "UTC+0", continent: "非洲" },
+            { code: "CIV", en: "Cote d'Ivoire", cn: "科特迪瓦", region: "africa", capital: "亚穆苏克罗", population: "2600万", currency: "法郎 (XOF)", timezone: "UTC+0", continent: "非洲" },
+            { code: "LBR", en: "Liberia", cn: "利比里亚", region: "africa", capital: "蒙罗维亚", population: "500万", currency: "元 (LRD)", timezone: "UTC+0", continent: "非洲" },
+            { code: "SLE", en: "Sierra Leone", cn: "塞拉利昂", region: "africa", capital: "弗里敦", population: "790万", currency: "利昂 (SLL)", timezone: "UTC+0", continent: "非洲" },
+            { code: "GIN", en: "Guinea", cn: "几内亚", region: "africa", capital: "科纳克里", population: "1300万", currency: "法郎 (GNF)", timezone: "UTC+0", continent: "非洲" },
+            { code: "GNB", en: "Guinea-Bissau", cn: "几内亚比绍", region: "africa", capital: "比绍", population: "190万", currency: "比索 (XOF)", timezone: "UTC+0", continent: "非洲" },
+            { code: "SEN", en: "Senegal", cn: "塞内加尔", region: "africa", capital: "达喀尔", population: "1600万", currency: "法郎 (XOF)", timezone: "UTC+0", continent: "非洲" },
+            { code: "GMB", en: "Gambia", cn: "冈比亚", region: "africa", capital: "班珠尔", population: "240万", currency: "达拉西 (GMD)", timezone: "UTC+0", continent: "非洲" },
+            { code: "MLI", en: "Mali", cn: "马里", region: "africa", capital: "巴马科", population: "2000万", currency: "法郎 (XOF)", timezone: "UTC+0", continent: "非洲" },
+            { code: "BFA", en: "Burkina Faso", cn: "布基纳法索", region: "africa", capital: "瓦加杜古", population: "2100万", currency: "法郎 (XOF)", timezone: "UTC+0", continent: "非洲" },
+            { code: "MRT", en: "Mauritania", cn: "毛里塔尼亚", region: "africa", capital: "努瓦克肖特", population: "460万", currency: "乌吉亚 (MRU)", timezone: "UTC+0", continent: "非洲" },
+            { code: "CPV", en: "Cape Verde", cn: "佛得角", region: "africa", capital: "普拉亚", population: "55万", currency: "埃斯库多 (CVE)", timezone: "UTC-1", continent: "非洲" },
+            { code: "MUS", en: "Mauritius", cn: "毛里求斯", region: "africa", capital: "路易港", population: "126万", currency: "卢比 (MUR)", timezone: "UTC+4", continent: "非洲" },
+            { code: "SYC", en: "Seychelles", cn: "塞舌尔", region: "africa", capital: "维多利亚", population: "9.8万", currency: "卢比 (SCR)", timezone: "UTC+4", continent: "非洲" },
+            { code: "COM", en: "The Comoros", cn: "科摩罗", region: "africa", capital: "莫罗尼", population: "85万", currency: "法郎 (KMF)", timezone: "UTC+3", continent: "非洲" },
+            { code: "MDG", en: "Madagascar", cn: "马达加斯加", region: "africa", capital: "塔那那利佛", population: "2700万", currency: "阿里亚里 (MGA)", timezone: "UTC+3", continent: "非洲" },
+            { code: "MWI", en: "Malawi", cn: "马拉维", region: "africa", capital: "利隆圭", population: "1900万", currency: "克瓦查 (MWK)", timezone: "UTC+2", continent: "非洲" },
+            { code: "MOZ", en: "Mozambique", cn: "莫桑比克", region: "africa", capital: "马普托", population: "3100万", currency: "梅蒂卡尔 (MZN)", timezone: "UTC+2", continent: "非洲" },
+            { code: "ZMB", en: "Zambia", cn: "赞比亚", region: "africa", capital: "卢萨卡", population: "1800万", currency: "克瓦查 (ZMW)", timezone: "UTC+2", continent: "非洲" },
+            { code: "ZWE", en: "Zimbabwe", cn: "津巴布韦", region: "africa", capital: "哈拉雷", population: "1500万", currency: "元 (ZWL)", timezone: "UTC+2", continent: "非洲" },
+            { code: "BWA", en: "Botswana", cn: "博茨瓦纳", region: "africa", capital: "哈博罗内", population: "230万", currency: "普拉 (BWP)", timezone: "UTC+2", continent: "非洲" },
+            { code: "NAM", en: "Namibia", cn: "纳米比亚", region: "africa", capital: "温得和克", population: "250万", currency: "元 (NAD)", timezone: "UTC+2", continent: "非洲" },
+            { code: "ZAF", en: "South Africa", cn: "南非", region: "africa", capital: "比勒陀利亚", population: "5900万", currency: "兰特 (ZAR)", timezone: "UTC+2", continent: "非洲" },
+            { code: "SAF", en: "South Africa", cn: "南非", region: "africa", capital: "比勒陀利亚", population: "5900万", currency: "兰特 (ZAR)", timezone: "UTC+2", continent: "非洲" },
+            { code: "SWZ", en: "Eswatini", cn: "斯威士兰", region: "africa", capital: "姆巴巴内", population: "120万", currency: "里兰吉尼 (SZL)", timezone: "UTC+2", continent: "非洲" },
+            { code: "LSO", en: "Lesotho", cn: "莱索托", region: "africa", capital: "马塞卢", population: "230万", currency: "洛蒂 (LSL)", timezone: "UTC+2", continent: "非洲" },
+            { code: "ESH", en: "Western Sahara", cn: "西撒哈拉", region: "africa", capital: "阿尤恩", population: "50万", currency: "迪拉姆 (MAD)", timezone: "UTC+0", continent: "非洲" },
+            { code: "CAN", en: "Canada", cn: "加拿大", region: "americas", capital: "渥太华", population: "3800万", currency: "加元 (CAD)", timezone: "UTC-3:30 ~ UTC-8", continent: "北美洲" },
+            { code: "USA", en: "United States of America", cn: "美国", region: "americas", capital: "华盛顿", population: "3.31亿", currency: "美元 (USD)", timezone: "UTC-4 ~ UTC-10", continent: "北美洲" },
+            { code: "MEX", en: "Mexico", cn: "墨西哥", region: "americas", capital: "墨西哥城", population: "1.28亿", currency: "比索 (MXN)", timezone: "UTC-6 ~ UTC-8", continent: "北美洲" },
+            { code: "GTM", en: "Guatemala", cn: "危地马拉", region: "americas", capital: "危地马拉城", population: "1700万", currency: "格查尔 (GTQ)", timezone: "UTC-6", continent: "北美洲" },
+            { code: "BLZ", en: "Belize", cn: "伯利兹", region: "americas", capital: "贝尔莫潘", population: "40万", currency: "元 (BZD)", timezone: "UTC-6", continent: "北美洲" },
+            { code: "SLV", en: "El Salvador", cn: "萨尔瓦多", region: "americas", capital: "圣萨尔瓦多", population: "650万", currency: "美元 (USD)", timezone: "UTC-6", continent: "北美洲" },
+            { code: "HND", en: "Honduras", cn: "洪都拉斯", region: "americas", capital: "特古西加尔巴", population: "1000万", currency: "伦皮拉 (HNL)", timezone: "UTC-6", continent: "北美洲" },
+            { code: "NIC", en: "Nicaragua", cn: "尼加拉瓜", region: "americas", capital: "马那瓜", population: "660万", currency: "科多巴 (NIO)", timezone: "UTC-6", continent: "北美洲" },
+            { code: "CRI", en: "Costa Rica", cn: "哥斯达黎加", region: "americas", capital: "圣何塞", population: "500万", currency: "科朗 (CRC)", timezone: "UTC-6", continent: "北美洲" },
+            { code: "PAN", en: "Panama", cn: "巴拿马", region: "americas", capital: "巴拿马城", population: "430万", currency: "巴波亚 (PAB)", timezone: "UTC-5", continent: "北美洲" },
+            { code: "CUB", en: "Cuba", cn: "古巴", region: "americas", capital: "哈瓦那", population: "1130万", currency: "比索 (CUP)", timezone: "UTC-5", continent: "北美洲" },
+            { code: "HTI", en: "Haiti", cn: "海地", region: "americas", capital: "太子港", population: "1140万", currency: "古德 (HTG)", timezone: "UTC-5", continent: "北美洲" },
+            { code: "DOM", en: "Dominican Republic", cn: "多米尼加", region: "americas", capital: "圣多明各", population: "1080万", currency: "比索 (DOP)", timezone: "UTC-4", continent: "北美洲" },
+            { code: "JAM", en: "Jamaica", cn: "牙买加", region: "americas", capital: "金斯顿", population: "290万", currency: "元 (JMD)", timezone: "UTC-5", continent: "北美洲" },
+            { code: "BHS", en: "The Bahamas", cn: "巴哈马", region: "americas", capital: "拿骚", population: "39万", currency: "元 (BSD)", timezone: "UTC-5", continent: "北美洲" },
+            { code: "BRB", en: "Barbados", cn: "巴巴多斯", region: "americas", capital: "布里奇敦", population: "29万", currency: "元 (BBD)", timezone: "UTC-4", continent: "北美洲" },
+            { code: "DMA", en: "Dominica", cn: "多米尼克", region: "americas", capital: "罗索", population: "7.2万", currency: "元 (XCD)", timezone: "UTC-4", continent: "北美洲" },
+            { code: "GRD", en: "Grenada", cn: "格林纳达", region: "americas", capital: "圣乔治", population: "11万", currency: "元 (XCD)", timezone: "UTC-4", continent: "北美洲" },
+            { code: "LCA", en: "St. Lucia", cn: "圣卢西亚", region: "americas", capital: "卡斯特里", population: "18万", currency: "元 (XCD)", timezone: "UTC-4", continent: "北美洲" },
+            { code: "VCT", en: "St. Vincent", cn: "圣文森特", region: "americas", capital: "金斯顿", population: "11万", currency: "元 (XCD)", timezone: "UTC-4", continent: "北美洲" },
+            { code: "ANT", en: "Netherlands Antilles", cn: "荷属安的列斯", region: "americas", capital: "威廉斯塔德", population: "22万", currency: "盾 (ANG)", timezone: "UTC-4", continent: "北美洲" },
+            { code: "ABW", en: "Aruba", cn: "阿鲁巴", region: "americas", capital: "奥拉涅斯塔德", population: "11万", currency: "盾 (AWG)", timezone: "UTC-4", continent: "北美洲" },
+            { code: "BES", en: "Bonaire", cn: "博奈尔", region: "americas", capital: "克拉伦代克", population: "2万", currency: "元 (USD)", timezone: "UTC-4", continent: "北美洲" },
+            { code: "CUW", en: "Curacao", cn: "库拉索", region: "americas", capital: "威廉斯塔德", population: "16万", currency: "盾 (ANG)", timezone: "UTC-4", continent: "北美洲" },
+            { code: "SXM", en: "Sint Maarten", cn: "荷属圣马丁", region: "americas", capital: "菲利普斯堡", population: "4万", currency: "盾 (ANG)", timezone: "UTC-4", continent: "北美洲" },
+            { code: "PRI", en: "Puerto Rico", cn: "波多黎各", region: "americas", capital: "圣胡安", population: "320万", currency: "美元 (USD)", timezone: "UTC-4", continent: "北美洲" },
+            { code: "VIR", en: "US Virgin Islands", cn: "美属维尔京群岛", region: "americas", capital: "夏洛特阿马利亚", population: "10万", currency: "美元 (USD)", timezone: "UTC-4", continent: "北美洲" },
+            { code: "VGB", en: "British Virgin Islands", cn: "英属维尔京群岛", region: "americas", capital: "罗德城", population: "3万", currency: "元 (USD)", timezone: "UTC-4", continent: "北美洲" },
+            { code: "AIA", en: "Anguilla", cn: "安圭拉", region: "americas", capital: "瓦利", population: "1.5万", currency: "元 (XCD)", timezone: "UTC-4", continent: "北美洲" },
+            { code: "MSR", en: "Montserrat", cn: "蒙特塞拉特", region: "americas", capital: "普利茅斯", population: "0.5万", currency: "元 (XCD)", timezone: "UTC-4", continent: "北美洲" },
+            { code: "KNA", en: "St. Kitts and Nevis", cn: "圣基茨和尼维斯", region: "americas", capital: "巴斯特尔", population: "5.5万", currency: "元 (XCD)", timezone: "UTC-4", continent: "北美洲" },
+            { code: "BMU", en: "Bermuda", cn: "百慕大", region: "americas", capital: "汉密尔顿", population: "6.3万", currency: "元 (BMD)", timezone: "UTC-4", continent: "北美洲" },
+            { code: "TCA", en: "Turks and Caicos", cn: "特克斯和凯科斯", region: "americas", capital: "科伯恩城", population: "3.9万", currency: "元 (USD)", timezone: "UTC-5", continent: "北美洲" },
+            { code: "CAY", en: "Cayman Islands", cn: "开曼群岛", region: "americas", capital: "乔治敦", population: "6.6万", currency: "元 (KYD)", timezone: "UTC-5", continent: "北美洲" },
+            { code: "BRA", en: "Brazil", cn: "巴西", region: "americas", capital: "巴西利亚", population: "2.13亿", currency: "雷亚尔 (BRL)", timezone: "UTC-2 ~ UTC-5", continent: "南美洲" },
+            { code: "ARG", en: "Argentina", cn: "阿根廷", region: "americas", capital: "布宜诺斯艾利斯", population: "4500万", currency: "比索 (ARS)", timezone: "UTC-3", continent: "南美洲" },
+            { code: "CHL", en: "Chile", cn: "智利", region: "americas", capital: "圣地亚哥", population: "1900万", currency: "比索 (CLP)", timezone: "UTC-3 ~ UTC-4", continent: "南美洲" },
+            { code: "COL", en: "Colombia", cn: "哥伦比亚", region: "americas", capital: "波哥大", population: "5100万", currency: "比索 (COP)", timezone: "UTC-5", continent: "南美洲" },
+            { code: "PER", en: "Peru", cn: "秘鲁", region: "americas", capital: "利马", population: "3300万", currency: "索尔 (PEN)", timezone: "UTC-5", continent: "南美洲" },
+            { code: "VEN", en: "Venezuela", cn: "委内瑞拉", region: "americas", capital: "加拉加斯", population: "2800万", currency: "玻利瓦尔 (VES)", timezone: "UTC-4", continent: "南美洲" },
+            { code: "ECU", en: "Ecuador", cn: "厄瓜多尔", region: "americas", capital: "基多", population: "1760万", currency: "美元 (USD)", timezone: "UTC-5", continent: "南美洲" },
+            { code: "BOL", en: "Bolivia", cn: "玻利维亚", region: "americas", capital: "拉巴斯", population: "1170万", currency: "玻利维亚诺 (BOB)", timezone: "UTC-4", continent: "南美洲" },
+            { code: "PRY", en: "Paraguay", cn: "巴拉圭", region: "americas", capital: "亚松森", population: "720万", currency: "瓜拉尼 (PYG)", timezone: "UTC-4", continent: "南美洲" },
+            { code: "URY", en: "Uruguay", cn: "乌拉圭", region: "americas", capital: "蒙得维的亚", population: "350万", currency: "比索 (UYU)", timezone: "UTC-3", continent: "南美洲" },
+            { code: "GUY", en: "Guyana", cn: "圭亚那", region: "americas", capital: "乔治敦", population: "78万", currency: "元 (GYD)", timezone: "UTC-4", continent: "南美洲" },
+            { code: "SUR", en: "Suriname", cn: "苏里南", region: "americas", capital: "帕拉马里博", population: "59万", currency: "元 (SRD)", timezone: "UTC-3", continent: "南美洲" },
+            { code: "GUF", en: "French Guiana", cn: "法属圭亚那", region: "americas", capital: "卡宴", population: "30万", currency: "欧元 (EUR)", timezone: "UTC-3", continent: "南美洲" },
+            { code: "FLK", en: "Falkland Islands", cn: "福克兰群岛", region: "americas", capital: "斯坦利港", population: "0.3万", currency: "镑 (FKP)", timezone: "UTC-3", continent: "南美洲" },
+            { code: "AUS", en: "Australia", cn: "澳大利亚", region: "oceania", capital: "堪培拉", population: "2570万", currency: "澳元 (AUD)", timezone: "UTC+8 ~ UTC+10", continent: "大洋洲" },
+            { code: "NZL", en: "New Zealand", cn: "新西兰", region: "oceania", capital: "惠灵顿", population: "500万", currency: "纽元 (NZD)", timezone: "UTC+12", continent: "大洋洲" },
+            { code: "PNG", en: "Papua New Guinea", cn: "巴布亚新几内亚", region: "oceania", capital: "莫尔兹比港", population: "890万", currency: "基那 (PGK)", timezone: "UTC+10", continent: "大洋洲" },
+            { code: "SLB", en: "Solomon Islands", cn: "所罗门群岛", region: "oceania", capital: "霍尼亚拉", population: "69万", currency: "元 (SBD)", timezone: "UTC+11", continent: "大洋洲" },
+            { code: "VUT", en: "Vanuatu", cn: "瓦努阿图", region: "oceania", capital: "维拉港", population: "31万", currency: "瓦图 (VUV)", timezone: "UTC+11", continent: "大洋洲" },
+            { code: "FJI", en: "Fiji", cn: "斐济", region: "oceania", capital: "苏瓦", population: "89万", currency: "元 (FJD)", timezone: "UTC+12", continent: "大洋洲" },
+            { code: "WSM", en: "Samoa", cn: "萨摩亚", region: "oceania", capital: "阿皮亚", population: "20万", currency: "塔拉 (WST)", timezone: "UTC+13", continent: "大洋洲" },
+            { code: "TON", en: "Tonga", cn: "汤加", region: "oceania", capital: "努库阿洛法", population: "10万", currency: "潘加 (TOP)", timezone: "UTC+13", continent: "大洋洲" },
+            { code: "KIR", en: "Kiribati", cn: "基里巴斯", region: "oceania", capital: "塔拉瓦", population: "12万", currency: "元 (AUD)", timezone: "UTC+12 ~ UTC+14", continent: "大洋洲" },
+            { code: "TUV", en: "Tuvalu", cn: "图瓦卢", region: "oceania", capital: "富纳富提", population: "1.2万", currency: "元 (AUD)", timezone: "UTC+12", continent: "大洋洲" },
+            { code: "NRU", en: "Nauru", cn: "瑙鲁", region: "oceania", capital: "亚伦", population: "1.3万", currency: "元 (AUD)", timezone: "UTC+12", continent: "大洋洲" },
+            { code: "PLW", en: "Palau", cn: "帕劳", region: "oceania", capital: "梅莱凯奥克", population: "1.8万", currency: "美元 (USD)", timezone: "UTC+9", continent: "大洋洲" },
+            { code: "MHL", en: "Marshall Islands", cn: "马绍尔群岛", region: "oceania", capital: "马朱罗", population: "5.9万", currency: "美元 (USD)", timezone: "UTC+12", continent: "大洋洲" },
+            { code: "FSM", en: "Micronesia", cn: "密克罗尼西亚联邦", region: "oceania", capital: "帕利基尔", population: "11万", currency: "美元 (USD)", timezone: "UTC+10 ~ UTC+11", continent: "大洋洲" },
+            { code: "GUM", en: "Guam", cn: "关岛", region: "oceania", capital: "阿加尼亚", population: "17万", currency: "美元 (USD)", timezone: "UTC+10", continent: "大洋洲" },
+            { code: "NCL", en: "New Caledonia", cn: "新喀里多尼亚", region: "oceania", capital: "努美阿", population: "27万", currency: "法郎 (XPF)", timezone: "UTC+11", continent: "大洋洲" },
+            { code: "PYF", en: "French Polynesia", cn: "法属波利尼西亚", region: "oceania", capital: "帕皮提", population: "28万", currency: "法郎 (XPF)", timezone: "UTC-10", continent: "大洋洲" },
+            { code: "WLF", en: "Wallis and Futuna", cn: "瓦利斯和富图纳", region: "oceania", capital: "马塔乌图", population: "1.5万", currency: "法郎 (XPF)", timezone: "UTC+12", continent: "大洋洲" },
+            { code: "NIU", en: "Niue", cn: "纽埃", region: "oceania", capital: "阿洛菲", population: "0.16万", currency: "元 (NZD)", timezone: "UTC-11", continent: "大洋洲" },
+            { code: "TKL", en: "Tokelau", cn: "托克劳", region: "oceania", capital: "法考福", population: "0.14万", currency: "元 (NZD)", timezone: "UTC-10", continent: "大洋洲" },
+            { code: "COK", en: "Cook Islands", cn: "库克群岛", region: "oceania", capital: "阿瓦鲁阿", population: "1.7万", currency: "元 (NZD)", timezone: "UTC-10", continent: "大洋洲" },
+            { code: "NFK", en: "Norfolk Island", cn: "诺福克岛", region: "oceania", capital: "金斯顿", population: "0.2万", currency: "澳元 (AUD)", timezone: "UTC+11", continent: "大洋洲" },
+            { code: "CCK", en: "Cocos Islands", cn: "科科斯群岛", region: "oceania", capital: "西岛", population: "0.06万", currency: "澳元 (AUD)", timezone: "UTC+6:30", continent: "大洋洲" },
+            { code: "HMD", en: "Heard Island", cn: "赫德岛", region: "oceania", capital: "-", population: "0", currency: "澳元 (AUD)", timezone: "UTC+5", continent: "大洋洲" },
+            { code: "SJM", en: "Svalbard", cn: "斯瓦尔巴", region: "europe", capital: "朗伊尔城", population: "0.26万", currency: "克朗 (NOK)", timezone: "UTC+1", continent: "欧洲" },
+            { code: "GRL", en: "Greenland", cn: "格陵兰", region: "americas", capital: "努克", population: "5.6万", currency: "克朗 (DKK)", timezone: "UTC-1 ~ UTC-4", continent: "北美洲" },
+            { code: "FRO", en: "Faroe Islands", cn: "法罗群岛", region: "europe", capital: "托尔斯港", population: "5.2万", currency: "克朗 (DKK)", timezone: "UTC+0", continent: "欧洲" },
+            { code: "ALA", en: "Aland Islands", cn: "奥兰群岛", region: "europe", capital: "玛丽港", population: "3万", currency: "欧元 (EUR)", timezone: "UTC+2", continent: "欧洲" },
+            { code: "GIB", en: "Gibraltar", cn: "直布罗陀", region: "europe", capital: "直布罗陀", population: "3.4万", currency: "镑 (GIP)", timezone: "UTC+1", continent: "欧洲" },
+            { code: "IMN", en: "Isle of Man", cn: "马恩岛", region: "europe", capital: "道格拉斯", population: "8.5万", currency: "镑 (IMP)", timezone: "UTC+0", continent: "欧洲" },
+            { code: "JEY", en: "Jersey", cn: "泽西岛", region: "europe", capital: "圣赫利尔", population: "10万", currency: "镑 (JEP)", timezone: "UTC+0", continent: "欧洲" },
+            { code: "GGY", en: "Guernsey", cn: "根西岛", region: "europe", capital: "圣彼得港", population: "6.7万", currency: "镑 (GGP)", timezone: "UTC+0", continent: "欧洲" },
+            { code: "SHN", en: "St. Helena", cn: "圣赫勒拿", region: "africa", capital: "詹姆斯敦", population: "0.6万", currency: "镑 (SHP)", timezone: "UTC+0", continent: "非洲" },
+            { code: "ATA", en: "Antarctica", cn: "南极洲", region: "oceania", capital: "-", population: "0.4万(科研)", currency: "多种", timezone: "UTC+3 ~ UTC-12", continent: "南极洲" },
+            { code: "ATF", en: "French Southern Lands", cn: "法属南部领地", region: "africa", capital: "法兰西港", population: "0.03万", currency: "欧元 (EUR)", timezone: "UTC+5", continent: "非洲" },
+            { code: "IOT", en: "British Indian Ocean", cn: "英属印度洋领地", region: "asia", capital: "迪戈加西亚岛", population: "0.3万", currency: "美元 (USD)", timezone: "UTC+6", continent: "亚洲" },
+            { code: "MYT", en: "Mayotte", cn: "马约特", region: "africa", capital: "马穆楚", population: "27万", currency: "欧元 (EUR)", timezone: "UTC+3", continent: "非洲" },
+            { code: "REU", en: "Reunion", cn: "留尼汪", region: "africa", capital: "圣但尼", population: "86万", currency: "欧元 (EUR)", timezone: "UTC+4", continent: "非洲" },
+            { code: "GLP", en: "Guadeloupe", cn: "瓜德罗普", region: "americas", capital: "巴斯特尔", population: "40万", currency: "欧元 (EUR)", timezone: "UTC-4", continent: "北美洲" },
+            { code: "MTQ", en: "Martinique", cn: "马提尼克", region: "americas", capital: "法兰西堡", population: "37万", currency: "欧元 (EUR)", timezone: "UTC-4", continent: "北美洲" },
+            { code: "BLM", en: "St. Barthelemy", cn: "圣巴泰勒米", region: "americas", capital: "古斯塔维亚", population: "0.7万", currency: "欧元 (EUR)", timezone: "UTC-4", continent: "北美洲" },
+            { code: "MAF", en: "St. Martin", cn: "法属圣马丁", region: "americas", capital: "马里戈特", population: "3.6万", currency: "欧元 (EUR)", timezone: "UTC-4", continent: "北美洲" },
+            { code: "SPM", en: "St. Pierre and Miquelon", cn: "圣皮埃尔和密克隆", region: "americas", capital: "圣皮埃尔", population: "0.6万", currency: "欧元 (EUR)", timezone: "UTC-3", continent: "北美洲" },
+            { code: "WAK", en: "Wake Island", cn: "威克岛", region: "oceania", capital: "威克岛", population: "0.02万", currency: "美元 (USD)", timezone: "UTC+12", continent: "大洋洲" },
+            { code: "MNP", en: "Northern Mariana Islands", cn: "北马里亚纳", region: "oceania", capital: "塞班", population: "5.6万", currency: "美元 (USD)", timezone: "UTC+10", continent: "大洋洲" },
+            { code: "ASm", en: "American Samoa", cn: "美属萨摩亚", region: "oceania", capital: "帕果帕果", population: "5.5万", currency: "美元 (USD)", timezone: "UTC-11", continent: "大洋洲" },
+            { code: "PCN", en: "Pitcairn Islands", cn: "皮特凯恩群岛", region: "oceania", capital: "亚当斯敦", population: "0.005万", currency: "元 (NZD)", timezone: "UTC-8", continent: "大洋洲" },
+            { code: "TKL", en: "Tokelau", cn: "托克劳", region: "oceania", capital: "法考福", population: "0.14万", currency: "元 (NZD)", timezone: "UTC-10", continent: "大洋洲" },
+            { code: "EUR", en: "EUROPE", cn: "欧洲(欧标)", region: "europe", type: "region", capital: "布鲁塞尔", population: "4.47亿", currency: "欧元 (EUR)", timezone: "UTC+0 ~ UTC+2", continent: "欧洲" },
+            { code: "PRO", en: "PROORAL", cn: "博皓", region: "asia", type: "brand", capital: "-", population: "-", currency: "-", timezone: "UTC+8", continent: "亚洲" },
+            { code: "STD", en: "STANDARD", cn: "标准", region: "asia", type: "brand", capital: "-", population: "-", currency: "-", timezone: "-", continent: "全球" }
+        ];
+        
+        // ============================================
+        // 状态管理
+        // ============================================
+        let currentPage = 'dashboard';
+        let currentRegion = 'all';
+        let currentSearchResults = [];
+        let currentPageNum = 1;
+        let totalPages = 1;
+        let selectedItems = new Set();
+        let searchHistory = JSON.parse(localStorage.getItem('searchHistory') || '[]');
+        let favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
+        let customBrands = JSON.parse(localStorage.getItem('customBrands') || '[]');
+        let currentDetailItem = null;
+        let isDarkMode = localStorage.getItem('darkMode') === 'true';
+        
+        // 合并数据
+        function getAllData() {
+            return [...countriesData, ...customBrands];
+        }
+        
+        // ============================================
+        // 初始化
+        // ============================================
+        document.addEventListener('DOMContentLoaded', function() {
+            initTheme();
+            initDashboard();
+            initAlphabetIndex();
+            initHotCountries();
+            updateFavCount();
+            initBrandTable();
+            bindEvents();
+        });
+        
+        // ============================================
+        // 主题切换
+        // ============================================
+        function initTheme() {
+            if (isDarkMode) {
+                document.documentElement.classList.add('dark');
+            }
+        }
+        
+        function toggleTheme() {
+            isDarkMode = !isDarkMode;
+            document.documentElement.classList.toggle('dark');
+            localStorage.setItem('darkMode', isDarkMode);
+            
+            const icon = document.getElementById('theme-icon');
+            if (isDarkMode) {
+                icon.className = 'fa fa-sun-o text-yellow-400';
+            } else {
+                icon.className = 'fa fa-moon-o text-gray-600';
+            }
+        }
+        
+        // ============================================
+        // 侧边栏
+        // ============================================
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            sidebar.classList.toggle('-translate-x-full');
+            overlay.classList.toggle('hidden');
+        }
+        
+        // ============================================
+        // 页面导航
+        // ============================================
+        function navigateTo(pageName) {
+            currentPage = pageName;
+            
+            // 更新侧边栏激活状态
+            document.querySelectorAll('.nav-item').forEach(item => {
+                const isActive = item.dataset.page === pageName;
+                item.classList.toggle('bg-primary-50', isActive);
+                item.classList.toggle('dark:bg-primary-900/30', isActive);
+                item.classList.toggle('text-primary-600', isActive);
+                item.classList.toggle('dark:text-primary-400', isActive);
+                item.classList.toggle('text-gray-700', !isActive);
+                item.classList.toggle('dark:text-gray-300', !isActive);
+                item.classList.toggle('hover:bg-gray-100', !isActive);
+                item.classList.toggle('dark:hover:bg-gray-700', !isActive);
+            });
+            
+            // 切换页面内容
+            document.querySelectorAll('.page-content').forEach(page => {
+                page.classList.add('hidden');
+            });
+            const targetPage = document.getElementById('page-' + pageName);
+            if (targetPage) {
+                targetPage.classList.remove('hidden');
+                targetPage.classList.remove('animate-fade-in');
+                void targetPage.offsetWidth;
+                targetPage.classList.add('animate-fade-in');
+            }
+            
+            // 更新页面标题
+            const titles = {
+                dashboard: '仪表盘',
+                search: '搜索查询',
+                regions: '地区浏览',
+                brands: '品牌管理',
+                favorites: '我的收藏',
+                history: '搜索历史'
+            };
+            document.getElementById('page-title').textContent = titles[pageName] || pageName;
+            
+            // 移动端自动收起侧边栏
+            if (window.innerWidth < 1024) {
+                const sidebar = document.getElementById('sidebar');
+                const overlay = document.getElementById('sidebar-overlay');
+                sidebar.classList.add('-translate-x-full');
+                overlay.classList.add('hidden');
+            }
+            
+            // 特定页面的初始化
+            if (pageName === 'favorites') {
+                renderFavorites();
+            } else if (pageName === 'history') {
+                renderHistory();
+            }
+        }
+        
+        // 绑定侧边栏导航事件
+        function bindEvents() {
+            // 主导航
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    navigateTo(item.dataset.page);
+                });
+            });
+            
+            // 地区筛选按钮
+            document.querySelectorAll('.region-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    filterByRegion(btn.dataset.region);
+                });
+            });
+            
+            // 搜索按钮
+            document.getElementById('main-search-btn').addEventListener('click', performSearch);
+            document.getElementById('main-search-input').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') performSearch();
+            });
+            
+            // 全局快速搜索
+            const quickSearch = document.getElementById('quick-search');
+            quickSearch.addEventListener('input', handleQuickSearch);
+            quickSearch.addEventListener('focus', handleQuickSearch);
+            quickSearch.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    const val = quickSearch.value.trim();
+                    if (val) {
+                        navigateTo('search');
+                        document.getElementById('main-search-input').value = val;
+                        performSearch();
+                        document.getElementById('autocomplete-dropdown').classList.add('hidden');
+                    }
+                }
+            });
+            
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('#quick-search') && !e.target.closest('#autocomplete-dropdown')) {
+                    document.getElementById('autocomplete-dropdown').classList.add('hidden');
+                }
+            });
+            
+            // 筛选器变化
+            document.getElementById('filter-region').addEventListener('change', performSearch);
+            document.getElementById('sort-by').addEventListener('change', performSearch);
+            document.getElementById('page-size').addEventListener('change', performSearch);
+            
+            // 键盘快捷键
+            document.addEventListener('keydown', (e) => {
+                if (e.ctrlKey && e.key === 'k') {
+                    e.preventDefault();
+                    quickSearch.focus();
+                    quickSearch.select();
+                }
+                if (e.ctrlKey && e.key === 'd') {
+                    e.preventDefault();
+                    toggleTheme();
+                }
+                if (e.ctrlKey && e.key === 'b') {
+                    e.preventDefault();
+                    toggleSidebar();
+                }
+                if (e.key === 'Escape') {
+                    closeDetailModal();
+                    closeAddBrandModal();
+                    closeHelpModal();
+                    clearSelection();
+                }
+            });
+        }
+        
+        // ============================================
+        // 仪表盘初始化
+        // ============================================
+        function initDashboard() {
+            const data = getAllData();
+            
+            // 统计数据
+            document.getElementById('stat-countries').textContent = data.length;
+            document.getElementById('stat-favorites').textContent = favorites.length;
+            
+            const brandCount = customBrands.length + data.filter(d => d.type === 'brand').length;
+            document.getElementById('stat-brands').textContent = brandCount;
+            
+            // 地区分布
+            const regionCount = {
+                asia: 0,
+                europe: 0,
+                africa: 0,
+                americas: 0,
+                oceania: 0
+            };
+            
+            data.forEach(item => {
+                if (regionCount.hasOwnProperty(item.region)) {
+                    regionCount[item.region]++;
+                }
+            });
+            
+            // 更新地区页面计数
+            document.getElementById('asia-count').textContent = regionCount.asia;
+            document.getElementById('europe-count').textContent = regionCount.europe;
+            document.getElementById('africa-count').textContent = regionCount.africa;
+            document.getElementById('americas-count').textContent = regionCount.americas;
+            document.getElementById('oceania-count').textContent = regionCount.oceania;
+            
+            // 生成地区分布条
+            const regionStats = document.getElementById('region-stats');
+            const regions = [
+                { key: 'asia', name: '亚洲', color: 'bg-asia' },
+                { key: 'europe', name: '欧洲', color: 'bg-europe' },
+                { key: 'africa', name: '非洲', color: 'bg-africa' },
+                { key: 'americas', name: '美洲', color: 'bg-americas' },
+                { key: 'oceania', name: '大洋洲', color: 'bg-oceania' }
+            ];
+            
+            const maxCount = Math.max(...Object.values(regionCount));
+            
+            regionStats.innerHTML = regions.map(r => {
+                const percent = maxCount > 0 ? (regionCount[r.key] / maxCount * 100) : 0;
+                return `
+                    <div class="flex items-center space-x-3">
+                        <span class="text-sm text-gray-600 dark:text-gray-400 w-16">${r.name}</span>
+                        <div class="flex-1 h-6 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                            <div class="h-full ${r.color} rounded-full transition-all duration-500" style="width: ${percent}%"></div>
+                        </div>
+                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300 w-10 text-right">${regionCount[r.key]}</span>
+                    </div>
+                `;
+            }).join('');
+            
+            // 更新最近搜索
+            updateRecentSearchesDashboard();
+        }
+        
+        // ============================================
+        // 热门国家
+        // ============================================
+        function initHotCountries() {
+            const hotCodes = ['CHN', 'USA', 'JPN', 'GBR', 'DEU', 'FRA', 'KOR', 'SGP'];
+            const data = getAllData();
+            const hotCountries = hotCodes.map(code => data.find(d => d.code === code)).filter(Boolean);
+            
+            const container = document.getElementById('hot-countries');
+            container.innerHTML = hotCountries.map(c => `
+                <button onclick="showDetail('${c.code}')" class="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-left">
+                    <span class="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center text-xs font-bold text-primary-600 dark:text-primary-400">
+                        ${c.code.substring(0, 2)}
+                    </span>
+                    <div class="flex-1 min-w-0">
+                        <div class="text-sm font-medium dark:text-white truncate">${c.cn}</div>
+                        <div class="text-xs text-gray-400 truncate">${c.code}</div>
+                    </div>
+                </button>
+            `).join('');
+        }
+        
+        // ============================================
+        // 字母索引
+        // ============================================
+        function initAlphabetIndex() {
+            const container = document.getElementById('alphabet-index');
+            const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+            
+            container.innerHTML = letters.map(letter => {
+                const hasCountry = getAllData().some(d => d.code.startsWith(letter));
+                return `
+                    <button onclick="filterByLetter('${letter}')" 
+                        class="w-8 h-8 rounded-lg text-sm font-medium transition-colors
+                        ${hasCountry ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 hover:bg-primary-200 dark:hover:bg-primary-800/40' : 'bg-gray-100 dark:bg-gray-700 text-gray-400 cursor-not-allowed'}"
+                        ${!hasCountry ? 'disabled' : ''}>
+                        ${letter}
+                    </button>
+                `;
+            }).join('');
+        }
+        
+        // ============================================
+        // 搜索功能
+        // ============================================
+        function performSearch() {
+            const query = document.getElementById('main-search-input').value.trim();
+            const searchType = document.getElementById('search-type').value;
+            const regionFilter = document.getElementById('filter-region').value;
+            const sortBy = document.getElementById('sort-by').value;
+            const pageSize = parseInt(document.getElementById('page-size').value);
+            
+            let results = getAllData();
+            
+            // 关键词搜索
+            if (query) {
+                const lowerQuery = query.toLowerCase();
+                
+                // 特殊处理欧盟
+                if (lowerQuery === '欧盟' || lowerQuery === 'eu') {
+                    results = results.filter(d => euMemberStates.includes(d.cn));
+                } else {
+                    results = results.filter(item => {
+                        let match = false;
+                        if (searchType === 'all' || searchType === 'code') {
+                            match = match || item.code.toLowerCase().includes(lowerQuery);
+                        }
+                        if (searchType === 'all' || searchType === 'cn') {
+                            match = match || item.cn.toLowerCase().includes(lowerQuery);
+                        }
+                        if (searchType === 'all' || searchType === 'en') {
+                            match = match || (item.en || '').toLowerCase().includes(lowerQuery);
+                        }
+                        return match;
+                    });
+                }
+                
+                // 保存搜索历史
+                addToHistory(query);
+            }
+            
+            // 地区筛选
+            if (regionFilter !== 'all') {
+                if (regionFilter === 'eu') {
+                    results = results.filter(d => euMemberStates.includes(d.cn));
+                } else {
+                    results = results.filter(d => d.region === regionFilter);
+                }
+            }
+            
+            // 排序
+            results.sort((a, b) => {
+                if (sortBy === 'code') return a.code.localeCompare(b.code);
+                if (sortBy === 'cn') return a.cn.localeCompare(b.cn, 'zh-CN');
+                if (sortBy === 'en') return (a.en || '').localeCompare(b.en || '');
+                return 0;
+            });
+            
+            currentSearchResults = results;
+            currentPageNum = 1;
+            totalPages = Math.ceil(results.length / pageSize) || 1;
+            
+            renderSearchResults();
+        }
+        
+        function renderSearchResults() {
+            const pageSize = parseInt(document.getElementById('page-size').value);
+            const container = document.getElementById('search-results');
+            const start = (currentPageNum - 1) * pageSize;
+            const end = start + pageSize;
+            const pageResults = currentSearchResults.slice(start, end);
+            
+            // 更新总数
+            document.getElementById('result-total').textContent = currentSearchResults.length;
+            
+            if (currentSearchResults.length === 0) {
+                container.innerHTML = `
+                    <div class="flex flex-col items-center justify-center py-16 text-gray-400">
+                        <i class="fa fa-search text-5xl mb-4 opacity-30"></i>
+                        <p>未找到匹配结果</p>
+                    </div>
+                `;
+                document.getElementById('pagination').classList.add('hidden');
+                return;
+            }
+            
+            container.innerHTML = `
+                <div class="grid gap-3">
+                    ${pageResults.map((item, index) => renderResultCard(item, start + index)).join('')}
+                </div>
+            `;
+            
+            // 分页
+            if (pageSize < 9999 && totalPages > 1) {
+                document.getElementById('pagination').classList.remove('hidden');
+                document.getElementById('page-current').textContent = currentPageNum;
+                document.getElementById('page-total').textContent = totalPages;
+                renderPageNumbers();
+            } else {
+                document.getElementById('pagination').classList.add('hidden');
+            }
+            
+            // 添加进入动画
+            const cards = container.querySelectorAll('.result-card');
+            cards.forEach((card, i) => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(10px)';
+                setTimeout(() => {
+                    card.style.transition = 'all 0.3s ease-out';
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, 30 * i);
+            });
+        }
+        
+        function renderResultCard(item, index) {
+            const isEu = euMemberStates.includes(item.cn);
+            const isSelected = selectedItems.has(item.code);
+            const isFav = favorites.some(f => f.code === item.code);
+            
+            const regionColors = {
+                asia: 'bg-asia/10 text-asia',
+                europe: 'bg-europe/10 text-europe',
+                africa: 'bg-africa/10 text-africa',
+                americas: 'bg-americas/10 text-americas',
+                oceania: 'bg-oceania/10 text-oceania'
+            };
+            const regionColor = regionColors[item.region] || 'bg-gray-100 text-gray-600';
+            
+            return `
+                <div class="result-card bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4 border border-gray-100 dark:border-gray-600 hover:border-primary-200 dark:hover:border-primary-800 transition-all">
+                    <div class="flex items-start gap-4">
+                        <label class="flex items-center mt-1 cursor-pointer">
+                            <input type="checkbox" onchange="toggleSelect('${item.code}')" 
+                                ${isSelected ? 'checked' : ''}
+                                class="w-4 h-4 rounded border-gray-300 text-primary-500 focus:ring-primary-500">
+                        </label>
+                        <div class="flex-1 min-w-0 cursor-pointer" onclick="showDetail('${item.code}')">
+                            <div class="flex items-center flex-wrap gap-2 mb-2">
+                                <span class="bg-primary-100 dark:bg-primary-900/40 text-primary-600 dark:text-primary-400 text-sm font-bold px-3 py-0.5 rounded-lg">
+                                    ${item.code}
+                                </span>
+                                ${isEu ? '<span class="bg-eu/10 text-eu text-xs px-2 py-0.5 rounded-full"><i class="fa fa-star mr-1"></i>欧盟</span>' : ''}
+                                ${item.type === 'brand' ? '<span class="bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 text-xs px-2 py-0.5 rounded-full">品牌</span>' : ''}
+                                <span class="text-xs ${regionColor} px-2 py-0.5 rounded-full">${item.continent || item.region}</span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2 text-sm">
+                                <div>
+                                    <span class="text-gray-400 text-xs">中文名</span>
+                                    <div class="font-medium dark:text-white">${item.cn}</div>
+                                </div>
+                                <div>
+                                    <span class="text-gray-400 text-xs">英文名</span>
+                                    <div class="font-medium dark:text-white truncate">${item.en || '-'}</div>
+                                </div>
+                                ${item.capital && item.capital !== '-' ? `
+                                <div>
+                                    <span class="text-gray-400 text-xs">首都</span>
+                                    <div class="font-medium dark:text-white">${item.capital}</div>
+                                </div>
+                                ` : ''}
+                                ${item.currency && item.currency !== '-' ? `
+                                <div>
+                                    <span class="text-gray-400 text-xs">货币</span>
+                                    <div class="font-medium dark:text-white truncate">${item.currency}</div>
+                                </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                        <div class="flex flex-col items-center space-y-1">
+                            <button onclick="event.stopPropagation(); toggleFavorite('${item.code}')" 
+                                class="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                                title="${isFav ? '取消收藏' : '收藏'}">
+                                <i class="fa fa-star ${isFav ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-500'}"></i>
+                            </button>
+                            <button onclick="event.stopPropagation(); copyItem('${item.code}')" 
+                                class="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                                title="复制">
+                                <i class="fa fa-copy text-gray-400"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // ============================================
+        // 分页
+        // ============================================
+        function renderPageNumbers() {
+            const container = document.getElementById('page-numbers');
+            let pages = [];
+            
+            const maxVisible = 5;
+            let start = Math.max(1, currentPageNum - Math.floor(maxVisible / 2));
+            let end = Math.min(totalPages, start + maxVisible - 1);
+            
+            if (end - start + 1 < maxVisible) {
+                start = Math.max(1, end - maxVisible + 1);
+            }
+            
+            for (let i = start; i <= end; i++) {
+                pages.push(i);
+            }
+            
+            container.innerHTML = pages.map(p => `
+                <button onclick="goToPage(${p})" 
+                    class="w-8 h-8 rounded-lg text-sm font-medium transition-colors
+                    ${p === currentPageNum ? 'bg-primary-500 text-white' : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400'}">
+                    ${p}
+                </button>
+            `).join('');
+        }
+        
+        function goToPage(page) {
+            if (page < 1 || page > totalPages) return;
+            currentPageNum = page;
+            renderSearchResults();
+        }
+        
+        function prevPage() {
+            goToPage(currentPageNum - 1);
+        }
+        
+        function nextPage() {
+            goToPage(currentPageNum + 1);
+        }
+        
+        // ============================================
+        // 快速搜索自动补全
+        // ============================================
+        function handleQuickSearch(e) {
+            const query = e.target.value.trim().toLowerCase();
+            const dropdown = document.getElementById('autocomplete-dropdown');
+            
+            if (!query) {
+                dropdown.classList.add('hidden');
+                return;
+            }
+            
+            const data = getAllData();
+            const matches = data.filter(item => 
+                item.code.toLowerCase().includes(query) ||
+                item.cn.toLowerCase().includes(query) ||
+                (item.en || '').toLowerCase().includes(query)
+            ).slice(0, 8);
+            
+            if (matches.length === 0) {
+                dropdown.innerHTML = '<div class="px-4 py-3 text-sm text-gray-400 text-center">无匹配结果</div>';
+            } else {
+                dropdown.innerHTML = matches.map(item => `
+                    <div onclick="quickSelectItem('${item.code}')" 
+                        class="px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer flex items-center space-x-3">
+                        <span class="text-primary-500 font-mono text-sm font-bold w-12">${item.code}</span>
+                        <span class="text-sm dark:text-white">${item.cn}</span>
+                        <span class="text-xs text-gray-400 ml-auto">${item.en || ''}</span>
+                    </div>
+                `).join('');
+            }
+            
+            dropdown.classList.remove('hidden');
+        }
+        
+        function quickSelectItem(code) {
+            const dropdown = document.getElementById('autocomplete-dropdown');
+            dropdown.classList.add('hidden');
+            document.getElementById('quick-search').value = '';
+            showDetail(code);
+        }
+        
+        // ============================================
+        // 地区筛选
+        // ============================================
+        function filterByRegion(region) {
+            currentRegion = region;
+            
+            navigateTo('search');
+            document.getElementById('filter-region').value = region;
+            document.getElementById('main-search-input').value = '';
+            performSearch();
+            
+            updateRegionBtnActive(region);
+        }
+        
+        function updateRegionBtnActive(region) {
+            document.querySelectorAll('.region-btn').forEach(btn => {
+                btn.classList.remove('bg-primary-50', 'dark:bg-primary-900/20', 'text-primary-600', 'dark:text-primary-400');
+                btn.classList.add('text-gray-600', 'dark:text-gray-400');
+                if (btn.dataset.region === region) {
+                    btn.classList.add('bg-primary-50', 'dark:bg-primary-900/20', 'text-primary-600', 'dark:text-primary-400');
+                    btn.classList.remove('text-gray-600', 'dark:text-gray-400');
+                }
+            });
+        }
+        
+        function filterByLetter(letter) {
+            navigateTo('search');
+            document.getElementById('main-search-input').value = '';
+            document.getElementById('filter-region').value = 'all';
+            performSearch();
+            
+            currentSearchResults = getAllData().filter(d => d.code.startsWith(letter));
+            currentSearchResults.sort((a, b) => a.code.localeCompare(b.code));
+            totalPages = 1;
+            currentPageNum = 1;
+            renderSearchResults();
+            updateRegionBtnActive('all');
+        }
+        
+        function showRegionCountries(region) {
+            if (currentPage !== 'regions') {
+                navigateTo('regions');
+            }
+            
+            const regionNames = {
+                asia: '亚洲国家/地区',
+                europe: '欧洲国家/地区',
+                africa: '非洲国家/地区',
+                americas: '美洲国家/地区',
+                oceania: '大洋洲国家/地区',
+                eu: '欧盟成员国'
+            };
+            const titleText = regionNames[region] || '国家列表';
+            
+            let data = countriesData.filter(d => d.region === region || (region === 'eu' && euMemberStates.includes(d.cn)));
+            data.sort((a, b) => a.code.localeCompare(b.code));
+            
+            const container = document.getElementById('region-countries');
+            if (!container) return;
+            
+            container.innerHTML = `
+                <div class="px-5 py-3 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+                    <h3 class="font-semibold dark:text-white" id="region-title">${titleText}</h3>
+                    <span class="text-sm text-gray-500 dark:text-gray-400">共 ${data.length} 个</span>
+                </div>
+                <div class="p-5">
+                    <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                        ${data.map(item => `
+                            <button onclick="showDetail('${item.code}')" 
+                                class="flex items-center space-x-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors text-left">
+                                <span class="w-10 h-10 rounded-lg bg-white dark:bg-gray-600 flex items-center justify-center text-primary-500 font-bold text-sm shadow-sm">
+                                    ${item.code.substring(0, 2)}
+                                </span>
+                                <div class="flex-1 min-w-0">
+                                    <div class="font-medium text-sm dark:text-white truncate">${item.cn}</div>
+                                    <div class="text-xs text-gray-400 truncate">${item.code}</div>
+                                </div>
+                            </button>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+            
+            document.querySelectorAll('#page-regions .region-card').forEach(card => {
+                card.classList.remove('ring-2', 'ring-white', 'ring-opacity-50', 'scale-105');
+            });
+            
+            const activeCard = document.querySelector(`#page-regions .region-card[onclick*="'${region}'"]`);
+            if (activeCard) {
+                activeCard.classList.add('ring-2', 'ring-white', 'ring-opacity-50', 'scale-105');
+            }
+            
+            container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        
+        // ============================================
+        // 详情模态框
+        // ============================================
+        function showDetail(code) {
+            const item = getAllData().find(d => d.code === code);
+            if (!item) return;
+            
+            currentDetailItem = item;
+            const isEu = euMemberStates.includes(item.cn);
+            const isFav = favorites.some(f => f.code === item.code);
+            
+            document.getElementById('detail-code').textContent = item.code;
+            document.getElementById('detail-cn').textContent = item.cn;
+            document.getElementById('detail-en').textContent = item.en || '-';
+            document.getElementById('detail-region').textContent = item.continent || item.region;
+            
+            const favBtn = document.getElementById('detail-fav-btn');
+            favBtn.innerHTML = isFav ? 
+                '<i class="fa fa-star text-yellow-400 mr-1"></i>已收藏' : 
+                '<i class="fa fa-star-o mr-1"></i>收藏';
+            
+            let detailRows = '';
+            if (item.capital && item.capital !== '-') {
+                detailRows += `<div class="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
+                    <span class="text-gray-500 dark:text-gray-400 text-sm">首都</span>
+                    <span class="font-medium dark:text-white text-sm">${item.capital}</span>
+                </div>`;
+            }
+            if (item.population && item.population !== '-') {
+                detailRows += `<div class="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
+                    <span class="text-gray-500 dark:text-gray-400 text-sm">人口</span>
+                    <span class="font-medium dark:text-white text-sm">${item.population}</span>
+                </div>`;
+            }
+            if (item.currency && item.currency !== '-') {
+                detailRows += `<div class="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
+                    <span class="text-gray-500 dark:text-gray-400 text-sm">货币</span>
+                    <span class="font-medium dark:text-white text-sm">${item.currency}</span>
+                </div>`;
+            }
+            if (item.timezone) {
+                detailRows += `<div class="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
+                    <span class="text-gray-500 dark:text-gray-400 text-sm">时区</span>
+                    <span class="font-medium dark:text-white text-sm">${item.timezone}</span>
+                </div>`;
+            }
+            if (isEu) {
+                detailRows += `<div class="flex justify-between py-2">
+                    <span class="text-gray-500 dark:text-gray-400 text-sm">欧盟成员国</span>
+                    <span class="font-medium text-eu text-sm">是</span>
+                </div>`;
+            }
+            
+            document.getElementById('detail-body').innerHTML = `<div class="space-y-1">${detailRows}</div>`;
+            
+            document.getElementById('detail-modal').classList.remove('hidden');
+        }
+        
+        function closeDetailModal() {
+            document.getElementById('detail-modal').classList.add('hidden');
+            currentDetailItem = null;
+        }
+        
+        function copyDetail() {
+            if (!currentDetailItem) return;
+            const item = currentDetailItem;
+            let text = `${item.code}\n${item.cn}\n${item.en || '-'}`;
+            if (item.capital && item.capital !== '-') text += `\n首都: ${item.capital}`;
+            if (item.population && item.population !== '-') text += `\n人口: ${item.population}`;
+            if (item.currency && item.currency !== '-') text += `\n货币: ${item.currency}`;
+            if (item.timezone) text += `\n时区: ${item.timezone}`;
+            if (euMemberStates.includes(item.cn)) text += '\n(欧盟成员国)';
+            
+            navigator.clipboard.writeText(text).then(() => {
+                showToast('已复制到剪贴板', 'success');
+            });
+        }
+        
+        function toggleFavoriteFromDetail() {
+            if (!currentDetailItem) return;
+            toggleFavorite(currentDetailItem.code);
+            showDetail(currentDetailItem.code);
+        }
+        
+        // ============================================
+        // 收藏功能
+        // ============================================
+        function isFavorite(code) {
+            return favorites.some(f => f.code === code);
+        }
+        
+        function toggleFavorite(code) {
+            const item = getAllData().find(d => d.code === code);
+            if (!item) return;
+            
+            const index = favorites.findIndex(f => f.code === code);
+            if (index > -1) {
+                favorites.splice(index, 1);
+                showToast('已取消收藏', 'info');
+            } else {
+                favorites.push({ code: item.code, cn: item.cn, en: item.en, region: item.region });
+                showToast('已添加收藏', 'success');
+            }
+            
+            localStorage.setItem('favorites', JSON.stringify(favorites));
+            updateFavCount();
+            document.getElementById('stat-favorites').textContent = favorites.length;
+            
+            // 如果在搜索页，重新渲染
+            if (currentPage === 'search' && currentSearchResults.length > 0) {
+                renderSearchResults();
+            }
+            if (currentPage === 'favorites') {
+                renderFavorites();
+            }
+        }
+        
+        function updateFavCount() {
+            document.getElementById('fav-count').textContent = favorites.length;
+        }
+        
+        function renderFavorites() {
+            const container = document.getElementById('favorites-list');
+            
+            if (favorites.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-full flex flex-col items-center justify-center py-16 text-gray-400">
+                        <i class="fa fa-star-o text-5xl mb-4 opacity-30"></i>
+                        <p>暂无收藏</p>
+                        <button onclick="navigateTo('search')" class="mt-4 text-primary-500 text-sm hover:underline">
+                            去搜索添加收藏
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = favorites.map(item => `
+                <div class="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
+                    <div class="flex items-start justify-between mb-3">
+                        <span class="bg-primary-100 dark:bg-primary-900/40 text-primary-600 dark:text-primary-400 font-bold px-3 py-1 rounded-lg">${item.code}</span>
+                        <button onclick="toggleFavorite('${item.code}')" class="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors">
+                            <i class="fa fa-star text-yellow-400"></i>
+                        </button>
+                    </div>
+                    <h4 class="font-semibold dark:text-white mb-1">${item.cn}</h4>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">${item.en || '-'}</p>
+                    <div class="flex space-x-2">
+                        <button onclick="showDetail('${item.code}')" class="flex-1 py-1.5 text-sm bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors dark:text-white">
+                            详情
+                        </button>
+                        <button onclick="copyItem('${item.code}')" class="flex-1 py-1.5 text-sm bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors">
+                            复制
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function exportFavorites() {
+            if (favorites.length === 0) {
+                showToast('暂无收藏数据', 'warning');
+                return;
+            }
+            exportToCSV(favorites, 'favorites');
+            showToast('收藏已导出', 'success');
+        }
+        
+        // ============================================
+        // 搜索历史
+        // ============================================
+        function addToHistory(query) {
+            if (!query.trim()) return;
+            
+            // 去重，移到最前面
+            searchHistory = searchHistory.filter(h => h !== query);
+            searchHistory.unshift(query);
+            
+            // 限制数量
+            if (searchHistory.length > 50) {
+                searchHistory = searchHistory.slice(0, 50);
+            }
+            
+            localStorage.setItem('searchHistory', JSON.stringify(searchHistory));
+            updateRecentSearchesDashboard();
+        }
+        
+        function updateRecentSearchesDashboard() {
+            const container = document.getElementById('recent-searches-dashboard');
+            const recent = searchHistory.slice(0, 5);
+            
+            if (recent.length === 0) {
+                container.innerHTML = '<p class="text-sm text-gray-400 text-center py-4">暂无搜索记录</p>';
+                return;
+            }
+            
+            container.innerHTML = recent.map(q => `
+                <button onclick="searchFromHistory('${q}')" class="w-full flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-left">
+                    <i class="fa fa-search text-gray-300 text-sm"></i>
+                    <span class="text-sm dark:text-white truncate">${q}</span>
+                    <i class="fa fa-arrow-right text-gray-300 text-xs ml-auto"></i>
+                </button>
+            `).join('');
+        }
+        
+        function searchFromHistory(query) {
+            navigateTo('search');
+            document.getElementById('main-search-input').value = query;
+            performSearch();
+        }
+        
+        function renderHistory() {
+            const container = document.getElementById('history-list');
+            const inner = container.querySelector('div');
+            
+            if (searchHistory.length === 0) {
+                inner.innerHTML = `
+                    <div class="flex flex-col items-center justify-center py-16 text-gray-400">
+                        <i class="fa fa-history text-5xl mb-4 opacity-30"></i>
+                        <p>暂无搜索历史</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            inner.innerHTML = searchHistory.map((q, i) => `
+                <div class="flex items-center justify-between px-5 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                    <button onclick="searchFromHistory('${q}')" class="flex items-center space-x-3 text-left flex-1">
+                        <i class="fa fa-search text-gray-300"></i>
+                        <span class="dark:text-white">${q}</span>
+                    </button>
+                    <button onclick="removeFromHistory(${i})" class="text-gray-300 hover:text-red-400 transition-colors p-1">
+                        <i class="fa fa-times"></i>
+                    </button>
+                </div>
+            `).join('');
+        }
+        
+        function removeFromHistory(index) {
+            searchHistory.splice(index, 1);
+            localStorage.setItem('searchHistory', JSON.stringify(searchHistory));
+            renderHistory();
+            updateRecentSearchesDashboard();
+        }
+        
+        function clearHistory() {
+            searchHistory = [];
+            localStorage.setItem('searchHistory', '[]');
+            updateRecentSearchesDashboard();
+            if (currentPage === 'history') renderHistory();
+            showToast('搜索历史已清空', 'info');
+        }
+        
+        // ============================================
+        // 复制功能
+        // ============================================
+        function copyItem(code) {
+            const item = getAllData().find(d => d.code === code);
+            if (!item) return;
+            
+            let text = `${item.code}\n${item.cn}\n${item.en || '-'}`;
+            if (euMemberStates.includes(item.cn)) text += '\n(欧盟成员国)';
+            
+            navigator.clipboard.writeText(text).then(() => {
+                showToast('已复制到剪贴板', 'success');
+            }).catch(() => {
+                showToast('复制失败', 'error');
+            });
+        }
+        
+        // ============================================
+        // 批量选择
+        // ============================================
+        function toggleSelect(code) {
+            if (selectedItems.has(code)) {
+                selectedItems.delete(code);
+            } else {
+                selectedItems.add(code);
+            }
+            updateSelectionUI(false);
+        }
+        
+        function selectAllResults() {
+            const allCodes = currentSearchResults.map(r => r.code);
+            const allSelected = allCodes.every(c => selectedItems.has(c));
+            
+            if (allSelected) {
+                allCodes.forEach(c => selectedItems.delete(c));
+            } else {
+                allCodes.forEach(c => selectedItems.add(c));
+            }
+            
+            updateSelectionUI(true);
+        }
+        
+        function clearSelection() {
+            selectedItems.clear();
+            updateSelectionUI(true);
+        }
+        
+        function updateSelectionUI(rerender = true) {
+            const count = selectedItems.size;
+            const toolbar = document.getElementById('floating-toolbar');
+            const selectedCountEl = document.getElementById('selected-count');
+            const selectedNumEl = document.getElementById('selected-num');
+            const floatCountEl = document.getElementById('float-selected-count');
+            
+            floatCountEl.textContent = count;
+            
+            if (count > 0) {
+                toolbar.classList.remove('hidden');
+                selectedCountEl.classList.remove('hidden');
+                selectedNumEl.textContent = count;
+            } else {
+                toolbar.classList.add('hidden');
+                selectedCountEl.classList.add('hidden');
+            }
+            
+            if (rerender && currentPage === 'search') {
+                renderSearchResults();
+            }
+        }
+        
+        function copySelected() {
+            if (selectedItems.size === 0) {
+                showToast('请先选择项目', 'warning');
+                return;
+            }
+            
+            const items = getAllData().filter(d => selectedItems.has(d.code));
+            const text = items.map(item => {
+                let line = `${item.code}\t${item.cn}\t${item.en || '-'}`;
+                if (euMemberStates.includes(item.cn)) line += '\t(欧盟)';
+                return line;
+            }).join('\n');
+            
+            navigator.clipboard.writeText(text).then(() => {
+                showToast(`已复制 ${items.length} 条`, 'success');
+            });
+        }
+        
+        function toggleSelectAllFavorites() {
+            if (selectedItems.size === 0) {
+                showToast('请先选择项目', 'warning');
+                return;
+            }
+            
+            selectedItems.forEach(code => {
+                const item = getAllData().find(d => d.code === code);
+                if (item && !isFavorite(code)) {
+                    favorites.push({ code: item.code, cn: item.cn, en: item.en, region: item.region });
+                }
+            });
+            
+            localStorage.setItem('favorites', JSON.stringify(favorites));
+            updateFavCount();
+            showToast(`已收藏 ${selectedItems.size} 项`, 'success');
+            updateSelectionUI(true);
+        }
+        
+        // ============================================
+        // 导出功能
+        // ============================================
+        function exportData(format) {
+            const data = getAllData();
+            if (format === 'csv') {
+                exportToCSV(data, 'countries-data');
+            } else {
+                exportToJSON(data, 'countries-data');
+            }
+            showToast('数据已导出', 'success');
+        }
+        
+        function exportSelected(format) {
+            if (selectedItems.size === 0) {
+                showToast('请先选择项目', 'warning');
+                return;
+            }
+            const data = getAllData().filter(d => selectedItems.has(d.code));
+            if (format === 'csv') {
+                exportToCSV(data, 'selected-data');
+            } else {
+                exportToJSON(data, 'selected-data');
+            }
+            showToast(`已导出 ${data.length} 条`, 'success');
+        }
+        
+        function exportToCSV(data, filename) {
+            const headers = ['代码', '中文名称', '英文名称', '地区', '首都', '人口', '货币', '时区'];
+            const rows = data.map(item => [
+                item.code,
+                item.cn,
+                item.en || '',
+                item.continent || item.region || '',
+                item.capital || '',
+                item.population || '',
+                item.currency || '',
+                item.timezone || ''
+            ]);
+            
+            const csvContent = [headers, ...rows]
+                .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+                .join('\n');
+            
+            const BOM = '\uFEFF';
+            const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+            downloadBlob(blob, `${filename}.csv`);
+        }
+        
+        function exportToJSON(data, filename) {
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            downloadBlob(blob, `${filename}.json`);
+        }
+        
+        function downloadBlob(blob, filename) {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+        
+        // ============================================
+        // 品牌管理
+        // ============================================
+        function initBrandTable() {
+            const tbody = document.getElementById('brand-table');
+            const brands = [
+                ...countriesData.filter(d => d.type === 'brand'),
+                ...customBrands
+            ];
+            
+            if (brands.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="px-5 py-12 text-center text-gray-400">
+                            <i class="fa fa-tags text-3xl mb-2 opacity-30 block"></i>
+                            暂无品牌数据
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            tbody.innerHTML = brands.map(item => `
+                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                    <td class="px-5 py-3 whitespace-nowrap">
+                        <span class="bg-primary-100 dark:bg-primary-900/40 text-primary-600 dark:text-primary-400 font-mono text-sm font-bold px-2 py-0.5 rounded">
+                            ${item.code}
+                        </span>
+                    </td>
+                    <td class="px-5 py-3 whitespace-nowrap text-sm dark:text-white">${item.en || '-'}</td>
+                    <td class="px-5 py-3 whitespace-nowrap text-sm dark:text-white">${item.cn}</td>
+                    <td class="px-5 py-3 whitespace-nowrap">
+                        <span class="text-xs px-2 py-0.5 rounded-full ${item.type === 'brand' ? 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'}">
+                            ${item.type === 'brand' ? '品牌' : item.type === 'standard' ? '标准' : '其他'}
+                        </span>
+                    </td>
+                    <td class="px-5 py-3 whitespace-nowrap text-right">
+                        <div class="flex items-center justify-end space-x-2">
+                            <button onclick="showDetail('${item.code}')" class="text-gray-400 hover:text-primary-500 transition-colors">
+                                <i class="fa fa-eye"></i>
+                            </button>
+                            ${customBrands.some(b => b.code === item.code) ? `
+                            <button onclick="deleteBrand('${item.code}')" class="text-gray-400 hover:text-red-500 transition-colors">
+                                <i class="fa fa-trash"></i>
+                            </button>
+                            ` : ''}
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+        
+        function showAddBrandModal() {
+            document.getElementById('new-brand-code').value = '';
+            document.getElementById('new-brand-en').value = '';
+            document.getElementById('new-brand-cn').value = '';
+            document.getElementById('new-brand-type').value = 'brand';
+            document.getElementById('add-brand-modal').classList.remove('hidden');
+            setTimeout(() => document.getElementById('new-brand-code').focus(), 100);
+        }
+        
+        function closeAddBrandModal() {
+            document.getElementById('add-brand-modal').classList.add('hidden');
+        }
+        
+        function saveBrand() {
+            const code = document.getElementById('new-brand-code').value.trim().toUpperCase();
+            const en = document.getElementById('new-brand-en').value.trim();
+            const cn = document.getElementById('new-brand-cn').value.trim();
+            const type = document.getElementById('new-brand-type').value;
+            
+            if (!code || !cn) {
+                showToast('请填写代码和中文名称', 'error');
+                return;
+            }
+            
+            if (getAllData().some(d => d.code === code)) {
+                showToast('该代码已存在', 'error');
+                return;
+            }
+            
+            customBrands.push({
+                code,
+                en,
+                cn,
+                type,
+                region: 'asia',
+                capital: '-',
+                population: '-',
+                currency: '-',
+                timezone: '-'
+            });
+            
+            localStorage.setItem('customBrands', JSON.stringify(customBrands));
+            closeAddBrandModal();
+            initBrandTable();
+            initDashboard();
+            showToast('品牌添加成功', 'success');
+        }
+        
+        function deleteBrand(code) {
+            if (!confirm('确定要删除这个品牌吗？')) return;
+            
+            customBrands = customBrands.filter(b => b.code !== code);
+            localStorage.setItem('customBrands', JSON.stringify(customBrands));
+            initBrandTable();
+            initDashboard();
+            showToast('已删除', 'success');
+        }
+        
+        // ============================================
+        // 随机国家
+        // ============================================
+        function showRandomCountry() {
+            const data = getAllData().filter(d => !d.type || d.type === 'region');
+            const random = data[Math.floor(Math.random() * data.length)];
+            showDetail(random.code);
+        }
+        
+        // ============================================
+        // 全屏
+        // ============================================
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                document.exitFullscreen();
+            }
+        }
+        
+        // ============================================
+        // 帮助
+        // ============================================
+        function showHelp() {
+            document.getElementById('help-modal').classList.remove('hidden');
+        }
+        
+        function closeHelpModal() {
+            document.getElementById('help-modal').classList.add('hidden');
+        }
+        
+        function showKeyboardShortcuts() {
+            showHelp();
+        }
+        
+        // ============================================
+        // Toast通知
+        // ============================================
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const id = Date.now();
+            
+            const icons = {
+                success: 'fa-check-circle text-green-500',
+                error: 'fa-times-circle text-red-500',
+                warning: 'fa-exclamation-circle text-yellow-500',
+                info: 'fa-info-circle text-blue-500'
+            };
+            
+            const toast = document.createElement('div');
+            toast.id = `toast-${id}`;
+            toast.className = 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg px-4 py-3 flex items-center space-x-3 transform translate-x-full transition-transform duration-300 min-w-[200px]';
+            toast.innerHTML = `
+                <i class="fa ${icons[type] || icons.info} text-lg"></i>
+                <span class="text-sm dark:text-white">${message}</span>
+            `;
+            
+            container.appendChild(toast);
+            
+            // 动画进入
+            setTimeout(() => {
+                toast.classList.remove('translate-x-full');
+            }, 10);
+            
+            // 自动消失
+            setTimeout(() => {
+                toast.classList.add('translate-x-full');
+                setTimeout(() => toast.remove(), 300);
+            }, 2500);
+        }
+    </script>
+</body>
+</html>

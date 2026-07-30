@@ -1,0 +1,2993 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GIF动图制作器 - 在线图片合成GIF工具</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-1: #667eea;
+            --primary-2: #764ba2;
+            --accent: #38ef7d;
+            --accent-2: #11998e;
+            --bg-1: #0f0c29;
+            --bg-2: #302b63;
+            --bg-3: #24243e;
+            --card-bg: rgba(255, 255, 255, 0.06);
+            --card-border: rgba(255, 255, 255, 0.12);
+            --text-primary: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.8);
+            --text-muted: rgba(255, 255, 255, 0.5);
+            --danger: #ff6b6b;
+            --warning: #feca57;
+            --dropdown-bg: #1b1838;
+            --dropdown-border: rgba(255, 255, 255, 0.22);
+            --dropdown-shadow: 0 12px 48px rgba(0, 0, 0, 0.65);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, var(--bg-1) 0%, var(--bg-2) 50%, var(--bg-3) 100%);
+            min-height: 100vh;
+            color: var(--text-primary);
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 20% 30%, rgba(102, 126, 234, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(118, 75, 162, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 50% 50%, rgba(56, 239, 125, 0.05) 0%, transparent 60%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .app {
+            position: relative;
+            z-index: 1;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 32px;
+            animation: fadeInDown 0.6s ease-out;
+        }
+
+        .header h1 {
+            font-size: 36px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary-1), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+        }
+
+        .header p {
+            color: var(--text-secondary);
+            font-size: 15px;
+        }
+
+        /* Main Layout */
+        .main-layout {
+            display: grid;
+            grid-template-columns: 1fr 420px;
+            gap: 24px;
+            align-items: start;
+        }
+
+        .left-panel,
+        .right-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* Card - 添加 position:relative 和 overflow:visible 确保下拉框不被裁剪 */
+        .card {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 20px;
+            animation: fadeInUp 0.5s ease-out;
+            position: relative;
+            overflow: visible;
+            z-index: 1;
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-title svg {
+            width: 20px;
+            height: 20px;
+            color: var(--primary-1);
+        }
+
+        /* Upload Area */
+        .upload-area {
+            border: 2px dashed rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 32px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .upload-area:hover,
+        .upload-area.dragover {
+            border-color: var(--primary-1);
+            background: rgba(102, 126, 234, 0.08);
+            transform: translateY(-2px);
+        }
+
+        .upload-icon {
+            width: 48px;
+            height: 48px;
+            margin: 0 auto 12px;
+            color: var(--primary-1);
+        }
+
+        .upload-area h3 {
+            font-size: 16px;
+            margin-bottom: 6px;
+        }
+
+        .upload-area p {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .upload-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 16px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            transition: all 0.25s ease;
+            font-family: inherit;
+        }
+
+        .btn svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-1), var(--primary-2));
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-primary);
+            border: 1px solid var(--card-border);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.12);
+            transform: translateY(-2px);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, var(--accent), var(--accent-2));
+            color: white;
+            box-shadow: 0 4px 15px rgba(56, 239, 125, 0.3);
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(56, 239, 125, 0.4);
+        }
+
+        .btn-danger {
+            background: rgba(255, 107, 107, 0.15);
+            color: var(--danger);
+            border: 1px solid rgba(255, 107, 107, 0.3);
+        }
+
+        .btn-danger:hover {
+            background: rgba(255, 107, 107, 0.25);
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 12px;
+            border-radius: 8px;
+        }
+
+        .btn-lg {
+            padding: 14px 28px;
+            font-size: 16px;
+            border-radius: 12px;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        /* Frame List */
+        .frame-list {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            padding: 4px 4px 12px;
+            scroll-behavior: smooth;
+        }
+
+        .frame-list::-webkit-scrollbar {
+            height: 8px;
+        }
+
+        .frame-list::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+        }
+
+        .frame-list::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+        }
+
+        .frame-list::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .frame-item {
+            flex-shrink: 0;
+            width: 90px;
+            height: 90px;
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+            cursor: grab;
+            border: 2px solid transparent;
+            transition: all 0.2s ease;
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        .frame-item:hover {
+            border-color: var(--primary-1);
+            transform: translateY(-3px);
+        }
+
+        .frame-item.selected {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(56, 239, 125, 0.2);
+        }
+
+        .frame-item.dragging {
+            opacity: 0.5;
+            cursor: grabbing;
+        }
+
+        .frame-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .frame-number {
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        .frame-delay {
+            position: absolute;
+            bottom: 4px;
+            right: 4px;
+            background: rgba(0, 0, 0, 0.7);
+            color: var(--accent);
+            font-size: 10px;
+            padding: 2px 5px;
+            border-radius: 4px;
+        }
+
+        .frame-remove {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: var(--danger);
+            color: white;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .frame-item:hover .frame-remove {
+            opacity: 1;
+        }
+
+        .frame-remove:hover {
+            transform: scale(1.1);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 20px;
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
+        .frame-toolbar {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+
+        /* Preview */
+        .preview-container {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .preview-canvas-wrapper {
+            width: 100%;
+            aspect-ratio: 1;
+            max-width: 380px;
+            background: linear-gradient(45deg, rgba(255, 255, 255, 0.05) 25%, transparent 25%),
+                linear-gradient(-45deg, rgba(255, 255, 255, 0.05) 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, rgba(255, 255, 255, 0.05) 75%),
+                linear-gradient(-45deg, transparent 75%, rgba(255, 255, 255, 0.05) 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .preview-canvas {
+            max-width: 100%;
+            max-height: 100%;
+            border-radius: 4px;
+        }
+
+        .preview-empty {
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        .preview-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+            justify-content: center;
+        }
+
+        .preview-controls .btn {
+            padding: 8px 14px;
+        }
+
+        .frame-indicator {
+            font-size: 13px;
+            color: var(--text-secondary);
+            min-width: 60px;
+            text-align: center;
+        }
+
+        /* Settings */
+        .setting-group {
+            margin-bottom: 18px;
+        }
+
+        .setting-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .setting-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .setting-label span:last-child {
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        .slider {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.1);
+            outline: none;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-1), var(--primary-2));
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.5);
+            transition: transform 0.2s;
+        }
+
+        .slider::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        .slider::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-1), var(--primary-2));
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.5);
+        }
+
+        .size-inputs {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .size-input-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .size-input {
+            flex: 1;
+            padding: 8px 10px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 13px;
+            font-family: inherit;
+            width: 100%;
+        }
+
+        .size-input:focus {
+            outline: none;
+            border-color: var(--primary-1);
+        }
+
+        .size-label {
+            color: var(--text-muted);
+            font-size: 12px;
+        }
+
+        .link-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--card-border);
+            color: var(--text-secondary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .link-btn.active {
+            background: rgba(102, 126, 234, 0.2);
+            border-color: var(--primary-1);
+            color: var(--primary-1);
+        }
+
+        .link-btn svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .select-wrapper {
+            position: relative;
+            z-index: 1;
+        }
+
+        .select {
+            width: 100%;
+            padding: 12px 50px 12px 14px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid var(--card-border);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 14px;
+            font-weight: 500;
+            font-family: inherit;
+            cursor: pointer;
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .select:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(102, 126, 234, 0.5);
+        }
+
+        .select:focus {
+            outline: none;
+            border-color: var(--primary-1);
+            background: rgba(102, 126, 234, 0.1);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+        }
+
+        .select-wrapper::after {
+            content: '';
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 0;
+            height: 0;
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-top: 7px solid #ffffff;
+            pointer-events: none;
+            z-index: 3;
+            filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.5));
+        }
+
+        .select-wrapper::before {
+            content: '';
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.6), rgba(118, 75, 162, 0.6));
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            pointer-events: none;
+            z-index: 2;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        /* ============ 自定义下拉框 - 核心修复 ============ */
+        .custom-select {
+            position: relative;
+            width: 100%;
+            z-index: 10;
+        }
+
+        /* 打开状态：z-index 提到极高，确保浮在所有卡片之上 */
+        .custom-select.open {
+            z-index: 9999;
+        }
+
+        .custom-select-trigger {
+            width: 100%;
+            padding: 12px 50px 12px 14px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid var(--card-border);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .custom-select-trigger:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(102, 126, 234, 0.5);
+        }
+
+        .custom-select.open .custom-select-trigger {
+            border-color: var(--primary-1);
+            background: rgba(102, 126, 234, 0.1);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+        }
+
+        .custom-select-trigger::after {
+            content: '';
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 0;
+            height: 0;
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-top: 7px solid #ffffff;
+            transition: transform 0.2s ease;
+            pointer-events: none;
+            z-index: 3;
+            filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.5));
+        }
+
+        .custom-select.open .custom-select-trigger::after {
+            transform: translateY(-50%) rotate(180deg);
+        }
+
+        .custom-select-trigger::before {
+            content: '';
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.6), rgba(118, 75, 162, 0.6));
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            pointer-events: none;
+            z-index: 2;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        /* 下拉选项面板 - 完全不透明背景 */
+        .custom-select-options {
+            position: absolute;
+            top: calc(100% + 6px);
+            left: 0;
+            right: 0;
+            background: var(--dropdown-bg);
+            /* 纯色深色背景，完全不透明 */
+            backdrop-filter: none;
+            -webkit-backdrop-filter: none;
+            border: 2px solid var(--dropdown-border);
+            border-radius: 12px;
+            padding: 8px;
+            max-height: 360px;
+            /* 增大以容纳更多选项 */
+            overflow-y: auto;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-8px);
+            transition: all 0.2s ease;
+            z-index: 100;
+            box-shadow: var(--dropdown-shadow);
+            /* 确保滚动到底部时最后一项有呼吸空间 */
+            padding-bottom: 10px;
+        }
+
+        .custom-select.open .custom-select-options {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .custom-select-options.dropdown-up {
+            top: auto;
+            bottom: calc(100% + 6px);
+            transform: translateY(8px);
+            padding-bottom: 8px;
+            padding-top: 10px;
+        }
+
+        .custom-select.open .custom-select-options.dropdown-up {
+            transform: translateY(0);
+        }
+
+        .custom-select-options::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .custom-select-options::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 3px;
+        }
+
+        .custom-select-options::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.25);
+            border-radius: 3px;
+        }
+
+        .custom-select-options::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.4);
+        }
+
+        /* 下拉选项 */
+        .custom-select-option {
+            padding: 10px 14px;
+            color: var(--text-secondary);
+            font-size: 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            background: transparent;
+            /* 默认无背景，依靠面板实色背景 */;
+        }
+
+        .custom-select-option:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+        }
+
+        .custom-select-option.selected {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.45), rgba(118, 75, 162, 0.45));
+            color: #ffffff;
+            font-weight: 600;
+        }
+
+        /* 确保最后一个选项在滚动时也能完整显示 */
+        .custom-select-option:last-child {
+            margin-bottom: 2px;
+        }
+
+        .border-style-btn.active {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.4), rgba(118, 75, 162, 0.4)) !important;
+            border-color: var(--primary-1) !important;
+            color: #ffffff !important;
+            font-weight: 600;
+            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+        }
+
+        .switch-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+        }
+
+        .switch-label {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .switch {
+            position: relative;
+            width: 44px;
+            height: 24px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .switch-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 24px;
+            transition: 0.3s;
+        }
+
+        .switch-slider::before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background: white;
+            border-radius: 50%;
+            transition: 0.3s;
+        }
+
+        .switch input:checked+.switch-slider {
+            background: linear-gradient(135deg, var(--primary-1), var(--primary-2));
+        }
+
+        .switch input:checked+.switch-slider::before {
+            transform: translateX(20px);
+        }
+
+        /* Advanced Toggle */
+        .advanced-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            color: var(--text-secondary);
+            transition: all 0.2s;
+            margin-bottom: 12px;
+        }
+
+        .advanced-toggle:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-primary);
+        }
+
+        .advanced-toggle svg {
+            width: 16px;
+            height: 16px;
+            transition: transform 0.3s;
+        }
+
+        .advanced-toggle.open svg {
+            transform: rotate(180deg);
+        }
+
+        .advanced-panel {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease-out;
+        }
+
+        .advanced-panel.open {
+            max-height: 600px;
+            /* 增大以确保位置下拉框有足够空间 */
+            overflow: visible;
+            /* 打开后允许下拉框溢出 */;
+        }
+
+        /* Text Overlay */
+        .text-overlay-input {
+            width: 100%;
+            padding: 10px 12px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 13px;
+            font-family: inherit;
+            margin-bottom: 10px;
+        }
+
+        .text-overlay-input:focus {
+            outline: none;
+            border-color: var(--primary-1);
+        }
+
+        .text-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .color-picker-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .color-picker {
+            width: 36px;
+            height: 36px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            background: transparent;
+        }
+
+        .color-picker::-webkit-color-swatch-wrapper {
+            padding: 0;
+        }
+
+        .color-picker::-webkit-color-swatch {
+            border: 2px solid var(--card-border);
+            border-radius: 6px;
+        }
+
+        /* Progress */
+        .progress-section {
+            display: none;
+        }
+
+        .progress-section.active {
+            display: block;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary-1), var(--accent));
+            border-radius: 4px;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .progress-text {
+            font-size: 13px;
+            color: var(--text-secondary);
+            text-align: center;
+        }
+
+        /* Export Section */
+        .export-section {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .export-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .export-info span:last-child {
+            color: var(--text-secondary);
+        }
+
+        /* Filters */
+        .filter-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+        }
+
+        .filter-btn {
+            padding: 8px 4px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            color: var(--text-secondary);
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+
+        .filter-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .filter-btn.active {
+            background: rgba(102, 126, 234, 0.2);
+            border-color: var(--primary-1);
+            color: var(--text-primary);
+        }
+
+        .color-btn {
+            width: 28px;
+            height: 28px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.2s;
+            padding: 0;
+        }
+
+        .color-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .color-btn.active {
+            border-color: var(--primary-1);
+            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.3);
+        }
+
+        /* Responsive */
+        @media (max-width: 960px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+            }
+            .right-panel {
+                order: -1;
+            }
+            .custom-select-options {
+                max-height: 300px;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .app {
+                padding: 16px;
+            }
+            .header h1 {
+                font-size: 28px;
+            }
+            .card {
+                padding: 16px;
+            }
+            .upload-area {
+                padding: 20px;
+            }
+            .frame-item {
+                width: 70px;
+                height: 70px;
+            }
+            .btn-lg {
+                padding: 12px 20px;
+                font-size: 14px;
+            }
+            .custom-select-options {
+                max-height: 280px;
+                padding: 6px;
+            }
+            .custom-select-option {
+                padding: 8px 12px;
+                font-size: 13px;
+            }
+        }
+
+        /* Animations */
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Tooltip */
+        .tooltip {
+            position: relative;
+        }
+
+        .tooltip::after {
+            content: attr(data-tip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 6px 10px;
+            background: rgba(0, 0, 0, 0.85);
+            color: white;
+            font-size: 12px;
+            border-radius: 6px;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+            margin-bottom: 6px;
+        }
+
+        .tooltip:hover::after {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <header class="header">
+            <h1>✨ GIF动图制作器</h1>
+            <p>上传多张图片，一键合成精彩GIF动图 · 纯前端处理 · 隐私安全</p>
+        </header>
+
+        <div class="main-layout">
+            <!-- Left Panel -->
+            <div class="left-panel">
+                <!-- Upload Card -->
+                <div class="card">
+                    <div class="card-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="17 8 12 3 7 8"></polyline>
+                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                        </svg>
+                        上传图片
+                    </div>
+                    <div class="upload-area" id="uploadArea">
+                        <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                            <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                            <polyline points="21 15 16 10 5 21"></polyline>
+                        </svg>
+                        <h3>拖拽图片到此处</h3>
+                        <p>或点击选择文件 · 支持 JPG/PNG/WebP/GIF · 可多选</p>
+                        <div class="upload-buttons">
+                            <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="17 8 12 3 7 8"></polyline>
+                                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                                </svg>
+                                选择图片
+                            </button>
+                            <button class="btn btn-secondary" onclick="pasteFromClipboard()">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+                                    <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+                                </svg>
+                                粘贴图片
+                            </button>
+                        </div>
+                        <input type="file" id="fileInput" accept="image/*" multiple hidden>
+                    </div>
+                </div>
+
+                <!-- Frame List Card -->
+                <div class="card">
+                    <div class="card-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="3" width="7" height="7"></rect>
+                            <rect x="14" y="3" width="7" height="7"></rect>
+                            <rect x="14" y="14" width="7" height="7"></rect>
+                            <rect x="3" y="14" width="7" height="7"></rect>
+                        </svg>
+                        帧列表
+                        <span style="margin-left:auto; font-size:13px; color:var(--text-muted); font-weight:normal;" id="frameCount">0 帧</span>
+                    </div>
+                    <div class="frame-toolbar">
+                        <button class="btn btn-sm btn-secondary tooltip" data-tip="反转顺序" onclick="reverseFrames()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="1 4 1 10 7 10"></polyline>
+                                <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+                            </svg>
+                        </button>
+                        <button class="btn btn-sm btn-secondary tooltip" data-tip="复制选中帧" onclick="duplicateFrame()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                            </svg>
+                        </button>
+                        <button class="btn btn-sm btn-secondary tooltip" data-tip="上移一帧" onclick="moveFrame(-1)">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="18 15 12 9 6 15"></polyline>
+                            </svg>
+                        </button>
+                        <button class="btn btn-sm btn-secondary tooltip" data-tip="下移一帧" onclick="moveFrame(1)">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
+                        </button>
+                        <button class="btn btn-sm btn-danger tooltip" data-tip="删除选中帧" onclick="removeSelectedFrame()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="3 6 5 6 21 6"></polyline>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            </svg>
+                        </button>
+                        <button class="btn btn-sm btn-danger tooltip" data-tip="清空全部" style="margin-left:auto;" onclick="clearAllFrames()">
+                            清空
+                        </button>
+                    </div>
+                    <div class="frame-list" id="frameList">
+                        <div class="empty-state" style="width:100%;">暂无图片，请上传</div>
+                    </div>
+                </div>
+
+                <!-- Advanced Settings -->
+                <div class="card">
+                    <div class="advanced-toggle" id="advancedToggle" onclick="toggleAdvanced()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                        <span>高级设置</span>
+                        <span style="margin-left:auto; font-size:12px; color:var(--text-muted);">文字 · 滤镜</span>
+                    </div>
+                    <div class="advanced-panel" id="advancedPanel">
+                        <!-- Text Overlay -->
+                        <div class="setting-group">
+                            <div class="setting-label">
+                                <span>文字叠加</span>
+                                <label class="switch">
+                                    <input type="checkbox" id="textEnabled" onchange="updateTextSettings()">
+                                    <span class="switch-slider"></span>
+                                </label>
+                            </div>
+                            <input type="text" class="text-overlay-input" id="textContent" placeholder="输入文字内容..." oninput="updateTextSettings()">
+                            <div class="text-options">
+                                <div>
+                                    <div class="setting-label" style="font-size:12px;">
+                                        <span>字号</span>
+                                        <span id="fontSizeVal">24px</span>
+                                    </div>
+                                    <input type="range" class="slider" id="fontSize" min="12" max="72" value="24" oninput="updateTextSettings()">
+                                </div>
+                                <div>
+                                    <div class="setting-label" style="font-size:12px;">
+                                        <span>颜色</span>
+                                    </div>
+                                    <div class="color-picker-wrapper">
+                                        <input type="color" class="color-picker" id="textColor" value="#ffffff" onchange="updateTextSettings()">
+                                        <span style="font-size:12px; color:var(--text-muted);" id="textColorVal">#ffffff</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="setting-label" style="font-size:12px;">
+                                        <span>位置</span>
+                                    </div>
+                                    <!-- 位置下拉框 -->
+                                    <div class="custom-select" data-onchange="updateTextPosition">
+                                        <div class="custom-select-trigger">底部</div>
+                                        <div class="custom-select-options">
+                                            <div class="custom-select-option selected" data-value="bottom">底部</div>
+                                            <div class="custom-select-option" data-value="top">顶部</div>
+                                            <div class="custom-select-option" data-value="center">居中</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="setting-label" style="font-size:12px;">
+                                        <span>描边</span>
+                                        <label class="switch" style="transform:scale(0.8);">
+                                            <input type="checkbox" id="textStroke" checked onchange="updateTextSettings()">
+                                            <span class="switch-slider"></span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Filters -->
+                        <div class="setting-group">
+                            <div class="setting-label">
+                                <span>滤镜效果</span>
+                            </div>
+                            <div class="filter-grid" id="filterGrid">
+                                <button class="filter-btn active" data-filter="none" onclick="setFilter('none')">原图</button>
+                                <button class="filter-btn" data-filter="grayscale" onclick="setFilter('grayscale')">黑白</button>
+                                <button class="filter-btn" data-filter="sepia" onclick="setFilter('sepia')">复古</button>
+                                <button class="filter-btn" data-filter="invert" onclick="setFilter('invert')">反色</button>
+                                <button class="filter-btn" data-filter="brightness" onclick="setFilter('brightness')">明亮</button>
+                                <button class="filter-btn" data-filter="contrast" onclick="setFilter('contrast')">高对比</button>
+                                <button class="filter-btn" data-filter="blur" onclick="setFilter('blur')">模糊</button>
+                                <button class="filter-btn" data-filter="vintage" onclick="setFilter('vintage')">怀旧</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel -->
+            <div class="right-panel">
+                <!-- Preview Card -->
+                <div class="card">
+                    <div class="card-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                        </svg>
+                        预览
+                    </div>
+                    <div class="preview-container">
+                        <div class="preview-canvas-wrapper">
+                            <canvas id="previewCanvas" class="preview-canvas" width="320" height="320"></canvas>
+                            <div class="preview-empty" id="previewEmpty">暂无预览</div>
+                        </div>
+                        <div class="preview-controls">
+                            <button class="btn btn-secondary btn-sm tooltip" data-tip="上一帧" onclick="prevFrame()">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polygon points="19 20 9 12 19 4 19 20"></polygon>
+                                    <line x1="5" y1="19" x2="5" y2="5"></line>
+                                </svg>
+                            </button>
+                            <button class="btn btn-primary" id="playBtn" onclick="togglePlay()">
+                                <svg id="playIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                                </svg>
+                                <span id="playText">播放</span>
+                            </button>
+                            <button class="btn btn-secondary btn-sm tooltip" data-tip="下一帧" onclick="nextFrame()">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polygon points="5 4 15 12 5 20 5 4"></polygon>
+                                    <line x1="19" y1="5" x2="19" y2="19"></line>
+                                </svg>
+                            </button>
+                            <span class="frame-indicator" id="frameIndicator">- / -</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Settings Card -->
+                <div class="card">
+                    <div class="card-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="3"></circle>
+                            <path
+                            d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
+                        </path>
+                    </svg>
+                    GIF设置
+                </div>
+
+                <div class="setting-group">
+                    <div class="setting-label">
+                        <span>帧延迟</span>
+                        <span id="delayVal">200ms</span>
+                    </div>
+                    <input type="range" class="slider" id="delaySlider" min="20" max="2000" value="200" step="10" oninput="updateDelay(this.value)">
+                    <div style="display:flex; gap:6px; margin-top:8px;">
+                        <button class="btn btn-sm btn-secondary" style="flex:1;" onclick="setDelay(100)">100ms</button>
+                        <button class="btn btn-sm btn-secondary" style="flex:1;" onclick="setDelay(200)">200ms</button>
+                        <button class="btn btn-sm btn-secondary" style="flex:1;" onclick="setDelay(500)">500ms</button>
+                        <button class="btn btn-sm btn-secondary" style="flex:1;" onclick="setDelay(1000)">1s</button>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <div class="setting-label">
+                        <span>输出尺寸</span>
+                        <span id="sizeVal">320 × 320</span>
+                    </div>
+                    <div class="size-inputs">
+                        <div class="size-input-wrapper">
+                            <input type="number" class="size-input" id="widthInput" value="320" min="16" max="1000" onchange="updateSize('width', this.value)">
+                            <span class="size-label">宽</span>
+                        </div>
+                        <button class="link-btn active tooltip" data-tip="锁定比例" id="ratioLock" onclick="toggleRatioLock()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" id="lockIcon">
+                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                            </svg>
+                        </button>
+                        <div class="size-input-wrapper">
+                            <input type="number" class="size-input" id="heightInput" value="320" min="16" max="1000" onchange="updateSize('height', this.value)">
+                            <span class="size-label">高</span>
+                        </div>
+                    </div>
+                    <div style="display:flex; gap:6px; margin-top:8px;">
+                        <button class="btn btn-sm btn-secondary" style="flex:1;" onclick="setPresetSize(200, 200)">200</button>
+                        <button class="btn btn-sm btn-secondary" style="flex:1;" onclick="setPresetSize(320, 320)">320</button>
+                        <button class="btn btn-sm btn-secondary" style="flex:1;" onclick="setPresetSize(480, 480)">480</button>
+                        <button class="btn btn-sm btn-secondary" style="flex:1;" onclick="setPresetSize(640, 640)">640</button>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <div class="setting-label">
+                        <span>画质</span>
+                        <span id="qualityVal">中等</span>
+                    </div>
+                    <input type="range" class="slider" id="qualitySlider" min="1" max="30" value="10" oninput="updateQuality(this.value)">
+                    <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--text-muted); margin-top:4px;">
+                        <span>最高</span>
+                        <span>最低</span>
+                    </div>
+                </div>
+
+                <!-- 循环播放下拉框 -->
+                <div class="setting-group">
+                    <div class="setting-label">
+                        <span>循环播放</span>
+                    </div>
+                    <div class="custom-select" data-onchange="updateLoop">
+                        <div class="custom-select-trigger">无限循环</div>
+                        <div class="custom-select-options">
+                            <div class="custom-select-option selected" data-value="0">无限循环</div>
+                            <div class="custom-select-option" data-value="1">播放 1 次</div>
+                            <div class="custom-select-option" data-value="2">播放 2 次</div>
+                            <div class="custom-select-option" data-value="3">播放 3 次</div>
+                            <div class="custom-select-option" data-value="5">播放 5 次</div>
+                            <div class="custom-select-option" data-value="10">播放 10 次</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 播放方向下拉框 -->
+                <div class="setting-group">
+                    <div class="setting-label">
+                        <span>播放方向</span>
+                    </div>
+                    <div class="custom-select" data-onchange="updateDirection">
+                        <div class="custom-select-trigger">顺序播放</div>
+                        <div class="custom-select-options">
+                            <div class="custom-select-option selected" data-value="forward">顺序播放</div>
+                            <div class="custom-select-option" data-value="reverse">倒序播放</div>
+                            <div class="custom-select-option" data-value="pingpong">来回播放</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 切换动效下拉框 -->
+                <div class="setting-group">
+                    <div class="setting-label">
+                        <span>切换动效</span>
+                    </div>
+                    <div class="custom-select" data-onchange="updateTransition">
+                        <div class="custom-select-trigger">无切换</div>
+                        <div class="custom-select-options">
+                            <div class="custom-select-option selected" data-value="none">无切换</div>
+                            <div class="custom-select-option" data-value="fade">淡入淡出</div>
+                            <div class="custom-select-option" data-value="slideLeft">左滑入</div>
+                            <div class="custom-select-option" data-value="slideRight">右滑入</div>
+                            <div class="custom-select-option" data-value="slideUp">上滑入</div>
+                            <div class="custom-select-option" data-value="slideDown">下滑入</div>
+                            <div class="custom-select-option" data-value="dissolve">溶解</div>
+                            <div class="custom-select-option" data-value="zoom">缩放</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="setting-group" id="transitionStepsGroup" style="display:none;">
+                    <div class="setting-label">
+                        <span>过渡帧数</span>
+                        <span id="transitionStepsVal">6 帧</span>
+                    </div>
+                    <input type="range" class="slider" id="transitionStepsSlider" min="2" max="15" value="6" oninput="updateTransitionSteps(this.value)">
+                    <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--text-muted); margin-top:4px;">
+                        <span>快</span>
+                        <span>慢</span>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <div class="switch-row">
+                        <span class="switch-label">图片边框</span>
+                        <label class="switch">
+                            <input type="checkbox" id="borderToggle" onchange="toggleBorder(this.checked)">
+                            <span class="switch-slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="setting-group" id="borderSettings" style="display:none;">
+                    <div class="setting-label">
+                        <span>边框样式</span>
+                    </div>
+                    <div style="display:flex; gap:6px; margin-bottom:10px;">
+                        <button class="btn btn-sm btn-secondary border-style-btn active" style="flex:1;" data-style="rounded" onclick="setBorderStyle('rounded')">圆角</button>
+                        <button class="btn btn-sm btn-secondary border-style-btn" style="flex:1;" data-style="square" onclick="setBorderStyle('square')">直角</button>
+                    </div>
+                    <div class="setting-label">
+                        <span>边框粗细</span>
+                        <span id="borderWidthVal">4px</span>
+                    </div>
+                    <input type="range" class="slider" id="borderWidthSlider" min="1" max="20" value="4" oninput="updateBorderWidth(this.value)">
+                    <div style="margin-top:10px;">
+                        <div class="setting-label">
+                            <span>边框颜色</span>
+                        </div>
+                        <div style="display:flex; gap:6px; margin-top:6px; flex-wrap:wrap;">
+                            <button class="color-btn active" style="background:#ffffff;" data-color="#ffffff" onclick="setBorderColor('#ffffff')"></button>
+                            <button class="color-btn" style="background:#ff6b6b;" data-color="#ff6b6b" onclick="setBorderColor('#ff6b6b')"></button>
+                            <button class="color-btn" style="background:#4ecdc4;" data-color="#4ecdc4" onclick="setBorderColor('#4ecdc4')"></button>
+                            <button class="color-btn" style="background:#ffe66d;" data-color="#ffe66d" onclick="setBorderColor('#ffe66d')"></button>
+                            <button class="color-btn" style="background:#667eea;" data-color="#667eea" onclick="setBorderColor('#667eea')"></button>
+                            <button class="color-btn" style="background:#000000;" data-color="#000000" onclick="setBorderColor('#000000')"></button>
+                        </div>
+                    </div>
+                    <div id="borderRadiusGroup" style="margin-top:10px;">
+                        <div class="setting-label">
+                            <span>圆角大小</span>
+                            <span id="borderRadiusVal">20px</span>
+                        </div>
+                        <input type="range" class="slider" id="borderRadiusSlider" min="0" max="100" value="20" oninput="updateBorderRadius(this.value)">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Export Card -->
+            <div class="card">
+                <div class="card-title">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    导出
+                </div>
+                <div class="export-section">
+                    <div class="export-info">
+                        <span>预计帧数</span>
+                        <span id="estFrames">0 帧</span>
+                    </div>
+                    <div class="export-info">
+                        <span>预计时长</span>
+                        <span id="estDuration">0s</span>
+                    </div>
+                    <button class="btn btn-success btn-lg" id="generateBtn" onclick="generateGif()" disabled>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <polygon points="10 8 16 12 10 16 10 8"></polygon>
+                        </svg>
+                        生成 GIF
+                    </button>
+
+                    <div class="progress-section" id="progressSection">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFill"></div>
+                        </div>
+                        <div class="progress-text" id="progressText">正在生成... 0%</div>
+                    </div>
+
+                    <button class="btn btn-primary btn-lg" id="downloadBtn" onclick="downloadGif()" style="display:none;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="7 10 12 15 17 10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                        下载 GIF
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ============== State ==============
+    const state = {
+        frames: [],
+        selectedIndex: -1,
+        delay: 200,
+        width: 320,
+        height: 320,
+        quality: 10,
+        loop: 0,
+        direction: 'forward',
+        ratioLocked: true,
+        aspectRatio: 1,
+        isPlaying: false,
+        currentFrame: 0,
+        playTimer: null,
+        currentFilter: 'none',
+        transition: 'none',
+        transitionSteps: 6,
+        border: {
+            enabled: false,
+            style: 'rounded',
+            width: 4,
+            color: '#ffffff',
+            radius: 20
+        },
+        textSettings: {
+            enabled: false,
+            content: '',
+            fontSize: 24,
+            color: '#ffffff',
+            position: 'bottom',
+            stroke: true
+        },
+        generatedBlob: null,
+        generatedUrl: null
+    };
+
+    // ============== DOM References ==============
+    const $ = (id) => document.getElementById(id);
+    const uploadArea = $('uploadArea');
+    const fileInput = $('fileInput');
+    const frameList = $('frameList');
+    const previewCanvas = $('previewCanvas');
+    const previewCtx = previewCanvas.getContext('2d');
+    const previewEmpty = $('previewEmpty');
+
+    // ============== Init Custom Selects - 核心修复 ==============
+    function initCustomSelects() {
+        document.querySelectorAll('.custom-select').forEach(select => {
+            const trigger = select.querySelector('.custom-select-trigger');
+            const optionsContainer = select.querySelector('.custom-select-options');
+            const options = select.querySelectorAll('.custom-select-option');
+
+            trigger.addEventListener('click', (e) => {
+                e.stopPropagation();
+
+                // 关闭其他所有打开的下拉框
+                document.querySelectorAll('.custom-select.open').forEach(s => {
+                    if (s !== select) {
+                        s.classList.remove('open');
+                        // 恢复其他下拉框父卡片的 z-index
+                        resetParentCardZIndex(s);
+                    }
+                });
+
+                if (!select.classList.contains('open')) {
+                    // 打开前检测空间
+                    const rect = select.getBoundingClientRect();
+                    const viewportHeight = window.innerHeight;
+                    const viewportWidth = window.innerWidth;
+                    const spaceBelow = viewportHeight - rect.bottom;
+                    const spaceAbove = rect.top;
+                    const estimatedHeight = Math.min(optionsContainer.scrollHeight || 360, 360);
+
+                    optionsContainer.classList.remove('dropdown-up');
+                    optionsContainer.style.width = '';
+                    optionsContainer.style.left = '';
+                    optionsContainer.style.right = '';
+
+                    // 如果下方空间不足且上方空间更大，向上展开
+                    if (spaceBelow < estimatedHeight + 20 && spaceAbove > spaceBelow + 40) {
+                        optionsContainer.classList.add('dropdown-up');
+                    }
+
+                    // 水平方向溢出处理
+                    const dropdownWidth = rect.width;
+                    if (rect.left + dropdownWidth > viewportWidth - 10) {
+                        const overflow = rect.left + dropdownWidth - viewportWidth + 10;
+                        optionsContainer.style.left = -overflow + 'px';
+                    }
+
+                    select.classList.add('open');
+                    // 提升父卡片 z-index，确保下拉框浮在所有卡片之上
+                    elevateParentCard(select);
+                } else {
+                    select.classList.remove('open');
+                    resetParentCardZIndex(select);
+                }
+            });
+
+            options.forEach(option => {
+                option.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const value = option.dataset.value;
+                    const label = option.textContent;
+
+                    select.querySelector('.custom-select-trigger').textContent = label;
+                    options.forEach(o => o.classList.remove('selected'));
+                    option.classList.add('selected');
+
+                    select.classList.remove('open');
+                    resetParentCardZIndex(select);
+
+                    const onChange = select.dataset.onchange;
+                    if (onChange && window[onChange]) {
+                        window[onChange](value);
+                    }
+                });
+            });
+        });
+
+        // 点击外部关闭所有下拉框
+        document.addEventListener('click', () => {
+            document.querySelectorAll('.custom-select.open').forEach(s => {
+                s.classList.remove('open');
+                resetParentCardZIndex(s);
+            });
+        });
+
+        // ESC 键关闭
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                document.querySelectorAll('.custom-select.open').forEach(s => {
+                    s.classList.remove('open');
+                    resetParentCardZIndex(s);
+                });
+            }
+        });
+    }
+
+    // 提升父卡片 z-index
+    function elevateParentCard(select) {
+        const card = select.closest('.card');
+        if (card) {
+            card.style.zIndex = '100';
+            card.style.transition = 'z-index 0s';
+        }
+    }
+
+    // 恢复父卡片 z-index
+    function resetParentCardZIndex(select) {
+        const card = select.closest('.card');
+        if (card) {
+            card.style.zIndex = '1';
+        }
+    }
+
+    function init() {
+        setupDragDrop();
+        setupFileInput();
+        setupPaste();
+        initCustomSelects();
+        renderEmptyState();
+        updateEstimates();
+        drawPreview();
+    }
+
+    // ============== Upload ==============
+    function setupDragDrop() {
+        ['dragenter', 'dragover'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('dragover');
+            });
+        });
+        ['dragleave', 'drop'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+            });
+        });
+        uploadArea.addEventListener('drop', (e) => {
+            const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+            handleFiles(files);
+        });
+    }
+
+    function setupFileInput() {
+        fileInput.addEventListener('change', (e) => {
+            handleFiles(Array.from(e.target.files));
+            fileInput.value = '';
+        });
+    }
+
+    function setupPaste() {
+        document.addEventListener('paste', (e) => {
+            const items = Array.from(e.clipboardData?.items || []);
+            const imageItems = items.filter(item => item.type.startsWith('image/'));
+            if (imageItems.length > 0) {
+                const files = imageItems.map(item => item.getAsFile());
+                handleFiles(files);
+            }
+        });
+    }
+
+    async function pasteFromClipboard() {
+        try {
+            const items = await navigator.clipboard.read();
+            for (const item of items) {
+                for (const type of item.types) {
+                    if (type.startsWith('image/')) {
+                        const blob = await item.getType(type);
+                        const file = new File([blob], 'pasted-image.png', { type });
+                        handleFiles([file]);
+                        return;
+                    }
+                }
+            }
+            alert('剪贴板中没有图片');
+        } catch (err) {
+            alert('请使用 Ctrl+V 粘贴图片');
+        }
+    }
+
+    async function handleFiles(files) {
+        if (files.length === 0) return;
+
+        for (const file of files) {
+            const img = await loadImage(file);
+            const canvas = document.createElement('canvas');
+            const thumbCanvas = document.createElement('canvas');
+
+            canvas.width = state.width;
+            canvas.height = state.height;
+            const ctx = canvas.getContext('2d');
+            drawImageCover(ctx, img, 0, 0, state.width, state.height);
+
+            thumbCanvas.width = 90;
+            thumbCanvas.height = 90;
+            const tctx = thumbCanvas.getContext('2d');
+            drawImageCover(tctx, img, 0, 0, 90, 90);
+
+            state.frames.push({
+                id: Date.now() + Math.random(),
+                image: img,
+                canvas: canvas,
+                thumb: thumbCanvas,
+                originalWidth: img.width,
+                originalHeight: img.height
+            });
+        }
+
+        if (state.selectedIndex === -1 && state.frames.length > 0) {
+            state.selectedIndex = 0;
+        }
+
+        if (state.frames.length > 0 && state.ratioLocked) {
+            const first = state.frames[0];
+            state.aspectRatio = first.originalWidth / first.originalHeight;
+        }
+
+        renderFrameList();
+        updateEstimates();
+        drawPreview();
+        updateGenerateButton();
+    }
+
+    function loadImage(file) {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => resolve(img);
+            img.onerror = reject;
+            img.src = URL.createObjectURL(file);
+        });
+    }
+
+    function drawImageCover(ctx, img, x, y, w, h) {
+        const imgRatio = img.width / img.height;
+        const canvasRatio = w / h;
+        let sx, sy, sw, sh;
+
+        if (imgRatio > canvasRatio) {
+            sh = img.height;
+            sw = img.height * canvasRatio;
+            sx = (img.width - sw) / 2;
+            sy = 0;
+        } else {
+            sw = img.width;
+            sh = img.width / canvasRatio;
+            sx = 0;
+            sy = (img.height - sh) / 2;
+        }
+
+        ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
+    }
+
+    // ============== Frame List ==============
+    function renderFrameList() {
+        if (state.frames.length === 0) {
+            renderEmptyState();
+            return;
+        }
+
+        frameList.innerHTML = '';
+
+        state.frames.forEach((frame, index) => {
+            const item = document.createElement('div');
+            item.className = 'frame-item' + (index === state.selectedIndex ? ' selected' : '');
+            item.draggable = true;
+            item.dataset.index = index;
+
+            const img = document.createElement('img');
+            img.src = frame.thumb.toDataURL();
+            item.appendChild(img);
+
+            const num = document.createElement('div');
+            num.className = 'frame-number';
+            num.textContent = index + 1;
+            item.appendChild(num);
+
+            const delay = document.createElement('div');
+            delay.className = 'frame-delay';
+            delay.textContent = state.delay + 'ms';
+            item.appendChild(delay);
+
+            const removeBtn = document.createElement('button');
+            removeBtn.className = 'frame-remove';
+            removeBtn.innerHTML = '×';
+            removeBtn.onclick = (e) => {
+                e.stopPropagation();
+                removeFrame(index);
+            };
+            item.appendChild(removeBtn);
+
+            item.addEventListener('click', () => selectFrame(index));
+
+            item.addEventListener('dragstart', (e) => {
+                item.classList.add('dragging');
+                e.dataTransfer.setData('text/plain', index);
+                e.dataTransfer.effectAllowed = 'move';
+            });
+            item.addEventListener('dragend', () => item.classList.remove('dragging'));
+            item.addEventListener('dragover', (e) => e.preventDefault());
+            item.addEventListener('drop', (e) => {
+                e.preventDefault();
+                const fromIndex = parseInt(e.dataTransfer.getData('text/plain'));
+                const toIndex = index;
+                if (fromIndex !== toIndex) {
+                    reorderFrames(fromIndex, toIndex);
+                }
+            });
+
+            frameList.appendChild(item);
+        });
+
+        $('frameCount').textContent = state.frames.length + ' 帧';
+    }
+
+    function renderEmptyState() {
+        frameList.innerHTML = '<div class="empty-state" style="width:100%;">暂无图片，请上传</div>';
+        $('frameCount').textContent = '0 帧';
+    }
+
+    function selectFrame(index) {
+        state.selectedIndex = index;
+        state.currentFrame = index;
+        renderFrameList();
+        drawPreview();
+        updateFrameIndicator();
+    }
+
+    function removeFrame(index) {
+        if (state.frames.length === 0) return;
+        state.frames.splice(index, 1);
+
+        if (state.selectedIndex >= state.frames.length) {
+            state.selectedIndex = state.frames.length - 1;
+        }
+        if (state.currentFrame >= state.frames.length) {
+            state.currentFrame = Math.max(0, state.frames.length - 1);
+        }
+
+        if (state.isPlaying && state.frames.length === 0) {
+            stopPlay();
+        }
+
+        renderFrameList();
+        updateEstimates();
+        drawPreview();
+        updateGenerateButton();
+    }
+
+    function removeSelectedFrame() {
+        if (state.selectedIndex >= 0) {
+            removeFrame(state.selectedIndex);
+        }
+    }
+
+    function clearAllFrames() {
+        if (state.frames.length === 0) return;
+        if (!confirm('确定要清空所有帧吗？')) return;
+
+        stopPlay();
+        state.frames = [];
+        state.selectedIndex = -1;
+        state.currentFrame = 0;
+        state.generatedBlob = null;
+        if (state.generatedUrl) URL.revokeObjectURL(state.generatedUrl);
+        state.generatedUrl = null;
+
+        renderFrameList();
+        updateEstimates();
+        drawPreview();
+        updateGenerateButton();
+        $('downloadBtn').style.display = 'none';
+        $('progressSection').classList.remove('active');
+    }
+
+    function reorderFrames(from, to) {
+        const [removed] = state.frames.splice(from, 1);
+        state.frames.splice(to, 0, removed);
+
+        if (state.selectedIndex === from) {
+            state.selectedIndex = to;
+        } else if (from < state.selectedIndex && to >= state.selectedIndex) {
+            state.selectedIndex--;
+        } else if (from > state.selectedIndex && to <= state.selectedIndex) {
+            state.selectedIndex++;
+        }
+
+        renderFrameList();
+        drawPreview();
+    }
+
+    function moveFrame(direction) {
+        if (state.selectedIndex < 0) return;
+        const newIndex = state.selectedIndex + direction;
+        if (newIndex < 0 || newIndex >= state.frames.length) return;
+        reorderFrames(state.selectedIndex, newIndex);
+    }
+
+    function duplicateFrame() {
+        if (state.selectedIndex < 0) return;
+        const original = state.frames[state.selectedIndex];
+        const newCanvas = document.createElement('canvas');
+        newCanvas.width = original.canvas.width;
+        newCanvas.height = original.canvas.height;
+        newCanvas.getContext('2d').drawImage(original.canvas, 0, 0);
+
+        const newThumb = document.createElement('canvas');
+        newThumb.width = original.thumb.width;
+        newThumb.height = original.thumb.height;
+        newThumb.getContext('2d').drawImage(original.thumb, 0, 0);
+
+        const newFrame = {
+            id: Date.now() + Math.random(),
+            image: original.image,
+            canvas: newCanvas,
+            thumb: newThumb,
+            originalWidth: original.originalWidth,
+            originalHeight: original.originalHeight
+        };
+
+        state.frames.splice(state.selectedIndex + 1, 0, newFrame);
+        state.selectedIndex++;
+        renderFrameList();
+        updateEstimates();
+        updateGenerateButton();
+    }
+
+    function reverseFrames() {
+        if (state.frames.length < 2) return;
+        state.frames.reverse();
+        if (state.selectedIndex >= 0) {
+            state.selectedIndex = state.frames.length - 1 - state.selectedIndex;
+        }
+        renderFrameList();
+        drawPreview();
+    }
+
+    // ============== Preview ==============
+    function drawPreview() {
+        const ctx = previewCtx;
+        ctx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+
+        if (state.frames.length === 0) {
+            previewEmpty.style.display = 'block';
+            return;
+        }
+
+        previewEmpty.style.display = 'none';
+        const frame = state.frames[state.currentFrame];
+
+        if (frame) {
+            ctx.drawImage(frame.canvas, 0, 0, previewCanvas.width, previewCanvas.height);
+            applyFilterToCanvas(ctx, previewCanvas.width, previewCanvas.height);
+            drawTextOnCanvas(ctx, previewCanvas.width, previewCanvas.height);
+            drawBorderOnCanvas(ctx, previewCanvas.width, previewCanvas.height);
+        }
+    }
+
+    function updateFrameIndicator() {
+        const total = state.frames.length;
+        const current = total > 0 ? state.currentFrame + 1 : 0;
+        $('frameIndicator').textContent = current + ' / ' + total;
+    }
+
+    function togglePlay() {
+        if (state.frames.length < 2) return;
+        state.isPlaying ? stopPlay() : startPlay();
+    }
+
+    function startPlay() {
+        if (state.frames.length < 2) return;
+        state.isPlaying = true;
+        updatePlayButton();
+        scheduleNextFrame();
+    }
+
+    function stopPlay() {
+        state.isPlaying = false;
+        if (state.playTimer) {
+            clearTimeout(state.playTimer);
+            state.playTimer = null;
+        }
+        updatePlayButton();
+    }
+
+    function scheduleNextFrame() {
+        if (!state.isPlaying) return;
+
+        state.playTimer = setTimeout(() => {
+            advanceFrame();
+            scheduleNextFrame();
+        }, state.delay);
+    }
+
+    function advanceFrame() {
+        const total = state.frames.length;
+        if (total < 2) return;
+
+        if (state.direction === 'forward') {
+            state.currentFrame = (state.currentFrame + 1) % total;
+        } else if (state.direction === 'reverse') {
+            state.currentFrame = (state.currentFrame - 1 + total) % total;
+        } else if (state.direction === 'pingpong') {
+            if (state.pingPongForward === undefined) state.pingPongForward = true;
+            if (state.pingPongForward) {
+                state.currentFrame++;
+                if (state.currentFrame >= total - 1) {
+                    state.currentFrame = total - 1;
+                    state.pingPongForward = false;
+                }
+            } else {
+                state.currentFrame--;
+                if (state.currentFrame <= 0) {
+                    state.currentFrame = 0;
+                    state.pingPongForward = true;
+                }
+            }
+        }
+
+        drawPreview();
+        updateFrameIndicator();
+    }
+
+    function nextFrame() {
+        if (state.frames.length === 0) return;
+        stopPlay();
+        state.currentFrame = (state.currentFrame + 1) % state.frames.length;
+        drawPreview();
+        updateFrameIndicator();
+    }
+
+    function prevFrame() {
+        if (state.frames.length === 0) return;
+        stopPlay();
+        state.currentFrame = (state.currentFrame - 1 + state.frames.length) % state.frames.length;
+        drawPreview();
+        updateFrameIndicator();
+    }
+
+    function updatePlayButton() {
+        const icon = $('playIcon');
+        const text = $('playText');
+        if (state.isPlaying) {
+            icon.innerHTML =
+            '<rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect>';
+            text.textContent = '暂停';
+        } else {
+            icon.innerHTML = '<polygon points="5 3 19 12 5 21 5 3"></polygon>';
+            text.textContent = '播放';
+        }
+    }
+
+    // ============== Settings ==============
+    function updateDelay(val) {
+        state.delay = parseInt(val);
+        $('delayVal').textContent = val + 'ms';
+        updateEstimates();
+    }
+
+    function setDelay(val) {
+        state.delay = val;
+        $('delaySlider').value = val;
+        $('delayVal').textContent = val + 'ms';
+        updateEstimates();
+    }
+
+    function updateSize(dimension, val) {
+        val = parseInt(val);
+        if (val < 16) val = 16;
+        if (val > 1000) val = 1000;
+
+        if (dimension === 'width') {
+            state.width = val;
+            if (state.ratioLocked) {
+                state.height = Math.round(val / state.aspectRatio);
+                $('heightInput').value = state.height;
+            }
+        } else {
+            state.height = val;
+            if (state.ratioLocked) {
+                state.width = Math.round(val * state.aspectRatio);
+                $('widthInput').value = state.width;
+            }
+        }
+
+        $('sizeVal').textContent = state.width + ' × ' + state.height;
+        previewCanvas.width = state.width;
+        previewCanvas.height = state.height;
+        refreshAllFrameCanvases();
+        drawPreview();
+        updateEstimates();
+    }
+
+    function setPresetSize(w, h) {
+        state.width = w;
+        state.height = h;
+        $('widthInput').value = w;
+        $('heightInput').value = h;
+        $('sizeVal').textContent = w + ' × ' + h;
+        previewCanvas.width = w;
+        previewCanvas.height = h;
+        refreshAllFrameCanvases();
+        drawPreview();
+        updateEstimates();
+    }
+
+    function toggleRatioLock() {
+        state.ratioLocked = !state.ratioLocked;
+        const btn = $('ratioLock');
+        btn.classList.toggle('active', state.ratioLocked);
+        $('lockIcon').innerHTML = state.ratioLocked ?
+            '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path>' :
+            '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path>';
+
+        if (state.ratioLocked && state.frames.length > 0) {
+            const first = state.frames[0];
+            state.aspectRatio = first.originalWidth / first.originalHeight;
+        }
+    }
+
+    function updateQuality(val) {
+        state.quality = parseInt(val);
+        const labels = { 1: '最高', 5: '高', 10: '中等', 20: '较低', 30: '最低' };
+        let label = '中等';
+        let minDiff = Infinity;
+        for (const k in labels) {
+            const diff = Math.abs(state.quality - parseInt(k));
+            if (diff < minDiff) { minDiff = diff;
+                label = labels[k]; }
+        }
+        $('qualityVal').textContent = label;
+    }
+
+    function updateLoop(val) {
+        state.loop = parseInt(val);
+    }
+
+    function updateDirection(val) {
+        state.direction = val;
+        state.pingPongForward = true;
+    }
+
+    function updateTransition(val) {
+        state.transition = val;
+        const stepsGroup = $('transitionStepsGroup');
+        stepsGroup.style.display = val === 'none' ? 'none' : 'block';
+        updateEstimates();
+    }
+
+    function updateTransitionSteps(val) {
+        state.transitionSteps = parseInt(val);
+        $('transitionStepsVal').textContent = val + ' 帧';
+        updateEstimates();
+    }
+
+    function toggleBorder(enabled) {
+        state.border.enabled = enabled;
+        $('borderSettings').style.display = enabled ? 'block' : 'none';
+        drawPreview();
+    }
+
+    function setBorderStyle(style) {
+        state.border.style = style;
+        document.querySelectorAll('.border-style-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.style === style);
+        });
+        $('borderRadiusGroup').style.display = style === 'rounded' ? 'block' : 'none';
+        drawPreview();
+    }
+
+    function updateBorderWidth(val) {
+        state.border.width = parseInt(val);
+        $('borderWidthVal').textContent = val + 'px';
+        drawPreview();
+    }
+
+    function setBorderColor(color) {
+        state.border.color = color;
+        document.querySelectorAll('.color-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.color === color);
+        });
+        drawPreview();
+    }
+
+    function updateBorderRadius(val) {
+        state.border.radius = parseInt(val);
+        $('borderRadiusVal').textContent = val + 'px';
+        drawPreview();
+    }
+
+    function refreshAllFrameCanvases() {
+        for (const frame of state.frames) {
+            frame.canvas.width = state.width;
+            frame.canvas.height = state.height;
+            const ctx = frame.canvas.getContext('2d');
+            drawImageCover(ctx, frame.image, 0, 0, state.width, state.height);
+
+            frame.thumb.width = 90;
+            frame.thumb.height = 90;
+            const tctx = frame.thumb.getContext('2d');
+            drawImageCover(tctx, frame.image, 0, 0, 90, 90);
+        }
+        renderFrameList();
+    }
+
+    // ============== Advanced ==============
+    function toggleAdvanced() {
+        const toggle = $('advancedToggle');
+        const panel = $('advancedPanel');
+        toggle.classList.toggle('open');
+        panel.classList.toggle('open');
+    }
+
+    function updateTextPosition(val) {
+        state.textSettings.position = val;
+        drawPreview();
+    }
+
+    function updateTextSettings() {
+        state.textSettings.enabled = $('textEnabled').checked;
+        state.textSettings.content = $('textContent').value;
+        state.textSettings.fontSize = parseInt($('fontSize').value);
+        state.textSettings.color = $('textColor').value;
+        state.textSettings.stroke = $('textStroke').checked;
+
+        $('fontSizeVal').textContent = state.textSettings.fontSize + 'px';
+        $('textColorVal').textContent = state.textSettings.color;
+
+        drawPreview();
+    }
+
+    function drawTextOnCanvas(ctx, w, h) {
+        if (!state.textSettings.enabled || !state.textSettings.content) return;
+
+        const { content, fontSize, color, position, stroke } = state.textSettings;
+        ctx.font = `bold ${fontSize}px -apple-system, BlinkMacSystemFont, sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        let y;
+        if (position === 'top') y = fontSize + 10;
+        else if (position === 'bottom') y = h - fontSize - 10;
+        else y = h / 2;
+
+        const x = w / 2;
+
+        if (stroke) {
+            ctx.strokeStyle = 'rgba(0,0,0,0.8)';
+            ctx.lineWidth = Math.max(2, fontSize * 0.1);
+            ctx.lineJoin = 'round';
+            ctx.strokeText(content, x, y);
+        }
+
+        ctx.fillStyle = color;
+        ctx.fillText(content, x, y);
+    }
+
+    function drawBorderOnCanvas(ctx, w, h) {
+        if (!state.border.enabled) return;
+
+        const { style, width, color, radius } = state.border;
+
+        ctx.save();
+
+        if (style === 'rounded') {
+            const r = Math.min(radius, w / 2, h / 2);
+            ctx.beginPath();
+            ctx.moveTo(r, 0);
+            ctx.lineTo(w - r, 0);
+            ctx.quadraticCurveTo(w, 0, w, r);
+            ctx.lineTo(w, h - r);
+            ctx.quadraticCurveTo(w, h, w - r, h);
+            ctx.lineTo(r, h);
+            ctx.quadraticCurveTo(0, h, 0, h - r);
+            ctx.lineTo(0, r);
+            ctx.quadraticCurveTo(0, 0, r, 0);
+            ctx.closePath();
+
+            ctx.strokeStyle = color;
+            ctx.lineWidth = width;
+            ctx.stroke();
+        } else if (style === 'square') {
+            ctx.strokeStyle = color;
+            ctx.lineWidth = width;
+            ctx.strokeRect(width / 2, width / 2, w - width, h - width);
+        }
+
+        ctx.restore();
+    }
+
+    function setFilter(filter) {
+        state.currentFilter = filter;
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.filter === filter);
+        });
+        drawPreview();
+    }
+
+    function getFilterString() {
+        switch (state.currentFilter) {
+            case 'grayscale':
+                return 'grayscale(100%)';
+            case 'sepia':
+                return 'sepia(80%)';
+            case 'invert':
+                return 'invert(100%)';
+            case 'brightness':
+                return 'brightness(125%)';
+            case 'contrast':
+                return 'contrast(140%)';
+            case 'blur':
+                return 'blur(3px)';
+            case 'vintage':
+                return 'sepia(40%) contrast(110%) brightness(105%) saturate(85%)';
+            default:
+                return 'none';
+        }
+    }
+
+    function applyFilterToCanvas(ctx, w, h) {
+        if (state.currentFilter === 'none') return;
+
+        const filterStr = getFilterString();
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = w;
+        tempCanvas.height = h;
+        const tempCtx = tempCanvas.getContext('2d');
+        tempCtx.filter = filterStr;
+        tempCtx.drawImage(ctx.canvas, 0, 0);
+
+        ctx.clearRect(0, 0, w, h);
+        ctx.drawImage(tempCanvas, 0, 0);
+    }
+
+    // ============== Estimates ==============
+    function updateEstimates() {
+        const count = getEffectiveFrameCount();
+        $('estFrames').textContent = count + ' 帧';
+        const duration = (count * state.delay / 1000).toFixed(1);
+        $('estDuration').textContent = duration + 's';
+    }
+
+    function getEffectiveFrameCount() {
+        let count = state.frames.length;
+        if (state.direction === 'pingpong' && state.frames.length > 2) {
+            count = state.frames.length * 2 - 2;
+        }
+        if (state.transition !== 'none' && count > 1) {
+            count = count + (count - 1) * state.transitionSteps;
+        }
+        return count;
+    }
+
+    function getEffectiveFrames() {
+        const frames = [...state.frames];
+        if (state.direction === 'reverse') {
+            frames.reverse();
+        } else if (state.direction === 'pingpong' && frames.length > 2) {
+            for (let i = frames.length - 2; i > 0; i--) {
+                frames.push(frames[i]);
+            }
+        }
+        return frames;
+    }
+
+    function updateGenerateButton() {
+        $('generateBtn').disabled = state.frames.length < 2;
+    }
+
+    function renderFrame(frame) {
+        const frameCanvas = document.createElement('canvas');
+        frameCanvas.width = state.width;
+        frameCanvas.height = state.height;
+        const fctx = frameCanvas.getContext('2d');
+        fctx.drawImage(frame.canvas, 0, 0);
+        applyFilterToCanvas(fctx, state.width, state.height);
+        drawTextOnCanvas(fctx, state.width, state.height);
+        drawBorderOnCanvas(fctx, state.width, state.height);
+        return frameCanvas;
+    }
+
+    function createTransitionFrame(fromCanvas, toCanvas, progress, type) {
+        const canvas = document.createElement('canvas');
+        canvas.width = state.width;
+        canvas.height = state.height;
+        const ctx = canvas.getContext('2d');
+        const w = state.width;
+        const h = state.height;
+
+        ctx.save();
+
+        switch (type) {
+            case 'fade':
+                ctx.globalAlpha = 1 - progress;
+                ctx.drawImage(fromCanvas, 0, 0);
+                ctx.globalAlpha = progress;
+                ctx.drawImage(toCanvas, 0, 0);
+                break;
+
+            case 'slideLeft':
+                ctx.drawImage(fromCanvas, -w * progress, 0);
+                ctx.drawImage(toCanvas, w * (1 - progress), 0);
+                break;
+
+            case 'slideRight':
+                ctx.drawImage(fromCanvas, w * progress, 0);
+                ctx.drawImage(toCanvas, -w * (1 - progress), 0);
+                break;
+
+            case 'slideUp':
+                ctx.drawImage(fromCanvas, 0, -h * progress);
+                ctx.drawImage(toCanvas, 0, h * (1 - progress));
+                break;
+
+            case 'slideDown':
+                ctx.drawImage(fromCanvas, 0, h * progress);
+                ctx.drawImage(toCanvas, 0, -h * (1 - progress));
+                break;
+
+            case 'dissolve':
+                ctx.globalAlpha = 1;
+                ctx.drawImage(fromCanvas, 0, 0);
+                ctx.globalAlpha = progress;
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = w;
+                tempCanvas.height = h;
+                const tempCtx = tempCanvas.getContext('2d');
+                tempCtx.drawImage(toCanvas, 0, 0);
+                const imageData = tempCtx.getImageData(0, 0, w, h);
+                const data = imageData.data;
+                for (let i = 0; i < data.length; i += 4) {
+                    const x = (i / 4) % w;
+                    const y = Math.floor((i / 4) / w);
+                    const random = Math.random();
+                    if (random > progress) {
+                        data[i + 3] = 0;
+                    }
+                }
+                tempCtx.putImageData(imageData, 0, 0);
+                ctx.drawImage(tempCanvas, 0, 0);
+                break;
+
+            case 'zoom':
+                const scale = 1 + progress * 0.3;
+                ctx.globalAlpha = 1 - progress;
+                ctx.drawImage(fromCanvas, w / 2 - w * scale / 2, h / 2 - h * scale / 2, w * scale, h * scale);
+                const scale2 = 1 + (1 - progress) * 0.3;
+                ctx.globalAlpha = progress;
+                ctx.drawImage(toCanvas, w / 2 - w * scale2 / 2, h / 2 - h * scale2 / 2, w * scale2, h * scale2);
+                break;
+
+            default:
+                ctx.drawImage(toCanvas, 0, 0);
+        }
+
+        ctx.restore();
+        return canvas;
+    }
+
+    // ============== GIF Generator ==============
+    async function generateGif() {
+        if (state.frames.length < 2) return;
+
+        stopPlay();
+        $('generateBtn').disabled = true;
+        $('downloadBtn').style.display = 'none';
+        $('progressSection').classList.add('active');
+        updateProgress(0, '正在准备帧...');
+
+        if (state.generatedUrl) {
+            URL.revokeObjectURL(state.generatedUrl);
+            state.generatedUrl = null;
+        }
+
+        try {
+            const frames = getEffectiveFrames();
+            const totalSourceFrames = frames.length;
+            const useTransition = state.transition !== 'none';
+            const transitionSteps = useTransition ? state.transitionSteps : 0;
+
+            let totalGifFrames = totalSourceFrames;
+            if (useTransition) {
+                totalGifFrames = totalSourceFrames + (totalSourceFrames - 1) * transitionSteps;
+            }
+
+            const gif = new GIFEncoder(state.width, state.height, {
+                quality: state.quality,
+                loop: state.loop,
+                delay: state.delay
+            });
+
+            let encodedCount = 0;
+
+            const renderedFrames = frames.map(f => renderFrame(f));
+
+            for (let i = 0; i < totalSourceFrames; i++) {
+                gif.addFrame(renderedFrames[i].getContext('2d').getImageData(0, 0, state.width, state.height));
+                encodedCount++;
+
+                updateProgress(Math.round(encodedCount / totalGifFrames * 70),
+                    `正在编码 ${encodedCount} / ${totalGifFrames} 帧...`);
+
+                await new Promise(r => setTimeout(r, 10));
+
+                if (useTransition && i < totalSourceFrames - 1) {
+                    for (let t = 1; t <= transitionSteps; t++) {
+                        const progress = t / (transitionSteps + 1);
+                        const transCanvas = createTransitionFrame(
+                            renderedFrames[i],
+                            renderedFrames[i + 1],
+                            progress,
+                            state.transition
+                        );
+                        gif.addFrame(transCanvas.getContext('2d').getImageData(0, 0, state.width, state.height));
+                        encodedCount++;
+
+                        updateProgress(Math.round(encodedCount / totalGifFrames * 70),
+                            `正在编码 ${encodedCount} / ${totalGifFrames} 帧...`);
+
+                        await new Promise(r => setTimeout(r, 5));
+                    }
+                }
+            }
+
+            updateProgress(75, '正在LZW压缩...');
+            await new Promise(r => setTimeout(r, 50));
+
+            const blob = gif.render();
+
+            updateProgress(100, '生成完成！');
+
+            state.generatedBlob = blob;
+            state.generatedUrl = URL.createObjectURL(blob);
+
+            $('downloadBtn').style.display = 'flex';
+            $('generateBtn').disabled = false;
+
+            setTimeout(() => {
+                $('progressSection').classList.remove('active');
+            }, 1500);
+
+        } catch (err) {
+            console.error(err);
+            alert('生成失败: ' + err.message);
+            $('generateBtn').disabled = false;
+            $('progressSection').classList.remove('active');
+        }
+    }
+
+    function updateProgress(percent, text) {
+        $('progressFill').style.width = percent + '%';
+        $('progressText').textContent = text + ' ' + percent + '%';
+    }
+
+    function downloadGif() {
+        if (!state.generatedUrl) return;
+
+        const a = document.createElement('a');
+        a.href = state.generatedUrl;
+        a.download = 'animation-' + Date.now() + '.gif';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
+
+    // ============== GIF Encoder ==============
+    class GIFEncoder {
+        constructor(width, height, options = {}) {
+            this.width = width;
+            this.height = height;
+            this.quality = options.quality || 10;
+            this.loop = options.loop !== undefined ? options.loop : 0;
+            this.delay = options.delay || 200;
+            this.frames = [];
+        }
+
+        addFrame(imageData) {
+            this.frames.push(imageData);
+        }
+
+        render() {
+            const width = this.width;
+            const height = this.height;
+            const delay = Math.round(this.delay / 10);
+
+            const out = new ByteStream();
+
+            out.writeUTFBytes('GIF89a');
+
+            const gct = this.buildColorTable();
+            const numColors = gct.length / 3;
+            let colorResolution = 8;
+            let gctSize = 0;
+            while ((1 << (gctSize + 1)) < numColors) {
+                gctSize++;
+            }
+            const actualColorCount = 1 << (gctSize + 1);
+
+            out.writeShort(width);
+            out.writeShort(height);
+
+            let packed = 0x80;
+            packed |= (colorResolution - 1) << 4;
+            packed |= gctSize;
+            out.writeByte(packed);
+
+            out.writeByte(0);
+            out.writeByte(0);
+
+            for (let i = 0; i < actualColorCount; i++) {
+                if (i < numColors) {
+                    out.writeByte(gct[i * 3]);
+                    out.writeByte(gct[i * 3 + 1]);
+                    out.writeByte(gct[i * 3 + 2]);
+                } else {
+                    out.writeByte(0);
+                    out.writeByte(0);
+                    out.writeByte(0);
+                }
+            }
+
+            if (this.loop === 0 || this.loop > 0) {
+                out.writeByte(0x21);
+                out.writeByte(0xFF);
+                out.writeByte(11);
+                out.writeUTFBytes('NETSCAPE2.0');
+                out.writeByte(3);
+                out.writeByte(1);
+                out.writeShort(this.loop);
+                out.writeByte(0);
+            }
+
+            for (let f = 0; f < this.frames.length; f++) {
+                const imageData = this.frames[f];
+
+                out.writeByte(0x21);
+                out.writeByte(0xF9);
+                out.writeByte(4);
+                out.writeByte(0x00);
+                out.writeShort(delay);
+                out.writeByte(0);
+                out.writeByte(0);
+
+                out.writeByte(0x2C);
+                out.writeShort(0);
+                out.writeShort(0);
+                out.writeShort(width);
+                out.writeShort(height);
+                out.writeByte(0);
+
+                const indexedPixels = this.quantize(imageData.data, gct, numColors);
+
+                const lzwMin = Math.max(2, gctSize + 1);
+                out.writeByte(lzwMin);
+
+                this.lzwEncode(out, indexedPixels, lzwMin);
+
+                out.writeByte(0);
+            }
+
+            out.writeByte(0x3B);
+
+            return new Blob([out.getBytes()], { type: 'image/gif' });
+        }
+
+        buildColorTable() {
+            const colors = new Map();
+            const totalPixels = this.width * this.height;
+            const maxSamples = 10000;
+            const sampleStep = Math.max(1, Math.floor(totalPixels / maxSamples));
+
+            for (let f = 0; f < this.frames.length; f++) {
+                const data = this.frames[f].data;
+                for (let i = 0; i < data.length; i += 4 * sampleStep) {
+                    const r = data[i];
+                    const g = data[i + 1];
+                    const b = data[i + 2];
+                    const a = data[i + 3];
+                    if (a < 128) continue;
+
+                    const qStep = Math.max(1, this.quality);
+                    const qr = Math.floor(r / qStep) * qStep;
+                    const qg = Math.floor(g / qStep) * qStep;
+                    const qb = Math.floor(b / qStep) * qStep;
+
+                    const key = (qr << 16) | (qg << 8) | qb;
+                    colors.set(key, (colors.get(key) || 0) + 1);
+                }
+            }
+
+            const sorted = Array.from(colors.entries()).sort((a, b) => b[1] - a[1]);
+            const topColors = sorted.slice(0, 256);
+
+            const palette = [];
+            for (const [key] of topColors) {
+                palette.push((key >> 16) & 0xFF);
+                palette.push((key >> 8) & 0xFF);
+                palette.push(key & 0xFF);
+            }
+
+            while (palette.length < 6) {
+                palette.push(0);
+            }
+
+            return palette;
+        }
+
+        quantize(pixels, palette, numColors) {
+            const result = new Uint8Array(this.width * this.height);
+            let idx = 0;
+
+            for (let i = 0; i < pixels.length; i += 4) {
+                const r = pixels[i];
+                const g = pixels[i + 1];
+                const b = pixels[i + 2];
+                const a = pixels[i + 3];
+
+                if (a < 128) {
+                    result[idx++] = 0;
+                    continue;
+                }
+
+                let minDist = Infinity;
+                let bestIdx = 0;
+
+                for (let c = 0; c < numColors; c++) {
+                    const pr = palette[c * 3];
+                    const pg = palette[c * 3 + 1];
+                    const pb = palette[c * 3 + 2];
+
+                    const dr = r - pr;
+                    const dg = g - pg;
+                    const db = b - pb;
+
+                    const dist = dr * dr + dg * dg + db * db;
+                    if (dist < minDist) {
+                        minDist = dist;
+                        bestIdx = c;
+                    }
+                }
+
+                result[idx++] = bestIdx;
+            }
+
+            return result;
+        }
+
+        lzwEncode(out, indices, minCodeSize) {
+            const clearCode = 1 << minCodeSize;
+            const eoiCode = clearCode + 1;
+
+            let codeSize = minCodeSize + 1;
+            let nextCode = eoiCode + 1;
+
+            let dict = Object.create(null);
+            const resetDict = () => {
+                dict = Object.create(null);
+                for (let i = 0; i < clearCode; i++) {
+                    dict[String.fromCharCode(i)] = i;
+                }
+                nextCode = eoiCode + 1;
+                codeSize = minCodeSize + 1;
+            };
+            resetDict();
+
+            let bitBuffer = 0;
+            let bitCount = 0;
+            let subBlock = [];
+
+            const writeCode = (code) => {
+                bitBuffer |= code << bitCount;
+                bitCount += codeSize;
+
+                while (bitCount >= 8) {
+                    subBlock.push(bitBuffer & 0xFF);
+                    bitBuffer >>>= 8;
+                    bitCount -= 8;
+
+                    if (subBlock.length >= 255) {
+                        out.writeByte(255);
+                        for (let i = 0; i < 255; i++) out.writeByte(subBlock[i]);
+                        subBlock = subBlock.slice(255);
+                    }
+                }
+            };
+
+            writeCode(clearCode);
+
+            let current = String.fromCharCode(indices[0]);
+
+            for (let i = 1; i < indices.length; i++) {
+                const pixel = indices[i];
+                const charCode = String.fromCharCode(pixel);
+                const combined = current + charCode;
+
+                if (dict[combined] !== undefined) {
+                    current = combined;
+                } else {
+                    writeCode(dict[current]);
+
+                    if (nextCode < 4096) {
+                        dict[combined] = nextCode++;
+                        if (nextCode > (1 << codeSize) && codeSize < 12) {
+                            codeSize++;
+                        }
+                    } else {
+                        writeCode(clearCode);
+                        resetDict();
+                    }
+
+                    current = charCode;
+                }
+            }
+
+            writeCode(dict[current]);
+            writeCode(eoiCode);
+
+            if (bitCount > 0) {
+                subBlock.push(bitBuffer & 0xFF);
+            }
+
+            while (subBlock.length > 0) {
+                const chunkSize = Math.min(255, subBlock.length);
+                out.writeByte(chunkSize);
+                for (let i = 0; i < chunkSize; i++) {
+                    out.writeByte(subBlock[i]);
+                }
+                subBlock = subBlock.slice(chunkSize);
+            }
+        }
+    }
+
+    class ByteStream {
+        constructor() {
+            this.bytes = [];
+        }
+
+        writeByte(b) {
+            this.bytes.push(b & 0xFF);
+        }
+
+        writeShort(s) {
+            this.bytes.push(s & 0xFF);
+            this.bytes.push((s >> 8) & 0xFF);
+        }
+
+        writeUTFBytes(str) {
+            for (let i = 0; i < str.length; i++) {
+                this.bytes.push(str.charCodeAt(i) & 0xFF);
+            }
+        }
+
+        getBytes() {
+            return new Uint8Array(this.bytes);
+        }
+    }
+
+    // ============== Initialize ==============
+    init();
+</script>
+</body>
+</html>

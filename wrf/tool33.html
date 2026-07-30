@@ -1,0 +1,1349 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>二维码/条形码扫描器</title>
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js">
+    </script>
+    <style>
+        :root {
+            --bg: #f0f4f8;
+            --card-bg: #ffffff;
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --primary-light: #eef2ff;
+            --success: #10b981;
+            --success-light: #ecfdf5;
+            --warning: #f59e0b;
+            --warning-light: #fffbeb;
+            --danger: #ef4444;
+            --danger-light: #fef2f2;
+            --text: #1e293b;
+            --text-secondary: #64748b;
+            --text-muted: #94a3b8;
+            --border: #e2e8f0;
+            --border-light: #f1f5f9;
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+            --shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06);
+            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07), 0 2px 4px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.1), 0 4px 10px rgba(0, 0, 0, 0.06);
+            --shadow-xl: 0 20px 40px rgba(0, 0, 0, 0.12);
+            --radius-sm: 8px;
+            --radius: 12px;
+            --radius-lg: 16px;
+            --radius-xl: 20px;
+            --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-slow: 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            --font-mono: 'SF Mono', 'Cascadia Code', 'Consolas', 'Monaco', 'Courier New', monospace;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Noto Sans SC', 'Helvetica Neue', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+            background-image:
+                radial-gradient(ellipse at 20% 20%, #e0e7ff 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 80%, #dbeafe 0%, transparent 60%),
+                radial-gradient(ellipse at 50% 50%, #f0f4f8 0%, #e2e8f0 100%);
+            background-attachment: fixed;
+        }
+        .container {
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 16px 16px 32px;
+        }
+        .header {
+            text-align: center;
+            padding: 28px 20px 8px;
+        }
+        .header-logo {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 56px;
+            height: 56px;
+            border-radius: var(--radius-lg);
+            background: linear-gradient(135deg, #4f46e5 0%, #6366f1 50%, #818cf8 100%);
+            box-shadow: 0 8px 24px rgba(79, 70, 229, 0.3);
+            margin-bottom: 14px;
+            font-size: 28px;
+            color: #fff;
+        }
+        .header h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            color: var(--text);
+            margin-bottom: 4px;
+        }
+        .header .subtitle {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            font-weight: 400;
+        }
+        .card {
+            background: var(--card-bg);
+            border-radius: var(--radius-xl);
+            padding: 20px 22px;
+            margin-bottom: 14px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-light);
+            transition: box-shadow var(--transition);
+        }
+        .card:hover {
+            box-shadow: var(--shadow-md);
+        }
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 16px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            color: var(--text);
+            letter-spacing: -0.01em;
+        }
+        .card-header .icon {
+            width: 34px;
+            height: 34px;
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 17px;
+            flex-shrink: 0;
+        }
+        .icon-upload {
+            background: #f0f9ff;
+            color: #0284c7;
+        }
+        .icon-result {
+            background: var(--success-light);
+            color: var(--success);
+        }
+        .icon-history {
+            background: #fef3c7;
+            color: #d97706;
+        }
+        .btn-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 14px;
+        }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 10px 18px;
+            border-radius: 25px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            letter-spacing: 0.01em;
+            transition: all var(--transition);
+            white-space: nowrap;
+            text-decoration: none;
+            font-family: inherit;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .btn:active {
+            transform: scale(0.96);
+        }
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+        .btn-primary {
+            background: var(--primary);
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+        }
+        .btn-primary:hover:not(:disabled) {
+            background: var(--primary-hover);
+            box-shadow: 0 6px 18px rgba(79, 70, 229, 0.4);
+            transform: translateY(-1px);
+        }
+        .btn-outline {
+            background: #fff;
+            color: var(--primary);
+            border: 1.5px solid var(--border);
+            box-shadow: var(--shadow-sm);
+        }
+        .btn-outline:hover:not(:disabled) {
+            border-color: var(--primary);
+            background: var(--primary-light);
+            box-shadow: var(--shadow);
+        }
+        .btn-danger {
+            background: #fff;
+            color: var(--danger);
+            border: 1.5px solid #fecaca;
+        }
+        .btn-danger:hover:not(:disabled) {
+            background: var(--danger-light);
+            border-color: var(--danger);
+        }
+        .btn-success {
+            background: var(--success);
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+        .btn-success:hover:not(:disabled) {
+            background: #059669;
+            box-shadow: 0 6px 18px rgba(16, 185, 129, 0.4);
+            transform: translateY(-1px);
+        }
+        .btn-sm {
+            padding: 6px 13px;
+            font-size: 0.8rem;
+            border-radius: 20px;
+        }
+        .btn-xs {
+            padding: 4px 10px;
+            font-size: 0.73rem;
+            border-radius: 16px;
+            gap: 4px;
+        }
+        .btn .spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid transparent;
+            border-top-color: currentColor;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            display: inline-block;
+        }
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+        .toggle-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 16px;
+            font-size: 0.88rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            user-select: none;
+            flex-wrap: wrap;
+        }
+        .toggle-switch {
+            position: relative;
+            width: 44px;
+            height: 26px;
+            flex-shrink: 0;
+        }
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            inset: 0;
+            background: #cbd5e1;
+            border-radius: 26px;
+            transition: all var(--transition);
+        }
+        .toggle-slider::before {
+            content: '';
+            position: absolute;
+            height: 20px;
+            width: 20px;
+            left: 3px;
+            bottom: 3px;
+            background: #fff;
+            border-radius: 50%;
+            transition: all var(--transition);
+            box-shadow: var(--shadow-sm);
+        }
+        .toggle-switch input:checked+.toggle-slider {
+            background: var(--primary);
+        }
+        .toggle-switch input:checked+.toggle-slider::before {
+            transform: translateX(18px);
+        }
+        .toggle-label {
+            font-weight: 500;
+        }
+        .toggle-hint {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+        }
+
+        /* 结果区域 */
+        .result-area {
+            display: none;
+            animation: fadeSlideIn 0.35s ease-out;
+        }
+        .result-area.show {
+            display: block;
+        }
+        @keyframes fadeSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-8px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .results-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-height: 500px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+        .results-list::-webkit-scrollbar {
+            width: 4px;
+        }
+        .results-list::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .results-list::-webkit-scrollbar-thumb {
+            background: #d1d5db;
+            border-radius: 10px;
+        }
+        .result-item {
+            display: flex;
+            gap: 12px;
+            padding: 14px;
+            border-radius: var(--radius);
+            background: #fafbfc;
+            border: 1px solid var(--border-light);
+            transition: all var(--transition);
+            align-items: flex-start;
+        }
+        .result-item:hover {
+            background: #fff;
+            border-color: var(--border);
+            box-shadow: var(--shadow-sm);
+        }
+        .result-item .r-thumb {
+            width: 52px;
+            height: 52px;
+            border-radius: var(--radius-sm);
+            object-fit: cover;
+            flex-shrink: 0;
+            border: 1px solid var(--border);
+            background: #f1f5f9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: #94a3b8;
+            overflow: hidden;
+        }
+        .result-item .r-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .result-item .r-info {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .result-item .r-content {
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            word-break: break-all;
+            color: #334155;
+            line-height: 1.5;
+            max-height: 80px;
+            overflow-y: auto;
+        }
+        .result-item .r-content.is-url {
+            color: #1d4ed8;
+            text-decoration: underline;
+            text-decoration-color: #93c5fd;
+            text-underline-offset: 3px;
+            cursor: pointer;
+        }
+        .result-item .r-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            align-items: center;
+            font-size: 0.73rem;
+            color: var(--text-muted);
+        }
+        .result-item .r-badge {
+            display: inline-block;
+            padding: 2px 9px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+            white-space: nowrap;
+        }
+        .badge-url {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+        .badge-text {
+            background: #f1f5f9;
+            color: #475569;
+        }
+        .badge-email {
+            background: #fce7f3;
+            color: #be185d;
+        }
+        .badge-phone {
+            background: #e0f2fe;
+            color: #0369a1;
+        }
+        .badge-wifi {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        .badge-error {
+            background: #fef2f2;
+            color: #dc2626;
+        }
+        .badge-format {
+            background: #f0fdf4;
+            color: #166534;
+        }
+        .result-item .r-actions {
+            display: flex;
+            gap: 4px;
+            flex-shrink: 0;
+            flex-wrap: wrap;
+            align-items: flex-start;
+        }
+        .result-item .r-filename {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 200px;
+        }
+        .no-results {
+            text-align: center;
+            padding: 20px;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        /* 历史记录 */
+        .history-list {
+            max-height: 380px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .history-list::-webkit-scrollbar {
+            width: 4px;
+        }
+        .history-list::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .history-list::-webkit-scrollbar-thumb {
+            background: #d1d5db;
+            border-radius: 10px;
+        }
+        .history-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 13px 15px;
+            border-radius: var(--radius);
+            background: #fafbfc;
+            border: 1px solid transparent;
+            transition: all var(--transition);
+            animation: fadeSlideIn 0.3s ease-out;
+        }
+        .history-item:hover {
+            background: #fff;
+            border-color: var(--border);
+            box-shadow: var(--shadow-sm);
+        }
+        .history-item .h-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+        .h-icon.qr {
+            background: #eef2ff;
+        }
+        .h-icon.link {
+            background: #dbeafe;
+        }
+        .h-icon.text {
+            background: #f1f5f9;
+        }
+        .history-item .h-info {
+            flex: 1;
+            min-width: 0;
+        }
+        .history-item .h-content {
+            font-size: 0.85rem;
+            font-family: var(--font-mono);
+            color: var(--text);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .history-item .h-meta {
+            font-size: 0.73rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .history-item .h-actions {
+            display: flex;
+            gap: 4px;
+            flex-shrink: 0;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-muted);
+        }
+        .empty-state .empty-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+            opacity: 0.6;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            top: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-120px);
+            background: #1e293b;
+            color: #fff;
+            padding: 12px 22px;
+            border-radius: 28px;
+            font-size: 0.88rem;
+            font-weight: 500;
+            z-index: 9999;
+            pointer-events: none;
+            box-shadow: var(--shadow-xl);
+            transition: transform var(--transition-slow);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+        }
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+        }
+        .toast.success {
+            background: #059669;
+        }
+        .toast.warning {
+            background: #d97706;
+        }
+        .toast.error {
+            background: #dc2626;
+        }
+
+        /* 统计 */
+        .stats-bar {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            justify-content: center;
+            padding: 6px 0;
+        }
+        .stats-bar span {
+            background: #fff;
+            padding: 6px 14px;
+            border-radius: 20px;
+            border: 1px solid var(--border-light);
+            box-shadow: var(--shadow-sm);
+            white-space: nowrap;
+        }
+        .stats-bar strong {
+            color: var(--text);
+            font-weight: 600;
+        }
+
+        /* 图片预览区（单文件时） */
+        .image-preview-single {
+            display: none;
+            text-align: center;
+            margin-top: 10px;
+        }
+        .image-preview-single img {
+            max-width: 100%;
+            max-height: 200px;
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+        }
+
+        @media (max-width: 500px) {
+            .container {
+                padding: 8px 10px 24px;
+            }
+            .card {
+                padding: 14px 15px;
+                border-radius: var(--radius-lg);
+                margin-bottom: 10px;
+            }
+            .header {
+                padding: 18px 10px 4px;
+            }
+            .header h1 {
+                font-size: 1.4rem;
+            }
+            .header-logo {
+                width: 44px;
+                height: 44px;
+                font-size: 22px;
+            }
+            .btn {
+                padding: 8px 14px;
+                font-size: 0.82rem;
+                border-radius: 22px;
+            }
+            .btn-row {
+                gap: 7px;
+                margin-top: 10px;
+            }
+            .result-item {
+                flex-wrap: wrap;
+                gap: 8px;
+                padding: 10px;
+            }
+            .result-item .r-thumb {
+                width: 40px;
+                height: 40px;
+            }
+            .result-item .r-content {
+                font-size: 0.78rem;
+                max-height: 60px;
+            }
+            .result-item .r-actions {
+                width: 100%;
+                justify-content: flex-end;
+            }
+            .history-list {
+                max-height: 280px;
+            }
+            .history-item {
+                padding: 10px 12px;
+                gap: 8px;
+            }
+            .history-item .h-content {
+                font-size: 0.78rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 隐藏的DOM元素，用于Html5Qrcode实例化 -->
+    <div id="qr-reader-hidden" style="display:none;"></div>
+
+    <div class="container">
+        <div class="header">
+            <div class="header-logo">📷</div>
+            <h1>码上扫描</h1>
+            <p class="subtitle">上传图片 · 识别二维码与条形码 · 支持批量</p>
+        </div>
+
+        <!-- 图片上传扫描 -->
+        <div class="card" id="uploadCard">
+            <div class="card-header">
+                <span class="icon icon-upload">📤</span>
+                <span>从图片识别</span>
+                <span style="font-size:0.75rem;color:var(--text-muted);margin-left:auto;">支持批量选择</span>
+            </div>
+            <div style="text-align:center;padding:8px 0;">
+                <input type="file" id="fileInput" accept="image/*" multiple style="display:none;">
+                <button class="btn btn-outline" id="btnUpload" style="width:100%;justify-content:center;">
+                    <span>🖼️</span> 选择图片文件（可多选）
+                </button>
+                <p style="font-size:0.78rem;color:var(--text-muted);margin-top:8px;">
+                    支持 JPG / PNG / WebP 等格式 · 可一次选择多张 · 也可拖放图片到此处
+                </p>
+            </div>
+            <!-- 单文件预览 -->
+            <div class="image-preview-single" id="imagePreviewSingle">
+                <img id="previewSingleImg" src="" alt="预览">
+            </div>
+            <!-- 自动跳转开关 -->
+            <label class="toggle-row" id="toggleAutoOpen">
+                <span class="toggle-switch">
+                    <input type="checkbox" id="autoOpenSwitch">
+                    <span class="toggle-slider"></span>
+                </span>
+                <span class="toggle-label">识别到链接后自动打开</span>
+                <span class="toggle-hint">（多文件时仅打开第一个链接）</span>
+            </label>
+        </div>
+
+        <!-- 扫描结果 -->
+        <div class="card result-area" id="resultCard">
+            <div class="card-header">
+                <span class="icon icon-result">✅</span>
+                <span>扫描结果</span>
+                <span id="resultSummary" style="font-size:0.8rem;color:var(--text-muted);margin-left:auto;"></span>
+            </div>
+            <div class="results-list" id="resultsList"></div>
+            <div class="no-results" id="noResults" style="display:none;">暂无识别结果</div>
+        </div>
+
+        <!-- 历史记录 -->
+        <div class="card">
+            <div class="card-header" style="justify-content:space-between;flex-wrap:wrap;gap:8px;">
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <span class="icon icon-history">📝</span>
+                    <span>扫描历史</span>
+                </div>
+                <button class="btn btn-danger btn-xs" id="btnClearHistory">
+                    <span>🗑️</span> 清空记录
+                </button>
+            </div>
+            <div class="history-list" id="historyList">
+                <div class="empty-state">
+                    <div class="empty-icon">📭</div>
+                    <p>暂无扫描记录</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="stats-bar">
+            <span>📊 今日扫描：<strong id="statToday">0</strong> 次</span>
+            <span>📦 总计扫描：<strong id="statTotal">0</strong> 次</span>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        (function() {
+            // ==================== DOM 元素 ====================
+            const fileInput = document.getElementById('fileInput');
+            const btnUpload = document.getElementById('btnUpload');
+            const imagePreviewSingle = document.getElementById('imagePreviewSingle');
+            const previewSingleImg = document.getElementById('previewSingleImg');
+            const resultCard = document.getElementById('resultCard');
+            const resultsList = document.getElementById('resultsList');
+            const resultSummary = document.getElementById('resultSummary');
+            const noResults = document.getElementById('noResults');
+            const historyList = document.getElementById('historyList');
+            const btnClearHistory = document.getElementById('btnClearHistory');
+            const autoOpenSwitch = document.getElementById('autoOpenSwitch');
+            const uploadCard = document.getElementById('uploadCard');
+            const toast = document.getElementById('toast');
+            const statToday = document.getElementById('statToday');
+            const statTotal = document.getElementById('statTotal');
+
+            // ==================== 状态变量 ====================
+            let html5QrCode = null;
+            let isProcessing = false;
+            const STORAGE_KEY_HISTORY = 'barcode_scanner_history_v3';
+            const STORAGE_KEY_STATS = 'barcode_scanner_stats_v3';
+            const MAX_HISTORY = 100;
+
+            // 格式名称映射
+            const formatNames = {
+                'qr_code': 'QR码',
+                'aztec': 'Aztec码',
+                'codabar': 'Codabar',
+                'code_128': 'Code 128',
+                'code_39': 'Code 39',
+                'code_93': 'Code 93',
+                'data_matrix': 'Data Matrix',
+                'ean_13': 'EAN-13',
+                'ean_8': 'EAN-8',
+                'itf': 'ITF',
+                'pdf417': 'PDF417',
+                'upc_a': 'UPC-A',
+                'upc_e': 'UPC-E',
+            };
+
+            // ==================== Toast ====================
+            let toastTimer;
+
+            function showToast(message, type = '') {
+                clearTimeout(toastTimer);
+                toast.textContent = message;
+                toast.className = 'toast ' + type + ' show';
+                toastTimer = setTimeout(() => { toast.classList.remove('show'); }, 2200);
+            }
+
+            // ==================== 音效 ====================
+            function playSuccessSound() {
+                try {
+                    const audioCtx = new(window.AudioContext || window.webkitAudioContext)();
+                    const now = audioCtx.currentTime;
+                    [880, 1100].forEach((freq, i) => {
+                        const osc = audioCtx.createOscillator();
+                        const gain = audioCtx.createGain();
+                        osc.connect(gain);
+                        gain.connect(audioCtx.destination);
+                        osc.frequency.value = freq;
+                        osc.type = 'sine';
+                        gain.gain.setValueAtTime(0.35, now + i * 0.1);
+                        gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.1 + 0.18);
+                        osc.start(now + i * 0.1);
+                        osc.stop(now + i * 0.1 + 0.18);
+                    });
+                } catch (e) { /* 静默处理 */ }
+            }
+
+            function vibrate() {
+                if (navigator.vibrate) navigator.vibrate(80);
+            }
+
+            // ==================== 数据存储 ====================
+            function getHistory() {
+                try { return JSON.parse(localStorage.getItem(STORAGE_KEY_HISTORY) || '[]'); } catch {
+                    return [];
+                }
+            }
+
+            function saveHistory(history) {
+                localStorage.setItem(STORAGE_KEY_HISTORY, JSON.stringify(history.slice(0, MAX_HISTORY)));
+            }
+
+            function addToHistory(data) {
+                const history = getHistory();
+                const filtered = history.filter(item => item.content !== data.content);
+                filtered.unshift({
+                    id: Date.now() + Math.random(),
+                    content: data.content,
+                    type: data.type,
+                    format: data.format || 'unknown',
+                    timestamp: Date.now(),
+                    isUrl: data.isUrl || false,
+                });
+                saveHistory(filtered);
+                updateStats();
+                renderHistory();
+            }
+
+            function getStats() {
+                try { return JSON.parse(localStorage.getItem(STORAGE_KEY_STATS) || '{"today":"","count":0}'); } catch {
+                    return { today: '', count: 0 };
+                }
+            }
+
+            function saveStats(stats) { localStorage.setItem(STORAGE_KEY_STATS, JSON.stringify(stats)); }
+
+            function updateStats() {
+                const stats = getStats();
+                const todayStr = new Date().toDateString();
+                if (stats.today !== todayStr) { stats.today = todayStr;
+                    stats.todayCount = 0; }
+                stats.todayCount = (stats.todayCount || 0) + 1;
+                stats.totalCount = (stats.totalCount || 0) + 1;
+                saveStats(stats);
+                renderStats();
+            }
+
+            function renderStats() {
+                const stats = getStats();
+                const todayStr = new Date().toDateString();
+                const todayCount = stats.today === todayStr ? (stats.todayCount || 0) : 0;
+                statToday.textContent = todayCount;
+                statTotal.textContent = stats.totalCount || 0;
+            }
+
+            // ==================== 内容类型检测 ====================
+            function detectContentType(text) {
+                if (!text || typeof text !== 'string') return { type: 'text', isUrl: false };
+                const trimmed = text.trim();
+                const strictUrlPattern = /^https?:\/\/[\w\-\.]+(\/[\w\-\.~:/?#\[\]@!$&'()*+,;=%]*)?$/i;
+                const wwwPattern = /^www\.[\w\-\.]+(\/[\w\-\.~:/?#\[\]@!$&'()*+,;=%]*)?$/i;
+                if (strictUrlPattern.test(trimmed) || wwwPattern.test(trimmed)) return { type: 'url', isUrl: true };
+                const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (emailPattern.test(trimmed)) return { type: 'email', isUrl: false };
+                const phonePattern = /^(\+?\d{1,4}[\s-]?)?(\(?\d{2,4}\)?[\s-]?)?[\d\s-]{6,15}$/;
+                if (phonePattern.test(trimmed) && trimmed.replace(/[\s\-()]/g, '').length >= 8) return { type: 'phone',
+                    isUrl: false };
+                if (trimmed.startsWith('WIFI:') || trimmed.startsWith('wifi:')) return { type: 'wifi', isUrl: false };
+                return { type: 'text', isUrl: false };
+            }
+
+            function normalizeUrl(url) {
+                const trimmed = url.trim();
+                if (/^https?:\/\//i.test(trimmed)) return trimmed;
+                if (/^www\./i.test(trimmed)) return 'https://' + trimmed;
+                return 'https://' + trimmed;
+            }
+
+            function normalizeFormat(format) {
+                if (!format) return null;
+                if (typeof format === 'object' && format.formatName) {
+                    format = format.formatName;
+                }
+                return String(format).toLowerCase().replace(/-/g, '_');
+            }
+
+            // ==================== 文件读取辅助 ====================
+            function readFileAsDataURL(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result);
+                    reader.onerror = reject;
+                    reader.readAsDataURL(file);
+                });
+            }
+
+            // ==================== 单文件扫描 ====================
+            async function scanSingleFile(file) {
+                if (!html5QrCode) {
+                    html5QrCode = new Html5Qrcode('qr-reader-hidden');
+                }
+                try {
+                    const result = await html5QrCode.scanFile(file, true);
+                    if (result) {
+                        const decodedText = result.decodedText || result;
+                        let formatInfo = null;
+                        if (result.result && result.result.format) {
+                            formatInfo = normalizeFormat(result.result.format);
+                        }
+                        return {
+                            fileName: file.name,
+                            content: decodedText,
+                            format: formatInfo,
+                            error: null,
+                            isUrl: detectContentType(decodedText).isUrl,
+                            type: detectContentType(decodedText).type,
+                        };
+                    }
+                    return {
+                        fileName: file.name,
+                        content: null,
+                        format: null,
+                        error: '未能识别到二维码或条形码',
+                        isUrl: false,
+                        type: 'text',
+                    };
+                } catch (error) {
+                    console.error('扫描文件失败:', file.name, error);
+                    let errorMsg = '未能识别到二维码或条形码';
+                    if (error && error.message) {
+                        if (error.message.includes('No barcode') || error.message.includes('No QR')) {
+                            errorMsg = '图片中未检测到二维码或条形码';
+                        } else {
+                            errorMsg = '识别失败：' + error.message;
+                        }
+                    }
+                    return {
+                        fileName: file.name,
+                        content: null,
+                        format: null,
+                        error: errorMsg,
+                        isUrl: false,
+                        type: 'text',
+                    };
+                }
+            }
+
+            // ==================== 批量扫描 ====================
+            async function processFiles(files) {
+                if (isProcessing) return;
+                isProcessing = true;
+                const originalBtnHTML = btnUpload.innerHTML;
+                btnUpload.disabled = true;
+
+                const fileArray = Array.from(files);
+                const total = fileArray.length;
+                const results = [];
+                const thumbnails = [];
+
+                // 先生成所有缩略图
+                for (let i = 0; i < total; i++) {
+                    try {
+                        const dataUrl = await readFileAsDataURL(fileArray[i]);
+                        thumbnails.push(dataUrl);
+                    } catch {
+                        thumbnails.push(null);
+                    }
+                }
+
+                // 依次扫描每个文件
+                for (let i = 0; i < total; i++) {
+                    btnUpload.innerHTML = `<span class="spinner"></span> 识别中... (${i + 1}/${total})`;
+                    const result = await scanSingleFile(fileArray[i]);
+                    result.thumbnail = thumbnails[i];
+                    result.index = i;
+                    results.push(result);
+
+                    // 实时更新结果展示
+                    renderResults(results, total);
+                }
+
+                // 处理完成
+                const successCount = results.filter(r => !r.error).length;
+                const failCount = results.filter(r => r.error).length;
+
+                // 添加到历史记录
+                results.forEach(r => {
+                    if (!r.error && r.content) {
+                        addToHistory({
+                            content: r.content,
+                            type: r.type,
+                            format: r.format || 'unknown',
+                            isUrl: r.isUrl,
+                        });
+                    }
+                });
+
+                // 音效和震动（至少有一个成功时触发）
+                if (successCount > 0) {
+                    playSuccessSound();
+                    vibrate();
+                }
+
+                // Toast总结
+                if (successCount > 0 && failCount === 0) {
+                    showToast(`✅ 全部识别成功！共 ${successCount} 个结果`, 'success');
+                } else if (successCount > 0 && failCount > 0) {
+                    showToast(`⚠️ ${successCount} 个成功，${failCount} 个失败`, 'warning');
+                } else {
+                    showToast('❌ 未能从图片中识别到任何二维码或条形码', 'error');
+                }
+
+                // 自动跳转：多文件时仅打开第一个链接
+                if (autoOpenSwitch.checked) {
+                    const firstUrlResult = results.find(r => !r.error && r.isUrl && r.content);
+                    if (firstUrlResult) {
+                        const urlToOpen = normalizeUrl(firstUrlResult.content);
+                        window.open(urlToOpen, '_blank', 'noopener,noreferrer');
+                        if (total > 1) {
+                            showToast(`已自动打开第一个链接（共${successCount}个结果）`, 'success');
+                        }
+                    }
+                }
+
+                // 恢复按钮
+                btnUpload.innerHTML = originalBtnHTML;
+                btnUpload.disabled = false;
+                isProcessing = false;
+
+                // 单文件时显示预览
+                if (total === 1 && thumbnails[0]) {
+                    previewSingleImg.src = thumbnails[0];
+                    imagePreviewSingle.style.display = 'block';
+                } else {
+                    imagePreviewSingle.style.display = 'none';
+                }
+
+                // 滚动到结果区域
+                resultCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+
+            // ==================== 渲染结果列表 ====================
+            function renderResults(results, total) {
+                if (results.length === 0) {
+                    resultCard.classList.remove('show');
+                    return;
+                }
+
+                resultCard.classList.add('show');
+                const successCount = results.filter(r => !r.error).length;
+                resultSummary.textContent = total > 1 ? `${successCount}/${total} 识别成功` : '';
+
+                if (results.every(r => r.error)) {
+                    noResults.style.display = 'block';
+                } else {
+                    noResults.style.display = 'none';
+                }
+
+                const badgeClassMap = {
+                    'url': 'badge-url',
+                    'email': 'badge-email',
+                    'phone': 'badge-phone',
+                    'wifi': 'badge-wifi',
+                    'text': 'badge-text',
+                };
+                const badgeLabelMap = {
+                    'url': '🔗 链接',
+                    'email': '📧 邮箱',
+                    'phone': '📞 电话',
+                    'wifi': '📶 WiFi配置',
+                    'text': '📄 文本',
+                };
+
+                resultsList.innerHTML = results.map((r, idx) => {
+                    const isSuccess = !r.error && r.content;
+                    const thumbContent = r.thumbnail ?
+                        `<img src="${r.thumbnail}" alt="缩略图">` :
+                        (isSuccess ? '✅' : '❌');
+
+                    if (!isSuccess) {
+                        // 失败的结果
+                        return `
+                            <div class="result-item" style="opacity:0.7;">
+                                <div class="r-thumb">${thumbContent}</div>
+                                <div class="r-info">
+                                    <div class="r-filename">📄 ${escapeHtml(r.fileName)}</div>
+                                    <div class="r-content" style="color:#94a3b8;">${escapeHtml(r.error || '识别失败')}</div>
+                                    <div class="r-meta">
+                                        <span class="r-badge badge-error">❌ 失败</span>
+                                    </div>
+                                </div>
+                            </div>`;
+                    }
+
+                    // 成功的结果
+                    const detection = detectContentType(r.content);
+                    const formatLabel = formatNames[r.format] || r.format || '未知格式';
+                    const contentPreview = r.content.length > 200 ? r.content.slice(0, 200) + '...' : r
+                        .content;
+
+                    return `
+                        <div class="result-item">
+                            <div class="r-thumb">${thumbContent}</div>
+                            <div class="r-info">
+                                <div class="r-filename">📄 ${escapeHtml(r.fileName)}</div>
+                                <div class="r-content ${detection.isUrl ? 'is-url' : ''}" 
+                                     title="点击复制内容" 
+                                     onclick="window._resultCopy('${escapeAttr(r.content)}')">
+                                    ${escapeHtml(contentPreview)}
+                                </div>
+                                <div class="r-meta">
+                                    <span class="r-badge ${badgeClassMap[detection.type] || 'badge-text'}">
+                                        ${badgeLabelMap[detection.type] || '📄 文本'}
+                                    </span>
+                                    <span class="r-badge badge-format">🏷️ ${formatLabel}</span>
+                                </div>
+                            </div>
+                            <div class="r-actions">
+                                <button class="btn btn-outline btn-xs" onclick="window._resultCopy('${escapeAttr(r.content)}')" title="复制内容">
+                                    📋
+                                </button>
+                                ${detection.isUrl ? `
+                                <button class="btn btn-primary btn-xs" onclick="window._resultOpen('${escapeAttr(normalizeUrl(r.content))}')" title="打开链接">
+                                    🔗
+                                </button>` : ''}
+                                ${navigator.share && navigator.canShare ? `
+                                <button class="btn btn-outline btn-xs" onclick="window._resultShare('${escapeAttr(r.content)}')" title="分享">
+                                    📤
+                                </button>` : ''}
+                            </div>
+                        </div>`;
+                }).join('');
+            }
+
+            function escapeHtml(str) {
+                const div = document.createElement('div');
+                div.textContent = str;
+                return div.innerHTML;
+            }
+
+            function escapeAttr(str) {
+                return str.replace(/'/g, "\\'").replace(/"/g, '\\"').replace(/`/g, '\\`');
+            }
+
+            // 全局函数供onclick调用
+            window._resultCopy = async function(text) {
+                try {
+                    await navigator.clipboard.writeText(text);
+                    showToast('✅ 已复制到剪贴板', 'success');
+                } catch {
+                    const textarea = document.createElement('textarea');
+                    textarea.value = text;
+                    textarea.style.position = 'fixed';
+                    textarea.style.opacity = '0';
+                    document.body.appendChild(textarea);
+                    textarea.select();
+                    try { document.execCommand('copy');
+                        showToast('✅ 已复制', 'success'); } catch { showToast('❌ 复制失败', 'error'); }
+                    document.body.removeChild(textarea);
+                }
+            };
+            window._resultOpen = function(url) {
+                window.open(url, '_blank', 'noopener,noreferrer');
+                showToast('正在打开链接...', 'success');
+            };
+            window._resultShare = async function(text) {
+                try {
+                    await navigator.share({ text: text });
+                } catch (e) { /* 用户取消 */ }
+            };
+
+            // ==================== 历史记录渲染 ====================
+            function renderHistory() {
+                const history = getHistory();
+                if (history.length === 0) {
+                    historyList.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-icon">📭</div>
+                            <p>暂无扫描记录</p>
+                        </div>`;
+                    return;
+                }
+                historyList.innerHTML = history.map(item => {
+                    const detection = detectContentType(item.content);
+                    const iconClass = detection.isUrl ? 'link' : (item.format === 'qr_code' ? 'qr' :
+                        'text');
+                    const iconEmoji = detection.isUrl ? '🔗' : (item.format === 'qr_code' ? '📱' : '📄');
+                    const timeStr = new Date(item.timestamp).toLocaleString('zh-CN', {
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                    });
+                    const formatLabel = formatNames[item.format] || item.format || '未知';
+                    const preview = item.content.length > 50 ? item.content.slice(0, 50) + '...' : item
+                        .content;
+                    return `
+                        <div class="history-item">
+                            <div class="h-icon ${iconClass}">${iconEmoji}</div>
+                            <div class="h-info">
+                                <div class="h-content" title="${escapeHtml(item.content)}">${escapeHtml(preview)}</div>
+                                <div class="h-meta">
+                                    <span>${timeStr}</span><span>·</span><span>${formatLabel}</span>
+                                    ${detection.isUrl ? '<span>·</span><span style="color:#1d4ed8;">链接</span>' : ''}
+                                </div>
+                            </div>
+                            <div class="h-actions">
+                                <button class="btn btn-outline btn-xs" onclick="window._histCopy('${escapeAttr(item.content)}')">📋</button>
+                                ${detection.isUrl ? `
+                                <button class="btn btn-primary btn-xs" onclick="window._histOpen('${escapeAttr(normalizeUrl(item.content))}')">🔗</button>` : ''}
+                                <button class="btn btn-danger btn-xs" onclick="window._histDelete(${item.id})">✕</button>
+                            </div>
+                        </div>`;
+                }).join('');
+            }
+
+            window._histCopy = (text) => window._resultCopy(text);
+            window._histOpen = (url) => window._resultOpen(url);
+            window._histDelete = (id) => {
+                let history = getHistory().filter(item => item.id !== id);
+                saveHistory(history);
+                renderHistory();
+                renderStats();
+                showToast('已删除该记录', 'warning');
+            };
+
+            // ==================== 事件绑定 ====================
+            btnUpload.addEventListener('click', () => {
+                if (!isProcessing) fileInput.click();
+            });
+
+            fileInput.addEventListener('change', (e) => {
+                const files = e.target.files;
+                if (files && files.length > 0) {
+                    // 验证文件类型
+                    const invalidFiles = Array.from(files).filter(f => !f.type.startsWith('image/'));
+                    if (invalidFiles.length > 0) {
+                        showToast('请只选择图片文件', 'error');
+                        fileInput.value = '';
+                        return;
+                    }
+                    // 检查文件大小
+                    const oversizedFiles = Array.from(files).filter(f => f.size > 20 * 1024 * 1024);
+                    if (oversizedFiles.length > 0) {
+                        showToast(`有 ${oversizedFiles.length} 个文件超过20MB限制`, 'error');
+                        fileInput.value = '';
+                        return;
+                    }
+                    processFiles(files);
+                }
+                fileInput.value = '';
+            });
+
+            // 拖放支持
+            uploadCard.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadCard.style.boxShadow = '0 0 0 3px rgba(79,70,229,0.3)';
+            });
+            uploadCard.addEventListener('dragleave', () => {
+                uploadCard.style.boxShadow = '';
+            });
+            uploadCard.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadCard.style.boxShadow = '';
+                if (isProcessing) {
+                    showToast('正在处理中，请稍候...', 'warning');
+                    return;
+                }
+                const files = e.dataTransfer.files;
+                if (files && files.length > 0) {
+                    const imageFiles = Array.from(files).filter(f => f.type.startsWith('image/'));
+                    if (imageFiles.length === 0) {
+                        showToast('请拖放图片文件', 'error');
+                        return;
+                    }
+                    const oversizedFiles = imageFiles.filter(f => f.size > 20 * 1024 * 1024);
+                    if (oversizedFiles.length > 0) {
+                        showToast(`有 ${oversizedFiles.length} 个文件超过20MB限制`, 'error');
+                        return;
+                    }
+                    processFiles(imageFiles);
+                }
+            });
+
+            btnClearHistory.addEventListener('click', () => {
+                if (confirm('确定要清空所有扫描历史记录吗？此操作不可恢复。')) {
+                    localStorage.removeItem(STORAGE_KEY_HISTORY);
+                    renderHistory();
+                    const stats = getStats();
+                    stats.todayCount = 0;
+                    saveStats(stats);
+                    renderStats();
+                    showToast('历史记录已清空', 'warning');
+                }
+            });
+
+            autoOpenSwitch.addEventListener('change', () => {
+                if (autoOpenSwitch.checked) {
+                    showToast('⚠️ 已开启自动跳转，识别到链接将自动打开', 'warning');
+                }
+            });
+
+            // ==================== 初始化 ====================
+            function init() {
+                // 确保隐藏DOM元素存在，用于Html5Qrcode实例化
+                if (!document.getElementById('qr-reader-hidden')) {
+                    const hiddenDiv = document.createElement('div');
+                    hiddenDiv.id = 'qr-reader-hidden';
+                    hiddenDiv.style.display = 'none';
+                    document.body.appendChild(hiddenDiv);
+                }
+                html5QrCode = new Html5Qrcode('qr-reader-hidden');
+                renderHistory();
+                renderStats();
+            }
+
+            init();
+
+            console.log('📷 二维码/条形码扫描器已就绪（图片识别版·支持批量）');
+            console.log('   - 支持格式：QR码、Code 128、Code 39、EAN-13、EAN-8、UPC-A、UPC-E、Data Matrix、PDF417等');
+            console.log('   - 支持多文件同时选择和拖放');
+            console.log('   - 扫描历史存储在本地浏览器中');
+        })();
+    </script>
+</body>
+</html>

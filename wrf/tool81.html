@@ -1,0 +1,3983 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>员工技能矩阵图</title>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+:root {
+  --primary: #1e3a5f;
+  --primary-light: #2d5a87;
+  --primary-dark: #152840;
+  --accent: #0ea5e9;
+  --accent-light: #38bdf8;
+  --bg: #f1f5f9;
+  --bg-card: #ffffff;
+  --bg-sidebar: #ffffff;
+  --text-primary: #1e293b;
+  --text-secondary: #64748b;
+  --text-muted: #94a3b8;
+  --border: #e2e8f0;
+  --shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+  --radius: 8px;
+  --radius-lg: 12px;
+  --level-0: #f1f5f9;
+  --level-1: #bae6fd;
+  --level-2: #7dd3fc;
+  --level-3: #0ea5e9;
+  --level-4: #0369a1;
+  --level-5: #f59e0b;
+  --level-0-text: #64748b;
+  --level-1-text: #0369a1;
+  --level-2-text: #0c4a6e;
+  --level-3-text: #ffffff;
+  --level-4-text: #ffffff;
+  --level-5-text: #ffffff;
+}
+
+[data-theme="dark"] {
+  --primary: #0ea5e9;
+  --primary-light: #38bdf8;
+  --primary-dark: #0284c7;
+  --accent: #06b6d4;
+  --accent-light: #22d3ee;
+  --bg: #0f172a;
+  --bg-card: #1e293b;
+  --bg-sidebar: #1e293b;
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --border: #334155;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.4);
+  --level-0: #334155;
+  --level-1: #0c4a6e;
+  --level-2: #0369a1;
+  --level-3: #0ea5e9;
+  --level-4: #38bdf8;
+  --level-5: #f59e0b;
+  --level-0-text: #94a3b8;
+  --level-1-text: #bae6fd;
+  --level-2-text: #e0f2fe;
+  --level-3-text: #ffffff;
+  --level-4-text: #0c4a6e;
+  --level-5-text: #1e293b;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  background: var(--bg);
+  color: var(--text-primary);
+  height: 100vh;
+  overflow: hidden;
+  font-size: 14px;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+/* ===== 顶部导航栏 ===== */
+.header {
+  background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+  color: white;
+  padding: 0 24px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: var(--shadow-lg);
+  z-index: 100;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.logo {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logo-icon {
+  width: 32px;
+  height: 32px;
+  background: var(--accent);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: white;
+}
+
+.btn-primary:hover {
+  background: var(--accent-light);
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background: rgba(255,255,255,0.15);
+  color: white;
+  backdrop-filter: blur(10px);
+}
+
+.btn-secondary:hover {
+  background: rgba(255,255,255,0.25);
+}
+
+.btn-outline {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+}
+
+.btn-outline:hover {
+  background: var(--bg);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.btn-danger {
+  background: #ef4444;
+  color: white;
+}
+
+.btn-danger:hover {
+  background: #dc2626;
+}
+
+.btn-sm {
+  padding: 5px 10px;
+  font-size: 12px;
+}
+
+.btn-icon {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  justify-content: center;
+  border-radius: 8px;
+}
+
+/* ===== 导出下拉菜单 ===== */
+.export-dropdown {
+  position: relative;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: calc(100% + 5px);
+  right: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  min-width: 180px;
+  z-index: 1000;
+  display: none;
+  overflow: hidden;
+}
+
+.dropdown-menu.show { display: block; animation: fadeIn 0.2s ease; }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.dropdown-item {
+  padding: 10px 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-primary);
+  transition: background 0.15s;
+  font-size: 13px;
+}
+
+.dropdown-item:hover {
+  background: var(--bg);
+  color: var(--accent);
+}
+
+.dropdown-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 4px 0;
+}
+
+/* ===== 主内容区 ===== */
+.main {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.sidebar {
+  width: 280px;
+  background: var(--bg-sidebar);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  transition: width 0.3s ease;
+}
+
+.sidebar.collapsed { width: 0; overflow: hidden; }
+
+.sidebar-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+}
+
+.sidebar-tab {
+  flex: 1;
+  padding: 12px 8px;
+  text-align: center;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+}
+
+.sidebar-tab.active {
+  color: var(--primary);
+  border-bottom-color: var(--accent);
+  background: var(--bg-sidebar);
+}
+
+[data-theme="dark"] .sidebar-tab.active { color: var(--accent-light); }
+
+.sidebar-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+}
+
+.sidebar-section { margin-bottom: 16px; }
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.section-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.search-box {
+  position: relative;
+  margin-bottom: 12px;
+}
+
+.search-box input {
+  width: 100%;
+  padding: 8px 12px 8px 32px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--text-primary);
+  font-size: 13px;
+  transition: border-color 0.2s;
+}
+
+.search-box input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.search-box::before {
+  content: "🔍";
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 12px;
+  opacity: 0.5;
+}
+
+.filter-select {
+  width: 100%;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--text-primary);
+  font-size: 13px;
+  margin-bottom: 10px;
+  cursor: pointer;
+}
+
+.filter-select:focus { outline: none; border-color: var(--accent); }
+
+/* ===== 员工/技能列表 ===== */
+.list-item {
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: all 0.15s;
+  margin-bottom: 4px;
+  border: 1px solid transparent;
+}
+
+.list-item:hover {
+  background: var(--bg);
+  border-color: var(--border);
+}
+
+.list-item.active {
+  background: rgba(14, 165, 233, 0.1);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.item-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--primary-light));
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.item-info { flex: 1; min-width: 0; }
+
+.item-name {
+  font-weight: 500;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.item-sub {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.item-actions {
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.list-item:hover .item-actions { opacity: 1; }
+
+.icon-btn {
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: var(--text-secondary);
+  transition: all 0.15s;
+}
+
+.icon-btn:hover { background: var(--border); color: var(--text-primary); }
+.icon-btn.danger:hover { background: #fee2e2; color: #ef4444; }
+
+/* ===== 技能分类折叠 ===== */
+.category-item {
+  margin-bottom: 6px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.category-header {
+  padding: 8px 12px;
+  background: var(--bg);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+  font-size: 13px;
+  user-select: none;
+}
+
+.category-header:hover { background: var(--border); }
+
+.category-toggle {
+  transition: transform 0.2s;
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.category-header.expanded .category-toggle { transform: rotate(90deg); }
+
+.category-body {
+  display: none;
+  padding: 6px;
+}
+
+.category-body.expanded { display: block; }
+
+.skill-item {
+  padding: 6px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: background 0.15s;
+}
+
+.skill-item:hover { background: var(--bg); }
+
+/* ===== 中央矩阵区 ===== */
+.content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 16px;
+}
+
+.matrix-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.toolbar-left, .toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.view-toggle {
+  display: flex;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.view-btn {
+  padding: 6px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  transition: all 0.2s;
+}
+
+.view-btn.active {
+  background: var(--accent);
+  color: white;
+}
+
+.legend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.legend-color {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  border: 1px solid rgba(0,0,0,0.1);
+}
+
+.matrix-container {
+  flex: 1;
+  overflow: auto;
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  position: relative;
+  border: 1px solid var(--border);
+}
+
+.matrix-table {
+  border-collapse: separate;
+  border-spacing: 0;
+  width: 100%;
+  font-size: 12px;
+}
+
+.matrix-table th,
+.matrix-table td {
+  padding: 0;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  min-width: 70px;
+}
+
+.matrix-table th {
+  position: sticky;
+  top: 0;
+  background: var(--bg-card);
+  z-index: 10;
+  font-weight: 600;
+  font-size: 11px;
+  color: var(--text-secondary);
+  padding: 10px 8px;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  border-bottom: 2px solid var(--border);
+}
+
+.matrix-table th:hover { color: var(--accent); }
+
+.matrix-table th .sort-icon {
+  margin-left: 4px;
+  font-size: 10px;
+  opacity: 0.5;
+}
+
+.matrix-table th.sorted .sort-icon { opacity: 1; color: var(--accent); }
+
+.matrix-table .th-corner {
+  position: sticky;
+  top: 0;
+  left: 0;
+  z-index: 20;
+  min-width: 160px;
+  text-align: left;
+  padding-left: 16px;
+  background: var(--bg-card);
+}
+
+.matrix-table .td-employee {
+  position: sticky;
+  left: 0;
+  background: var(--bg-card);
+  z-index: 5;
+  text-align: left;
+  padding: 8px 12px 8px 16px;
+  min-width: 160px;
+  font-weight: 500;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-right: 2px solid var(--border);
+}
+
+.matrix-table tr:hover .td-employee { background: var(--bg); }
+.matrix-table tr:hover td.cell { filter: brightness(1.05); }
+
+/* 单元格高度增加到 52px，确保内容完整显示 */
+.cell {
+  height: 52px;
+  min-height: 52px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  position: relative;
+  font-weight: 600;
+  font-size: 13px;
+  overflow: visible;
+  line-height: 52px;
+  vertical-align: middle;
+}
+
+.cell:hover {
+  transform: scale(1.05);
+  z-index: 2;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.cell.level-0 { background: var(--level-0); color: var(--level-0-text); }
+.cell.level-1 { background: var(--level-1); color: var(--level-1-text); }
+.cell.level-2 { background: var(--level-2); color: var(--level-2-text); }
+.cell.level-3 { background: var(--level-3); color: var(--level-3-text); }
+.cell.level-4 { background: var(--level-4); color: var(--level-4-text); }
+.cell.level-5 { background: var(--level-5); color: var(--level-5-text); }
+
+.cell-tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--text-primary);
+  color: var(--bg-card);
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s;
+  z-index: 100;
+  font-weight: normal;
+}
+
+.cell:hover .cell-tooltip { opacity: 1; }
+
+/* ===== 右侧统计面板 ===== */
+.stats-panel {
+  width: 300px;
+  background: var(--bg-sidebar);
+  border-left: 1px solid var(--border);
+  padding: 16px;
+  overflow-y: auto;
+  transition: width 0.3s ease;
+}
+
+.stats-panel.collapsed { width: 0; padding: 0; overflow: hidden; }
+
+.stats-title {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 16px;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stats-card {
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  padding: 14px;
+  margin-bottom: 12px;
+  border: 1px solid var(--border);
+}
+
+.stats-card-title {
+  font-size: 11px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 10px;
+  font-weight: 600;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.stat-item {
+  text-align: center;
+  padding: 8px;
+  background: var(--bg);
+  border-radius: 8px;
+}
+
+.stat-number {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--accent);
+  line-height: 1.2;
+}
+
+.stat-label {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+/* 技能分布条 */
+.skill-dist { margin-top: 8px; }
+
+.dist-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 11px;
+}
+
+.dist-label {
+  width: 60px;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.dist-bar {
+  flex: 1;
+  height: 16px;
+  background: var(--bg);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.dist-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.5s ease;
+}
+
+.dist-count {
+  width: 30px;
+  text-align: right;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  font-weight: 500;
+}
+
+/* 雷达图 */
+.radar-container {
+  width: 100%;
+  height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.radar-svg { width: 100%; height: 100%; }
+
+/* 排行榜 */
+.rank-list { margin-top: 6px; }
+
+.rank-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+}
+
+.rank-item:last-child { border-bottom: none; }
+
+.rank-num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  background: var(--bg);
+  color: var(--text-secondary);
+}
+
+.rank-item:nth-child(1) .rank-num { background: #f59e0b; color: white; }
+.rank-item:nth-child(2) .rank-num { background: #94a3b8; color: white; }
+.rank-item:nth-child(3) .rank-num { background: #b45309; color: white; }
+
+.rank-name { flex: 1; }
+
+.rank-score {
+  font-weight: 600;
+  color: var(--accent);
+}
+
+/* ===== 模态框 ===== */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+
+.modal-overlay.show { display: flex; animation: fadeIn 0.2s ease; }
+
+.modal {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  width: 90%;
+  max-width: 500px;
+  max-height: 85vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.modal-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.modal-close {
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 18px;
+  color: var(--text-secondary);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+
+.modal-close:hover { background: var(--bg); color: var(--text-primary); }
+
+.modal-body {
+  padding: 20px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.modal-footer {
+  padding: 12px 20px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* 表单 */
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+.form-input, .form-select, .form-textarea {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--text-primary);
+  font-size: 13px;
+  transition: border-color 0.2s;
+  font-family: inherit;
+}
+
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.form-textarea { resize: vertical; min-height: 80px; }
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* 等级选择器 */
+.level-selector {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.level-option {
+  flex: 1;
+  min-width: 50px;
+  padding: 10px 6px;
+  text-align: center;
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.level-option:hover { transform: translateY(-2px); }
+
+.level-option.selected {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.4), inset 0 0 0 2px rgba(255, 255, 255, 0.5);
+  transform: scale(1.05);
+  position: relative;
+  z-index: 10;
+}
+
+.level-option .level-num {
+  display: block;
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+/* 图例说明列表 */
+.legend-display-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.legend-display-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+.legend-display-icon {
+  width: 60px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.legend-display-text {
+  flex: 1;
+}
+.legend-display-label {
+  font-weight: 600;
+  color: var(--text);
+  font-size: 14px;
+  margin-bottom: 2px;
+}
+.legend-display-desc {
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+/* ===== 设置面板 ===== */
+.settings-section {
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.settings-section:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.settings-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+}
+
+.settings-label {
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+.settings-desc {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* 开关 */
+.toggle-switch {
+  position: relative;
+  width: 44px;
+  height: 24px;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background: var(--border);
+  border-radius: 24px;
+  transition: 0.3s;
+}
+
+.toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background: white;
+  border-radius: 50%;
+  transition: 0.3s;
+}
+
+input:checked + .toggle-slider {
+  background: var(--accent);
+}
+
+input:checked + .toggle-slider:before {
+  transform: translateX(20px);
+}
+
+/* ===== 底部状态栏 ===== */
+.statusbar {
+  height: 30px;
+  background: var(--bg-card);
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.status-left, .status-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.status-item { display: flex; align-items: center; gap: 4px; }
+
+/* ===== Toast 提示 ===== */
+.toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.toast {
+  background: var(--bg-card);
+  border-left: 4px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  box-shadow: var(--shadow-lg);
+  min-width: 250px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  animation: slideIn 0.3s ease;
+  font-size: 13px;
+}
+
+.toast.success { border-left-color: #10b981; }
+.toast.error { border-left-color: #ef4444; }
+.toast.warning { border-left-color: #f59e0b; }
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(100%); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.toast-icon { font-size: 18px; }
+
+/* ===== 滚动条美化 ===== */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+/* ===== 响应式 ===== */
+@media (max-width: 1200px) {
+  .sidebar { position: absolute; left: 0; top: 60px; bottom: 30px; z-index: 50; box-shadow: var(--shadow-lg); }
+  .stats-panel { position: absolute; right: 0; top: 60px; bottom: 30px; z-index: 50; box-shadow: var(--shadow-lg); }
+}
+
+@media (max-width: 768px) {
+  .header { padding: 0 12px; }
+  .logo span { display: none; }
+  .btn-text { display: none; }
+  .btn { padding: 8px 10px; }
+  .sidebar { width: 100%; }
+  .stats-panel { width: 100%; }
+  .content { padding: 10px; }
+}
+
+/* 空状态 */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.empty-state-icon {
+  font-size: 48px;
+  margin-bottom: 12px;
+  opacity: 0.5;
+}
+
+.empty-state-text {
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+
+/* 加载动画 */
+.loading {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ===== 图表视图 ===== */
+.chart-view {
+  display: none;
+  flex: 1;
+  overflow: auto;
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+  padding: 20px;
+}
+
+.chart-view.active { display: block; }
+
+.chart-section {
+  margin-bottom: 24px;
+}
+
+.chart-section-title {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chart-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.chart-card {
+  background: var(--bg);
+  border-radius: var(--radius);
+  padding: 16px;
+  border: 1px solid var(--border);
+}
+
+.chart-card-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.bar-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bar-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.bar-label {
+  width: 100px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bar-track {
+  flex: 1;
+  height: 24px;
+  background: var(--bg-card);
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.5s ease;
+  display: flex;
+  align-items: center;
+  padding-right: 8px;
+  justify-content: flex-end;
+  font-size: 11px;
+  font-weight: 600;
+  color: white;
+}
+
+.radar-big-container {
+  width: 100%;
+  height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 堆叠柱状图 */
+.stacked-bar-container {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stacked-bar-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.stacked-bar-label {
+  width: 80px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stacked-bar {
+  flex: 1;
+  height: 20px;
+  border-radius: 4px;
+  overflow: hidden;
+  display: flex;
+  border: 1px solid var(--border);
+}
+
+.stacked-segment {
+  height: 100%;
+  transition: width 0.5s ease;
+}
+
+.stacked-value {
+  width: 40px;
+  text-align: right;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+/* ===== 显示样式选择器 ===== */
+.display-style-selector {
+  display: flex;
+  gap: 4px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 2px;
+}
+
+.style-btn {
+  padding: 4px 8px;
+  font-size: 11px;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  border-radius: 5px;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.style-btn.active {
+  background: var(--accent);
+  color: white;
+}
+
+.style-btn:hover:not(.active) {
+  background: var(--bg);
+  color: var(--text-primary);
+}
+
+/* 星星显示模式 */
+.cell-stars {
+  display: inline-flex;
+  gap: 1px;
+  font-size: 12px;
+}
+
+/* 进度条显示模式 */
+.cell-progress {
+  width: 80%;
+  height: 8px;
+  background: rgba(0,0,0,0.1);
+  border-radius: 4px;
+  margin: 0 auto;
+  overflow: hidden;
+}
+
+.cell-progress-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+/* 图标显示模式 */
+.cell-icon {
+  font-size: 18px;
+  line-height: 1;
+}
+
+/* 导出图片设置模态框 */
+.export-settings-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.export-settings-row:last-child {
+  border-bottom: none;
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- 顶部导航 -->
+  <header class="header">
+    <div class="header-left">
+      <button class="btn btn-secondary btn-icon" id="toggleSidebar" title="切换侧边栏">
+        <span>☰</span>
+      </button>
+      <div class="logo">
+        <div class="logo-icon">📊</div>
+        <span>员工技能矩阵图</span>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="export-dropdown">
+        <button class="btn btn-primary" id="exportBtn">
+          <span>📥</span><span class="btn-text">导出</span><span>▼</span>
+        </button>
+        <div class="dropdown-menu" id="exportMenu">
+          <div class="dropdown-item" data-export="excel">📊 导出 Excel</div>
+          <div class="dropdown-item" data-export="image">🖼️ 导出图片</div>
+          <div class="dropdown-item" data-export="word">📄 导出 Word</div>
+          <div class="dropdown-divider"></div>
+          <div class="dropdown-item" data-export="json">💾 导出 JSON 备份</div>
+        </div>
+      </div>
+      <button class="btn btn-secondary" id="importBtn" title="导入数据">
+        <span>📤</span><span class="btn-text">导入</span>
+      </button>
+      <input type="file" id="importFile" accept=".xlsx,.xls,.json" style="display:none">
+      <button class="btn btn-secondary btn-icon" id="settingsBtn" title="设置">
+        <span>⚙️</span>
+      </button>
+      <button class="btn btn-secondary btn-icon" id="themeToggle" title="切换主题">
+        <span id="themeIcon">🌙</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- 主内容 -->
+  <div class="main">
+    <!-- 左侧面板 -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-tabs">
+        <div class="sidebar-tab active" data-tab="employees">员工</div>
+        <div class="sidebar-tab" data-tab="skills">技能</div>
+      </div>
+      <div class="sidebar-content" id="sidebarContent">
+        <!-- 员工标签内容 -->
+        <div id="employeeTab">
+          <div class="search-box">
+            <input type="text" id="empSearch" placeholder="搜索员工...">
+          </div>
+          <select class="filter-select" id="deptFilter">
+            <option value="">全部部门</option>
+          </select>
+          <div class="sidebar-section">
+            <div class="section-header">
+              <span class="section-title">员工列表</span>
+              <button class="btn btn-primary btn-sm" id="addEmpBtn">+ 新增</button>
+            </div>
+            <div id="employeeList"></div>
+          </div>
+        </div>
+        <!-- 技能标签内容 -->
+        <div id="skillTab" style="display:none">
+          <div class="search-box">
+            <input type="text" id="skillSearch" placeholder="搜索技能...">
+          </div>
+          <div class="sidebar-section">
+            <div class="section-header">
+              <span class="section-title">技能分类</span>
+              <button class="btn btn-primary btn-sm" id="addCategoryBtn">+ 分类</button>
+            </div>
+            <div id="categoryList"></div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- 中央矩阵区 -->
+    <main class="content">
+      <div class="matrix-toolbar">
+        <div class="toolbar-left">
+          <div class="view-toggle">
+            <button class="view-btn active" data-view="matrix">矩阵视图</button>
+            <button class="view-btn" data-view="chart">图表视图</button>
+          </div>
+          <div class="display-style-selector" id="styleSelector" title="显示样式">
+            <button class="style-btn active" data-style="color" title="颜色模式">🎨</button>
+            <button class="style-btn" data-style="number" title="数字模式">🔢</button>
+            <button class="style-btn" data-style="stars" title="星级模式">⭐</button>
+            <button class="style-btn" data-style="progress" title="进度条模式">📊</button>
+            <button class="style-btn" data-style="icon" title="图标模式">🏆</button>
+          </div>
+          <button class="btn btn-outline btn-sm" id="sortByName">
+            <span>↕️</span> 按姓名排序
+          </button>
+        </div>
+        <div class="toolbar-right">
+          <button class="btn btn-outline btn-sm" id="legendBtn">
+            <span>🏷️</span> 图例说明
+          </button>
+          <button class="btn btn-outline btn-sm" id="toggleStats">
+            <span>📈</span> 统计
+          </button>
+        </div>
+      </div>
+      <div class="matrix-container" id="matrixContainer">
+        <table class="matrix-table" id="matrixTable">
+          <thead>
+            <tr id="matrixHead"></tr>
+          </thead>
+          <tbody id="matrixBody"></tbody>
+        </table>
+      </div>
+      <div class="chart-view" id="chartView">
+        <div class="chart-section">
+          <div class="chart-section-title">📊 技能平均水平</div>
+          <div class="chart-grid">
+            <div class="chart-card">
+              <div class="chart-card-title">各技能平均等级</div>
+              <div class="bar-chart" id="skillAvgChart"></div>
+            </div>
+            <div class="chart-card">
+              <div class="chart-card-title">分类能力雷达图</div>
+              <div class="radar-big-container">
+                <svg class="radar-svg" id="bigRadarChart" viewBox="0 0 400 300"></svg>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="chart-section">
+          <div class="chart-section-title">👥 员工能力分布</div>
+          <div class="chart-grid">
+            <div class="chart-card">
+              <div class="chart-card-title">员工综合能力排名</div>
+              <div class="bar-chart" id="empRankChart"></div>
+            </div>
+            <div class="chart-card">
+              <div class="chart-card-title">技能等级分布堆叠图</div>
+              <div class="stacked-bar-container" id="stackedChart"></div>
+            </div>
+          </div>
+        </div>
+        <div class="chart-section">
+          <div class="chart-section-title">📈 部门能力对比</div>
+          <div class="chart-grid">
+            <div class="chart-card" style="grid-column: 1 / -1;">
+              <div class="chart-card-title">各部门平均技能等级</div>
+              <div class="bar-chart" id="deptChart"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- 右侧统计面板 -->
+    <aside class="stats-panel" id="statsPanel">
+      <div class="stats-title">📈 数据统计</div>
+
+      <div class="stats-card">
+        <div class="stats-card-title">概览数据</div>
+        <div class="stats-grid">
+          <div class="stat-item">
+            <div class="stat-number" id="statEmpCount">0</div>
+            <div class="stat-label">员工总数</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-number" id="statSkillCount">0</div>
+            <div class="stat-label">技能总数</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-number" id="statAvgScore">0</div>
+            <div class="stat-label">平均等级</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-number" id="statCategoryCount">0</div>
+            <div class="stat-label">技能分类</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="stats-card">
+        <div class="stats-card-title">技能等级分布</div>
+        <div class="skill-dist" id="skillDist"></div>
+      </div>
+
+      <div class="stats-card">
+        <div class="stats-card-title">分类能力雷达</div>
+        <div class="radar-container">
+          <svg class="radar-svg" id="radarChart" viewBox="0 0 200 200"></svg>
+        </div>
+      </div>
+
+      <div class="stats-card">
+        <div class="stats-card-title">综合能力排行</div>
+        <div class="rank-list" id="rankList"></div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- 底部状态栏 -->
+  <footer class="statusbar">
+    <div class="status-left">
+      <div class="status-item">👥 <span id="statusEmp">0</span> 名员工</div>
+      <div class="status-item">🎯 <span id="statusSkill">0</span> 项技能</div>
+    </div>
+    <div class="status-right">
+      <div class="status-item">最后更新: <span id="statusTime">-</span></div>
+    </div>
+  </footer>
+</div>
+
+<!-- 员工编辑模态框 -->
+<div class="modal-overlay" id="empModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="empModalTitle">新增员工</div>
+      <button class="modal-close" data-close="empModal">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">姓名 *</label>
+          <input type="text" class="form-input" id="empName" placeholder="请输入姓名">
+        </div>
+        <div class="form-group">
+          <label class="form-label">部门</label>
+          <input type="text" class="form-input" id="empDept" placeholder="所属部门">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">职位</label>
+        <input type="text" class="form-input" id="empPosition" placeholder="职位">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" data-close="empModal">取消</button>
+      <button class="btn btn-primary" id="saveEmpBtn">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 技能等级编辑模态框 -->
+<div class="modal-overlay" id="levelModal">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header">
+      <div class="modal-title">设置技能等级</div>
+      <button class="modal-close" data-close="levelModal">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <div class="form-label" id="levelEmpName"></div>
+        <div class="form-label" id="levelSkillName" style="font-weight:500;color:var(--accent);margin-top:-2px"></div>
+      </div>
+      <div class="level-selector" id="levelSelector"></div>
+      <div class="form-group" style="margin-top:16px">
+        <label class="form-label">备注说明</label>
+        <textarea class="form-textarea" id="levelNote" placeholder="可选：技能掌握情况说明..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" data-close="levelModal">取消</button>
+      <button class="btn btn-primary" id="saveLevelBtn">确定</button>
+    </div>
+  </div>
+</div>
+
+<!-- 图例说明模态框 -->
+<div class="modal-overlay" id="legendModal">
+  <div class="modal" style="max-width:500px">
+    <div class="modal-header">
+      <div class="modal-title">技能等级图例说明</div>
+      <button class="modal-close" data-close="legendModal">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="legend-display-list" id="legendDisplayList"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" data-close="legendModal">我知道了</button>
+    </div>
+  </div>
+</div>
+
+<!-- 分类编辑模态框 -->
+<div class="modal-overlay" id="categoryModal">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header">
+      <div class="modal-title" id="categoryModalTitle">新增分类</div>
+      <button class="modal-close" data-close="categoryModal">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">分类名称 *</label>
+        <input type="text" class="form-input" id="categoryName" placeholder="例如：前端开发">
+      </div>
+      <div class="form-group">
+        <label class="form-label">分类描述</label>
+        <textarea class="form-textarea" id="categoryDesc" placeholder="分类描述信息..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" data-close="categoryModal">取消</button>
+      <button class="btn btn-primary" id="saveCategoryBtn">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 技能编辑模态框 -->
+<div class="modal-overlay" id="skillModal">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header">
+      <div class="modal-title" id="skillModalTitle">新增技能</div>
+      <button class="modal-close" data-close="skillModal">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">技能名称 *</label>
+        <input type="text" class="form-input" id="skillName" placeholder="例如：JavaScript">
+      </div>
+      <div class="form-group">
+        <label class="form-label">所属分类 *</label>
+        <select class="form-select" id="skillCategory"></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">技能描述</label>
+        <textarea class="form-textarea" id="skillDesc" placeholder="技能描述信息..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" data-close="skillModal">取消</button>
+      <button class="btn btn-primary" id="saveSkillBtn">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 图片导出设置模态框 -->
+<div class="modal-overlay" id="imageExportModal">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header">
+      <div class="modal-title">导出图片设置</div>
+      <button class="modal-close" data-close="imageExportModal">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="export-settings-row">
+        <div>
+          <div class="settings-label">包含图例说明</div>
+          <div class="settings-desc">在图片底部添加等级颜色图例</div>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="exportShowLegend" checked>
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <div class="export-settings-row">
+        <div>
+          <div class="settings-label">包含标题</div>
+          <div class="settings-desc">在图片顶部添加标题</div>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="exportShowTitle" checked>
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <div class="export-settings-row">
+        <div>
+          <div class="settings-label">高清模式 (2x)</div>
+          <div class="settings-desc">更高分辨率的图片</div>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="exportHighRes" checked>
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" data-close="imageExportModal">取消</button>
+      <button class="btn btn-primary" id="confirmImageExport">开始导出</button>
+    </div>
+  </div>
+</div>
+
+<!-- 设置模态框 -->
+<div class="modal-overlay" id="settingsModal">
+  <div class="modal" style="max-width:500px">
+    <div class="modal-header">
+      <div class="modal-title">系统设置</div>
+      <button class="modal-close" data-close="settingsModal">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="settings-section">
+        <div class="stats-card-title">显示设置</div>
+        <div class="settings-item">
+          <div>
+            <div class="settings-label">深色模式</div>
+            <div class="settings-desc">切换深色/浅色主题</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="settingDarkMode">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="settings-item">
+          <div>
+            <div class="settings-label">显示等级数字</div>
+            <div class="settings-desc">在矩阵单元格中显示等级数值</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="settingShowLevel" checked>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+      <div class="settings-section">
+        <div class="stats-card-title">数据管理</div>
+        <div class="settings-item">
+          <div>
+            <div class="settings-label">重置为示例数据</div>
+            <div class="settings-desc">清除当前数据，加载示例数据</div>
+          </div>
+          <button class="btn btn-outline btn-sm" id="resetDataBtn">重置数据</button>
+        </div>
+        <div class="settings-item">
+          <div>
+            <div class="settings-label">清空所有数据</div>
+            <div class="settings-desc">删除所有员工和技能数据</div>
+          </div>
+          <button class="btn btn-danger btn-sm" id="clearDataBtn">清空数据</button>
+        </div>
+      </div>
+      <div class="settings-section">
+        <div class="stats-card-title">等级说明</div>
+        <div style="font-size:12px;color:var(--text-secondary);line-height:1.8">
+          <p><strong>Lv.0 无经验</strong>：未接触过该技能</p>
+          <p><strong>Lv.1 入门</strong>：有基本概念，需要指导</p>
+          <p><strong>Lv.2 了解</strong>：可以完成简单任务</p>
+          <p><strong>Lv.3 熟练</strong>：独立完成日常工作</p>
+          <p><strong>Lv.4 精通</strong>：深入理解，能解决复杂问题</p>
+          <p><strong>Lv.5 专家</strong>：行业领先，能够指导他人</p>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" data-close="settingsModal">完成</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast 容器 -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+// ============== 数据管理模块 ==============
+const DataManager = {
+  STORAGE_KEYS: {
+    employees: 'skill_matrix_employees',
+    categories: 'skill_matrix_categories',
+    settings: 'skill_matrix_settings'
+  },
+
+  employees: [],
+  categories: [],
+  settings: {
+    darkMode: false,
+    showLevel: true,
+    sortBy: 'name',
+    displayStyle: 'color'
+  },
+
+  levelConfig: [
+    { level: 0, label: '无经验', color: 'var(--level-0)', description: '未接触过该技能' },
+    { level: 1, label: '入门', color: 'var(--level-1)', description: '有基本概念，需要指导' },
+    { level: 2, label: '了解', color: 'var(--level-2)', description: '可以完成简单任务' },
+    { level: 3, label: '熟练', color: 'var(--level-3)', description: '独立完成日常工作' },
+    { level: 4, label: '精通', color: 'var(--level-4)', description: '深入理解，能解决复杂问题' },
+    { level: 5, label: '专家', color: 'var(--level-5)', description: '行业领先，能够指导他人' }
+  ],
+
+  init() {
+    this.loadData();
+  },
+
+  loadData() {
+    try {
+      const empData = localStorage.getItem(this.STORAGE_KEYS.employees);
+      const catData = localStorage.getItem(this.STORAGE_KEYS.categories);
+      const setData = localStorage.getItem(this.STORAGE_KEYS.settings);
+
+      if (empData) this.employees = JSON.parse(empData);
+      if (catData) this.categories = JSON.parse(catData);
+      if (setData) this.settings = { ...this.settings, ...JSON.parse(setData) };
+
+      if (this.employees.length === 0 && this.categories.length === 0) {
+        this.loadSampleData();
+      }
+    } catch (e) {
+      console.error('加载数据失败:', e);
+      this.loadSampleData();
+    }
+  },
+
+  saveData() {
+    localStorage.setItem(this.STORAGE_KEYS.employees, JSON.stringify(this.employees));
+    localStorage.setItem(this.STORAGE_KEYS.categories, JSON.stringify(this.categories));
+    localStorage.setItem(this.STORAGE_KEYS.settings, JSON.stringify(this.settings));
+  },
+
+  saveSettings() {
+    localStorage.setItem(this.STORAGE_KEYS.settings, JSON.stringify(this.settings));
+  },
+
+  loadSampleData() {
+    this.categories = [
+      {
+        id: 'cat_1',
+        name: '前端开发',
+        description: '前端开发相关技术',
+        skills: [
+          { id: 'sk_1', name: 'JavaScript', categoryId: 'cat_1', description: 'JS编程能力' },
+          { id: 'sk_2', name: 'React', categoryId: 'cat_1', description: 'React框架' },
+          { id: 'sk_3', name: 'Vue', categoryId: 'cat_1', description: 'Vue框架' },
+          { id: 'sk_4', name: 'HTML/CSS', categoryId: 'cat_1', description: '页面重构能力' },
+          { id: 'sk_5', name: 'TypeScript', categoryId: 'cat_1', description: 'TS类型系统' }
+        ]
+      },
+      {
+        id: 'cat_2',
+        name: '后端开发',
+        description: '后端开发相关技术',
+        skills: [
+          { id: 'sk_6', name: 'Java', categoryId: 'cat_2', description: 'Java编程' },
+          { id: 'sk_7', name: 'Python', categoryId: 'cat_2', description: 'Python编程' },
+          { id: 'sk_8', name: 'Node.js', categoryId: 'cat_2', description: 'Node.js开发' },
+          { id: 'sk_9', name: 'MySQL', categoryId: 'cat_2', description: '数据库设计' }
+        ]
+      },
+      {
+        id: 'cat_3',
+        name: '软技能',
+        description: '综合能力素质',
+        skills: [
+          { id: 'sk_10', name: '沟通能力', categoryId: 'cat_3', description: '沟通表达能力' },
+          { id: 'sk_11', name: '团队协作', categoryId: 'cat_3', description: '团队合作精神' },
+          { id: 'sk_12', name: '项目管理', categoryId: 'cat_3', description: '项目管理能力' },
+          { id: 'sk_13', name: '创新能力', categoryId: 'cat_3', description: '创新思维' }
+        ]
+      }
+    ];
+
+    const skills = this.getAllSkills();
+    const genSkills = () => {
+      const obj = {};
+      skills.forEach(s => {
+        obj[s.id] = Math.floor(Math.random() * 6);
+      });
+      return obj;
+    };
+
+    this.employees = [
+      { id: 'emp_1', name: '张伟', department: '技术部', position: '高级前端工程师', skills: genSkills() },
+      { id: 'emp_2', name: '李娜', department: '技术部', position: '后端工程师', skills: genSkills() },
+      { id: 'emp_3', name: '王强', department: '产品部', position: '产品经理', skills: genSkills() },
+      { id: 'emp_4', name: '刘芳', department: '设计部', position: 'UI设计师', skills: genSkills() },
+      { id: 'emp_5', name: '陈明', department: '技术部', position: '全栈工程师', skills: genSkills() },
+      { id: 'emp_6', name: '赵丽', department: '技术部', position: '测试工程师', skills: genSkills() },
+      { id: 'emp_7', name: '孙磊', department: '运维部', position: '运维工程师', skills: genSkills() },
+      { id: 'emp_8', name: '周琳', department: '产品部', position: '产品总监', skills: genSkills() }
+    ];
+
+    this.saveData();
+  },
+
+  getAllSkills() {
+    return this.categories.flatMap(cat => cat.skills);
+  },
+
+  getSkillById(id) {
+    for (const cat of this.categories) {
+      const skill = cat.skills.find(s => s.id === id);
+      if (skill) return { ...skill, categoryName: cat.name };
+    }
+    return null;
+  },
+
+  getCategoryById(id) {
+    return this.categories.find(c => c.id === id);
+  },
+
+  getDepartments() {
+    return [...new Set(this.employees.map(e => e.department).filter(Boolean))];
+  },
+
+  addEmployee(emp) {
+    emp.id = 'emp_' + Date.now();
+    emp.skills = {};
+    this.getAllSkills().forEach(s => emp.skills[s.id] = 0);
+    this.employees.push(emp);
+    this.saveData();
+    return emp;
+  },
+
+  updateEmployee(id, data) {
+    const idx = this.employees.findIndex(e => e.id === id);
+    if (idx !== -1) {
+      this.employees[idx] = { ...this.employees[idx], ...data };
+      this.saveData();
+      return this.employees[idx];
+    }
+    return null;
+  },
+
+  deleteEmployee(id) {
+    this.employees = this.employees.filter(e => e.id !== id);
+    this.saveData();
+  },
+
+  setSkillLevel(empId, skillId, level) {
+    const emp = this.employees.find(e => e.id === empId);
+    if (emp) {
+      emp.skills[skillId] = Math.max(0, Math.min(5, level));
+      this.saveData();
+    }
+  },
+
+  addCategory(name, description) {
+    const cat = {
+      id: 'cat_' + Date.now(),
+      name,
+      description: description || '',
+      skills: []
+    };
+    this.categories.push(cat);
+    this.saveData();
+    return cat;
+  },
+
+  updateCategory(id, data) {
+    const idx = this.categories.findIndex(c => c.id === id);
+    if (idx !== -1) {
+      this.categories[idx] = { ...this.categories[idx], ...data };
+      this.saveData();
+      return this.categories[idx];
+    }
+    return null;
+  },
+
+  deleteCategory(id) {
+    const cat = this.getCategoryById(id);
+    if (cat) {
+      cat.skills.forEach(s => {
+        this.employees.forEach(e => delete e.skills[s.id]);
+      });
+    }
+    this.categories = this.categories.filter(c => c.id !== id);
+    this.saveData();
+  },
+
+  addSkill(categoryId, name, description) {
+    const cat = this.getCategoryById(categoryId);
+    if (cat) {
+      const skill = {
+        id: 'sk_' + Date.now(),
+        name,
+        categoryId,
+        description: description || ''
+      };
+      cat.skills.push(skill);
+      this.employees.forEach(e => e.skills[skill.id] = 0);
+      this.saveData();
+      return skill;
+    }
+    return null;
+  },
+
+  updateSkill(skillId, data) {
+    for (const cat of this.categories) {
+      const idx = cat.skills.findIndex(s => s.id === skillId);
+      if (idx !== -1) {
+        if (data.categoryId && data.categoryId !== cat.id) {
+          cat.skills.splice(idx, 1);
+          const newCat = this.getCategoryById(data.categoryId);
+          if (newCat) {
+            newCat.skills.push({ ...cat.skills[idx], ...data });
+          }
+        } else {
+          cat.skills[idx] = { ...cat.skills[idx], ...data };
+        }
+        this.saveData();
+        return true;
+      }
+    }
+    return false;
+  },
+
+  deleteSkill(skillId) {
+    for (const cat of this.categories) {
+      const idx = cat.skills.findIndex(s => s.id === skillId);
+      if (idx !== -1) {
+        cat.skills.splice(idx, 1);
+        this.employees.forEach(e => delete e.skills[skillId]);
+        this.saveData();
+        return true;
+      }
+    }
+    return false;
+  },
+
+  clearAllData() {
+    this.employees = [];
+    this.categories = [];
+    this.saveData();
+  },
+
+  resetToSample() {
+    localStorage.removeItem(this.STORAGE_KEYS.employees);
+    localStorage.removeItem(this.STORAGE_KEYS.categories);
+    this.loadSampleData();
+  },
+
+  exportJSON() {
+    return JSON.stringify({
+      employees: this.employees,
+      categories: this.categories,
+      exportTime: new Date().toISOString()
+    }, null, 2);
+  },
+
+  importJSON(data) {
+    try {
+      const obj = JSON.parse(data);
+      if (obj.employees) this.employees = obj.employees;
+      if (obj.categories) this.categories = obj.categories;
+      this.saveData();
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+};
+
+// ============== 矩阵渲染模块 ==============
+const MatrixRenderer = {
+  currentSort: { type: 'name', order: 'asc' },
+  filterDept: '',
+  searchEmp: '',
+  expandedCategories: {},
+
+  init() {
+    this.categories.forEach(cat => this.expandedCategories[cat.id] = true);
+  },
+
+  get categories() { return DataManager.categories; },
+  get employees() {
+    let emps = [...DataManager.employees];
+
+    if (this.searchEmp) {
+      const q = this.searchEmp.toLowerCase();
+      emps = emps.filter(e =>
+        e.name.toLowerCase().includes(q) ||
+        e.department?.toLowerCase().includes(q) ||
+        e.position?.toLowerCase().includes(q)
+      );
+    }
+
+    if (this.filterDept) {
+      emps = emps.filter(e => e.department === this.filterDept);
+    }
+
+    if (this.currentSort.type === 'name') {
+      emps.sort((a, b) => {
+        const cmp = a.name.localeCompare(b.name, 'zh');
+        return this.currentSort.order === 'asc' ? cmp : -cmp;
+      });
+    } else if (this.currentSort.type === 'avg') {
+      emps.sort((a, b) => {
+        const avgA = this.getEmployeeAvgScore(a);
+        const avgB = this.getEmployeeAvgScore(b);
+        return this.currentSort.order === 'asc' ? avgA - avgB : avgB - avgA;
+      });
+    }
+
+    return emps;
+  },
+
+  getEmployeeAvgScore(emp) {
+    const skills = DataManager.getAllSkills();
+    if (skills.length === 0) return 0;
+    const sum = skills.reduce((s, sk) => s + (emp.skills[sk.id] || 0), 0);
+    return sum / skills.length;
+  },
+
+  getVisibleSkills() {
+    const skills = [];
+    this.categories.forEach(cat => {
+      if (this.expandedCategories[cat.id] !== false) {
+        cat.skills.forEach(s => skills.push({ ...s, categoryName: cat.name }));
+      }
+    });
+    return skills;
+  },
+
+  render() {
+    this.renderHead();
+    this.renderBody();
+    this.updateStatusBar();
+  },
+
+  renderHead() {
+    const thead = document.getElementById('matrixHead');
+    const skills = this.getVisibleSkills();
+
+    let html = '<th class="th-corner">员工 / 技能</th>';
+    skills.forEach(skill => {
+      html += `<th data-skill="${skill.id}" title="${skill.name}\n${skill.categoryName}">
+        ${skill.name}
+        <span class="sort-icon">↕</span>
+      </th>`;
+    });
+
+    thead.innerHTML = html;
+  },
+
+  renderBody() {
+    const tbody = document.getElementById('matrixBody');
+    const employees = this.employees;
+    const skills = this.getVisibleSkills();
+    const showLevel = DataManager.settings.showLevel;
+    const displayStyle = DataManager.settings.displayStyle || 'color';
+
+    if (employees.length === 0 || skills.length === 0) {
+      const colCount = skills.length + 1;
+      tbody.innerHTML = `
+        <tr><td colspan="${colCount}">
+          <div class="empty-state">
+            <div class="empty-state-icon">📭</div>
+            <div class="empty-state-text">暂无数据，请添加员工和技能</div>
+          </div>
+        </td></tr>`;
+      return;
+    }
+
+    const iconMap = { 0: '⬜', 1: '🌱', 2: '🌿', 3: '🌳', 4: '🌟', 5: '👑' };
+
+    const renderCellContent = (level) => {
+      switch (displayStyle) {
+        case 'number':
+          return level;
+        case 'stars':
+          return `<span class="cell-stars">${'★'.repeat(level)}${'☆'.repeat(5 - level)}</span>`;
+        case 'progress':
+          return `<div class="cell-progress"><div class="cell-progress-fill" style="width:${level / 5 * 100}%;background:var(--level-${level})"></div></div>`;
+        case 'icon':
+          return `<span class="cell-icon">${iconMap[level] || '⬜'}</span>`;
+        case 'color':
+        default:
+          return showLevel ? level : '';
+      }
+    };
+
+    let html = '';
+    employees.forEach(emp => {
+      html += `<tr data-emp="${emp.id}">`;
+      html += `<td class="td-employee">
+        <div class="item-avatar">${emp.name.charAt(0)}</div>
+        <div class="item-info">
+          <div class="item-name">${emp.name}</div>
+          <div class="item-sub">${emp.position || emp.department || '-'}</div>
+        </div>
+      </td>`;
+
+      skills.forEach(skill => {
+        const level = emp.skills[skill.id] || 0;
+        const levelInfo = DataManager.levelConfig[level];
+        const cellClass = displayStyle === 'color' ? `cell level-${level}` : 'cell';
+        const cellStyle = displayStyle !== 'color' ? `style="background:var(--bg);color:var(--text-primary)"` : '';
+        html += `<td class="${cellClass}" data-emp="${emp.id}" data-skill="${skill.id}" title="${emp.name} - ${skill.name}: ${levelInfo.label}" ${cellStyle}>
+          ${renderCellContent(level)}
+          <span class="cell-tooltip">${levelInfo.label} (Lv.${level})</span>
+        </td>`;
+      });
+
+      html += '</tr>';
+    });
+
+    tbody.innerHTML = html;
+  },
+
+  updateStatusBar() {
+    document.getElementById('statusEmp').textContent = DataManager.employees.length;
+    document.getElementById('statusSkill').textContent = DataManager.getAllSkills().length;
+    document.getElementById('statusTime').textContent = new Date().toLocaleString('zh-CN');
+  },
+
+  toggleSort(type) {
+    if (this.currentSort.type === type) {
+      this.currentSort.order = this.currentSort.order === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.currentSort.type = type;
+      this.currentSort.order = 'asc';
+    }
+    this.render();
+  }
+};
+
+// ============== 统计分析模块 ==============
+const StatsAnalyzer = {
+  render() {
+    this.renderOverview();
+    this.renderSkillDist();
+    this.renderRadar();
+    this.renderRankList();
+  },
+
+  renderOverview() {
+    const emps = DataManager.employees;
+    const skills = DataManager.getAllSkills();
+
+    document.getElementById('statEmpCount').textContent = emps.length;
+    document.getElementById('statSkillCount').textContent = skills.length;
+    document.getElementById('statCategoryCount').textContent = DataManager.categories.length;
+
+    let totalLevel = 0;
+    let count = 0;
+    emps.forEach(emp => {
+      skills.forEach(skill => {
+        totalLevel += emp.skills[skill.id] || 0;
+        count++;
+      });
+    });
+    const avg = count > 0 ? (totalLevel / count).toFixed(1) : 0;
+    document.getElementById('statAvgScore').textContent = avg;
+  },
+
+  renderSkillDist() {
+    const container = document.getElementById('skillDist');
+    const emps = DataManager.employees;
+    const skills = DataManager.getAllSkills();
+    const total = emps.length * skills.length;
+
+    let html = '';
+    for (let i = 0; i <= 5; i++) {
+      let count = 0;
+      emps.forEach(emp => {
+        skills.forEach(skill => {
+          if ((emp.skills[skill.id] || 0) === i) count++;
+        });
+      });
+      const pct = total > 0 ? (count / total * 100).toFixed(1) : 0;
+      const levelInfo = DataManager.levelConfig[i];
+      html += `
+        <div class="dist-row">
+          <span class="dist-label">Lv.${i}</span>
+          <div class="dist-bar">
+            <div class="dist-fill" style="width:${pct}%;background:var(--level-${i})"></div>
+          </div>
+          <span class="dist-count">${count}</span>
+        </div>`;
+    }
+    container.innerHTML = html;
+  },
+
+  renderRadar() {
+    const svg = document.getElementById('radarChart');
+    const cats = DataManager.categories;
+    const emps = DataManager.employees;
+    const cx = 100, cy = 100, maxR = 70;
+
+    if (cats.length === 0 || emps.length === 0) {
+      svg.innerHTML = '<text x="100" y="100" text-anchor="middle" fill="#94a3b8" font-size="12">暂无数据</text>';
+      return;
+    }
+
+    const catScores = cats.map(cat => {
+      if (cat.skills.length === 0) return 0;
+      let total = 0;
+      let count = 0;
+      emps.forEach(emp => {
+        cat.skills.forEach(skill => {
+          total += emp.skills[skill.id] || 0;
+          count++;
+        });
+      });
+      return count > 0 ? (total / count) / 5 : 0;
+    });
+
+    const n = cats.length;
+    const angle = (2 * Math.PI) / n;
+
+    let gridPath = '';
+    for (let r = 1; r <= 5; r++) {
+      let pts = [];
+      for (let i = 0; i < n; i++) {
+        const a = i * angle - Math.PI / 2;
+        const radius = (maxR * r) / 5;
+        pts.push(`${cx + radius * Math.cos(a)},${cy + radius * Math.sin(a)}`);
+      }
+      gridPath += `<polygon points="${pts.join(' ')}" fill="none" stroke="var(--border)" stroke-width="0.5"/>`;
+    }
+
+    let axisPath = '';
+    let labels = '';
+    for (let i = 0; i < n; i++) {
+      const a = i * angle - Math.PI / 2;
+      axisPath += `<line x1="${cx}" y1="${cy}" x2="${cx + maxR * Math.cos(a)}" y2="${cy + maxR * Math.sin(a)}" stroke="var(--border)" stroke-width="0.5"/>`;
+      const lx = cx + (maxR + 12) * Math.cos(a);
+      const ly = cy + (maxR + 12) * Math.sin(a);
+      labels += `<text x="${lx}" y="${ly}" text-anchor="middle" dominant-baseline="middle" fill="var(--text-secondary)" font-size="10">${cats[i].name}</text>`;
+    }
+
+    let dataPts = [];
+    for (let i = 0; i < n; i++) {
+      const a = i * angle - Math.PI / 2;
+      const r = maxR * catScores[i];
+      dataPts.push(`${cx + r * Math.cos(a)},${cy + r * Math.sin(a)}`);
+    }
+    const dataPath = `<polygon points="${dataPts.join(' ')}" fill="rgba(14, 165, 233, 0.3)" stroke="var(--accent)" stroke-width="2"/>`;
+
+    let dots = '';
+    dataPts.forEach(p => {
+      const [x, y] = p.split(',');
+      dots += `<circle cx="${x}" cy="${y}" r="3" fill="var(--accent)"/>`;
+    });
+
+    svg.innerHTML = gridPath + axisPath + labels + dataPath + dots;
+  },
+
+  renderRankList() {
+    const container = document.getElementById('rankList');
+    const emps = DataManager.employees;
+    const skills = DataManager.getAllSkills();
+
+    if (emps.length === 0 || skills.length === 0) {
+      container.innerHTML = '<div class="empty-state-text" style="padding:20px;text-align:center">暂无数据</div>';
+      return;
+    }
+
+    const ranked = emps.map(emp => {
+      const sum = skills.reduce((s, sk) => s + (emp.skills[sk.id] || 0), 0);
+      const avg = skills.length > 0 ? (sum / skills.length).toFixed(2) : 0;
+      return { ...emp, avgScore: parseFloat(avg) };
+    }).sort((a, b) => b.avgScore - a.avgScore).slice(0, 5);
+
+    let html = '';
+    ranked.forEach((emp, idx) => {
+      html += `
+        <div class="rank-item">
+          <div class="rank-num">${idx + 1}</div>
+          <div class="rank-name">${emp.name}</div>
+          <div class="rank-score">${emp.avgScore}</div>
+        </div>`;
+    });
+    container.innerHTML = html;
+  }
+};
+
+// ============== 图表渲染模块 ==============
+const ChartRenderer = {
+  currentView: 'matrix',
+
+  toggleView(view) {
+    this.currentView = view;
+    const matrixContainer = document.getElementById('matrixContainer');
+    const chartView = document.getElementById('chartView');
+    const styleSelector = document.getElementById('styleSelector');
+    
+    document.querySelectorAll('.view-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.view === view);
+    });
+
+    if (view === 'matrix') {
+      matrixContainer.style.display = 'block';
+      chartView.classList.remove('active');
+      styleSelector.style.display = 'flex';
+    } else {
+      matrixContainer.style.display = 'none';
+      chartView.classList.add('active');
+      styleSelector.style.display = 'none';
+      this.renderAllCharts();
+    }
+  },
+
+  renderAllCharts() {
+    this.renderSkillAvgChart();
+    this.renderBigRadarChart();
+    this.renderEmpRankChart();
+    this.renderStackedChart();
+    this.renderDeptChart();
+  },
+
+  getAllSkillLevels() {
+    const employees = DataManager.employees;
+    const skills = DataManager.getAllSkills();
+    const categories = DataManager.categories;
+    
+    return { employees, skills, categories };
+  },
+
+  getColorValue(level) {
+    const colors = {
+      0: '#94a3b8',
+      1: '#3b82f6',
+      2: '#22c55e',
+      3: '#f59e0b',
+      4: '#ef4444',
+      5: '#8b5cf6'
+    };
+    return colors[level] || colors[0];
+  },
+
+  renderSkillAvgChart() {
+    const container = document.getElementById('skillAvgChart');
+    const { employees, skills } = this.getAllSkillLevels();
+    
+    if (employees.length === 0 || skills.length === 0) {
+      container.innerHTML = '<div class="empty-mini">暂无数据</div>';
+      return;
+    }
+
+    const skillAvgs = skills.map(skill => {
+      let sum = 0;
+      employees.forEach(emp => sum += (emp.skills[skill.id] || 0));
+      return { name: skill.name, avg: sum / employees.length };
+    }).sort((a, b) => b.avg - a.avg).slice(0, 10);
+
+    let html = '';
+    skillAvgs.forEach(skill => {
+      const pct = (skill.avg / 5) * 100;
+      const color = this.getColorValue(Math.round(skill.avg));
+      html += `<div class="bar-item">
+        <div class="bar-label" title="${skill.name}">${skill.name}</div>
+        <div class="bar-track">
+          <div class="bar-fill" style="width:${pct.toFixed(1)}%;background:${color}">${skill.avg.toFixed(1)}</div>
+        </div>
+      </div>`;
+    });
+    container.innerHTML = html;
+  },
+
+  renderBigRadarChart() {
+    const svg = document.getElementById('bigRadarChart');
+    const { employees, categories } = this.getAllSkillLevels();
+    
+    if (employees.length === 0 || categories.length === 0) {
+      svg.innerHTML = '';
+      return;
+    }
+
+    const cx = 200, cy = 150, maxR = 100;
+    const levels = 5;
+    const catCount = categories.length;
+    const angleStep = (2 * Math.PI) / catCount;
+
+    const catAvgs = categories.map(cat => {
+      let total = 0, count = 0;
+      cat.skills.forEach(skill => {
+        employees.forEach(emp => {
+          total += (emp.skills[skill.id] || 0);
+          count++;
+        });
+      });
+      return { name: cat.name, avg: count > 0 ? total / count : 0 };
+    });
+
+    let svgContent = '';
+
+    for (let i = levels; i >= 1; i--) {
+      const r = (maxR * i) / levels;
+      const points = [];
+      for (let j = 0; j < catCount; j++) {
+        const angle = j * angleStep - Math.PI / 2;
+        points.push(`${cx + r * Math.cos(angle)},${cy + r * Math.sin(angle)}`);
+      }
+      svgContent += `<polygon points="${points.join(' ')}" fill="none" stroke="var(--border)" stroke-width="1"/>`;
+    }
+
+    for (let j = 0; j < catCount; j++) {
+      const angle = j * angleStep - Math.PI / 2;
+      const x = cx + maxR * Math.cos(angle);
+      const y = cy + maxR * Math.sin(angle);
+      svgContent += `<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="var(--border)" stroke-width="1"/>`;
+    }
+
+    const dataPoints = catAvgs.map((cat, i) => {
+      const angle = i * angleStep - Math.PI / 2;
+      const r = (maxR * cat.avg) / 5;
+      return `${cx + r * Math.cos(angle)},${cy + r * Math.sin(angle)}`;
+    });
+    svgContent += `<polygon points="${dataPoints.join(' ')}" fill="rgba(99,102,241,0.3)" stroke="#6366f1" stroke-width="2"/>`;
+
+    catAvgs.forEach((cat, i) => {
+      const angle = i * angleStep - Math.PI / 2;
+      const labelR = maxR + 20;
+      const lx = cx + labelR * Math.cos(angle);
+      const ly = cy + labelR * Math.sin(angle);
+      const anchor = Math.abs(Math.cos(angle)) < 0.2 ? 'middle' : (Math.cos(angle) > 0 ? 'start' : 'end');
+      svgContent += `<text x="${lx}" y="${ly}" text-anchor="${anchor}" dominant-baseline="middle" fill="var(--text-secondary)" font-size="11">${cat.name}</text>`;
+    });
+
+    svg.innerHTML = svgContent;
+  },
+
+  renderEmpRankChart() {
+    const container = document.getElementById('empRankChart');
+    const { employees } = this.getAllSkillLevels();
+    const skills = DataManager.getAllSkills();
+    
+    if (employees.length === 0 || skills.length === 0) {
+      container.innerHTML = '<div class="empty-mini">暂无数据</div>';
+      return;
+    }
+
+    const empAvgs = employees.map(emp => {
+      let sum = 0;
+      skills.forEach(skill => sum += (emp.skills[skill.id] || 0));
+      return { name: emp.name, avg: skills.length > 0 ? sum / skills.length : 0 };
+    }).sort((a, b) => b.avg - a.avg).slice(0, 10);
+
+    let html = '';
+    empAvgs.forEach((emp, idx) => {
+      const pct = (emp.avg / 5) * 100;
+      const color = this.getColorValue(Math.round(emp.avg));
+      html += `<div class="bar-item">
+        <div class="bar-label" title="${emp.name}">${idx + 1}. ${emp.name}</div>
+        <div class="bar-track">
+          <div class="bar-fill" style="width:${pct.toFixed(1)}%;background:${color}">${emp.avg.toFixed(2)}</div>
+        </div>
+      </div>`;
+    });
+    container.innerHTML = html;
+  },
+
+  renderStackedChart() {
+    const container = document.getElementById('stackedChart');
+    const { employees, skills } = this.getAllSkillLevels();
+    
+    if (employees.length === 0 || skills.length === 0) {
+      container.innerHTML = '<div class="empty-mini">暂无数据</div>';
+      return;
+    }
+
+    const levelCounts = [0, 0, 0, 0, 0, 0];
+    employees.forEach(emp => {
+      skills.forEach(skill => {
+        const lvl = emp.skills[skill.id] || 0;
+        levelCounts[lvl]++;
+      });
+    });
+
+    const total = levelCounts.reduce((a, b) => a + b, 0);
+
+    let html = '';
+    let cumPct = 0;
+    html += `<div class="stacked-bar-item">
+      <div class="stacked-bar-label">整体分布</div>
+      <div class="stacked-bar">`;
+    for (let i = 0; i <= 5; i++) {
+      const pct = total > 0 ? (levelCounts[i] / total) * 100 : 0;
+      html += `<div class="stacked-segment" style="width:${pct}%;background:var(--level-${i})" title="${DataManager.levelConfig[i].label}: ${levelCounts[i]} (${pct.toFixed(1)}%)"></div>`;
+    }
+    html += `</div>
+      <div class="stacked-value">${total}</div>
+    </div>`;
+
+    for (let i = 5; i >= 0; i--) {
+      const pct = total > 0 ? (levelCounts[i] / total) * 100 : 0;
+      html += `<div class="stacked-bar-item">
+        <div class="stacked-bar-label">${DataManager.levelConfig[i].label}</div>
+        <div class="stacked-bar">
+          <div class="stacked-segment" style="width:${pct}%;background:var(--level-${i})"></div>
+        </div>
+        <div class="stacked-value">${levelCounts[i]}</div>
+      </div>`;
+    }
+    container.innerHTML = html;
+  },
+
+  renderDeptChart() {
+    const container = document.getElementById('deptChart');
+    const { employees, skills } = this.getAllSkillLevels();
+    
+    if (employees.length === 0 || skills.length === 0) {
+      container.innerHTML = '<div class="empty-mini">暂无数据</div>';
+      return;
+    }
+
+    const deptMap = {};
+    employees.forEach(emp => {
+      const dept = emp.department || '未分配';
+      if (!deptMap[dept]) deptMap[dept] = { count: 0, total: 0 };
+      skills.forEach(skill => {
+        deptMap[dept].total += (emp.skills[skill.id] || 0);
+      });
+      deptMap[dept].count++;
+    });
+
+    const deptAvgs = Object.keys(deptMap).map(dept => ({
+      name: dept,
+      avg: deptMap[dept].count > 0 ? deptMap[dept].total / (deptMap[dept].count * skills.length) : 0,
+      count: deptMap[dept].count
+    })).sort((a, b) => b.avg - a.avg);
+
+    let html = '';
+    deptAvgs.forEach(dept => {
+      const pct = (dept.avg / 5) * 100;
+      const color = this.getColorValue(Math.round(dept.avg));
+      html += `<div class="bar-item">
+        <div class="bar-label" title="${dept.name} (${dept.count}人)">${dept.name} (${dept.count}人)</div>
+        <div class="bar-track">
+          <div class="bar-fill" style="width:${pct.toFixed(1)}%;background:${color}">${dept.avg.toFixed(2)}</div>
+        </div>
+      </div>`;
+    });
+    container.innerHTML = html;
+  }
+};
+
+// ============== 导出模块 ==============
+const ExportManager = {
+  exportExcel() {
+    try {
+      const wb = XLSX.utils.book_new();
+      const skills = DataManager.getAllSkills();
+      const emps = DataManager.employees;
+
+      const header = ['姓名', '部门', '职位', '邮箱', ...skills.map(s => s.name)];
+      const data = [header];
+
+      emps.forEach(emp => {
+        const row = [
+          emp.name,
+          emp.department || '',
+          emp.position || '',
+          emp.email || '',
+          ...skills.map(s => emp.skills[s.id] || 0)
+        ];
+        data.push(row);
+      });
+
+      const ws = XLSX.utils.aoa_to_sheet(data);
+
+      ws['!cols'] = [
+        { wch: 12 }, { wch: 12 }, { wch: 16 }, { wch: 24 },
+        ...skills.map(() => ({ wch: 12 }))
+      ];
+
+      XLSX.utils.book_append_sheet(wb, ws, '技能矩阵');
+
+      const catData = [['分类', '技能名称', '技能描述']];
+      DataManager.categories.forEach(cat => {
+        cat.skills.forEach(skill => {
+          catData.push([cat.name, skill.name, skill.description || '']);
+        });
+      });
+      const ws2 = XLSX.utils.aoa_to_sheet(catData);
+      ws2['!cols'] = [{ wch: 15 }, { wch: 20 }, { wch: 40 }];
+      XLSX.utils.book_append_sheet(wb, ws2, '技能列表');
+
+      const levelData = [
+        ['等级', '名称', '说明'],
+        ...DataManager.levelConfig.map(l => [l.level, l.label, l.description])
+      ];
+      const ws3 = XLSX.utils.aoa_to_sheet(levelData);
+      ws3['!cols'] = [{ wch: 8 }, { wch: 12 }, { wch: 40 }];
+      XLSX.utils.book_append_sheet(wb, ws3, '等级说明');
+
+      const fileName = `技能矩阵_${new Date().toISOString().slice(0, 10)}.xlsx`;
+      XLSX.writeFile(wb, fileName);
+      UIController.toast('Excel 导出成功！', 'success');
+    } catch (e) {
+      console.error('导出Excel失败:', e);
+      UIController.toast('导出失败：' + e.message, 'error');
+    }
+  },
+
+  showImageExportModal() {
+    UIController.showModal('imageExportModal');
+  },
+
+  // ===== 修复：导出图片时员工名字和技能位置一致、技能熟练程度完整显示 =====
+  exportImage(options = {}) {
+    const showLegend = options.showLegend !== false;
+    const showTitle = options.showTitle !== false;
+    const highRes = options.highRes !== false;
+    const scale = highRes ? 2 : 1;
+    
+    UIController.toast('正在生成图片...', 'info');
+
+    const isChartView = ChartRenderer.currentView === 'chart';
+    const sourceElement = isChartView 
+      ? document.getElementById('chartView') 
+      : document.getElementById('matrixContainer');
+
+    // 创建离屏包装器
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'position:fixed;left:-9999px;top:-9999px;';
+    
+    // 深度克隆源元素
+    const cloned = sourceElement.cloneNode(true);
+    
+    // 计算内容宽度：优先使用表格的实际宽度
+    const sourceTable = sourceElement.querySelector('.matrix-table');
+    let contentWidth = sourceElement.offsetWidth || 800;
+    if (sourceTable) {
+      // 获取表格的实际滚动宽度（包含所有列）
+      const tableWidth = sourceTable.scrollWidth || sourceTable.offsetWidth;
+      contentWidth = Math.max(tableWidth, contentWidth);
+    }
+    // 增加内边距余量，防止内容被裁剪
+    contentWidth += 60;
+    
+    // 设置克隆体样式
+    cloned.style.width = contentWidth + 'px';
+    cloned.style.minWidth = contentWidth + 'px';
+    cloned.style.display = 'block';
+    cloned.style.position = 'relative';
+    cloned.style.overflow = 'visible';
+    cloned.style.background = 'var(--bg-card)';
+    cloned.style.padding = '20px';
+    cloned.style.borderRadius = '0';
+    cloned.style.boxShadow = 'none';
+    cloned.style.border = 'none';
+    
+    const bgColor = getComputedStyle(document.documentElement).getPropertyValue('--bg-card').trim() || '#ffffff';
+    wrap.style.background = bgColor;
+    cloned.style.background = bgColor;
+
+    // ===== 矩阵视图特殊修复：解决 sticky 定位导致的位置偏移和内容遮挡 =====
+    if (!isChartView) {
+      // 1. 移除所有 sticky 定位，改为相对定位，确保列和表头在图片中正常排列
+      cloned.querySelectorAll('.th-corner, .td-employee').forEach(el => {
+        el.style.position = 'relative';
+        el.style.top = 'auto';
+        el.style.left = 'auto';
+        el.style.zIndex = 'auto';
+        // 确保背景色保留
+        if (el.classList.contains('td-employee')) {
+          el.style.background = 'var(--bg-card)';
+        }
+        if (el.classList.contains('th-corner')) {
+          el.style.background = 'var(--bg-card)';
+        }
+      });
+
+      // 2. 增加单元格高度，确保技能等级（数字、星星、进度条等）完整显示
+      cloned.querySelectorAll('.cell').forEach(el => {
+        el.style.height = '56px';
+        el.style.minHeight = '56px';
+        el.style.lineHeight = '56px';
+        el.style.overflow = 'visible';
+        // 保留背景色
+        const levelMatch = el.className.match(/level-(\d)/);
+        if (levelMatch) {
+          const lvl = levelMatch[1];
+          el.style.background = `var(--level-${lvl})`;
+          el.style.color = `var(--level-${lvl}-text)`;
+        }
+      });
+
+      // 3. 员工列：允许文字换行，取消溢出隐藏，确保姓名和职位完整显示
+      cloned.querySelectorAll('.td-employee').forEach(el => {
+        el.style.height = '56px';
+        el.style.minHeight = '56px';
+        el.style.overflow = 'visible';
+        el.style.background = 'var(--bg-card)';
+        el.style.padding = '8px 16px';
+        el.style.display = 'flex';
+        el.style.alignItems = 'center';
+        el.style.gap = '10px';
+        el.style.borderRight = '2px solid var(--border)';
+        
+        const nameEl = el.querySelector('.item-name');
+        const subEl = el.querySelector('.item-sub');
+        if (nameEl) {
+          nameEl.style.whiteSpace = 'normal';
+          nameEl.style.overflow = 'visible';
+          nameEl.style.textOverflow = 'clip';
+          nameEl.style.wordBreak = 'break-word';
+          nameEl.style.fontWeight = '500';
+          nameEl.style.fontSize = '13px';
+        }
+        if (subEl) {
+          subEl.style.whiteSpace = 'normal';
+          subEl.style.overflow = 'visible';
+          subEl.style.textOverflow = 'clip';
+          subEl.style.wordBreak = 'break-word';
+          subEl.style.fontSize = '11px';
+          subEl.style.color = 'var(--text-muted)';
+          subEl.style.marginTop = '2px';
+        }
+        // 头像保持居中
+        const avatar = el.querySelector('.item-avatar');
+        if (avatar) {
+          avatar.style.flexShrink = '0';
+        }
+        const info = el.querySelector('.item-info');
+        if (info) {
+          info.style.flex = '1';
+          info.style.minWidth = '0';
+        }
+      });
+
+      // 4. 确保表格宽度自适应，所有列完整显示
+      const table = cloned.querySelector('.matrix-table');
+      if (table) {
+        table.style.width = '100%';
+        table.style.tableLayout = 'auto';
+        table.style.borderCollapse = 'separate';
+        table.style.borderSpacing = '0';
+        // 确保所有 th 和 td 的宽度自适应
+        table.querySelectorAll('th, td').forEach(cell => {
+          cell.style.overflow = 'visible';
+          cell.style.whiteSpace = 'normal';
+        });
+        // 表头特殊处理：保留 sticky 移除后的样式
+        table.querySelectorAll('th').forEach(th => {
+          th.style.position = 'relative';
+          th.style.top = 'auto';
+          th.style.zIndex = 'auto';
+          th.style.background = 'var(--bg-card)';
+          th.style.padding = '10px 8px';
+          th.style.borderBottom = '2px solid var(--border)';
+          th.style.borderRight = '1px solid var(--border)';
+          th.style.whiteSpace = 'normal';
+          th.style.wordBreak = 'break-word';
+        });
+        // 修复表头左上角
+        const corner = table.querySelector('.th-corner');
+        if (corner) {
+          corner.style.position = 'relative';
+          corner.style.left = 'auto';
+          corner.style.top = 'auto';
+          corner.style.zIndex = 'auto';
+          corner.style.background = 'var(--bg-card)';
+          corner.style.minWidth = '160px';
+          corner.style.textAlign = 'left';
+          corner.style.paddingLeft = '16px';
+        }
+        // 所有 td 单元格
+        table.querySelectorAll('td').forEach(td => {
+          td.style.overflow = 'visible';
+          td.style.whiteSpace = 'normal';
+          td.style.borderBottom = '1px solid var(--border)';
+          td.style.borderRight = '1px solid var(--border)';
+          td.style.padding = '0';
+        });
+      }
+    }
+
+    // 添加标题（如果启用）
+    if (showTitle) {
+      const titleEl = document.createElement('div');
+      titleEl.style.cssText = 'text-align:center;font-size:22px;font-weight:700;margin-bottom:16px;color:#1e3a5f;background:transparent;';
+      titleEl.textContent = isChartView ? '技能矩阵分析图表' : '员工技能矩阵图';
+      cloned.insertBefore(titleEl, cloned.firstChild);
+    }
+
+    // 添加图例（如果启用，且为矩阵视图）
+    if (showLegend && !isChartView) {
+      const displayStyle = DataManager.settings.displayStyle || 'color';
+      const legendEl = document.createElement('div');
+      legendEl.style.cssText = 'display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin-top:18px;padding-top:14px;border-top:1px solid #e5e7eb;background:transparent;';
+      
+      const colorMap = {
+        '0': '#94a3b8', '1': '#3b82f6', '2': '#22c55e',
+        '3': '#f59e0b', '4': '#ef4444', '5': '#8b5cf6'
+      };
+      const levelIcons = ['⬜', '🌱', '🌿', '🌳', '🌟', '👑'];
+      
+      DataManager.levelConfig.forEach(lc => {
+        const hexColor = colorMap[lc.level] || '#94a3b8';
+        let iconHtml = '';
+        switch (displayStyle) {
+          case 'color':
+            iconHtml = `<div style="width:20px;height:20px;background:${hexColor};border-radius:4px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:700;flex-shrink:0;">${lc.level}</div>`;
+            break;
+          case 'number':
+            iconHtml = `<div style="width:20px;height:20px;background:#fff;border:2px solid #d1d5db;border-radius:4px;display:flex;align-items:center;justify-content:center;color:#374151;font-size:11px;font-weight:700;flex-shrink:0;">${lc.level}</div>`;
+            break;
+          case 'stars':
+            const stars = '★'.repeat(lc.level) + '☆'.repeat(5 - lc.level);
+            iconHtml = `<span style="color:#f59e0b;font-size:14px;letter-spacing:1px;flex-shrink:0;">${stars}</span>`;
+            break;
+          case 'progress':
+            iconHtml = `<div style="width:40px;height:10px;background:#e5e7eb;border-radius:3px;overflow:hidden;flex-shrink:0;"><div style="width:${lc.level * 20}%;height:100%;background:${hexColor};"></div></div>`;
+            break;
+          case 'icon':
+            iconHtml = `<span style="font-size:18px;flex-shrink:0;">${levelIcons[lc.level] || ''}</span>`;
+            break;
+          default:
+            iconHtml = `<div style="width:20px;height:20px;background:${hexColor};border-radius:4px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:700;flex-shrink:0;">${lc.level}</div>`;
+        }
+        legendEl.innerHTML += `<div style="display:flex;align-items:center;gap:8px;font-size:12px;color:#374151;background:transparent;padding:4px 8px;border-radius:4px;">
+          ${iconHtml}
+          <span style="white-space:nowrap;">${lc.label}</span>
+        </div>`;
+      });
+      cloned.appendChild(legendEl);
+    }
+
+    // 将克隆体添加到离屏包装器
+    wrap.appendChild(cloned);
+    document.body.appendChild(wrap);
+
+    // 使用 html2canvas 截图
+    html2canvas(cloned, {
+      backgroundColor: bgColor,
+      scale: scale,
+      useCORS: true,
+      logging: false,
+      allowTaint: true,
+      // 确保所有内容都被捕获
+      width: cloned.scrollWidth,
+      height: cloned.scrollHeight,
+      windowWidth: cloned.scrollWidth,
+      windowHeight: cloned.scrollHeight,
+      onclone: (doc) => {
+        // 在克隆文档中再次确保样式正确
+        const clonedDoc = doc;
+        const table = clonedDoc.querySelector('.matrix-table');
+        if (table) {
+          table.style.width = '100%';
+          table.style.tableLayout = 'auto';
+        }
+      }
+    }).then(canvas => {
+      document.body.removeChild(wrap);
+      const link = document.createElement('a');
+      link.download = `技能矩阵_${new Date().toISOString().slice(0, 10)}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+      UIController.toast('图片导出成功！', 'success');
+      UIController.hideModal('imageExportModal');
+    }).catch(err => {
+      document.body.removeChild(wrap);
+      console.error('导出图片失败:', err);
+      UIController.toast('导出失败：' + err.message, 'error');
+    });
+  },
+
+  exportWord() {
+    const skills = DataManager.getAllSkills();
+    const emps = DataManager.employees;
+    const displayStyle = DataManager.settings.displayStyle || 'color';
+
+    const levelColors = {
+      0: '#94a3b8', 1: '#3b82f6', 2: '#22c55e',
+      3: '#f59e0b', 4: '#ef4444', 5: '#8b5cf6'
+    };
+    const levelTextColors = {
+      0: '#374151', 1: '#ffffff', 2: '#ffffff',
+      3: '#ffffff', 4: '#ffffff', 5: '#ffffff'
+    };
+    const levelIcons = ['⬜', '🌱', '🌿', '🌳', '🌟', '👑'];
+
+    let cellStyle = '';
+    let legendStyle = '';
+
+    const renderCell = (level) => {
+      const color = levelColors[level];
+      const textColor = levelTextColors[level];
+      switch (displayStyle) {
+        case 'color':
+          return `<td style="background:${color};color:${textColor};text-align:center;padding:8px;border:1px solid #ddd;font-weight:600;">${level}</td>`;
+        case 'number':
+          return `<td style="background:#fff;color:#374151;text-align:center;padding:8px;border:1px solid #ddd;font-weight:600;">${level}</td>`;
+        case 'stars':
+          const stars = '★'.repeat(level) + '☆'.repeat(5 - level);
+          return `<td style="background:#fff;color:#f59e0b;text-align:center;padding:8px;border:1px solid #ddd;font-size:14px;letter-spacing:1px;font-family:SimSun,serif;">${stars}</td>`;
+        case 'progress':
+          const progressPct = level * 20;
+          return `<td style="background:#fff;padding:0;border:1px solid #ddd;vertical-align:middle;height:32px;">
+            <table cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;height:100%;">
+              <tr>
+                <td style="width:${progressPct}%;background:${color};height:100%;"></td>
+                <td style="width:${100 - progressPct}%;background:#e5e7eb;height:100%;"></td>
+              </tr>
+            </table>
+          </td>`;
+        case 'icon':
+          return `<td style="background:#fff;color:${color};text-align:center;padding:8px;border:1px solid #ddd;font-size:20px;">${levelIcons[level] || ''}</td>`;
+        default:
+          return `<td style="background:${color};color:${textColor};text-align:center;padding:8px;border:1px solid #ddd;font-weight:600;">${level}</td>`;
+      }
+    };
+
+    const renderLegend = () => {
+      return DataManager.levelConfig.map(l => {
+        const color = levelColors[l.level];
+        const textColor = levelTextColors[l.level];
+        let iconHtml = '';
+        switch (displayStyle) {
+          case 'color':
+            iconHtml = `<span style="display:inline-block;width:22px;height:22px;line-height:22px;text-align:center;background:${color};color:${textColor};border-radius:4px;font-size:12px;font-weight:600;">${l.level}</span>`;
+            break;
+          case 'number':
+            iconHtml = `<span style="display:inline-block;width:22px;height:22px;line-height:20px;text-align:center;background:#fff;color:#374151;border:2px solid #d1d5db;border-radius:4px;font-size:12px;font-weight:600;box-sizing:border-box;">${l.level}</span>`;
+            break;
+          case 'stars':
+            const stars = '★'.repeat(l.level) + '☆'.repeat(5 - l.level);
+            iconHtml = `<span style="color:#f59e0b;font-size:14px;letter-spacing:1px;font-family:SimSun,serif;">${stars}</span>`;
+            break;
+          case 'progress':
+            const pct = l.level * 20;
+            iconHtml = `<table cellpadding="0" cellspacing="0" style="display:inline-table;vertical-align:middle;width:60px;height:12px;border-collapse:collapse;"><tr><td style="width:${pct}%;background:${color};height:12px;"></td><td style="width:${100 - pct}%;background:#e5e7eb;height:12px;"></td></tr></table>`;
+            break;
+          case 'icon':
+            iconHtml = `<span style="font-size:18px;">${levelIcons[l.level] || ''}</span>`;
+            break;
+        }
+        return `<div style="display:flex;align-items:center;gap:6px;font-size:12px;color:#374151;">${iconHtml}<span>Lv.${l.level} ${l.label}</span></div>`;
+      }).join('');
+    };
+
+    const styles = `
+      <style>
+        body { font-family: "Microsoft YaHei", Arial, sans-serif; }
+        h1 { color: #1e3a5f; text-align: center; margin-bottom: 20px; }
+        table { border-collapse: collapse; width: 100%; margin-bottom: 20px; }
+        th { border: 1px solid #ddd; padding: 8px; text-align: center; font-size: 12px; background: #1e3a5f; color: white; }
+        td { font-size: 12px; }
+        .emp-cell { text-align: left; padding: 8px; border: 1px solid #ddd; }
+        .info { color: #666; font-size: 14px; margin-bottom: 15px; }
+        .legend { display: flex; gap: 12px; flex-wrap: wrap; margin: 10px 0 20px; align-items: center; }
+      </style>
+    `;
+
+    let tableRows = '';
+    let headerRow = '<th>姓名</th><th>部门</th><th>职位</th>';
+    skills.forEach(s => headerRow += `<th>${s.name}</th>`);
+
+    emps.forEach(emp => {
+      let row = `<tr><td class="emp-cell">${emp.name}</td><td class="emp-cell">${emp.department || ''}</td><td class="emp-cell">${emp.position || ''}</td>`;
+      skills.forEach(skill => {
+        const level = emp.skills[skill.id] || 0;
+        row += renderCell(level);
+      });
+      row += '</tr>';
+      tableRows += row;
+    });
+
+    const legend = renderLegend();
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        ${styles}
+      </head>
+      <body>
+        <h1>员工技能矩阵图</h1>
+        <div class="info">
+          <p>生成时间：${new Date().toLocaleString('zh-CN')}</p>
+          <p>员工总数：${emps.length} 人 | 技能总数：${skills.length} 项</p>
+        </div>
+        <div class="legend">${legend}</div>
+        <table>
+          <thead><tr>${headerRow}</tr></thead>
+          <tbody>${tableRows}</tbody>
+        </table>
+      </body>
+      </html>
+    `;
+
+    const blob = new Blob(['\ufeff', html], { type: 'application/msword' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `技能矩阵_${new Date().toISOString().slice(0, 10)}.doc`;
+    link.click();
+    URL.revokeObjectURL(url);
+    UIController.toast('Word 导出成功！', 'success');
+  },
+
+  exportJSON() {
+    const data = DataManager.exportJSON();
+    const blob = new Blob([data], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `技能矩阵备份_${new Date().toISOString().slice(0, 10)}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+    UIController.toast('JSON 备份导出成功！', 'success');
+  },
+
+  importFromFile(file) {
+    const reader = new FileReader();
+    const ext = file.name.split('.').pop().toLowerCase();
+
+    reader.onload = (e) => {
+      try {
+        if (ext === 'json') {
+          const success = DataManager.importJSON(e.target.result);
+          if (success) {
+            UIController.toast('导入成功！', 'success');
+            UIController.refreshAll();
+          } else {
+            UIController.toast('导入失败：数据格式错误', 'error');
+          }
+        } else if (ext === 'xlsx' || ext === 'xls') {
+          this.importExcel(e.target.result);
+        }
+      } catch (err) {
+        UIController.toast('导入失败：' + err.message, 'error');
+      }
+    };
+
+    if (ext === 'xlsx' || ext === 'xls') {
+      reader.readAsArrayBuffer(file);
+    } else {
+      reader.readAsText(file);
+    }
+  },
+
+  importExcel(buffer) {
+    const wb = XLSX.read(buffer, { type: 'array' });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const data = XLSX.utils.sheet_to_json(ws, { header: 1 });
+
+    if (data.length < 2) {
+      UIController.toast('Excel 数据不足', 'error');
+      return;
+    }
+
+    const header = data[0];
+    const nameIdx = header.findIndex(h => String(h).includes('姓名'));
+    const deptIdx = header.findIndex(h => String(h).includes('部门'));
+    const posIdx = header.findIndex(h => String(h).includes('职位'));
+
+    if (nameIdx === -1) {
+      UIController.toast('未找到姓名字段', 'error');
+      return;
+    }
+
+    const skillStartIdx = Math.max(nameIdx, deptIdx, posIdx) + 1;
+    const skillNames = header.slice(skillStartIdx);
+
+    const newCats = [{
+      id: 'cat_import_' + Date.now(),
+      name: '导入技能',
+      description: '从Excel导入的技能',
+      skills: skillNames.map((name, i) => ({
+        id: 'sk_imp_' + Date.now() + '_' + i,
+        name: String(name),
+        categoryId: 'cat_import_' + Date.now(),
+        description: ''
+      }))
+    }];
+
+    const newEmps = data.slice(1).filter(row => row[nameIdx]).map((row, i) => {
+      const skills = {};
+      newCats[0].skills.forEach((skill, si) => {
+        const val = row[skillStartIdx + si];
+        skills[skill.id] = val ? Math.max(0, Math.min(5, parseInt(val) || 0)) : 0;
+      });
+      return {
+        id: 'emp_imp_' + Date.now() + '_' + i,
+        name: String(row[nameIdx]),
+        department: deptIdx !== -1 ? String(row[deptIdx] || '') : '',
+        position: posIdx !== -1 ? String(row[posIdx] || '') : '',
+        email: '',
+        skills
+      };
+    });
+
+    DataManager.categories = newCats;
+    DataManager.employees = newEmps;
+    DataManager.saveData();
+    UIController.toast(`成功导入 ${newEmps.length} 名员工和 ${skillNames.length} 项技能`, 'success');
+    UIController.refreshAll();
+  }
+};
+
+// ============== UI控制模块 ==============
+const UIController = {
+  currentEditingEmpId: null,
+  currentEditingCategoryId: null,
+  currentEditingSkillId: null,
+  currentLevelEmpId: null,
+  currentLevelSkillId: null,
+  selectedLevel: 0,
+  sidebarCollapsed: false,
+  statsCollapsed: false,
+
+  init() {
+    this.bindEvents();
+    this.applyTheme();
+    this.refreshAll();
+    const style = DataManager.settings.displayStyle || 'color';
+    document.querySelectorAll('.style-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.style === style);
+    });
+  },
+
+  bindEvents() {
+    document.getElementById('toggleSidebar').addEventListener('click', () => {
+      this.sidebarCollapsed = !this.sidebarCollapsed;
+      document.getElementById('sidebar').classList.toggle('collapsed', this.sidebarCollapsed);
+    });
+
+    document.getElementById('toggleStats').addEventListener('click', () => {
+      this.statsCollapsed = !this.statsCollapsed;
+      document.getElementById('statsPanel').classList.toggle('collapsed', this.statsCollapsed);
+    });
+
+    document.getElementById('legendBtn').addEventListener('click', () => {
+      this.renderLegendModal();
+      this.showModal('legendModal');
+    });
+
+    document.getElementById('themeToggle').addEventListener('click', () => this.toggleTheme());
+
+    document.getElementById('exportBtn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      document.getElementById('exportMenu').classList.toggle('show');
+    });
+
+    document.addEventListener('click', () => {
+      document.getElementById('exportMenu').classList.remove('show');
+    });
+
+    document.querySelectorAll('[data-export]').forEach(item => {
+      item.addEventListener('click', () => {
+        const type = item.dataset.export;
+        this.handleExport(type);
+        document.getElementById('exportMenu').classList.remove('show');
+      });
+    });
+
+    document.getElementById('importBtn').addEventListener('click', () => {
+      document.getElementById('importFile').click();
+    });
+
+    document.getElementById('importFile').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        ExportManager.importFromFile(file);
+        e.target.value = '';
+      }
+    });
+
+    document.querySelectorAll('.sidebar-tab').forEach(tab => {
+      tab.addEventListener('click', () => this.switchSidebarTab(tab.dataset.tab));
+    });
+
+    document.getElementById('empSearch').addEventListener('input', (e) => {
+      MatrixRenderer.searchEmp = e.target.value;
+      MatrixRenderer.render();
+    });
+
+    document.getElementById('skillSearch').addEventListener('input', (e) => {
+      this.renderCategoryList(e.target.value);
+    });
+
+    document.getElementById('deptFilter').addEventListener('change', (e) => {
+      MatrixRenderer.filterDept = e.target.value;
+      MatrixRenderer.render();
+    });
+
+    document.getElementById('addEmpBtn').addEventListener('click', () => this.openEmpModal());
+    document.getElementById('saveEmpBtn').addEventListener('click', () => this.saveEmployee());
+    document.getElementById('addCategoryBtn').addEventListener('click', () => this.openCategoryModal());
+    document.getElementById('saveCategoryBtn').addEventListener('click', () => this.saveCategory());
+    document.getElementById('saveSkillBtn').addEventListener('click', () => this.saveSkill());
+    document.getElementById('saveLevelBtn').addEventListener('click', () => this.saveLevel());
+
+    document.getElementById('sortByName').addEventListener('click', () => {
+      MatrixRenderer.toggleSort('name');
+    });
+
+    document.getElementById('matrixBody').addEventListener('click', (e) => {
+      const cell = e.target.closest('.cell');
+      if (cell) {
+        const empId = cell.dataset.emp;
+        const skillId = cell.dataset.skill;
+        this.openLevelModal(empId, skillId);
+      }
+    });
+
+    document.querySelectorAll('.view-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        ChartRenderer.toggleView(btn.dataset.view);
+      });
+    });
+
+    document.querySelectorAll('.style-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.style-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        DataManager.settings.displayStyle = btn.dataset.style;
+        DataManager.saveSettings();
+        MatrixRenderer.render();
+      });
+    });
+
+    document.getElementById('confirmImageExport').addEventListener('click', () => {
+      const showLegend = document.getElementById('exportShowLegend').checked;
+      const showTitle = document.getElementById('exportShowTitle').checked;
+      const highRes = document.getElementById('exportHighRes').checked;
+      ExportManager.exportImage({ showLegend, showTitle, highRes });
+    });
+
+    document.querySelectorAll('[data-close]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.getElementById(btn.dataset.close).classList.remove('show');
+      });
+    });
+
+    document.querySelectorAll('.modal-overlay').forEach(overlay => {
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) overlay.classList.remove('show');
+      });
+    });
+
+    document.getElementById('settingsBtn').addEventListener('click', () => {
+      document.getElementById('settingDarkMode').checked = DataManager.settings.darkMode;
+      document.getElementById('settingShowLevel').checked = DataManager.settings.showLevel;
+      document.getElementById('settingsModal').classList.add('show');
+    });
+
+    document.getElementById('settingDarkMode').addEventListener('change', (e) => {
+      DataManager.settings.darkMode = e.target.checked;
+      DataManager.saveSettings();
+      this.applyTheme();
+    });
+
+    document.getElementById('settingShowLevel').addEventListener('change', (e) => {
+      DataManager.settings.showLevel = e.target.checked;
+      DataManager.saveSettings();
+      MatrixRenderer.render();
+    });
+
+    document.getElementById('resetDataBtn').addEventListener('click', () => {
+      if (confirm('确定要重置为示例数据吗？当前数据将被清除。')) {
+        DataManager.resetToSample();
+        this.refreshAll();
+        this.toast('已重置为示例数据', 'success');
+      }
+    });
+
+    document.getElementById('clearDataBtn').addEventListener('click', () => {
+      if (confirm('确定要清空所有数据吗？此操作不可恢复！')) {
+        DataManager.clearAllData();
+        this.refreshAll();
+        this.toast('数据已清空', 'warning');
+      }
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        document.querySelectorAll('.modal-overlay.show').forEach(m => m.classList.remove('show'));
+      }
+    });
+  },
+
+  switchSidebarTab(tab) {
+    document.querySelectorAll('.sidebar-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+    document.getElementById('employeeTab').style.display = tab === 'employees' ? 'block' : 'none';
+    document.getElementById('skillTab').style.display = tab === 'skills' ? 'block' : 'none';
+  },
+
+  refreshAll() {
+    this.renderEmployeeList();
+    this.renderCategoryList();
+    this.renderDeptFilter();
+    MatrixRenderer.render();
+    StatsAnalyzer.render();
+    if (ChartRenderer.currentView === 'chart') {
+      ChartRenderer.renderAllCharts();
+    }
+  },
+
+  renderEmployeeList() {
+    const container = document.getElementById('employeeList');
+    const search = document.getElementById('empSearch').value.toLowerCase();
+
+    let emps = DataManager.employees.filter(e => {
+      if (!search) return true;
+      return e.name.toLowerCase().includes(search) ||
+        e.department?.toLowerCase().includes(search) ||
+        e.position?.toLowerCase().includes(search);
+    });
+
+    if (emps.length === 0) {
+      container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">👤</div><div class="empty-state-text">暂无员工</div></div>';
+      return;
+    }
+
+    let html = '';
+    emps.forEach(emp => {
+      html += `
+        <div class="list-item" data-emp="${emp.id}">
+          <div class="item-avatar">${emp.name.charAt(0)}</div>
+          <div class="item-info">
+            <div class="item-name">${emp.name}</div>
+            <div class="item-sub">${emp.department || ''} · ${emp.position || ''}</div>
+          </div>
+          <div class="item-actions">
+            <button class="icon-btn" data-action="edit-emp" data-id="${emp.id}" title="编辑">✏️</button>
+            <button class="icon-btn danger" data-action="del-emp" data-id="${emp.id}" title="删除">🗑️</button>
+          </div>
+        </div>`;
+    });
+
+    container.innerHTML = html;
+
+    container.querySelectorAll('[data-action="edit-emp"]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.openEmpModal(btn.dataset.id);
+      });
+    });
+
+    container.querySelectorAll('[data-action="del-emp"]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (confirm('确定删除该员工吗？')) {
+          DataManager.deleteEmployee(btn.dataset.id);
+          this.refreshAll();
+          this.toast('删除成功', 'success');
+        }
+      });
+    });
+  },
+
+  renderCategoryList(filter = '') {
+    const container = document.getElementById('categoryList');
+    const cats = DataManager.categories;
+    const q = filter.toLowerCase();
+
+    if (cats.length === 0) {
+      container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📂</div><div class="empty-state-text">暂无技能分类</div></div>';
+      return;
+    }
+
+    let html = '';
+    cats.forEach(cat => {
+      const expanded = MatrixRenderer.expandedCategories[cat.id] !== false;
+      const filteredSkills = cat.skills.filter(s =>
+        !q || s.name.toLowerCase().includes(q)
+      );
+      const showCat = !q || filteredSkills.length > 0;
+
+      if (!showCat) return;
+
+      html += `
+        <div class="category-item">
+          <div class="category-header ${expanded ? 'expanded' : ''}" data-cat="${cat.id}">
+            <span class="category-toggle">▶</span>
+            <span style="flex:1">${cat.name}</span>
+            <span style="font-size:11px;color:var(--text-muted)">${filteredSkills.length}</span>
+            <button class="icon-btn" data-action="edit-cat" data-id="${cat.id}" style="opacity:1" title="编辑">✏️</button>
+            <button class="icon-btn danger" data-action="del-cat" data-id="${cat.id}" style="opacity:1" title="删除">🗑️</button>
+          </div>
+          <div class="category-body ${expanded ? 'expanded' : ''}">
+            ${filteredSkills.length === 0 ? '<div style="padding:8px;text-align:center;color:var(--text-muted);font-size:12px">暂无技能</div>' : ''}
+            ${filteredSkills.map(skill => `
+              <div class="skill-item" data-skill="${skill.id}">
+                <span>${skill.name}</span>
+                <div style="display:flex;gap:2px">
+                  <button class="icon-btn" data-action="edit-skill" data-id="${skill.id}" title="编辑">✏️</button>
+                  <button class="icon-btn danger" data-action="del-skill" data-id="${skill.id}" title="删除">🗑️</button>
+                </div>
+              </div>
+            `).join('')}
+            <button class="btn btn-outline btn-sm" style="width:100%;margin-top:6px" data-action="add-skill" data-cat="${cat.id}">+ 添加技能</button>
+          </div>
+        </div>`;
+    });
+
+    html += '';
+    container.innerHTML = html;
+
+    container.querySelectorAll('.category-header').forEach(header => {
+      header.addEventListener('click', (e) => {
+        if (e.target.closest('[data-action]')) return;
+        const catId = header.dataset.cat;
+        MatrixRenderer.expandedCategories[catId] = !MatrixRenderer.expandedCategories[catId];
+        this.renderCategoryList(filter);
+        MatrixRenderer.render();
+      });
+    });
+
+    container.querySelectorAll('[data-action="edit-cat"]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.openCategoryModal(btn.dataset.id);
+      });
+    });
+
+    container.querySelectorAll('[data-action="del-cat"]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (confirm('确定删除该分类及其下所有技能吗？')) {
+          DataManager.deleteCategory(btn.dataset.id);
+          this.refreshAll();
+          this.toast('删除成功', 'success');
+        }
+      });
+    });
+
+    container.querySelectorAll('[data-action="edit-skill"]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.openSkillModal(btn.dataset.id);
+      });
+    });
+
+    container.querySelectorAll('[data-action="del-skill"]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (confirm('确定删除该技能吗？')) {
+          DataManager.deleteSkill(btn.dataset.id);
+          this.refreshAll();
+          this.toast('删除成功', 'success');
+        }
+      });
+    });
+
+    container.querySelectorAll('[data-action="add-skill"]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.openSkillModal(null, btn.dataset.cat);
+      });
+    });
+  },
+
+  renderDeptFilter() {
+    const depts = DataManager.getDepartments();
+    const select = document.getElementById('deptFilter');
+    const current = select.value;
+    select.innerHTML = '<option value="">全部部门</option>' +
+      depts.map(d => `<option value="${d}">${d}</option>`).join('');
+    select.value = current;
+  },
+
+  openEmpModal(id = null) {
+    this.currentEditingEmpId = id;
+    const modal = document.getElementById('empModal');
+
+    if (id) {
+      const emp = DataManager.employees.find(e => e.id === id);
+      if (emp) {
+        document.getElementById('empModalTitle').textContent = '编辑员工';
+        document.getElementById('empName').value = emp.name;
+        document.getElementById('empDept').value = emp.department || '';
+        document.getElementById('empPosition').value = emp.position || '';
+      }
+    } else {
+      document.getElementById('empModalTitle').textContent = '新增员工';
+      document.getElementById('empName').value = '';
+      document.getElementById('empDept').value = '';
+      document.getElementById('empPosition').value = '';
+    }
+
+    modal.classList.add('show');
+    setTimeout(() => document.getElementById('empName').focus(), 100);
+  },
+
+  saveEmployee() {
+    const name = document.getElementById('empName').value.trim();
+    if (!name) {
+      this.toast('请输入姓名', 'warning');
+      return;
+    }
+
+    const data = {
+      name,
+      department: document.getElementById('empDept').value.trim(),
+      position: document.getElementById('empPosition').value.trim()
+    };
+
+    if (this.currentEditingEmpId) {
+      DataManager.updateEmployee(this.currentEditingEmpId, data);
+      this.toast('更新成功', 'success');
+    } else {
+      DataManager.addEmployee(data);
+      this.toast('添加成功', 'success');
+    }
+
+    document.getElementById('empModal').classList.remove('show');
+    this.refreshAll();
+  },
+
+  openCategoryModal(id = null) {
+    this.currentEditingCategoryId = id;
+    const modal = document.getElementById('categoryModal');
+
+    if (id) {
+      const cat = DataManager.getCategoryById(id);
+      if (cat) {
+        document.getElementById('categoryModalTitle').textContent = '编辑分类';
+        document.getElementById('categoryName').value = cat.name;
+        document.getElementById('categoryDesc').value = cat.description || '';
+      }
+    } else {
+      document.getElementById('categoryModalTitle').textContent = '新增分类';
+      document.getElementById('categoryName').value = '';
+      document.getElementById('categoryDesc').value = '';
+    }
+
+    modal.classList.add('show');
+    setTimeout(() => document.getElementById('categoryName').focus(), 100);
+  },
+
+  saveCategory() {
+    const name = document.getElementById('categoryName').value.trim();
+    if (!name) {
+      this.toast('请输入分类名称', 'warning');
+      return;
+    }
+
+    const description = document.getElementById('categoryDesc').value.trim();
+
+    if (this.currentEditingCategoryId) {
+      DataManager.updateCategory(this.currentEditingCategoryId, { name, description });
+      this.toast('更新成功', 'success');
+    } else {
+      DataManager.addCategory(name, description);
+      this.toast('添加成功', 'success');
+    }
+
+    document.getElementById('categoryModal').classList.remove('show');
+    this.refreshAll();
+  },
+
+  openSkillModal(id = null, categoryId = null) {
+    this.currentEditingSkillId = id;
+    const modal = document.getElementById('skillModal');
+    const select = document.getElementById('skillCategory');
+
+    select.innerHTML = DataManager.categories.map(c =>
+      `<option value="${c.id}">${c.name}</option>`
+    ).join('');
+
+    if (id) {
+      const skill = DataManager.getSkillById(id);
+      if (skill) {
+        document.getElementById('skillModalTitle').textContent = '编辑技能';
+        document.getElementById('skillName').value = skill.name;
+        document.getElementById('skillCategory').value = skill.categoryId;
+        document.getElementById('skillDesc').value = skill.description || '';
+      }
+    } else {
+      document.getElementById('skillModalTitle').textContent = '新增技能';
+      document.getElementById('skillName').value = '';
+      if (categoryId) select.value = categoryId;
+      document.getElementById('skillDesc').value = '';
+    }
+
+    modal.classList.add('show');
+    setTimeout(() => document.getElementById('skillName').focus(), 100);
+  },
+
+  saveSkill() {
+    const name = document.getElementById('skillName').value.trim();
+    const categoryId = document.getElementById('skillCategory').value;
+
+    if (!name) {
+      this.toast('请输入技能名称', 'warning');
+      return;
+    }
+    if (!categoryId) {
+      this.toast('请选择分类', 'warning');
+      return;
+    }
+
+    const description = document.getElementById('skillDesc').value.trim();
+
+    if (this.currentEditingSkillId) {
+      DataManager.updateSkill(this.currentEditingSkillId, { name, categoryId, description });
+      this.toast('更新成功', 'success');
+    } else {
+      DataManager.addSkill(categoryId, name, description);
+      this.toast('添加成功', 'success');
+    }
+
+    document.getElementById('skillModal').classList.remove('show');
+    this.refreshAll();
+  },
+
+  openLevelModal(empId, skillId) {
+    this.currentLevelEmpId = empId;
+    this.currentLevelSkillId = skillId;
+
+    const emp = DataManager.employees.find(e => e.id === empId);
+    const skill = DataManager.getSkillById(skillId);
+    if (!emp || !skill) return;
+
+    const currentLevel = emp.skills[skillId] || 0;
+    this.selectedLevel = currentLevel;
+
+    document.getElementById('levelEmpName').textContent = emp.name;
+    document.getElementById('levelSkillName').textContent = skill.name;
+    document.getElementById('levelNote').value = '';
+
+    const selector = document.getElementById('levelSelector');
+    selector.innerHTML = DataManager.levelConfig.map(l => `
+      <div class="level-option ${l.level === currentLevel ? 'selected' : ''}" data-level="${l.level}" style="background:var(--level-${l.level});color:var(--level-${l.level}-text)">
+        <span class="level-num">${l.level}</span>
+        <span>${l.label}</span>
+      </div>
+    `).join('');
+
+    selector.querySelectorAll('.level-option').forEach(opt => {
+      opt.addEventListener('click', () => {
+        selector.querySelectorAll('.level-option').forEach(o => o.classList.remove('selected'));
+        opt.classList.add('selected');
+        this.selectedLevel = parseInt(opt.dataset.level);
+      });
+    });
+
+    document.getElementById('levelModal').classList.add('show');
+  },
+
+  saveLevel() {
+    if (this.currentLevelEmpId && this.currentLevelSkillId) {
+      DataManager.setSkillLevel(this.currentLevelEmpId, this.currentLevelSkillId, this.selectedLevel);
+      MatrixRenderer.render();
+      StatsAnalyzer.render();
+      this.toast('等级已更新', 'success');
+    }
+    document.getElementById('levelModal').classList.remove('show');
+  },
+
+  handleExport(type) {
+    switch (type) {
+      case 'excel':
+        ExportManager.exportExcel();
+        break;
+      case 'image':
+        ExportManager.showImageExportModal();
+        break;
+      case 'word':
+        ExportManager.exportWord();
+        break;
+      case 'json':
+        ExportManager.exportJSON();
+        break;
+    }
+  },
+
+  toggleTheme() {
+    DataManager.settings.darkMode = !DataManager.settings.darkMode;
+    DataManager.saveSettings();
+    this.applyTheme();
+  },
+
+  applyTheme() {
+    if (DataManager.settings.darkMode) {
+      document.documentElement.setAttribute('data-theme', 'dark');
+      document.getElementById('themeIcon').textContent = '☀️';
+    } else {
+      document.documentElement.removeAttribute('data-theme');
+      document.getElementById('themeIcon').textContent = '🌙';
+    }
+  },
+
+  toast(message, type = 'info') {
+    const container = document.getElementById('toastContainer');
+    const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
+
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.innerHTML = `
+      <span class="toast-icon">${icons[type] || icons.info}</span>
+      <span>${message}</span>
+    `;
+
+    container.appendChild(toast);
+
+    setTimeout(() => {
+      toast.style.opacity = '0';
+      toast.style.transform = 'translateX(100%)';
+      toast.style.transition = 'all 0.3s ease';
+      setTimeout(() => toast.remove(), 300);
+    }, 3000);
+  },
+
+  showModal(id) {
+    const modal = document.getElementById(id);
+    if (modal) modal.classList.add('show');
+  },
+
+  renderLegendModal() {
+    const displayStyle = DataManager.settings.displayStyle || 'color';
+    const list = document.getElementById('legendDisplayList');
+    list.innerHTML = DataManager.levelConfig.map(l => {
+      let iconHtml = '';
+      switch (displayStyle) {
+        case 'color':
+          iconHtml = `<div class="legend-display-icon" style="background:var(--level-${l.level});color:var(--level-${l.level}-text)">${l.level}</div>`;
+          break;
+        case 'number':
+          iconHtml = `<div class="legend-display-icon" style="background:var(--bg);color:var(--text);border:2px solid var(--border)">${l.level}</div>`;
+          break;
+        case 'stars':
+          const stars = '★'.repeat(l.level) + '☆'.repeat(5 - l.level);
+          iconHtml = `<div class="legend-display-icon" style="background:var(--bg);color:#f59e0b;border:2px solid var(--border);font-size:14px">${stars}</div>`;
+          break;
+        case 'progress':
+          iconHtml = `<div class="legend-display-icon" style="background:var(--bg);border:2px solid var(--border);padding:0 6px"><div style="width:100%;height:12px;background:var(--level-${l.level});border-radius:2px"></div></div>`;
+          break;
+        case 'icon':
+          const icons = ['⬜', '🌱', '🌿', '🌳', '🌟', '👑'];
+          iconHtml = `<div class="legend-display-icon" style="background:var(--bg);border:2px solid var(--border);font-size:22px">${icons[l.level] || ''}</div>`;
+          break;
+      }
+      return `
+        <div class="legend-display-item">
+          ${iconHtml}
+          <div class="legend-display-text">
+            <div class="legend-display-label">${l.label}（等级 ${l.level}）</div>
+            <div class="legend-display-desc">${l.description}</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  },
+
+  hideModal(id) {
+    const modal = document.getElementById(id);
+    if (modal) modal.classList.remove('show');
+  }
+};
+
+// ============== 应用初始化 ==============
+document.addEventListener('DOMContentLoaded', () => {
+  DataManager.init();
+  MatrixRenderer.init();
+  UIController.init();
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>多平台账号密码管理</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 40px auto;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 25px;
+            border-bottom: 2px solid #f0f4ff;
+            position: relative;
+        }
+        
+        header::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 2px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 2px;
+        }
+        
+        h1 {
+            color: #2d3748;
+            margin-bottom: 12px;
+            font-size: 2.2rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+        
+        .subtitle {
+            color: #718096;
+            font-size: 1.1rem;
+            font-weight: 400;
+        }
+        
+        .search-container {
+            margin-bottom: 30px;
+            position: relative;
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 12px 20px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 1rem;
+            background: #f8fafc;
+            transition: all 0.3s ease;
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .search-icon {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #a0aec0;
+        }
+        
+        .website-list {
+            display: grid;
+            gap: 28px;
+        }
+        
+        .website-card {
+            padding: 30px;
+            border-radius: 12px;
+            background: linear-gradient(145deg, #ffffff, #f8f9ff);
+            border: 1px solid #e8f0fe;
+            box-shadow: 0 8px 16px rgba(102, 126, 234, 0.08);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .website-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: linear-gradient(180deg, #667eea, #764ba2);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .website-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(102, 126, 234, 0.15);
+        }
+        
+        .website-card:hover::before {
+            opacity: 1;
+        }
+        
+        .website-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+        
+        .website-title {
+            display: flex;
+            align-items: center;
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: #2d3748;
+        }
+        
+        .website-icon {
+            margin-right: 12px;
+            font-size: 1.5rem;
+        }
+        
+        .website-badge {
+            padding: 4px 12px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            color: white;
+            border-radius: 50px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        
+        .account-item {
+            margin-bottom: 20px;
+            padding: 20px;
+            background: #f7fafc;
+            border-radius: 8px;
+            border-left: 3px solid #667eea;
+        }
+        
+        .account-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .account-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #4a5568;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .account-title::before {
+            content: '🔑';
+            margin-right: 8px;
+        }
+        
+        .info-row {
+            display: flex;
+            margin-bottom: 12px;
+            align-items: center;
+        }
+        
+        .info-row:last-child {
+            margin-bottom: 0;
+        }
+        
+        .info-label {
+            width: 90px;
+            font-weight: 500;
+            color: #4a5568;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+        }
+        
+        .info-label::before {
+            content: '';
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #667eea;
+            margin-right: 8px;
+        }
+        
+        .info-content {
+            flex: 1;
+            display: flex;
+            align-items: center;
+        }
+        
+        .info-value {
+            flex: 1;
+            font-size: 1rem;
+            color: #2d3748;
+            background: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            border: 1px solid #e2e8f0;
+            min-height: 40px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .action-btn {
+            margin-left: 10px;
+            padding: 6px 10px;
+            border: none;
+            border-radius: 6px;
+            background: #667eea;
+            color: white;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .action-btn:hover {
+            background: #5a67d8;
+        }
+        
+        .action-btn svg {
+            width: 14px;
+            height: 14px;
+            margin-right: 4px;
+        }
+        
+        .toggle-password {
+            background: #48bb78;
+        }
+        
+        .toggle-password:hover {
+            background: #38a169;
+        }
+        
+        .hidden-password {
+            position: relative;
+            display: flex;
+            align-items: center;
+            flex: 1;
+        }
+        
+        .password-mask {
+            background: #e2e8f0;
+            height: 20px;
+            border-radius: 4px;
+            width: 100%;
+        }
+        
+        .copy-notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            background: #48bb78;
+            color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+        
+        .copy-notification.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .no-results {
+            text-align: center;
+            padding: 40px;
+            color: #718096;
+            font-size: 1.1rem;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            color: #718096;
+            font-size: 0.9rem;
+            padding-top: 20px;
+            border-top: 1px solid #f0f4ff;
+        }
+        
+        @media (max-width: 600px) {
+            .container {
+                padding: 25px;
+                margin: 20px auto;
+            }
+            
+            h1 {
+                font-size: 1.8rem;
+            }
+            
+            .website-card {
+                padding: 20px;
+            }
+            
+            .info-row {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .info-label {
+                width: 100%;
+                margin-bottom: 6px;
+            }
+            
+            .info-content {
+                width: 100%;
+            }
+            
+            .action-btn {
+                margin-top: 8px;
+                margin-left: 0;
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>多平台账号密码</h1>
+            <p class="subtitle">管理系统</p>
+        </header>
+        
+        <div class="search-container">
+            <input type="text" class="search-input" id="searchInput" placeholder="搜索平台名称...">
+            <span class="search-icon">🔍</span>
+        </div>
+        
+        <div class="website-list" id="websiteList">
+            <!-- 电子书城 1 -->
+            <div class="website-card" data-name="1">
+                <div class="website-header">
+                    <div class="website-title">
+                        <span class="website-icon">📖</span>
+                        1
+                    </div>
+                    <span class="website-badge">阅读平台</span>
+                </div>
+                
+                <div class="account-item">
+                    <div class="account-title">VIP账号</div>
+                    <div class="info-row">
+                        <span class="info-label">账号：</span>
+                        <div class="info-content">
+                            <span class="info-value" id="account-1">ka2eyv@temporam.com</span>
+                            <button class="action-btn" onclick="copyToClipboard('account-1')">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                </svg>
+                                复制
+                            </button>
+                        </div>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">密码：</span>
+                        <div class="info-content">
+                            <span class="info-value hidden-password" id="password-1-container">
+                                <span class="password-mask" id="password-1-mask"></span>
+                                <span class="password-text" id="password-1" style="display: none;">12345678</span>
+                            </span>
+                            <button class="action-btn toggle-password" onclick="togglePassword('password-1')">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="eye-icon-1">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                </svg>
+                                显示
+                            </button>
+                            <button class="action-btn" onclick="copyToClipboard('password-1')">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                </svg>
+                                复制
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 电子书城 2 -->
+            <div class="website-card" data-name="2">
+                <div class="website-header">
+                    <div class="website-title">
+                        <span class="website-icon">📖</span>
+                        2
+                    </div>
+                    <span class="website-badge">阅读平台</span>
+                </div>
+                
+                <div class="account-item">
+                    <div class="account-title">VIP账号</div>
+                    <div class="info-row">
+                        <span class="info-label">账号：</span>
+                        <div class="info-content">
+                            <span class="info-value" id="account-2">lfcfiv@temporam.xin</span>
+                            <button class="action-btn" onclick="copyToClipboard('account-2')">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                </svg>
+                                复制
+                            </button>
+                        </div>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">密码：</span>
+                        <div class="info-content">
+                            <span class="info-value hidden-password" id="password-2-container">
+                                <span class="password-mask" id="password-2-mask"></span>
+                                <span class="password-text" id="password-2" style="display: none;">123456789</span>
+                            </span>
+                            <button class="action-btn toggle-password" onclick="togglePassword('password-2')">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="eye-icon-2">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                </svg>
+                                显示
+                            </button>
+                            <button class="action-btn" onclick="copyToClipboard('password-2')">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                </svg>
+                                复制
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+          
+            <!-- 电子书城 3 -->
+            <div class="website-card" data-name="3">
+                <div class="website-header">
+                    <div class="website-title">
+                        <span class="website-icon">📖</span>
+                        3
+                    </div>
+                    <span class="website-badge">阅读平台</span>
+                </div>
+                
+                <div class="account-item">
+                    <div class="account-title">VIP账号</div>
+                    <div class="info-row">
+                        <span class="info-label">账号：</span>
+                        <div class="info-content">
+                            <span class="info-value" id="account-3">dbx@temporam.xin</span>
+                            <button class="action-btn" onclick="copyToClipboard('account-3')">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                </svg>
+                                复制
+                            </button>
+                        </div>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">密码：</span>
+                        <div class="info-content">
+                            <span class="info-value hidden-password" id="password-3-container">
+                                <span class="password-mask" id="password-3-mask"></span>
+                                <span class="password-text" id="password-3" style="display: none;">456123</span>
+                            </span>
+                            <button class="action-btn toggle-password" onclick="togglePassword('password-3')">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="eye-icon-3">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                </svg>
+                                显示
+                            </button>
+                            <button class="action-btn" onclick="copyToClipboard('password-3')">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                </svg>
+                                复制
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+          
+            <!-- 电子书城 4 -->
+            <div class="website-card" data-name="4">
+                <div class="website-header">
+                    <div class="website-title">
+                        <span class="website-icon">📖</span>
+                        4
+                    </div>
+                    <span class="website-badge">阅读平台</span>
+                </div>
+                
+                <div class="account-item">
+                    <div class="account-title">VIP账号</div>
+                    <div class="info-row">
+                        <span class="info-label">账号：</span>
+                        <div class="info-content">
+                            <span class="info-value" id="account-4">frkg@guanshuyun.com</span>
+                            <button class="action-btn" onclick="copyToClipboard('account-4')">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                </svg>
+                                复制
+                            </button>
+                        </div>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">密码：</span>
+                        <div class="info-content">
+                            <span class="info-value hidden-password" id="password-4-container">
+                                <span class="password-mask" id="password-4-mask"></span>
+                                <span class="password-text" id="password-4" style="display: none;">789123</span>
+                            </span>
+                            <button class="action-btn toggle-password" onclick="togglePassword('password-4')">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="eye-icon-4">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                </svg>
+                                显示
+                            </button>
+                            <button class="action-btn" onclick="copyToClipboard('password-4')">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                </svg>
+                                复制
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+          
+            <!-- 电子书城 5 -->
+            <div class="website-card" data-name="5">
+                <div class="website-header">
+                    <div class="website-title">
+                        <span class="website-icon">📖</span>
+                        5
+                    </div>
+                    <span class="website-badge">阅读平台</span>
+                </div>
+                
+                <div class="account-item">
+                    <div class="account-title">VIP账号</div>
+                    <div class="info-row">
+                        <span class="info-label">账号：</span>
+                        <div class="info-content">
+                            <span class="info-value" id="account-5">rfyefa@temporam.xin</span>
+                            <button class="action-btn" onclick="copyToClipboard('account-5')">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                </svg>
+                                复制
+                            </button>
+                        </div>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">密码：</span>
+                        <div class="info-content">
+                            <span class="info-value hidden-password" id="password-5-container">
+                                <span class="password-mask" id="password-5-mask"></span>
+                                <span class="password-text" id="password-5" style="display: none;">123456</span>
+                            </span>
+                            <button class="action-btn toggle-password" onclick="togglePassword('password-5')">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="eye-icon-5">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                </svg>
+                                显示
+                            </button>
+                            <button class="action-btn" onclick="copyToClipboard('password-5')">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                </svg>
+                                复制
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+          
+            <!-- 电子书城 6 -->
+            <div class="website-card" data-name="6">
+                <div class="website-header">
+                    <div class="website-title">
+                        <span class="website-icon">📖</span>
+                        6
+                    </div>
+                    <span class="website-badge">阅读平台</span>
+                </div>
+                
+                <div class="account-item">
+                    <div class="account-title">VIP账号</div>
+                    <div class="info-row">
+                        <span class="info-label">账号：</span>
+                        <div class="info-content">
+                            <span class="info-value" id="account-6">gdf9@temporam.com</span>
+                            <button class="action-btn" onclick="copyToClipboard('account-6')">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                </svg>
+                                复制
+                            </button>
+                        </div>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">密码：</span>
+                        <div class="info-content">
+                            <span class="info-value hidden-password" id="password-6-container">
+                                <span class="password-mask" id="password-6-mask"></span>
+                                <span class="password-text" id="password-6" style="display: none;">123456</span>
+                            </span>
+                            <button class="action-btn toggle-password" onclick="togglePassword('password-6')">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="eye-icon-6">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                </svg>
+                                显示
+                            </button>
+                            <button class="action-btn" onclick="copyToClipboard('password-6')">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                </svg>
+                                复制
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+          
+            <!-- 电子书城 7 -->
+            <div class="website-card" data-name="7">
+                <div class="website-header">
+                    <div class="website-title">
+                        <span class="website-icon">📖</span>
+                        7
+                    </div>
+                    <span class="website-badge">阅读平台</span>
+                </div>
+                
+                <div class="account-item">
+                    <div class="account-title">VIP账号</div>
+                    <div class="info-row">
+                        <span class="info-label">账号：</span>
+                        <div class="info-content">
+                            <span class="info-value" id="account-7">gu66m@tianmi.me</span>
+                            <button class="action-btn" onclick="copyToClipboard('account-7')">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                </svg>
+                                复制
+                            </button>
+                        </div>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">密码：</span>
+                        <div class="info-content">
+                            <span class="info-value hidden-password" id="password-7-container">
+                                <span class="password-mask" id="password-7-mask"></span>
+                                <span class="password-text" id="password-7" style="display: none;">123789</span>
+                            </span>
+                            <button class="action-btn toggle-password" onclick="togglePassword('password-7')">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="eye-icon-7">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                </svg>
+                                显示
+                            </button>
+                            <button class="action-btn" onclick="copyToClipboard('password-7')">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                </svg>
+                                复制
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+          
+            <!-- 电子书城 8 -->
+            <div class="website-card" data-name="8">
+                <div class="website-header">
+                    <div class="website-title">
+                        <span class="website-icon">📖</span>
+                        8
+                    </div>
+                    <span class="website-badge">阅读平台</span>
+                </div>
+                
+                <div class="account-item">
+                    <div class="account-title">VIP账号</div>
+                    <div class="info-row">
+                        <span class="info-label">账号：</span>
+                        <div class="info-content">
+                            <span class="info-value" id="account-8">adns@tianmi.me</span>
+                            <button class="action-btn" onclick="copyToClipboard('account-8')">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                </svg>
+                                复制
+                            </button>
+                        </div>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">密码：</span>
+                        <div class="info-content">
+                            <span class="info-value hidden-password" id="password-8-container">
+                                <span class="password-mask" id="password-8-mask"></span>
+                                <span class="password-text" id="password-8" style="display: none;">123456</span>
+                            </span>
+                            <button class="action-btn toggle-password" onclick="togglePassword('password-8')">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="eye-icon-8">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                </svg>
+                                显示
+                            </button>
+                            <button class="action-btn" onclick="copyToClipboard('password-8')">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                </svg>
+                                复制
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+          
+            <!-- 电子书城 9 -->
+            <div class="website-card" data-name="9">
+                <div class="website-header">
+                    <div class="website-title">
+                        <span class="website-icon">📖</span>
+                        9
+                    </div>
+                    <span class="website-badge">阅读平台</span>
+                </div>
+                
+                <div class="account-item">
+                    <div class="account-title">VIP账号</div>
+                    <div class="info-row">
+                        <span class="info-label">账号：</span>
+                        <div class="info-content">
+                            <span class="info-value" id="account-9">pnm@temporam.com</span>
+                            <button class="action-btn" onclick="copyToClipboard('account-9')">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                </svg>
+                                复制
+                            </button>
+                        </div>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">密码：</span>
+                        <div class="info-content">
+                            <span class="info-value hidden-password" id="password-9-container">
+                                <span class="password-mask" id="password-9-mask"></span>
+                                <span class="password-text" id="password-9" style="display: none;">123456</span>
+                            </span>
+                            <button class="action-btn toggle-password" onclick="togglePassword('password-9')">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="eye-icon-9">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                </svg>
+                                显示
+                            </button>
+                            <button class="action-btn" onclick="copyToClipboard('password-9')">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                </svg>
+                                复制
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+          
+            <!-- 电子书城 10 -->
+            <div class="website-card" data-name="10">
+                <div class="website-header">
+                    <div class="website-title">
+                        <span class="website-icon">📖</span>
+                        10
+                    </div>
+                    <span class="website-badge">阅读平台</span>
+                </div>
+                
+                <div class="account-item">
+                    <div class="account-title">VIP账号</div>
+                    <div class="info-row">
+                        <span class="info-label">账号：</span>
+                        <div class="info-content">
+                            <span class="info-value" id="account-10">4ht@tianmi.me</span>
+                            <button class="action-btn" onclick="copyToClipboard('account-10')">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                </svg>
+                                复制
+                            </button>
+                        </div>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">密码：</span>
+                        <div class="info-content">
+                            <span class="info-value hidden-password" id="password-10-container">
+                                <span class="password-mask" id="password-10-mask"></span>
+                                <span class="password-text" id="password-10" style="display: none;">123456</span>
+                            </span>
+                            <button class="action-btn toggle-password" onclick="togglePassword('password-10')">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="eye-icon-10">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                </svg>
+                                显示
+                            </button>
+                            <button class="action-btn" onclick="copyToClipboard('password-10')">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                </svg>
+                                复制
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            &copy; 2025 图书账号管理系统 | 安全存储 · 便捷访问
+        </footer>
+    </div>
+    
+    <div class="copy-notification" id="copyNotification">已复制到剪贴板！</div>
+
+    <script>
+        // 密码显示/隐藏切换
+        function togglePassword(id) {
+            const passwordElement = document.getElementById(id);
+            const maskElement = document.getElementById(`${id}-mask`);
+            const eyeIcon = document.getElementById(`eye-icon-${id.split('-')[1]}`);
+            const toggleBtn = eyeIcon.parentElement;
+            
+            if (passwordElement.style.display === 'none') {
+                passwordElement.style.display = 'inline';
+                maskElement.style.display = 'none';
+                eyeIcon.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line>';
+                toggleBtn.innerHTML = toggleBtn.innerHTML.replace('显示', '隐藏');
+            } else {
+                passwordElement.style.display = 'none';
+                maskElement.style.display = 'block';
+                eyeIcon.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle>';
+                toggleBtn.innerHTML = toggleBtn.innerHTML.replace('隐藏', '显示');
+            }
+        }
+        
+        // 复制到剪贴板
+        function copyToClipboard(id) {
+            const element = document.getElementById(id);
+            const text = element.textContent || element.innerText;
+            
+            navigator.clipboard.writeText(text).then(() => {
+                const notification = document.getElementById('copyNotification');
+                notification.classList.add('show');
+                
+                setTimeout(() => {
+                    notification.classList.remove('show');
+                }, 2000);
+            }).catch(err => {
+                console.error('复制失败:', err);
+                alert('复制失败，请手动复制');
+            });
+        }
+        
+        // 搜索功能
+        document.getElementById('searchInput').addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const websiteCards = document.querySelectorAll('.website-card');
+            let hasResults = false;
+            
+            websiteCards.forEach(card => {
+                const websiteName = card.getAttribute('data-name').toLowerCase();
+                if (websiteName.includes(searchTerm)) {
+                    card.style.display = 'block';
+                    hasResults = true;
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+            
+            // 如果没有搜索结果，显示提示
+            const noResultsElement = document.getElementById('noResults');
+            if (!hasResults) {
+                if (!noResultsElement) {
+                    const noResults = document.createElement('div');
+                    noResults.id = 'noResults';
+                    noResults.className = 'no-results';
+                    noResults.textContent = '没有找到匹配的平台';
+                    document.getElementById('websiteList').appendChild(noResults);
+                }
+            } else if (noResultsElement) {
+                noResultsElement.remove();
+            }
+        });
+        
+        // 页面加载时初始化密码掩码宽度
+        document.addEventListener('DOMContentLoaded', function() {
+            const passwordElements = document.querySelectorAll('.password-text');
+            passwordElements.forEach(el => {
+                const maskId = `${el.id}-mask`;
+                const maskElement = document.getElementById(maskId);
+                if (maskElement) {
+                    maskElement.style.width = `${el.textContent.length * 8 + 20}px`;
+                }
+            });
+        });
+    </script>
+</body>
+</html>

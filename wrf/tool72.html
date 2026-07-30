@@ -1,0 +1,3213 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>全能视频播放器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            color: #fff;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 320px;
+            gap: 20px;
+        }
+
+        @media (max-width: 900px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .player-wrapper {
+            background: #000;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            position: relative;
+        }
+
+        .video-container {
+            position: relative;
+            width: 100%;
+            background: #000;
+            aspect-ratio: 16/9;
+        }
+
+        .video-container video {
+            width: 100%;
+            height: 100%;
+            display: block;
+            object-fit: contain;
+            transition: transform 0.25s ease;
+            transform-origin: center center;
+            cursor: grab;
+        }
+
+        .video-container video.zooming {
+            transition: none;
+            cursor: grabbing;
+        }
+
+        .video-container video.zoom-enabled {
+            cursor: grab;
+        }
+
+        .zoom-indicator {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(0, 0, 0, 0.7);
+            color: #fff;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            z-index: 20;
+            display: none;
+            pointer-events: none;
+        }
+
+        .zoom-indicator.show {
+            display: block;
+        }
+
+        .zoom-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+        }
+
+        .zoom-controls button {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: none;
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            cursor: pointer;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s ease;
+        }
+
+        .zoom-controls button:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .zoom-controls button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .zoom-level-display {
+            min-width: 50px;
+            text-align: center;
+            font-size: 13px;
+            color: #ccc;
+        }
+
+        .rotate-menu {
+            position: absolute;
+            bottom: 40px;
+            right: 0;
+            background: rgba(30, 30, 50, 0.95);
+            border-radius: 8px;
+            padding: 8px 0;
+            min-width: 160px;
+            display: none;
+            z-index: 100;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .rotate-menu.show {
+            display: block;
+        }
+
+        .rotate-menu .settings-section {
+            padding: 8px 16px;
+            font-size: 11px;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .rotate-menu .menu-item {
+            padding: 8px 16px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .rotate-menu .menu-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .rotate-menu .menu-item.active {
+            color: #e94560;
+        }
+
+        .rotate-menu .menu-item svg {
+            width: 16px;
+            height: 16px;
+            fill: currentColor;
+        }
+
+        .rotate-divider {
+            height: 1px;
+            background: rgba(255, 255, 255, 0.1);
+            margin: 6px 0;
+        }
+
+        .center-play-btn {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80px;
+            height: 80px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .video-container.paused .center-play-btn {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .center-play-btn:hover {
+            transform: translate(-50%, -50%) scale(1.1);
+            background: #fff;
+        }
+
+        .center-play-btn svg {
+            width: 36px;
+            height: 36px;
+            fill: #1a1a2e;
+            margin-left: 4px;
+        }
+
+        .controls {
+            background: linear-gradient(transparent, rgba(0, 0, 0, 0.9));
+            padding: 15px 20px;
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 20;
+        }
+
+        .video-container:hover .controls,
+        .video-container.paused .controls,
+        .video-container.show-controls .controls {
+            opacity: 1;
+        }
+
+        .progress-container {
+            width: 100%;
+            margin-bottom: 12px;
+            position: relative;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 3px;
+            cursor: pointer;
+            position: relative;
+            transition: height 0.2s ease;
+        }
+
+        .progress-bar:hover,
+        .progress-bar.dragging {
+            height: 8px;
+        }
+
+        .progress-bar.dragging {
+            cursor: grabbing;
+        }
+
+        .progress-bar.dragging .progress-thumb {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1.2);
+        }
+
+        .progress-bar.dragging .time-tooltip {
+            opacity: 1;
+        }
+
+        .buffered-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.4);
+            border-radius: 3px;
+            width: 0%;
+        }
+
+        .progress-fill {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            background: linear-gradient(90deg, #e94560, #ff6b6b);
+            border-radius: 3px;
+            width: 0%;
+        }
+
+        .progress-thumb {
+            position: absolute;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 14px;
+            height: 14px;
+            background: #fff;
+            border-radius: 50%;
+            left: 0%;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .progress-bar:hover .progress-thumb {
+            opacity: 1;
+        }
+
+        .time-tooltip {
+            position: absolute;
+            bottom: 20px;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .progress-bar:hover .time-tooltip {
+            opacity: 1;
+        }
+
+        .thumbnail-tooltip {
+            position: absolute;
+            bottom: 50px;
+            transform: translateX(-50%);
+            width: 160px;
+            height: 90px;
+            background: #000;
+            border-radius: 6px;
+            overflow: hidden;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .thumbnail-tooltip.show {
+            opacity: 1;
+        }
+
+        .thumbnail-tooltip img,
+        .thumbnail-tooltip canvas {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+        }
+
+        .thumbnail-loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #fff;
+            font-size: 12px;
+            opacity: 0.8;
+        }
+
+        .progress-bar-container {
+            position: relative;
+            width: 100%;
+            padding: 10px 0;
+        }
+
+        .controls-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px;
+        }
+
+        .controls-left,
+        .controls-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .control-btn {
+            background: none;
+            border: none;
+            color: #fff;
+            cursor: pointer;
+            padding: 6px;
+            border-radius: 6px;
+            transition: background 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .control-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .control-btn svg {
+            width: 22px;
+            height: 22px;
+            fill: currentColor;
+        }
+
+        .play-pause-btn svg {
+            width: 28px;
+            height: 28px;
+        }
+
+        .time-display {
+            font-size: 13px;
+            font-family: 'Courier New', monospace;
+            color: #ccc;
+            white-space: nowrap;
+        }
+
+        .time-display .current {
+            color: #fff;
+        }
+
+        .volume-control {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .volume-slider {
+            width: 0;
+            overflow: hidden;
+            transition: width 0.3s ease;
+        }
+
+        .volume-control:hover .volume-slider {
+            width: 80px;
+        }
+
+        .volume-slider input {
+            width: 80px;
+            height: 4px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 2px;
+            outline: none;
+        }
+
+        .volume-slider input::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 12px;
+            height: 12px;
+            background: #fff;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .speed-control,
+        .loop-control {
+            position: relative;
+        }
+
+        .speed-menu,
+        .loop-menu,
+        .subtitle-menu {
+            position: absolute;
+            bottom: 40px;
+            right: 0;
+            background: rgba(30, 30, 50, 0.95);
+            border-radius: 8px;
+            padding: 8px 0;
+            min-width: 120px;
+            display: none;
+            z-index: 100;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .speed-menu.show,
+        .loop-menu.show,
+        .subtitle-menu.show {
+            display: block;
+        }
+
+        .menu-item {
+            padding: 8px 16px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .menu-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .menu-item.active {
+            color: #e94560;
+        }
+
+        .menu-item.active::after {
+            content: '✓';
+            margin-left: 10px;
+        }
+
+        .speed-label,
+        .loop-label {
+            font-size: 13px;
+            min-width: 40px;
+            text-align: center;
+        }
+
+        .playlist-panel {
+            background: rgba(30, 30, 50, 0.8);
+            border-radius: 12px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            display: flex;
+            flex-direction: column;
+            max-height: 600px;
+        }
+
+        .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+
+        .panel-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .add-btn {
+            background: linear-gradient(135deg, #e94560, #ff6b6b);
+            border: none;
+            color: #fff;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: transform 0.2s ease;
+        }
+
+        .add-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .playlist {
+            flex: 1;
+            overflow-y: auto;
+            list-style: none;
+        }
+
+        .playlist::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .playlist::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 3px;
+        }
+
+        .playlist::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+        }
+
+        .playlist-item {
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 6px;
+            transition: background 0.2s ease;
+            position: relative;
+        }
+
+        .playlist-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .playlist-item.active {
+            background: rgba(233, 69, 96, 0.2);
+            border-left: 3px solid #e94560;
+        }
+
+        .playlist-item-index {
+            width: 24px;
+            height: 24px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            flex-shrink: 0;
+        }
+
+        .playlist-item.active .playlist-item-index {
+            background: #e94560;
+        }
+
+        .playlist-item-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .playlist-item-title {
+            font-size: 14px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .playlist-item-duration {
+            font-size: 11px;
+            color: #888;
+            margin-top: 2px;
+        }
+
+        .playlist-item-remove {
+            opacity: 0;
+            background: none;
+            border: none;
+            color: #888;
+            cursor: pointer;
+            padding: 4px;
+            transition: opacity 0.2s ease, color 0.2s ease;
+        }
+
+        .playlist-item:hover .playlist-item-remove {
+            opacity: 1;
+        }
+
+        .playlist-item-remove:hover {
+            color: #e94560;
+        }
+
+        .empty-playlist {
+            text-align: center;
+            padding: 40px 20px;
+            color: #666;
+        }
+
+        .empty-playlist-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .url-input-container {
+            margin-bottom: 15px;
+            display: flex;
+            gap: 8px;
+        }
+
+        .url-input {
+            flex: 1;
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 13px;
+            outline: none;
+        }
+
+        .url-input:focus {
+            border-color: #e94560;
+        }
+
+        .url-input::placeholder {
+            color: #666;
+        }
+
+        .url-add-btn {
+            padding: 8px 16px;
+            background: linear-gradient(135deg, #e94560, #ff6b6b);
+            border: none;
+            color: #fff;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        .info-panel {
+            background: rgba(30, 30, 50, 0.8);
+            border-radius: 12px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            margin-top: 20px;
+        }
+
+        .info-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            font-size: 13px;
+        }
+
+        .info-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .info-label {
+            color: #888;
+        }
+
+        .info-value {
+            color: #fff;
+            word-break: break-all;
+        }
+
+        .shortcut-hint {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .shortcut-hint-title {
+            font-size: 14px;
+            margin-bottom: 8px;
+            color: #ccc;
+        }
+
+        .shortcut-list {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 6px;
+            font-size: 12px;
+        }
+
+        .shortcut-item {
+            display: flex;
+            justify-content: space-between;
+            color: #888;
+        }
+
+        .shortcut-key {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+            color: #fff;
+        }
+
+        .loading-spinner {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top-color: #e94560;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            display: none;
+            z-index: 15;
+        }
+
+        .video-container.loading .loading-spinner {
+            display: block;
+        }
+
+        @keyframes spin {
+            to { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
+        .error-message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(233, 69, 96, 0.9);
+            padding: 15px 25px;
+            border-radius: 8px;
+            font-size: 14px;
+            display: none;
+            z-index: 15;
+            text-align: center;
+        }
+
+        .video-container.error .error-message {
+            display: block;
+        }
+
+        .open-local-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(26, 26, 46, 0.95);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 30;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .video-container.no-video .open-local-overlay {
+            display: flex;
+        }
+
+        .open-local-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+
+        .open-local-title {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .open-local-desc {
+            font-size: 14px;
+            color: #888;
+            margin-bottom: 30px;
+        }
+
+        .open-local-buttons {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .open-local-btn {
+            background: linear-gradient(135deg, #e94560, #ff6b6b);
+            border: none;
+            color: #fff;
+            padding: 14px 28px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 15px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .open-local-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(233, 69, 96, 0.4);
+        }
+
+        .open-local-btn.secondary {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .open-local-btn.secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .drag-drop-hint {
+            margin-top: 25px;
+            padding: 20px 30px;
+            border: 2px dashed rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            color: #666;
+            font-size: 13px;
+        }
+
+        .video-container.drag-over .open-local-overlay {
+            display: flex;
+        }
+
+        .video-container.drag-over .drag-drop-hint {
+            border-color: #e94560;
+            background: rgba(233, 69, 96, 0.1);
+            color: #fff;
+        }
+
+        .add-dropdown {
+            position: relative;
+        }
+
+        .add-menu {
+            position: absolute;
+            top: 40px;
+            right: 0;
+            background: rgba(30, 30, 50, 0.95);
+            border-radius: 8px;
+            padding: 8px 0;
+            min-width: 180px;
+            display: none;
+            z-index: 100;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .add-menu.show {
+            display: block;
+        }
+
+        .add-menu-item {
+            padding: 10px 16px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .add-menu-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .add-menu-item svg {
+            width: 18px;
+            height: 18px;
+            fill: currentColor;
+        }
+
+        .recent-files-section {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .recent-files-title {
+            font-size: 13px;
+            color: #888;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .clear-recent-btn {
+            background: none;
+            border: none;
+            color: #666;
+            font-size: 11px;
+            cursor: pointer;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        .clear-recent-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+
+        .recent-files-list {
+            max-height: 120px;
+            overflow-y: auto;
+        }
+
+        .recent-file-item {
+            padding: 6px 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: #aaa;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .recent-file-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
+        }
+
+        .recent-file-icon {
+            width: 14px;
+            height: 14px;
+            flex-shrink: 0;
+        }
+
+        .screenshot-canvas {
+            display: none;
+        }
+
+        .subtitle-display {
+            position: absolute;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            color: #fff;
+            font-size: 20px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+            pointer-events: none;
+            z-index: 15;
+            max-width: 80%;
+        }
+
+        .settings-panel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 25;
+        }
+
+        .settings-menu {
+            position: absolute;
+            top: 40px;
+            right: 0;
+            background: rgba(30, 30, 50, 0.95);
+            border-radius: 8px;
+            padding: 8px 0;
+            min-width: 180px;
+            display: none;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .settings-menu.show {
+            display: block;
+        }
+
+        .settings-section {
+            padding: 8px 16px;
+            font-size: 11px;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+
+            .controls {
+                padding: 10px 12px;
+            }
+
+            .controls-row {
+                gap: 8px;
+            }
+
+            .controls-left,
+            .controls-right {
+                gap: 6px;
+            }
+
+            .control-btn svg {
+                width: 18px;
+                height: 18px;
+            }
+
+            .play-pause-btn svg {
+                width: 24px;
+                height: 24px;
+            }
+
+            .time-display {
+                font-size: 11px;
+            }
+
+            .volume-control:hover .volume-slider {
+                width: 60px;
+            }
+
+            .volume-slider input {
+                width: 60px;
+            }
+
+            .speed-label,
+            .loop-label {
+                font-size: 11px;
+                min-width: 30px;
+            }
+
+            .playlist-panel {
+                max-height: 400px;
+            }
+
+            .subtitle-display {
+                font-size: 16px;
+                bottom: 60px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="player-main">
+            <div class="player-wrapper">
+                <div class="video-container paused no-video" id="videoContainer">
+                    <video id="video" preload="metadata" playsinline>
+                        您的浏览器不支持视频播放
+                    </video>
+                    
+                    <div class="loading-spinner"></div>
+                    
+                    <div class="error-message" id="errorMessage">
+                        <div id="errorText">视频加载失败</div>
+                    </div>
+                    
+                    <div class="zoom-indicator" id="zoomIndicator">100%</div>
+                    
+                    <div class="open-local-overlay" id="openLocalOverlay">
+                        <div class="open-local-icon">🎬</div>
+                        <div class="open-local-title">打开本地视频</div>
+                        <div class="open-local-desc">选择视频文件开始播放，支持多种格式</div>
+                        <div class="open-local-buttons">
+                            <button class="open-local-btn" id="openFileBtn">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/>
+                                </svg>
+                                选择视频文件
+                            </button>
+                            <button class="open-local-btn secondary" id="openFolderBtn">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/>
+                                </svg>
+                                打开文件夹
+                            </button>
+                        </div>
+                        <div class="drag-drop-hint">
+                            📁 或将视频文件拖拽到此处播放
+                        </div>
+                        <div style="margin-top: 20px; font-size: 12px; color: #666;">
+                            推荐格式：MP4 (H.264) · WebM · OGG &nbsp;|&nbsp; 
+                            <span style="color: #888;">兼容 MKV、MOV、AVI 等（取决于浏览器）</span>
+                        </div>
+                    </div>
+                    
+                    <div class="center-play-btn" id="centerPlayBtn">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M8 5v14l11-7z"/>
+                        </svg>
+                    </div>
+                    
+                    <div class="subtitle-display" id="subtitleDisplay"></div>
+                    
+                    <div class="settings-panel">
+                        <button class="control-btn" id="settingsBtn" title="设置">
+                            <svg viewBox="0 0 24 24">
+                                <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
+                            </svg>
+                        </button>
+                        <div class="settings-menu" id="settingsMenu">
+                            <div class="settings-section">视频</div>
+                            <div class="menu-item" id="screenshotBtn">
+                                <span>截图</span>
+                                <span style="font-size: 11px; color: #888;">S</span>
+                            </div>
+                            <div class="menu-item" id="pipBtn">
+                                <span>画中画</span>
+                                <span style="font-size: 11px; color: #888;">P</span>
+                            </div>
+                            <div class="settings-section">画面缩放</div>
+                            <div class="zoom-controls">
+                                <button id="zoomOutBtn" title="缩小">−</button>
+                                <span class="zoom-level-display" id="zoomLevelDisplay">100%</span>
+                                <button id="zoomInBtn" title="放大">+</button>
+                            </div>
+                            <div class="menu-item" id="zoomResetBtn">
+                                <span>重置缩放</span>
+                                <span style="font-size: 11px; color: #888;">0</span>
+                            </div>
+                            <div class="settings-section">显示</div>
+                            <div class="menu-item" id="subtitleToggle">
+                                <span>字幕</span>
+                                <span style="font-size: 11px; color: #888;">C</span>
+                            </div>
+                            <div class="menu-item" id="fullscreenToggle">
+                                <span>全屏</span>
+                                <span style="font-size: 11px; color: #888;">F</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="controls">
+                        <div class="progress-container">
+                            <div class="progress-bar-container">
+                                <div class="progress-bar" id="progressBar">
+                                    <div class="buffered-bar" id="bufferedBar"></div>
+                                    <div class="progress-fill" id="progressFill"></div>
+                                    <div class="progress-thumb" id="progressThumb"></div>
+                                    <div class="time-tooltip" id="timeTooltip">00:00</div>
+                                    <div class="thumbnail-tooltip" id="thumbnailTooltip">
+                                        <canvas id="thumbnailCanvas"></canvas>
+                                        <div class="thumbnail-loading" id="thumbnailLoading" style="display:none;">加载中...</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="controls-row">
+                            <div class="controls-left">
+                                <button class="control-btn play-pause-btn" id="playPauseBtn" title="播放/暂停 (Space)">
+                                    <svg id="playIcon" viewBox="0 0 24 24">
+                                        <path d="M8 5v14l11-7z"/>
+                                    </svg>
+                                    <svg id="pauseIcon" viewBox="0 0 24 24" style="display:none">
+                                        <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+                                    </svg>
+                                </button>
+                                
+                                <button class="control-btn" id="prevBtn" title="上一个">
+                                    <svg viewBox="0 0 24 24">
+                                        <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/>
+                                    </svg>
+                                </button>
+                                
+                                <button class="control-btn" id="nextBtn" title="下一个">
+                                    <svg viewBox="0 0 24 24">
+                                        <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/>
+                                    </svg>
+                                </button>
+                                
+                                <button class="control-btn" id="rewindBtn" title="快退10秒 (←)">
+                                    <svg viewBox="0 0 24 24">
+                                        <path d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z"/>
+                                    </svg>
+                                </button>
+                                
+                                <button class="control-btn" id="forwardBtn" title="快进10秒 (→)">
+                                    <svg viewBox="0 0 24 24">
+                                        <path d="M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z"/>
+                                    </svg>
+                                </button>
+                                
+                                <div class="volume-control">
+                                    <button class="control-btn" id="muteBtn" title="静音 (M)">
+                                        <svg id="volumeHighIcon" viewBox="0 0 24 24">
+                                            <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+                                        </svg>
+                                        <svg id="volumeLowIcon" viewBox="0 0 24 24" style="display:none">
+                                            <path d="M7 9v6h4l5 5V4l-5 5H7z"/>
+                                        </svg>
+                                        <svg id="volumeMuteIcon" viewBox="0 0 24 24" style="display:none">
+                                            <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>
+                                        </svg>
+                                    </button>
+                                    <div class="volume-slider">
+                                        <input type="range" id="volumeSlider" min="0" max="1" step="0.01" value="1">
+                                    </div>
+                                </div>
+                                
+                                <div class="time-display">
+                                    <span class="current" id="currentTime">00:00</span>
+                                    <span> / </span>
+                                    <span id="duration">00:00</span>
+                                </div>
+                            </div>
+                            
+                            <div class="controls-right">
+                                <div class="subtitle-control">
+                                    <button class="control-btn" id="subtitleBtn" title="字幕 (C)">
+                                        <svg viewBox="0 0 24 24">
+                                            <path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zM4 12h4v2H4v-2zm10 6H4v-2h10v2zm6 0h-4v-2h4v2zm0-4H10v-2h10v2z"/>
+                                        </svg>
+                                    </button>
+                                    <div class="subtitle-menu" id="subtitleMenu">
+                                        <div class="menu-item active" data-subtitle="off">关闭</div>
+                                        <div class="menu-item" data-subtitle="on">字幕</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="speed-control">
+                                    <button class="control-btn" id="speedBtn" title="播放速度">
+                                        <span class="speed-label" id="speedLabel">1x</span>
+                                    </button>
+                                    <div class="speed-menu" id="speedMenu">
+                                        <div class="menu-item" data-speed="0.25">0.25x</div>
+                                        <div class="menu-item" data-speed="0.5">0.5x</div>
+                                        <div class="menu-item" data-speed="0.75">0.75x</div>
+                                        <div class="menu-item active" data-speed="1">1x (正常)</div>
+                                        <div class="menu-item" data-speed="1.25">1.25x</div>
+                                        <div class="menu-item" data-speed="1.5">1.5x</div>
+                                        <div class="menu-item" data-speed="2">2x</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="loop-control">
+                                    <button class="control-btn" id="loopBtn" title="循环模式">
+                                        <svg viewBox="0 0 24 24">
+                                            <path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/>
+                                        </svg>
+                                    </button>
+                                    <div class="loop-menu" id="loopMenu">
+                                        <div class="menu-item active" data-loop="none">不循环</div>
+                                        <div class="menu-item" data-loop="one">单曲循环</div>
+                                        <div class="menu-item" data-loop="list">列表循环</div>
+                                        <div class="menu-item" data-loop="shuffle">随机播放</div>
+                                    </div>
+                                </div>
+                                
+                                <button class="control-btn" id="pipBtn2" title="画中画 (P)">
+                                    <svg viewBox="0 0 24 24">
+                                        <path d="M19 7h-8v6h8V7zm2-4H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16.01H3V4.98h18v14.03z"/>
+                                    </svg>
+                                </button>
+                                
+                                <div class="rotate-control">
+                                    <button class="control-btn" id="rotateBtn" title="旋转 (R)">
+                                        <svg viewBox="0 0 24 24">
+                                            <path d="M12 8V4l8 8-8 8v-4c-4.42 0-8-3.58-8-8s3.58-8 8-8c1.57 0 3.02.46 4.25 1.25l1.45-1.45C15.81 2.67 14 2 12 2 6.48 2 2 6.48 2 12s4.48 10 10 10v-2c-4.42 0-8-3.58-8-8s3.58-8 8-8z"/>
+                                        </svg>
+                                    </button>
+                                    <div class="rotate-menu" id="rotateMenu">
+                                        <div class="settings-section">旋转</div>
+                                        <div class="menu-item" data-rotate="0">
+                                            <svg viewBox="0 0 24 24"><path d="M4 4h16v16H4z" opacity="0"/><path d="M12 8V4l8 8-8 8v-4c-4.42 0-8-3.58-8-8s3.58-8 8-8c1.57 0 3.02.46 4.25 1.25l1.45-1.45C15.81 2.67 14 2 12 2 6.48 2 2 6.48 2 12s4.48 10 10 10v-2c-4.42 0-8-3.58-8-8s3.58-8 8-8z"/></svg>
+                                            原始方向
+                                        </div>
+                                        <div class="menu-item" data-rotate="90">
+                                            <svg viewBox="0 0 24 24" style="transform: rotate(90deg);"><path d="M4 4h16v16H4z" opacity="0"/><path d="M12 8V4l8 8-8 8v-4c-4.42 0-8-3.58-8-8s3.58-8 8-8c1.57 0 3.02.46 4.25 1.25l1.45-1.45C15.81 2.67 14 2 12 2 6.48 2 2 6.48 2 12s4.48 10 10 10v-2c-4.42 0-8-3.58-8-8s3.58-8 8-8z"/></svg>
+                                            顺时针 90°
+                                        </div>
+                                        <div class="menu-item" data-rotate="180">
+                                            <svg viewBox="0 0 24 24" style="transform: rotate(180deg);"><path d="M4 4h16v16H4z" opacity="0"/><path d="M12 8V4l8 8-8 8v-4c-4.42 0-8-3.58-8-8s3.58-8 8-8c1.57 0 3.02.46 4.25 1.25l1.45-1.45C15.81 2.67 14 2 12 2 6.48 2 2 6.48 2 12s4.48 10 10 10v-2c-4.42 0-8-3.58-8-8s3.58-8 8-8z"/></svg>
+                                            旋转 180°
+                                        </div>
+                                        <div class="menu-item" data-rotate="270">
+                                            <svg viewBox="0 0 24 24" style="transform: rotate(270deg);"><path d="M4 4h16v16H4z" opacity="0"/><path d="M12 8V4l8 8-8 8v-4c-4.42 0-8-3.58-8-8s3.58-8 8-8c1.57 0 3.02.46 4.25 1.25l1.45-1.45C15.81 2.67 14 2 12 2 6.48 2 2 6.48 2 12s4.48 10 10 10v-2c-4.42 0-8-3.58-8-8s3.58-8 8-8z"/></svg>
+                                            逆时针 90°
+                                        </div>
+                                        <div class="rotate-divider"></div>
+                                        <div class="settings-section">翻转</div>
+                                        <div class="menu-item" data-flip="horizontal">
+                                            <svg viewBox="0 0 24 24"><path d="M15 21h2v-2h-2v2zm4 0h2v-2h-2v2zM7 21h2v-2H7v2zm4 0h2v-2h-2v2zm8-8h2v-2h-2v2zm0-4h2V7h-2v2zM3 3v18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V3c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2zm16 18H5V3h14v18zm-8-2h2v-2h-2v2zm-4 0H5v-2h2v2zm0-4H5v-2h2v2zm0-4H5V7h2v2zm0-4H5V3h2v2zm4 0h2V3h-2v2zm4 0h2V3h-2v2z"/></svg>
+                                            水平翻转
+                                        </div>
+                                        <div class="menu-item" data-flip="vertical">
+                                            <svg viewBox="0 0 24 24" style="transform: rotate(90deg);"><path d="M15 21h2v-2h-2v2zm4 0h2v-2h-2v2zM7 21h2v-2H7v2zm4 0h2v-2h-2v2zm8-8h2v-2h-2v2zm0-4h2V7h-2v2zM3 3v18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V3c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2zm16 18H5V3h14v18zm-8-2h2v-2h-2v2zm-4 0H5v-2h2v2zm0-4H5v-2h2v2zm0-4H5V7h2v2zm0-4H5V3h2v2zm4 0h2V3h-2v2zm4 0h2V3h-2v2z"/></svg>
+                                            垂直翻转
+                                        </div>
+                                        <div class="menu-item" data-reset="true">
+                                            <svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+                                            重置
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <button class="control-btn" id="fullscreenBtn" title="全屏 (F)">
+                                    <svg id="fullscreenEnterIcon" viewBox="0 0 24 24">
+                                        <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
+                                    </svg>
+                                    <svg id="fullscreenExitIcon" viewBox="0 0 24 24" style="display:none">
+                                        <path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="info-panel">
+                <div class="info-title" id="videoTitle">视频信息</div>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label">文件名</span>
+                        <span class="info-value" id="infoFileName">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">格式</span>
+                        <span class="info-value" id="infoFormat">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">分辨率</span>
+                        <span class="info-value" id="infoResolution">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">时长</span>
+                        <span class="info-value" id="infoDuration">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">大小</span>
+                        <span class="info-value" id="infoSize">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">类型</span>
+                        <span class="info-value" id="infoType">-</span>
+                    </div>
+                </div>
+                
+                <div class="shortcut-hint">
+                    <div class="shortcut-hint-title">快捷键</div>
+                    <div class="shortcut-list">
+                        <div class="shortcut-item">
+                            <span>播放/暂停</span>
+                            <span class="shortcut-key">Space</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <span>全屏</span>
+                            <span class="shortcut-key">F</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <span>快退10秒</span>
+                            <span class="shortcut-key">←</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <span>快进10秒</span>
+                            <span class="shortcut-key">→</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <span>音量减</span>
+                            <span class="shortcut-key">↓</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <span>音量加</span>
+                            <span class="shortcut-key">↑</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <span>静音</span>
+                            <span class="shortcut-key">M</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <span>画中画</span>
+                            <span class="shortcut-key">P</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <span>截图</span>
+                            <span class="shortcut-key">S</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <span>字幕</span>
+                            <span class="shortcut-key">C</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <span>打开文件</span>
+                            <span class="shortcut-key">Ctrl+O</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <span>上一个</span>
+                            <span class="shortcut-key">B</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <span>下一个</span>
+                            <span class="shortcut-key">N</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <span>顺时针旋转</span>
+                            <span class="shortcut-key">R</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <span>逆时针旋转</span>
+                            <span class="shortcut-key">Shift+R</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <span>画面放大</span>
+                            <span class="shortcut-key">+</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <span>画面缩小</span>
+                            <span class="shortcut-key">−</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <span>重置缩放</span>
+                            <span class="shortcut-key">0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="playlist-panel">
+            <div class="panel-header">
+                <span class="panel-title">播放列表</span>
+                <div class="add-dropdown">
+                    <button class="add-btn" id="addBtn">+ 添加</button>
+                    <div class="add-menu" id="addMenu">
+                        <div class="add-menu-item" id="addFileBtn">
+                            <svg viewBox="0 0 24 24">
+                                <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/>
+                            </svg>
+                            选择视频文件
+                        </div>
+                        <div class="add-menu-item" id="addFolderBtn">
+                            <svg viewBox="0 0 24 24">
+                                <path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/>
+                            </svg>
+                            打开文件夹
+                        </div>
+                        <div class="add-menu-item" id="addUrlBtn">
+                            <svg viewBox="0 0 24 24">
+                                <path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/>
+                            </svg>
+                            添加视频URL
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="url-input-container" id="urlInputContainer" style="display: none;">
+                <input type="text" class="url-input" id="urlInput" placeholder="输入视频URL...">
+                <button class="url-add-btn" id="urlAddBtn">添加</button>
+            </div>
+            
+            <input type="file" class="file-input" id="fileInput" accept="video/*, .mp4, .webm, .ogg, .ogv, .mov, .mkv, .avi, .wmv, .flv, .m4v, .3gp, .ts" multiple>
+            <input type="file" class="file-input" id="folderInput" webkitdirectory directory multiple style="display:none">
+            
+            <ul class="playlist" id="playlist">
+                <li class="empty-playlist">
+                    <div class="empty-playlist-icon">📹</div>
+                    <div>暂无视频</div>
+                    <div style="font-size: 12px; margin-top: 5px;">点击上方"添加"按钮或拖拽文件到这里</div>
+                </li>
+            </ul>
+            
+            <div class="recent-files-section" id="recentFilesSection" style="display: none;">
+                <div class="recent-files-title">
+                    <span>最近播放</span>
+                    <button class="clear-recent-btn" id="clearRecentBtn">清除</button>
+                </div>
+                <div class="recent-files-list" id="recentFilesList"></div>
+            </div>
+        </div>
+    </div>
+    
+    <canvas class="screenshot-canvas" id="screenshotCanvas"></canvas>
+    
+    <script>
+        class VideoPlayer {
+            constructor() {
+                this.video = document.getElementById('video');
+                this.videoContainer = document.getElementById('videoContainer');
+                this.playlist = [];
+                this.currentIndex = -1;
+                this.loopMode = 'none';
+                this.subtitleEnabled = false;
+                this.isDragging = false;
+                this.lastShuffledIndex = -1;
+                this.controlsTimeout = null;
+                this.subtitleCues = [];
+                
+                this.initElements();
+                this.initEvents();
+            }
+            
+            initElements() {
+                this.playPauseBtn = document.getElementById('playPauseBtn');
+                this.playIcon = document.getElementById('playIcon');
+                this.pauseIcon = document.getElementById('pauseIcon');
+                this.centerPlayBtn = document.getElementById('centerPlayBtn');
+                this.prevBtn = document.getElementById('prevBtn');
+                this.nextBtn = document.getElementById('nextBtn');
+                this.rewindBtn = document.getElementById('rewindBtn');
+                this.forwardBtn = document.getElementById('forwardBtn');
+                this.muteBtn = document.getElementById('muteBtn');
+                this.volumeSlider = document.getElementById('volumeSlider');
+                this.volumeHighIcon = document.getElementById('volumeHighIcon');
+                this.volumeLowIcon = document.getElementById('volumeLowIcon');
+                this.volumeMuteIcon = document.getElementById('volumeMuteIcon');
+                this.currentTimeEl = document.getElementById('currentTime');
+                this.durationEl = document.getElementById('duration');
+                this.progressBar = document.getElementById('progressBar');
+                this.progressFill = document.getElementById('progressFill');
+                this.progressThumb = document.getElementById('progressThumb');
+                this.bufferedBar = document.getElementById('bufferedBar');
+                this.timeTooltip = document.getElementById('timeTooltip');
+                this.thumbnailTooltip = document.getElementById('thumbnailTooltip');
+                this.thumbnailCanvas = document.getElementById('thumbnailCanvas');
+                this.thumbnailLoading = document.getElementById('thumbnailLoading');
+                this.isDragging = false;
+                this.thumbnailVideo = null;
+                this.thumbnailCache = {};
+                this.lastThumbnailTime = -1;
+                this.thumbnailThrottle = 80;
+                this.lastThumbnailRequest = 0;
+                this.thumbnailPending = false;
+                this.pendingThumbnailTime = 0;
+                this.pendingCacheKey = null;
+                this.zoomLevel = 1;
+                this.zoomMin = 0.5;
+                this.zoomMax = 4;
+                this.zoomStep = 0.25;
+                this.zoomPanX = 0;
+                this.zoomPanY = 0;
+                this.isPanning = false;
+                this.panStartX = 0;
+                this.panStartY = 0;
+                this.zoomIndicator = document.getElementById('zoomIndicator');
+                this.zoomInBtn = document.getElementById('zoomInBtn');
+                this.zoomOutBtn = document.getElementById('zoomOutBtn');
+                this.zoomResetBtn = document.getElementById('zoomResetBtn');
+                this.zoomLevelDisplay = document.getElementById('zoomLevelDisplay');
+                this.fullscreenBtn = document.getElementById('fullscreenBtn');
+                this.fullscreenEnterIcon = document.getElementById('fullscreenEnterIcon');
+                this.fullscreenExitIcon = document.getElementById('fullscreenExitIcon');
+                this.speedBtn = document.getElementById('speedBtn');
+                this.speedMenu = document.getElementById('speedMenu');
+                this.speedLabel = document.getElementById('speedLabel');
+                this.loopBtn = document.getElementById('loopBtn');
+                this.loopMenu = document.getElementById('loopMenu');
+                this.subtitleBtn = document.getElementById('subtitleBtn');
+                this.subtitleMenu = document.getElementById('subtitleMenu');
+                this.subtitleDisplay = document.getElementById('subtitleDisplay');
+                this.pipBtn = document.getElementById('pipBtn');
+                this.pipBtn2 = document.getElementById('pipBtn2');
+                this.rotateBtn = document.getElementById('rotateBtn');
+                this.rotateMenu = document.getElementById('rotateMenu');
+                this.rotation = 0;
+                this.flipH = false;
+                this.flipV = false;
+                this.settingsBtn = document.getElementById('settingsBtn');
+                this.settingsMenu = document.getElementById('settingsMenu');
+                this.screenshotBtn = document.getElementById('screenshotBtn');
+                this.screenshotCanvas = document.getElementById('screenshotCanvas');
+                this.playlistEl = document.getElementById('playlist');
+                this.addBtn = document.getElementById('addBtn');
+                this.addMenu = document.getElementById('addMenu');
+                this.addFileBtn = document.getElementById('addFileBtn');
+                this.addFolderBtn = document.getElementById('addFolderBtn');
+                this.addUrlBtn = document.getElementById('addUrlBtn');
+                this.fileInput = document.getElementById('fileInput');
+                this.folderInput = document.getElementById('folderInput');
+                this.urlInput = document.getElementById('urlInput');
+                this.urlAddBtn = document.getElementById('urlAddBtn');
+                this.urlInputContainer = document.getElementById('urlInputContainer');
+                this.errorMessage = document.getElementById('errorMessage');
+                this.errorText = document.getElementById('errorText');
+                this.openLocalOverlay = document.getElementById('openLocalOverlay');
+                this.openFileBtn = document.getElementById('openFileBtn');
+                this.openFolderBtn = document.getElementById('openFolderBtn');
+                this.recentFilesSection = document.getElementById('recentFilesSection');
+                this.recentFilesList = document.getElementById('recentFilesList');
+                this.clearRecentBtn = document.getElementById('clearRecentBtn');
+                this.recentFiles = [];
+                
+                this.infoFileName = document.getElementById('infoFileName');
+                this.infoFormat = document.getElementById('infoFormat');
+                this.infoResolution = document.getElementById('infoResolution');
+                this.infoDuration = document.getElementById('infoDuration');
+                this.infoSize = document.getElementById('infoSize');
+                this.infoType = document.getElementById('infoType');
+                this.videoTitle = document.getElementById('videoTitle');
+            }
+            
+            initEvents() {
+                this.playPauseBtn.addEventListener('click', () => this.togglePlay());
+                this.centerPlayBtn.addEventListener('click', () => this.togglePlay());
+                this.video.addEventListener('click', () => {
+                    if (this.zoomLevel > 1 && this.panMoved) {
+                        return;
+                    }
+                    this.togglePlay();
+                });
+                
+                this.video.addEventListener('play', () => this.updatePlayState(true));
+                this.video.addEventListener('pause', () => this.updatePlayState(false));
+                this.video.addEventListener('ended', () => this.onVideoEnded());
+                this.video.addEventListener('timeupdate', () => this.updateProgress());
+                this.video.addEventListener('loadedmetadata', () => this.onLoadedMetadata());
+                this.video.addEventListener('progress', () => this.updateBuffered());
+                this.video.addEventListener('waiting', () => this.setLoading(true));
+                this.video.addEventListener('canplay', () => this.setLoading(false));
+                this.video.addEventListener('error', (e) => this.onError(e));
+                this.video.addEventListener('volumechange', () => this.updateVolumeIcon());
+                
+                this.prevBtn.addEventListener('click', () => this.playPrev());
+                this.nextBtn.addEventListener('click', () => this.playNext());
+                this.rewindBtn.addEventListener('click', () => this.skip(-10));
+                this.forwardBtn.addEventListener('click', () => this.skip(10));
+                
+                this.muteBtn.addEventListener('click', () => this.toggleMute());
+                this.volumeSlider.addEventListener('input', (e) => this.setVolume(e.target.value));
+                
+                this.speedBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.toggleMenu(this.speedMenu);
+                });
+                this.speedMenu.querySelectorAll('.menu-item').forEach(item => {
+                    item.addEventListener('click', (e) => {
+                        const speed = parseFloat(e.target.dataset.speed);
+                        this.setSpeed(speed);
+                        this.speedMenu.classList.remove('show');
+                    });
+                });
+                
+                this.loopBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.toggleMenu(this.loopMenu);
+                });
+                this.loopMenu.querySelectorAll('.menu-item').forEach(item => {
+                    item.addEventListener('click', (e) => {
+                        const mode = e.target.dataset.loop;
+                        this.setLoopMode(mode);
+                        this.loopMenu.classList.remove('show');
+                    });
+                });
+                
+                this.subtitleBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.toggleMenu(this.subtitleMenu);
+                });
+                this.subtitleMenu.querySelectorAll('.menu-item').forEach(item => {
+                    item.addEventListener('click', (e) => {
+                        const mode = e.target.dataset.subtitle;
+                        this.toggleSubtitle(mode === 'on');
+                        this.subtitleMenu.classList.remove('show');
+                    });
+                });
+                
+                this.fullscreenBtn.addEventListener('click', () => this.toggleFullscreen());
+                this.pipBtn.addEventListener('click', () => this.togglePiP());
+                this.pipBtn2.addEventListener('click', () => this.togglePiP());
+                this.screenshotBtn.addEventListener('click', () => this.takeScreenshot());
+                
+                this.rotateBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.toggleMenu(this.rotateMenu);
+                });
+                
+                this.rotateMenu.querySelectorAll('[data-rotate]').forEach(item => {
+                    item.addEventListener('click', (e) => {
+                        const degrees = parseInt(e.currentTarget.dataset.rotate);
+                        this.setRotation(degrees);
+                        this.rotateMenu.classList.remove('show');
+                    });
+                });
+                
+                this.rotateMenu.querySelectorAll('[data-flip]').forEach(item => {
+                    item.addEventListener('click', (e) => {
+                        const direction = e.currentTarget.dataset.flip;
+                        this.toggleFlip(direction);
+                        this.rotateMenu.classList.remove('show');
+                    });
+                });
+                
+                this.rotateMenu.querySelector('[data-reset]').addEventListener('click', () => {
+                    this.resetRotation();
+                    this.rotateMenu.classList.remove('show');
+                });
+                
+                this.settingsBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.toggleMenu(this.settingsMenu);
+                });
+                document.getElementById('fullscreenToggle').addEventListener('click', () => {
+                    this.toggleFullscreen();
+                    this.settingsMenu.classList.remove('show');
+                });
+                document.getElementById('subtitleToggle').addEventListener('click', () => {
+                    this.toggleSubtitle(!this.subtitleEnabled);
+                    this.settingsMenu.classList.remove('show');
+                });
+                document.getElementById('pipBtn').addEventListener('click', () => {
+                    this.togglePiP();
+                    this.settingsMenu.classList.remove('show');
+                });
+                this.screenshotBtn.addEventListener('click', () => {
+                    this.settingsMenu.classList.remove('show');
+                });
+                
+                this.zoomInBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.zoomIn();
+                });
+                this.zoomOutBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.zoomOut();
+                });
+                this.zoomResetBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.resetZoom();
+                });
+                
+                this.video.addEventListener('wheel', (e) => {
+                    if (e.ctrlKey || e.metaKey) {
+                        e.preventDefault();
+                        if (e.deltaY < 0) {
+                            this.zoomIn();
+                        } else {
+                            this.zoomOut();
+                        }
+                    }
+                });
+                
+                this.video.addEventListener('pointerdown', (e) => {
+                    if (e.button === 0) {
+                        this.panMoved = false;
+                        if (this.zoomLevel > 1) {
+                            this.startPan(e);
+                        }
+                    }
+                });
+                document.addEventListener('pointermove', (e) => this.onPan(e));
+                document.addEventListener('pointerup', (e) => this.endPan(e));
+                
+                document.addEventListener('click', () => {
+                    this.speedMenu.classList.remove('show');
+                    this.loopMenu.classList.remove('show');
+                    this.subtitleMenu.classList.remove('show');
+                    this.settingsMenu.classList.remove('show');
+                    this.addMenu.classList.remove('show');
+                    this.rotateMenu.classList.remove('show');
+                });
+                
+                this.progressBar.addEventListener('pointerdown', (e) => this.startDrag(e));
+                document.addEventListener('pointermove', (e) => this.onDrag(e));
+                document.addEventListener('pointerup', (e) => this.endDrag(e));
+                this.progressBar.addEventListener('pointermove', (e) => {
+                    this.updateTimeTooltip(e);
+                    this.updateThumbnailTooltip(e);
+                });
+                this.progressBar.addEventListener('pointerenter', (e) => {
+                    this.showThumbnailTooltip(e);
+                });
+                this.progressBar.addEventListener('pointerleave', () => {
+                    this.hideThumbnailTooltip();
+                });
+                
+                this.addBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.toggleMenu(this.addMenu);
+                });
+                this.addFileBtn.addEventListener('click', () => {
+                    this.addMenu.classList.remove('show');
+                    this.fileInput.click();
+                });
+                this.addFolderBtn.addEventListener('click', () => {
+                    this.addMenu.classList.remove('show');
+                    this.folderInput.click();
+                });
+                this.addUrlBtn.addEventListener('click', () => {
+                    this.addMenu.classList.remove('show');
+                    this.showUrlInput();
+                });
+                this.fileInput.addEventListener('change', (e) => {
+                    this.handleFiles(e.target.files, true);
+                    e.target.value = '';
+                });
+                this.folderInput.addEventListener('change', (e) => {
+                    this.handleFiles(e.target.files, true);
+                    e.target.value = '';
+                });
+                this.urlAddBtn.addEventListener('click', () => this.addUrlVideo());
+                this.urlInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') this.addUrlVideo();
+                });
+                
+                this.openFileBtn.addEventListener('click', () => this.fileInput.click());
+                this.openFolderBtn.addEventListener('click', () => this.folderInput.click());
+                
+                this.videoContainer.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    this.videoContainer.classList.add('drag-over');
+                });
+                this.videoContainer.addEventListener('dragleave', (e) => {
+                    if (!this.videoContainer.contains(e.relatedTarget)) {
+                        this.videoContainer.classList.remove('drag-over');
+                    }
+                });
+                this.videoContainer.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    this.videoContainer.classList.remove('drag-over');
+                    const files = e.dataTransfer.files;
+                    if (files && files.length > 0) {
+                        this.handleFiles(files, true);
+                    }
+                });
+                
+                this.clearRecentBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.clearRecentFiles();
+                });
+                
+                document.addEventListener('keydown', (e) => this.handleKeyboard(e));
+                document.addEventListener('fullscreenchange', () => this.updateFullscreenIcon());
+                
+                this.videoContainer.addEventListener('mousemove', () => this.showControls());
+                this.videoContainer.addEventListener('mouseleave', () => this.hideControlsDelayed());
+                
+                const playlistPanel = document.querySelector('.playlist-panel');
+                playlistPanel.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    playlistPanel.style.background = 'rgba(233, 69, 96, 0.2)';
+                });
+                playlistPanel.addEventListener('dragleave', () => {
+                    playlistPanel.style.background = '';
+                });
+                playlistPanel.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    playlistPanel.style.background = '';
+                    this.handleFiles(e.dataTransfer.files);
+                });
+                
+                this.loadRecentFiles();
+            }
+            
+            loadDemoVideos() {
+                const demoVideos = [
+                    {
+                        title: 'Big Buck Bunny',
+                        url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+                        type: 'video/mp4'
+                    },
+                    {
+                        title: 'Elephant Dream',
+                        url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
+                        type: 'video/mp4'
+                    },
+                    {
+                        title: 'For Bigger Blazes',
+                        url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+                        type: 'video/mp4'
+                    }
+                ];
+                
+                demoVideos.forEach(video => {
+                    this.addToPlaylist(video);
+                });
+            }
+            
+            addToPlaylist(videoData, autoPlay = true) {
+                const index = this.playlist.length;
+                this.playlist.push(videoData);
+                this.renderPlaylist();
+                
+                if (this.currentIndex === -1 && autoPlay) {
+                    this.playVideo(0);
+                }
+                
+                if (videoData.isLocal && videoData.fileName) {
+                    this.addToRecent(videoData.fileName, videoData.size);
+                }
+            }
+            
+            handleFiles(files, autoPlayFirst = false) {
+                const videoFiles = [];
+                const videoExtensions = ['mp4', 'webm', 'ogg', 'ogv', 'mov', 'mkv', 'avi', 'wmv', 'flv', 'm4v', '3gp', 'ts', 'm3u8'];
+                
+                Array.from(files).forEach(file => {
+                    if (file.type && file.type.startsWith('video/')) {
+                        videoFiles.push(file);
+                        return;
+                    }
+                    
+                    const ext = file.name.split('.').pop().toLowerCase();
+                    if (videoExtensions.includes(ext)) {
+                        videoFiles.push(file);
+                    }
+                });
+                
+                if (videoFiles.length === 0) {
+                    this.showError('未找到支持的视频文件');
+                    return;
+                }
+                
+                videoFiles.sort((a, b) => a.name.localeCompare(b.name));
+                
+                const firstNewIndex = this.playlist.length;
+                
+                videoFiles.forEach((file) => {
+                    const url = URL.createObjectURL(file);
+                    const ext = file.name.split('.').pop().toLowerCase();
+                    const typeMap = {
+                        'mp4': 'video/mp4',
+                        'webm': 'video/webm',
+                        'ogg': 'video/ogg',
+                        'ogv': 'video/ogg',
+                        'mov': 'video/quicktime',
+                        'mkv': 'video/x-matroska',
+                        'avi': 'video/x-msvideo',
+                        'wmv': 'video/x-ms-wmv',
+                        'flv': 'video/x-flv',
+                        'm4v': 'video/x-m4v',
+                        '3gp': 'video/3gpp',
+                        'ts': 'video/mp2t'
+                    };
+                    
+                    const videoData = {
+                        title: file.name,
+                        url: url,
+                        type: file.type || typeMap[ext] || 'video/mp4',
+                        size: file.size,
+                        isLocal: true,
+                        fileName: file.name,
+                        fileType: ext.toUpperCase(),
+                        lastModified: file.lastModified,
+                        fileObj: file
+                    };
+                    
+                    this.addToPlaylist(videoData, false);
+                });
+                
+                if (autoPlayFirst && videoFiles.length > 0) {
+                    this.playVideo(firstNewIndex);
+                }
+            }
+            
+            showUrlInput() {
+                this.urlInputContainer.style.display = 'flex';
+                this.urlInput.focus();
+            }
+            
+            addUrlVideo() {
+                const url = this.urlInput.value.trim();
+                if (!url) return;
+                
+                const ext = url.split('?')[0].split('.').pop().toLowerCase();
+                const typeMap = {
+                    'mp4': 'video/mp4',
+                    'webm': 'video/webm',
+                    'ogg': 'video/ogg',
+                    'ogv': 'video/ogg',
+                    'mov': 'video/quicktime',
+                    'mkv': 'video/x-matroska',
+                    'avi': 'video/x-msvideo',
+                    'wmv': 'video/x-ms-wmv',
+                    'flv': 'video/x-flv',
+                    'm4v': 'video/x-m4v',
+                    '3gp': 'video/3gpp',
+                    'm3u8': 'application/x-mpegURL',
+                    'ts': 'video/mp2t'
+                };
+                
+                const videoData = {
+                    title: this.getFileNameFromUrl(url),
+                    url: url,
+                    type: typeMap[ext] || 'video/mp4',
+                    isLocal: false
+                };
+                
+                this.addToPlaylist(videoData);
+                this.urlInput.value = '';
+                this.urlInputContainer.style.display = 'none';
+            }
+            
+            getFileNameFromUrl(url) {
+                try {
+                    const pathname = new URL(url).pathname;
+                    return pathname.split('/').pop() || url;
+                } catch {
+                    return url.split('/').pop() || url;
+                }
+            }
+            
+            removeFromPlaylist(index) {
+                if (index < 0 || index >= this.playlist.length) return;
+                
+                if (this.playlist[index].isLocal) {
+                    URL.revokeObjectURL(this.playlist[index].url);
+                }
+                
+                this.playlist.splice(index, 1);
+                
+                if (index === this.currentIndex) {
+                    if (this.playlist.length === 0) {
+                        this.currentIndex = -1;
+                        this.video.src = '';
+                        this.updateInfoPanel(null);
+                    } else if (this.currentIndex >= this.playlist.length) {
+                        this.currentIndex = this.playlist.length - 1;
+                        this.playVideo(this.currentIndex);
+                    } else {
+                        this.playVideo(this.currentIndex);
+                    }
+                } else if (index < this.currentIndex) {
+                    this.currentIndex--;
+                }
+                
+                this.renderPlaylist();
+            }
+            
+            renderPlaylist() {
+                if (this.playlist.length === 0) {
+                    this.playlistEl.innerHTML = `
+                        <li class="empty-playlist">
+                            <div class="empty-playlist-icon">📹</div>
+                            <div>暂无视频</div>
+                            <div style="font-size: 12px; margin-top: 5px;">点击上方"添加"按钮或拖拽文件到这里</div>
+                        </li>
+                    `;
+                    return;
+                }
+                
+                this.playlistEl.innerHTML = this.playlist.map((video, index) => `
+                    <li class="playlist-item ${index === this.currentIndex ? 'active' : ''}" data-index="${index}">
+                        <div class="playlist-item-index">${index + 1}</div>
+                        <div class="playlist-item-info">
+                            <div class="playlist-item-title">${this.escapeHtml(video.title)}</div>
+                            <div class="playlist-item-duration">${video.type || '未知格式'}</div>
+                        </div>
+                        <button class="playlist-item-remove" data-index="${index}">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                            </svg>
+                        </button>
+                    </li>
+                `).join('');
+                
+                this.playlistEl.querySelectorAll('.playlist-item').forEach(item => {
+                    item.addEventListener('click', (e) => {
+                        if (e.target.closest('.playlist-item-remove')) return;
+                        const index = parseInt(item.dataset.index);
+                        this.playVideo(index);
+                    });
+                });
+                
+                this.playlistEl.querySelectorAll('.playlist-item-remove').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const index = parseInt(btn.dataset.index);
+                        this.removeFromPlaylist(index);
+                    });
+                });
+            }
+            
+            playVideo(index) {
+                if (index < 0 || index >= this.playlist.length) return;
+                
+                this.currentIndex = index;
+                const videoData = this.playlist[index];
+                
+                console.log('正在播放视频:', {
+                    index: index,
+                    title: videoData.title,
+                    type: videoData.type,
+                    isLocal: videoData.isLocal,
+                    url: videoData.url.substring(0, 80) + '...'
+                });
+                
+                this.setLoading(true);
+                this.videoContainer.classList.remove('error', 'no-video');
+                
+                try {
+                    this.video.src = videoData.url;
+                    
+                    this.video.load();
+                    
+                    const playPromise = this.video.play();
+                    if (playPromise) {
+                        playPromise.then(() => {
+                            console.log('播放成功');
+                            this.setLoading(false);
+                        }).catch((err) => {
+                            console.warn('自动播放被阻止，等待用户手动播放:', err);
+                            this.setLoading(false);
+                            this.updatePlayState(false);
+                        });
+                    }
+                } catch (err) {
+                    console.error('设置视频源失败:', err);
+                    this.setLoading(false);
+                    this.showError('视频加载失败: ' + err.message);
+                }
+                
+                this.renderPlaylist();
+                this.updateInfoPanel(videoData);
+                this.videoTitle.textContent = videoData.title;
+                
+                if (videoData.isLocal && videoData.fileName) {
+                    this.addToRecent(videoData.fileName, videoData.size);
+                }
+                
+                this.thumbnailCache = {};
+                if (this.thumbnailVideo) {
+                    try {
+                        this.thumbnailVideo.pause();
+                        this.thumbnailVideo.removeAttribute('src');
+                        this.thumbnailVideo.load();
+                    } catch (e) {}
+                }
+            }
+            
+            updateInfoPanel(videoData) {
+                if (!videoData) {
+                    this.infoFileName.textContent = '-';
+                    this.infoFormat.textContent = '-';
+                    this.infoResolution.textContent = '-';
+                    this.infoDuration.textContent = '-';
+                    this.infoSize.textContent = '-';
+                    this.infoType.textContent = '-';
+                    return;
+                }
+                
+                this.infoFileName.textContent = videoData.title;
+                this.infoFormat.textContent = videoData.fileType || 
+                    (videoData.type ? videoData.type.split('/')[1].toUpperCase() : '-');
+                this.infoType.textContent = videoData.isLocal ? '本地文件' : '网络视频';
+                this.infoSize.textContent = videoData.size ? this.formatFileSize(videoData.size) : '-';
+                
+                if (videoData.lastModified) {
+                    const date = new Date(videoData.lastModified);
+                    this.infoType.textContent += ' · ' + date.toLocaleDateString();
+                }
+            }
+            
+            togglePlay() {
+                if (this.video.paused) {
+                    this.video.play();
+                } else {
+                    this.video.pause();
+                }
+            }
+            
+            updatePlayState(isPlaying) {
+                if (isPlaying) {
+                    this.playIcon.style.display = 'none';
+                    this.pauseIcon.style.display = 'block';
+                    this.videoContainer.classList.remove('paused');
+                } else {
+                    this.playIcon.style.display = 'block';
+                    this.pauseIcon.style.display = 'none';
+                    this.videoContainer.classList.add('paused');
+                }
+            }
+            
+            playPrev() {
+                if (this.playlist.length === 0) return;
+                
+                let newIndex;
+                if (this.loopMode === 'shuffle') {
+                    newIndex = this.getRandomIndex();
+                } else {
+                    newIndex = this.currentIndex - 1;
+                    if (newIndex < 0) {
+                        newIndex = this.playlist.length - 1;
+                    }
+                }
+                
+                this.playVideo(newIndex);
+            }
+            
+            playNext() {
+                if (this.playlist.length === 0) return;
+                
+                let newIndex;
+                if (this.loopMode === 'shuffle') {
+                    newIndex = this.getRandomIndex();
+                } else {
+                    newIndex = this.currentIndex + 1;
+                    if (newIndex >= this.playlist.length) {
+                        newIndex = 0;
+                    }
+                }
+                
+                this.playVideo(newIndex);
+            }
+            
+            getRandomIndex() {
+                if (this.playlist.length <= 1) return 0;
+                
+                let newIndex;
+                do {
+                    newIndex = Math.floor(Math.random() * this.playlist.length);
+                } while (newIndex === this.lastShuffledIndex);
+                
+                this.lastShuffledIndex = newIndex;
+                return newIndex;
+            }
+            
+            onVideoEnded() {
+                switch (this.loopMode) {
+                    case 'one':
+                        this.video.currentTime = 0;
+                        this.video.play();
+                        break;
+                    case 'list':
+                        this.playNext();
+                        break;
+                    case 'shuffle':
+                        this.playNext();
+                        break;
+                    case 'none':
+                    default:
+                        if (this.currentIndex < this.playlist.length - 1) {
+                            this.playNext();
+                        }
+                        break;
+                }
+            }
+            
+            skip(seconds) {
+                this.video.currentTime = Math.max(0, Math.min(this.video.duration || 0, this.video.currentTime + seconds));
+            }
+            
+            toggleMute() {
+                this.video.muted = !this.video.muted;
+            }
+            
+            setVolume(value) {
+                this.video.volume = value;
+                this.video.muted = value === 0;
+            }
+            
+            updateVolumeIcon() {
+                this.volumeSlider.value = this.video.muted ? 0 : this.video.volume;
+                
+                this.volumeHighIcon.style.display = 'none';
+                this.volumeLowIcon.style.display = 'none';
+                this.volumeMuteIcon.style.display = 'none';
+                
+                if (this.video.muted || this.video.volume === 0) {
+                    this.volumeMuteIcon.style.display = 'block';
+                } else if (this.video.volume < 0.5) {
+                    this.volumeLowIcon.style.display = 'block';
+                } else {
+                    this.volumeHighIcon.style.display = 'block';
+                }
+            }
+            
+            setSpeed(speed) {
+                this.video.playbackRate = speed;
+                this.speedLabel.textContent = speed + 'x';
+                
+                this.speedMenu.querySelectorAll('.menu-item').forEach(item => {
+                    item.classList.toggle('active', parseFloat(item.dataset.speed) === speed);
+                });
+            }
+            
+            setLoopMode(mode) {
+                this.loopMode = mode;
+                
+                this.loopMenu.querySelectorAll('.menu-item').forEach(item => {
+                    item.classList.toggle('active', item.dataset.loop === mode);
+                });
+            }
+            
+            toggleSubtitle(enabled) {
+                this.subtitleEnabled = enabled;
+                this.subtitleDisplay.style.display = enabled ? 'block' : 'none';
+                
+                this.subtitleMenu.querySelectorAll('.menu-item').forEach(item => {
+                    item.classList.toggle('active', 
+                        (enabled && item.dataset.subtitle === 'on') ||
+                        (!enabled && item.dataset.subtitle === 'off')
+                    );
+                });
+            }
+            
+            toggleFullscreen() {
+                if (!document.fullscreenElement) {
+                    this.videoContainer.requestFullscreen().catch(err => {
+                        console.error('全屏错误:', err);
+                    });
+                } else {
+                    document.exitFullscreen();
+                }
+            }
+            
+            updateFullscreenIcon() {
+                if (document.fullscreenElement) {
+                    this.fullscreenEnterIcon.style.display = 'none';
+                    this.fullscreenExitIcon.style.display = 'block';
+                } else {
+                    this.fullscreenEnterIcon.style.display = 'block';
+                    this.fullscreenExitIcon.style.display = 'none';
+                }
+            }
+            
+            async togglePiP() {
+                try {
+                    if (document.pictureInPictureElement) {
+                        await document.exitPictureInPicture();
+                    } else if (document.pictureInPictureEnabled) {
+                        await this.video.requestPictureInPicture();
+                    }
+                } catch (err) {
+                    console.error('画中画错误:', err);
+                }
+            }
+            
+            takeScreenshot() {
+                if (!this.video.videoWidth) return;
+                
+                const canvas = this.screenshotCanvas;
+                canvas.width = this.video.videoWidth;
+                canvas.height = this.video.videoHeight;
+                
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(this.video, 0, 0, canvas.width, canvas.height);
+                
+                canvas.toBlob((blob) => {
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `screenshot_${Date.now()}.png`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                }, 'image/png');
+            }
+            
+            startDrag(e) {
+                e.preventDefault();
+                this.isDragging = true;
+                this.progressBar.classList.add('dragging');
+                this.updateProgressFromMouse(e);
+                
+                if (e.pointerId) {
+                    this.progressBar.setPointerCapture(e.pointerId);
+                }
+            }
+            
+            onDrag(e) {
+                if (!this.isDragging) return;
+                this.updateProgressFromMouse(e);
+                
+                const fakeEvent = {
+                    clientX: e.clientX,
+                    clientY: e.clientY
+                };
+                this.updateTimeTooltip(fakeEvent);
+                this.updateThumbnailTooltip(fakeEvent);
+                this.thumbnailTooltip.classList.add('show');
+            }
+            
+            endDrag(e) {
+                if (!this.isDragging) return;
+                this.isDragging = false;
+                this.progressBar.classList.remove('dragging');
+                this.updateProgressFromMouse(e);
+                
+                if (e.pointerId && this.progressBar.hasPointerCapture) {
+                    try {
+                        this.progressBar.releasePointerCapture(e.pointerId);
+                    } catch (err) {}
+                }
+            }
+            
+            updateProgressFromMouse(e) {
+                const rect = this.progressBar.getBoundingClientRect();
+                const percent = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+                
+                if (this.video.duration) {
+                    this.video.currentTime = percent * this.video.duration;
+                }
+            }
+            
+            updateTimeTooltip(e) {
+                const rect = this.progressBar.getBoundingClientRect();
+                const percent = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+                const time = percent * (this.video.duration || 0);
+                
+                this.timeTooltip.textContent = this.formatTime(time);
+                this.timeTooltip.style.left = (percent * 100) + '%';
+            }
+            
+            showThumbnailTooltip(e) {
+                if (!this.video.duration) return;
+                
+                const rect = this.progressBar.getBoundingClientRect();
+                const percent = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+                const time = percent * this.video.duration;
+                
+                this.thumbnailTooltip.classList.add('show');
+                this.updateThumbnailPosition(percent);
+                this.requestThumbnail(time);
+            }
+            
+            hideThumbnailTooltip() {
+                this.thumbnailTooltip.classList.remove('show');
+            }
+            
+            updateThumbnailTooltip(e) {
+                if (!this.video.duration) return;
+                
+                const rect = this.progressBar.getBoundingClientRect();
+                const percent = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+                const time = percent * this.video.duration;
+                
+                this.updateThumbnailPosition(percent);
+                this.requestThumbnail(time);
+            }
+            
+            updateThumbnailPosition(percent) {
+                const tooltipWidth = 160;
+                const progressWidth = this.progressBar.offsetWidth;
+                const tooltipCenter = percent * progressWidth;
+                
+                let leftPercent = percent * 100;
+                
+                if (tooltipCenter < tooltipWidth / 2) {
+                    leftPercent = (tooltipWidth / 2) / progressWidth * 100;
+                } else if (tooltipCenter > progressWidth - tooltipWidth / 2) {
+                    leftPercent = (progressWidth - tooltipWidth / 2) / progressWidth * 100;
+                }
+                
+                this.thumbnailTooltip.style.left = leftPercent + '%';
+            }
+            
+            requestThumbnail(time) {
+                const now = Date.now();
+                if (now - this.lastThumbnailRequest < this.thumbnailThrottle) {
+                    return;
+                }
+                
+                this.lastThumbnailRequest = now;
+                
+                const roundedTime = Math.floor(time * 2) / 2;
+                if (this.thumbnailCache[roundedTime]) {
+                    this.drawThumbnailFromCache(roundedTime);
+                    return;
+                }
+                
+                this.generateThumbnail(time, roundedTime);
+            }
+            
+            generateThumbnail(time, cacheKey) {
+                if (!this.thumbnailVideo) {
+                    this.thumbnailVideo = document.createElement('video');
+                    this.thumbnailVideo.muted = true;
+                    this.thumbnailVideo.preload = 'auto';
+                    this.thumbnailVideo.playsInline = true;
+                }
+                
+                if (this.thumbnailVideo.src !== this.video.src) {
+                    if (this.video.src.startsWith('blob:') || this.video.src.startsWith('file:')) {
+                        this.thumbnailVideo.crossOrigin = null;
+                        this.thumbnailVideo.removeAttribute('crossorigin');
+                    } else {
+                        this.thumbnailVideo.crossOrigin = 'anonymous';
+                    }
+                    this.thumbnailVideo.src = this.video.src;
+                    this.thumbnailCache = {};
+                }
+                
+                if (time < 0) time = 0;
+                if (this.video.duration && time > this.video.duration - 0.1) {
+                    time = this.video.duration - 0.1;
+                }
+                
+                if (this.thumbnailPending) {
+                    this.pendingThumbnailTime = time;
+                    this.pendingCacheKey = cacheKey;
+                    return;
+                }
+                
+                this.thumbnailPending = true;
+                this.pendingThumbnailTime = 0;
+                
+                try {
+                    const onSeeked = () => {
+                        this.thumbnailVideo.removeEventListener('seeked', onSeeked);
+                        this.captureThumbnail(cacheKey);
+                        
+                        this.thumbnailPending = false;
+                        
+                        if (this.pendingThumbnailTime > 0) {
+                            const pendingTime = this.pendingThumbnailTime;
+                            const pendingKey = this.pendingCacheKey;
+                            this.pendingThumbnailTime = 0;
+                            this.pendingCacheKey = null;
+                            
+                            if (!this.thumbnailCache[pendingKey]) {
+                                this.generateThumbnail(pendingTime, pendingKey);
+                            } else {
+                                this.drawThumbnailFromCache(pendingKey);
+                            }
+                        }
+                    };
+                    
+                    this.thumbnailVideo.addEventListener('seeked', onSeeked, { once: true });
+                    this.thumbnailVideo.currentTime = time;
+                    
+                } catch (e) {
+                    console.warn('生成缩略图失败:', e);
+                    this.thumbnailPending = false;
+                }
+            }
+            
+            captureThumbnail(cacheKey) {
+                const canvas = this.thumbnailCanvas;
+                const video = this.thumbnailVideo;
+                
+                if (!video.videoWidth || !video.videoHeight) {
+                    return;
+                }
+                
+                const targetWidth = 160;
+                const targetHeight = 90;
+                const videoRatio = video.videoWidth / video.videoHeight;
+                const targetRatio = targetWidth / targetHeight;
+                
+                let drawWidth, drawHeight, offsetX, offsetY;
+                
+                if (videoRatio > targetRatio) {
+                    drawHeight = targetHeight;
+                    drawWidth = targetHeight * videoRatio;
+                    offsetX = (targetWidth - drawWidth) / 2;
+                    offsetY = 0;
+                } else {
+                    drawWidth = targetWidth;
+                    drawHeight = targetWidth / videoRatio;
+                    offsetX = 0;
+                    offsetY = (targetHeight - drawHeight) / 2;
+                }
+                
+                canvas.width = targetWidth;
+                canvas.height = targetHeight;
+                
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = '#000';
+                ctx.fillRect(0, 0, targetWidth, targetHeight);
+                
+                try {
+                    ctx.drawImage(video, offsetX, offsetY, drawWidth, drawHeight);
+                    this.thumbnailCache[cacheKey] = canvas.toDataURL('image/jpeg', 0.7);
+                    this.showThumbnailCanvas();
+                } catch (e) {
+                    console.warn('绘制缩略图失败:', e);
+                }
+            }
+            
+            drawThumbnailFromCache(cacheKey) {
+                const dataUrl = this.thumbnailCache[cacheKey];
+                if (!dataUrl) return;
+                
+                const canvas = this.thumbnailCanvas;
+                const ctx = canvas.getContext('2d');
+                const img = new Image();
+                
+                img.onload = () => {
+                    canvas.width = 160;
+                    canvas.height = 90;
+                    ctx.drawImage(img, 0, 0, 160, 90);
+                    this.showThumbnailCanvas();
+                };
+                
+                img.src = dataUrl;
+            }
+            
+            showThumbnailCanvas() {
+                this.thumbnailCanvas.style.display = 'block';
+                this.thumbnailLoading.style.display = 'none';
+            }
+            
+            updateProgress() {
+                if (this.isDragging) return;
+                
+                const percent = this.video.duration ? (this.video.currentTime / this.video.duration) * 100 : 0;
+                this.progressFill.style.width = percent + '%';
+                this.progressThumb.style.left = percent + '%';
+                this.currentTimeEl.textContent = this.formatTime(this.video.currentTime);
+                
+                this.updateSubtitle();
+            }
+            
+            updateBuffered() {
+                if (this.video.buffered.length > 0 && this.video.duration) {
+                    const bufferedEnd = this.video.buffered.end(this.video.buffered.length - 1);
+                    const percent = (bufferedEnd / this.video.duration) * 100;
+                    this.bufferedBar.style.width = percent + '%';
+                }
+            }
+            
+            onLoadedMetadata() {
+                this.durationEl.textContent = this.formatTime(this.video.duration);
+                this.infoResolution.textContent = `${this.video.videoWidth} x ${this.video.videoHeight}`;
+                this.infoDuration.textContent = this.formatTime(this.video.duration);
+                this.setLoading(false);
+            }
+            
+            onError(e) {
+                this.setLoading(false);
+                this.videoContainer.classList.add('error');
+                
+                const error = this.video.error;
+                const currentVideo = this.playlist[this.currentIndex];
+                let errorTitle = '视频加载失败';
+                let errorDetail = '';
+                let suggestion = '';
+                
+                if (error) {
+                    switch (error.code) {
+                        case 1:
+                            errorTitle = '视频加载被中止';
+                            errorDetail = '加载过程被中断';
+                            suggestion = '请尝试点击播放按钮重新播放';
+                            break;
+                        case 2:
+                            errorTitle = '网络错误';
+                            errorDetail = '无法连接到视频源';
+                            if (currentVideo && currentVideo.isLocal) {
+                                suggestion = '本地文件可能无法访问。请尝试：1) 重新选择文件 2) 检查文件是否存在 3) 尝试用其他浏览器打开';
+                            } else {
+                                suggestion = '请检查网络连接或视频链接是否有效';
+                            }
+                            break;
+                        case 3:
+                            errorTitle = '视频解码失败';
+                            errorDetail = '浏览器无法解码该视频';
+                            suggestion = '视频文件可能已损坏，或编码格式不支持。建议使用格式工厂等工具转换为 H.264 编码的 MP4 格式';
+                            break;
+                        case 4:
+                            errorTitle = '不支持的视频格式';
+                            errorDetail = '浏览器不支持此视频格式';
+                            const format = currentVideo?.fileType || '未知';
+                            suggestion = `当前格式：${format}。建议使用 MP4 (H.264) 或 WebM 格式。如果是 MP4 仍无法播放，可能是编码问题（如 HEVC/H.265），请转换为 H.264 编码。`;
+                            break;
+                        default:
+                            errorTitle = '未知错误';
+                            errorDetail = error.message || '发生未知错误';
+                            suggestion = '请尝试更换视频文件，或按 F12 打开控制台查看详细错误';
+                    }
+                }
+                
+                const canPlayMp4 = this.video.canPlayType('video/mp4; codecs="avc1.42E01E"');
+                const diagnostics = `
+                    <div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.2);font-size:11px;opacity:0.8;">
+                        <div>浏览器 MP4 支持: ${canPlayMp4 || '未知'}</div>
+                        <div>视频类型: ${currentVideo?.type || '未知'}</div>
+                        <div style="margin-top:4px;">💡 按 F12 打开控制台查看详细日志</div>
+                    </div>
+                `;
+                
+                this.errorText.innerHTML = `
+                    <div style="font-weight:600;margin-bottom:6px;">${errorTitle}</div>
+                    <div style="font-size:12px;opacity:0.9;line-height:1.5;">
+                        ${errorDetail}<br>
+                        ${suggestion}
+                        ${diagnostics}
+                    </div>
+                `;
+                
+                console.error('========== 视频播放错误 ==========');
+                console.error('错误代码:', error?.code);
+                console.error('错误信息:', error?.message);
+                console.error('视频标题:', currentVideo?.title);
+                console.error('视频类型:', currentVideo?.type);
+                console.error('是否本地:', currentVideo?.isLocal);
+                console.error('视频URL前缀:', currentVideo?.url?.substring(0, 100));
+                console.error('浏览器MP4支持:', this.video.canPlayType('video/mp4'));
+                console.error('浏览器H264支持:', this.video.canPlayType('video/mp4; codecs="avc1.42E01E"'));
+                console.error('=================================');
+                
+                setTimeout(() => this.videoContainer.classList.remove('error'), 8000);
+            }
+            
+            setLoading(isLoading) {
+                this.videoContainer.classList.toggle('loading', isLoading);
+            }
+            
+            updateSubtitle() {
+                if (!this.subtitleEnabled || this.subtitleCues.length === 0) {
+                    this.subtitleDisplay.textContent = '';
+                    return;
+                }
+                
+                const currentTime = this.video.currentTime;
+                const activeCue = this.subtitleCues.find(cue => 
+                    currentTime >= cue.start && currentTime <= cue.end
+                );
+                
+                this.subtitleDisplay.textContent = activeCue ? activeCue.text : '';
+            }
+            
+            loadSubtitleFromVTT(vttText) {
+                const lines = vttText.split('\n');
+                const cues = [];
+                let i = 0;
+                
+                while (i < lines.length && !lines[i].includes('-->')) {
+                    i++;
+                }
+                
+                while (i < lines.length) {
+                    if (lines[i].includes('-->')) {
+                        const times = lines[i].split('-->').map(t => t.trim());
+                        const start = this.parseVTTTime(times[0]);
+                        const end = this.parseVTTTime(times[1]);
+                        
+                        let text = '';
+                        i++;
+                        while (i < lines.length && lines[i].trim() !== '') {
+                            text += (text ? '\n' : '') + lines[i];
+                            i++;
+                        }
+                        
+                        if (text) {
+                            cues.push({ start, end, text });
+                        }
+                    }
+                    i++;
+                }
+                
+                this.subtitleCues = cues;
+            }
+            
+            parseVTTTime(timeStr) {
+                const parts = timeStr.split(':');
+                let seconds = 0;
+                
+                if (parts.length === 3) {
+                    seconds = parseInt(parts[0]) * 3600 + parseInt(parts[1]) * 60 + parseFloat(parts[2]);
+                } else if (parts.length === 2) {
+                    seconds = parseInt(parts[0]) * 60 + parseFloat(parts[1]);
+                }
+                
+                return seconds;
+            }
+            
+            toggleMenu(menu) {
+                const wasOpen = menu.classList.contains('show');
+                this.speedMenu.classList.remove('show');
+                this.loopMenu.classList.remove('show');
+                this.subtitleMenu.classList.remove('show');
+                this.settingsMenu.classList.remove('show');
+                this.addMenu.classList.remove('show');
+                this.rotateMenu.classList.remove('show');
+                
+                if (!wasOpen) {
+                    menu.classList.add('show');
+                }
+            }
+            
+            showControls() {
+                this.videoContainer.classList.add('show-controls');
+                clearTimeout(this.controlsTimeout);
+                this.hideControlsDelayed();
+            }
+            
+            hideControlsDelayed() {
+                if (this.video.paused) return;
+                
+                clearTimeout(this.controlsTimeout);
+                this.controlsTimeout = setTimeout(() => {
+                    this.videoContainer.classList.remove('show-controls');
+                }, 3000);
+            }
+            
+            handleKeyboard(e) {
+                if (e.target.tagName === 'INPUT') return;
+                
+                switch (e.key.toLowerCase()) {
+                    case ' ':
+                    case 'k':
+                        e.preventDefault();
+                        this.togglePlay();
+                        break;
+                    case 'f':
+                        e.preventDefault();
+                        this.toggleFullscreen();
+                        break;
+                    case 'm':
+                        e.preventDefault();
+                        this.toggleMute();
+                        break;
+                    case 'p':
+                        e.preventDefault();
+                        this.togglePiP();
+                        break;
+                    case 's':
+                        e.preventDefault();
+                        this.takeScreenshot();
+                        break;
+                    case 'c':
+                        e.preventDefault();
+                        this.toggleSubtitle(!this.subtitleEnabled);
+                        break;
+                    case 'arrowleft':
+                        e.preventDefault();
+                        this.skip(-10);
+                        break;
+                    case 'arrowright':
+                        e.preventDefault();
+                        this.skip(10);
+                        break;
+                    case 'arrowup':
+                        e.preventDefault();
+                        this.setVolume(Math.min(1, this.video.volume + 0.1));
+                        break;
+                    case 'arrowdown':
+                        e.preventDefault();
+                        this.setVolume(Math.max(0, this.video.volume - 0.1));
+                        break;
+                    case 'n':
+                        e.preventDefault();
+                        this.playNext();
+                        break;
+                    case 'b':
+                        e.preventDefault();
+                        this.playPrev();
+                        break;
+                    case 'o':
+                        if (e.ctrlKey || e.metaKey) {
+                            e.preventDefault();
+                            this.fileInput.click();
+                        }
+                        break;
+                    case 'r':
+                        if (!e.ctrlKey && !e.metaKey) {
+                            e.preventDefault();
+                            if (e.shiftKey) {
+                                this.rotateCounterClockwise();
+                            } else {
+                                this.rotateClockwise();
+                            }
+                        }
+                        break;
+                    case '+':
+                    case '=':
+                        if (!e.ctrlKey && !e.metaKey) {
+                            e.preventDefault();
+                            this.zoomIn();
+                        }
+                        break;
+                    case '-':
+                    case '_':
+                        if (!e.ctrlKey && !e.metaKey) {
+                            e.preventDefault();
+                            this.zoomOut();
+                        }
+                        break;
+                    case '0':
+                        if (!e.ctrlKey && !e.metaKey) {
+                            e.preventDefault();
+                            this.resetZoom();
+                        }
+                        break;
+                }
+            }
+            
+            formatTime(seconds) {
+                if (isNaN(seconds) || !isFinite(seconds)) return '00:00';
+                
+                const h = Math.floor(seconds / 3600);
+                const m = Math.floor((seconds % 3600) / 60);
+                const s = Math.floor(seconds % 60);
+                
+                if (h > 0) {
+                    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+                }
+                return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+            }
+            
+            formatFileSize(bytes) {
+                if (bytes === 0) return '0 B';
+                const k = 1024;
+                const sizes = ['B', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+            
+            setRotation(degrees) {
+                this.rotation = degrees;
+                this.updateVideoTransform();
+                this.updateRotateMenuState();
+            }
+            
+            rotateClockwise() {
+                this.rotation = (this.rotation + 90) % 360;
+                this.updateVideoTransform();
+                this.updateRotateMenuState();
+            }
+            
+            rotateCounterClockwise() {
+                this.rotation = (this.rotation - 90 + 360) % 360;
+                this.updateVideoTransform();
+                this.updateRotateMenuState();
+            }
+            
+            toggleFlip(direction) {
+                if (direction === 'horizontal') {
+                    this.flipH = !this.flipH;
+                } else if (direction === 'vertical') {
+                    this.flipV = !this.flipV;
+                }
+                this.updateVideoTransform();
+                this.updateRotateMenuState();
+            }
+            
+            resetRotation() {
+                this.rotation = 0;
+                this.flipH = false;
+                this.flipV = false;
+                this.updateVideoTransform();
+                this.updateRotateMenuState();
+            }
+            
+            updateVideoTransform() {
+                const scaleX = (this.flipH ? -1 : 1) * this.zoomLevel;
+                const scaleY = (this.flipV ? -1 : 1) * this.zoomLevel;
+                this.video.style.transform = `translate(${this.zoomPanX}px, ${this.zoomPanY}px) rotate(${this.rotation}deg) scaleX(${scaleX}) scaleY(${scaleY})`;
+            }
+            
+            zoomIn() {
+                const newLevel = Math.min(this.zoomMax, this.zoomLevel + this.zoomStep);
+                this.setZoom(newLevel);
+            }
+            
+            zoomOut() {
+                const newLevel = Math.max(this.zoomMin, this.zoomLevel - this.zoomStep);
+                this.setZoom(newLevel);
+            }
+            
+            setZoom(level) {
+                this.zoomLevel = Math.max(this.zoomMin, Math.min(this.zoomMax, level));
+                
+                if (this.zoomLevel <= 1) {
+                    this.zoomPanX = 0;
+                    this.zoomPanY = 0;
+                }
+                
+                this.updateVideoTransform();
+                this.updateZoomUI();
+                
+                if (this.zoomLevel > 1) {
+                    this.zoomIndicator.classList.add('show');
+                    this.zoomIndicator.textContent = Math.round(this.zoomLevel * 100) + '%';
+                    
+                    clearTimeout(this.zoomIndicatorTimeout);
+                    this.zoomIndicatorTimeout = setTimeout(() => {
+                        this.zoomIndicator.classList.remove('show');
+                    }, 2000);
+                } else {
+                    this.zoomIndicator.classList.remove('show');
+                }
+            }
+            
+            resetZoom() {
+                this.setZoom(1);
+                this.settingsMenu.classList.remove('show');
+            }
+            
+            updateZoomUI() {
+                const percent = Math.round(this.zoomLevel * 100) + '%';
+                this.zoomLevelDisplay.textContent = percent;
+                this.zoomInBtn.disabled = this.zoomLevel >= this.zoomMax;
+                this.zoomOutBtn.disabled = this.zoomLevel <= this.zoomMin;
+            }
+            
+            startPan(e) {
+                if (this.zoomLevel <= 1) return;
+                
+                this.isPanning = true;
+                this.panStartX = e.clientX - this.zoomPanX;
+                this.panStartY = e.clientY - this.zoomPanY;
+                this.video.classList.add('zooming');
+                
+                if (e.pointerId) {
+                    this.video.setPointerCapture(e.pointerId);
+                }
+            }
+            
+            onPan(e) {
+                if (!this.isPanning) return;
+                
+                const newPanX = e.clientX - this.panStartX;
+                const newPanY = e.clientY - this.panStartY;
+                
+                const moveDist = Math.abs(newPanX - this.zoomPanX) + Math.abs(newPanY - this.zoomPanY);
+                if (moveDist > 3) {
+                    this.panMoved = true;
+                }
+                
+                const containerWidth = this.videoContainer.offsetWidth;
+                const containerHeight = this.videoContainer.offsetHeight;
+                const maxPanX = (this.zoomLevel - 1) * containerWidth / 2;
+                const maxPanY = (this.zoomLevel - 1) * containerHeight / 2;
+                
+                this.zoomPanX = Math.max(-maxPanX, Math.min(maxPanX, newPanX));
+                this.zoomPanY = Math.max(-maxPanY, Math.min(maxPanY, newPanY));
+                
+                this.updateVideoTransform();
+            }
+            
+            endPan(e) {
+                if (!this.isPanning) return;
+                
+                this.isPanning = false;
+                this.video.classList.remove('zooming');
+                
+                if (e.pointerId && this.video.hasPointerCapture) {
+                    try {
+                        this.video.releasePointerCapture(e.pointerId);
+                    } catch (err) {}
+                }
+            }
+            
+            updateRotateMenuState() {
+                this.rotateMenu.querySelectorAll('[data-rotate]').forEach(item => {
+                    const degrees = parseInt(item.dataset.rotate);
+                    item.classList.toggle('active', this.rotation === degrees);
+                });
+                
+                this.rotateMenu.querySelectorAll('[data-flip="horizontal"]').forEach(item => {
+                    item.classList.toggle('active', this.flipH);
+                });
+                
+                this.rotateMenu.querySelectorAll('[data-flip="vertical"]').forEach(item => {
+                    item.classList.toggle('active', this.flipV);
+                });
+            }
+            
+            escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+            
+            addToRecent(fileName, size) {
+                const key = fileName + '_' + size;
+                const existingIndex = this.recentFiles.findIndex(f => f.key === key);
+                
+                if (existingIndex !== -1) {
+                    this.recentFiles.splice(existingIndex, 1);
+                }
+                
+                this.recentFiles.unshift({
+                    key: key,
+                    fileName: fileName,
+                    size: size,
+                    playedAt: Date.now()
+                });
+                
+                if (this.recentFiles.length > 20) {
+                    this.recentFiles = this.recentFiles.slice(0, 20);
+                }
+                
+                this.saveRecentFiles();
+                this.renderRecentFiles();
+            }
+            
+            removeFromRecent(index) {
+                this.recentFiles.splice(index, 1);
+                this.saveRecentFiles();
+                this.renderRecentFiles();
+            }
+            
+            clearRecentFiles() {
+                this.recentFiles = [];
+                this.saveRecentFiles();
+                this.renderRecentFiles();
+            }
+            
+            saveRecentFiles() {
+                try {
+                    localStorage.setItem('videoPlayerRecentFiles', JSON.stringify(this.recentFiles));
+                } catch (e) {
+                    console.warn('无法保存最近播放记录:', e);
+                }
+            }
+            
+            loadRecentFiles() {
+                try {
+                    const saved = localStorage.getItem('videoPlayerRecentFiles');
+                    if (saved) {
+                        this.recentFiles = JSON.parse(saved);
+                        this.renderRecentFiles();
+                    }
+                } catch (e) {
+                    console.warn('无法加载最近播放记录:', e);
+                }
+            }
+            
+            renderRecentFiles() {
+                if (this.recentFiles.length === 0) {
+                    this.recentFilesSection.style.display = 'none';
+                    return;
+                }
+                
+                this.recentFilesSection.style.display = 'block';
+                
+                this.recentFilesList.innerHTML = this.recentFiles.map((file, index) => `
+                    <div class="recent-file-item" title="${this.escapeHtml(file.fileName)}">
+                        <svg class="recent-file-icon" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M18 4l2 4h-3l-2-4h-2l2 4h-3l-2-4H8l2 4H7L5 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4h-4z"/>
+                        </svg>
+                        <span>${this.escapeHtml(file.fileName)}</span>
+                    </div>
+                `).join('');
+            }
+            
+            showError(message) {
+                this.videoContainer.classList.add('error');
+                this.errorText.innerHTML = message;
+                setTimeout(() => this.videoContainer.classList.remove('error'), 3000);
+            }
+            
+            checkBrowserSupport() {
+                const testVideo = document.createElement('video');
+                const support = {
+                    mp4: testVideo.canPlayType('video/mp4'),
+                    h264: testVideo.canPlayType('video/mp4; codecs="avc1.42E01E"'),
+                    webm: testVideo.canPlayType('video/webm'),
+                    ogg: testVideo.canPlayType('video/ogg'),
+                    hls: testVideo.canPlayType('application/vnd.apple.mpegurl')
+                };
+                
+                console.log('========== 浏览器视频支持检测 ==========');
+                console.log('MP4:', support.mp4 || '不支持');
+                console.log('H.264:', support.h264 || '不支持');
+                console.log('WebM:', support.webm || '不支持');
+                console.log('OGG:', support.ogg || '不支持');
+                console.log('HLS:', support.hls || '不支持');
+                console.log('======================================');
+                
+                return support;
+            }
+        }
+        
+        const player = new VideoPlayer();
+        player.checkBrowserSupport();
+        console.log('✅ 播放器初始化完成，等待选择视频文件...');
+        console.log('💡 提示：点击"选择视频文件"按钮，或拖拽视频到播放区域');
+    </script>
+</body>
+</html>

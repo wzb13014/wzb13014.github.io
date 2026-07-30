@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>专业涂鸦录屏演示工具 · 增强版</title>
+    <style>
+        :root {
+            --bg: #1e1e2e;
+            --panel-bg: #252536;
+            --surface: #2a2a3d;
+            --surface-hover: #323250;
+            --text: #e0e0e0;
+            --text-secondary: #a0a0b8;
+            --border: #3a3a55;
+            --accent: #6c7bff;
+            --accent-hover: #7b8aff;
+            --danger: #e0556a;
+            --success: #4caf84;
+            --warning: #e8a840;
+            --shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+            --radius: 10px;
+            --radius-sm: 6px;
+            --transition: 0.2s ease;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .toolbar-top {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 14px;
+            background: var(--panel-bg);
+            border-bottom: 1px solid var(--border);
+            z-index: 10;
+            flex-wrap: wrap;
+            min-height: 50px;
+        }
+
+        .brand { font-weight: 700; font-size: 1em; color: var(--accent); white-space: nowrap; letter-spacing: -0.3px; }
+
+        .tool-group {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 0 8px;
+            border-right: 1px solid var(--border);
+            height: 34px;
+        }
+        .tool-group:last-child { border-right: none; }
+        .tool-group label {
+            font-size: 0.75em;
+            color: var(--text-secondary);
+            white-space: nowrap;
+            font-weight: 500;
+            margin-right: 2px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            padding: 6px 12px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+            background: var(--surface);
+            color: var(--text);
+            cursor: pointer;
+            font-size: 0.8em;
+            font-weight: 500;
+            transition: all var(--transition);
+            white-space: nowrap;
+            font-family: inherit;
+        }
+        .btn:hover { background: var(--surface-hover); border-color: #555; transform: translateY(-1px); }
+        .btn:active { transform: scale(0.96); transition: 0.08s; }
+        .btn.active { background: var(--accent); border-color: var(--accent); color: #fff; box-shadow: 0 0 16px rgba(108,123,255,0.3); }
+        .btn.recording { background: #c0392b; border-color: #e74c3c; color: #fff; animation: pulse-rec 1.2s infinite; }
+        @keyframes pulse-rec { 0%,100% { box-shadow: 0 0 0 0 rgba(231,76,60,0.6); } 50% { box-shadow: 0 0 0 14px rgba(231,76,60,0); } }
+        .btn-danger { background: var(--danger); border-color: var(--danger); color: #fff; }
+        .btn-success { background: var(--success); border-color: var(--success); color: #fff; }
+        .btn-sm { padding: 4px 8px; font-size: 0.72em; border-radius: 4px; }
+        .btn-icon { width: 30px; height: 30px; padding: 0; border-radius: var(--radius-sm); font-size: 1em; }
+
+        .color-presets { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
+        .color-dot {
+            width: 24px; height: 24px; border-radius: 50%; cursor: pointer;
+            border: 2px solid transparent; transition: all var(--transition); flex-shrink: 0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        }
+        .color-dot:hover { transform: scale(1.15); border-color: #fff; }
+        .color-dot.active { border-color: #fff; box-shadow: 0 0 0 4px rgba(255,255,255,0.25); transform: scale(1.1); }
+        .color-dot.custom { background: conic-gradient(red,yellow,lime,cyan,blue,magenta,red); position: relative; }
+        .color-dot.custom::after {
+            content: '+'; position: absolute; inset:0; display: flex; align-items: center; justify-content: center;
+            font-weight: bold; color: #fff; font-size: 14px; text-shadow:0 0 4px #000; background: rgba(0,0,0,0.25); border-radius: 50%;
+        }
+        input[type="color"] { width:0; height:0; opacity:0; position:absolute; pointer-events:none; }
+
+        input[type="range"] { -webkit-appearance: none; width: 70px; height: 5px; border-radius: 3px; background: var(--border); outline: none; cursor: pointer; }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: var(--accent); cursor: pointer; border: 2px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.3); }
+        .size-display { display: inline-block; width: 28px; text-align: center; font-weight: 600; font-size: 0.8em; color: var(--accent); }
+
+        .main-area { flex: 1; display: flex; overflow: hidden; position: relative; }
+        .tools-panel {
+            width: 50px; background: var(--panel-bg); display: flex; flex-direction: column;
+            align-items: center; gap: 2px; padding: 8px 4px; border-right: 1px solid var(--border); z-index: 5; overflow-y: auto;
+        }
+        .tool-btn {
+            width: 38px; height: 38px; border-radius: var(--radius-sm); border: 1px solid transparent;
+            background: transparent; color: var(--text-secondary); cursor: pointer; font-size: 1.2em;
+            transition: all var(--transition); display: flex; align-items: center; justify-content: center; position: relative;
+        }
+        .tool-btn:hover { background: var(--surface); color: #fff; border-color: var(--border); }
+        .tool-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); box-shadow: 0 0 12px rgba(108,123,255,0.35); }
+        .tool-btn .tooltip { position: absolute; left: 46px; background: #000; color: #fff; padding: 3px 8px; border-radius: 4px; font-size: 0.65em; white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity 0.2s; z-index:20; }
+        .tool-btn:hover .tooltip { opacity: 1; }
+        .tools-divider { width: 24px; height: 1px; background: var(--border); margin: 4px 0; }
+
+        .canvas-container { flex: 1; display: flex; align-items: center; justify-content: center; background: #181825; position: relative; overflow: auto; padding: 20px; }
+        .canvas-wrapper { position: relative; box-shadow: var(--shadow); border-radius: 2px; overflow: hidden; flex-shrink: 0; }
+        canvas { display: block; cursor: crosshair; background: #fff; }
+        canvas.eraser-mode { cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20'%3E%3Ccircle cx='10' cy='10' r='8' fill='none' stroke='%23888' stroke-width='1.5' stroke-dasharray='3 2'/%3E%3C/svg%3E") 10 10, crosshair; }
+        canvas.text-mode { cursor: text; }
+        canvas.fill-mode { cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 22 22'%3E%3Cpath d='M5 18 L5 8 L12 3 L17 8 L12 13Z' fill='none' stroke='%23888' stroke-width='1.8'/%3E%3Ccircle cx='6' cy='17' r='2.5' fill='none' stroke='%23888' stroke-width='1.5'/%3E%3C/svg%3E") 5 18, crosshair; }
+        .text-input-overlay { position: absolute; border: 2px dashed var(--accent); background: rgba(108,123,255,0.08); outline: none; font-family: inherit; color: #000; padding: 4px 8px; border-radius: 3px; min-width: 60px; z-index:15; font-size: 16px; }
+        .recording-indicator { position: absolute; top: 12px; right: 16px; display: flex; align-items: center; gap: 6px; background: rgba(0,0,0,0.8); color: #fff; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 0.8em; z-index:20; pointer-events: none; opacity: 0; transition: opacity 0.3s; }
+        .recording-indicator.visible { opacity: 1; }
+        .rec-dot { width: 10px; height: 10px; border-radius: 50%; background: #e74c3c; animation: blink 0.7s infinite; }
+        @keyframes blink { 0%,100% { opacity:1; } 50% { opacity:0.2; } }
+        .status-bar { display: flex; align-items: center; gap: 12px; padding: 5px 14px; background: var(--panel-bg); border-top: 1px solid var(--border); font-size: 0.72em; color: var(--text-secondary); z-index:10; min-height: 28px; }
+        .status-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; margin-right: 3px; }
+        .status-dot.green { background: #4caf84; }
+        .status-dot.red { background: #e74c3c; animation: blink 0.7s infinite; }
+        .toast { position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%) translateY(20px); background: #333; color: #fff; padding: 8px 18px; border-radius: 20px; font-size: 0.8em; z-index:100; opacity:0; transition: all 0.3s; pointer-events:none; font-weight:500; }
+        .toast.show { opacity:1; transform: translateX(-50%) translateY(0); }
+        .modal-overlay { position: fixed; inset:0; background: rgba(0,0,0,0.6); z-index:200; display:flex; align-items:center; justify-content:center; }
+        .modal-box { background: var(--panel-bg); padding: 20px 25px; border-radius: var(--radius); box-shadow: var(--shadow); color: var(--text); min-width: 300px; }
+        .modal-box h3 { margin-bottom: 12px; }
+        .modal-box button { margin: 6px; }
+
+        @media (max-width: 768px) {
+            .toolbar-top { gap:3px; padding:6px 8px; min-height:40px; }
+            .btn { padding:3px 6px; font-size:0.65em; }
+            .tools-panel { width:40px; padding:4px 2px; }
+            .tool-btn { width:30px; height:30px; font-size:0.9em; }
+        }
+    </style>
+</head>
+<body>
+<div class="toolbar-top">
+    <div class="brand">🎨 Doodle<span>Pro</span></div>
+
+    <div class="tool-group">
+        <label>画布</label>
+        <select id="canvasSizeSelect" style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:4px 6px;font-size:0.75em;">
+            <option value="800x600">800×600</option>
+            <option value="1200x800" selected>1200×800</option>
+            <option value="1920x1080">1920×1080</option>
+            <option value="2400x1600">2400×1600</option>
+        </select>
+    </div>
+
+    <div class="tool-group">
+        <label>颜色</label>
+        <div class="color-presets" id="colorPresets"></div>
+        <button class="btn btn-sm" id="btnCustomColor" title="自定义颜色">🎨</button>
+        <input type="color" id="customColorInput" value="#6c7bff">
+    </div>
+
+    <div class="tool-group">
+        <label>粗细</label>
+        <button class="btn btn-sm btn-icon" id="btnSizeDown">−</button>
+        <input type="range" id="brushSize" min="1" max="60" value="4" title="画笔粗细">
+        <button class="btn btn-sm btn-icon" id="btnSizeUp">+</button>
+        <span class="size-display" id="sizeDisplay">4</span>
+    </div>
+
+    <div class="tool-group">
+        <label>透明</label>
+        <input type="range" id="opacitySlider" min="10" max="100" value="100">
+        <span class="size-display" id="opacityDisplay">100%</span>
+    </div>
+
+    <div class="tool-group">
+        <button class="btn btn-sm active" id="btnCapRound">圆头</button>
+        <button class="btn btn-sm" id="btnCapSquare">平头</button>
+    </div>
+
+    <div class="tool-group">
+        <button class="btn btn-sm active" id="btnSolid">实线</button>
+        <button class="btn btn-sm" id="btnDashed">虚线</button>
+        <button class="btn btn-sm" id="btnDotted">点线</button>
+    </div>
+
+    <div class="tool-group">
+        <button class="btn btn-sm" id="btnFillToggle">🖌 描边</button>
+    </div>
+
+    <div class="tool-group" style="border-right:none;">
+        <button class="btn btn-sm" id="btnUndo">↩</button>
+        <button class="btn btn-sm" id="btnRedo">↪</button>
+        <button class="btn btn-sm btn-danger" id="btnClear">🗑</button>
+        <button class="btn btn-sm" id="btnSave">💾</button>
+        <button class="btn btn-sm" id="btnRec">⏺ 录制</button>
+    </div>
+</div>
+
+<div class="main-area">
+    <div class="tools-panel" id="toolsPanel">
+        <button class="tool-btn active" data-tool="brush">✏️<span class="tooltip">画笔 (B)</span></button>
+        <button class="tool-btn" data-tool="eraser">🧹<span class="tooltip">橡皮擦 (E)</span></button>
+        <div class="tools-divider"></div>
+        <button class="tool-btn" data-tool="select">🖱️<span class="tooltip">选择/移动 (V)</span></button>
+        <div class="tools-divider"></div>
+        <button class="tool-btn" data-tool="line">📏<span class="tooltip">直线 (L)</span></button>
+        <button class="tool-btn" data-tool="arrow">➡️<span class="tooltip">箭头 (A)</span></button>
+        <button class="tool-btn" data-tool="rectangle">⬜<span class="tooltip">矩形 (R)</span></button>
+        <button class="tool-btn" data-tool="circle">⭕<span class="tooltip">圆形 (C)</span></button>
+        <button class="tool-btn" data-tool="triangle">🔺<span class="tooltip">三角形</span></button>
+        <button class="tool-btn" data-tool="star">⭐<span class="tooltip">五角星</span></button>
+        <button class="tool-btn" data-tool="diamond">💠<span class="tooltip">菱形</span></button>
+        <button class="tool-btn" data-tool="heart">❤️<span class="tooltip">心形</span></button>
+        <div class="tools-divider"></div>
+        <button class="tool-btn" data-tool="text">📝<span class="tooltip">文字 (T)</span></button>
+        <button class="tool-btn" data-tool="fill">🪣<span class="tooltip">填充 (G)</span></button>
+        <button class="tool-btn" data-tool="eyedropper">💉<span class="tooltip">取色器 (I)</span></button>
+    </div>
+
+    <div class="canvas-container" id="canvasContainer">
+        <div class="canvas-wrapper">
+            <canvas id="mainCanvas" width="1200" height="800"></canvas>
+        </div>
+        <div class="recording-indicator" id="recIndicator">
+            <span class="rec-dot"></span><span>录制中</span><span class="rec-time" id="recTime">00:00</span>
+        </div>
+    </div>
+</div>
+
+<div class="status-bar">
+    <span><span class="status-dot green"></span> 就绪</span>
+    <span id="statusTool">工具: 画笔</span>
+    <span id="statusColor">颜色: #000000</span>
+    <span id="statusSize">粗细: 4px</span>
+    <span id="statusHistory">历史: 0个快照</span>
+    <span style="margin-left:auto;" id="statusCoords">坐标: - , -</span>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+    (function() {
+        // DOM 元素
+        const canvas = document.getElementById('mainCanvas');
+        const ctx = canvas.getContext('2d');
+        const canvasContainer = document.getElementById('canvasContainer');
+        const colorPresetsContainer = document.getElementById('colorPresets');
+        const brushSizeSlider = document.getElementById('brushSize');
+        const sizeDisplay = document.getElementById('sizeDisplay');
+        const opacitySlider = document.getElementById('opacitySlider');
+        const opacityDisplay = document.getElementById('opacityDisplay');
+        const btnCustomColor = document.getElementById('btnCustomColor');
+        const customColorInput = document.getElementById('customColorInput');
+        const btnUndo = document.getElementById('btnUndo');
+        const btnRedo = document.getElementById('btnRedo');
+        const btnClear = document.getElementById('btnClear');
+        const btnSave = document.getElementById('btnSave');
+        const btnRec = document.getElementById('btnRec');
+        const btnCapRound = document.getElementById('btnCapRound');
+        const btnCapSquare = document.getElementById('btnCapSquare');
+        const btnSolid = document.getElementById('btnSolid');
+        const btnDashed = document.getElementById('btnDashed');
+        const btnDotted = document.getElementById('btnDotted');
+        const btnFillToggle = document.getElementById('btnFillToggle');
+        const recIndicator = document.getElementById('recIndicator');
+        const recTimeEl = document.getElementById('recTime');
+        const toast = document.getElementById('toast');
+        const statusTool = document.getElementById('statusTool');
+        const statusColor = document.getElementById('statusColor');
+        const statusSize = document.getElementById('statusSize');
+        const statusHistory = document.getElementById('statusHistory');
+        const statusCoords = document.getElementById('statusCoords');
+        const canvasSizeSelect = document.getElementById('canvasSizeSelect');
+        const btnSizeUp = document.getElementById('btnSizeUp');
+        const btnSizeDown = document.getElementById('btnSizeDown');
+
+        // 离屏位图
+        const offscreen = document.createElement('canvas');
+        const offCtx = offscreen.getContext('2d');
+
+        // 状态
+        let currentTool = 'brush';
+        let currentColor = '#000000';
+        let brushSize = 4;
+        let opacity = 1;
+        let lineCap = 'round';
+        let lineStyle = 'solid';
+        let fillShapes = false;
+        let isDrawing = false;
+        let startX, startY;
+
+        let vectorObjects = [];
+        let selectedObjectIndex = -1;
+        let moveStartMouse = null;
+        let moveStartObjCoords = null;
+
+        let historyStack = [];
+        let historyIndex = -1;
+        const maxHistory = 80;
+
+        let shapeStartImageData = null;
+
+        let textInputOverlay = null;
+        let textInputPos = null;
+
+        // 录屏
+        let mediaRecorder = null;
+        let recordedChunks = [];
+        let recordingStartTime = 0;
+        let recordingTimer = null;
+        let isRecording = false;
+        let canvasStream = null;
+
+        const colorPresets = [
+            '#000000','#ffffff','#e74c3c','#e67e22','#f1c40f','#2ecc71',
+            '#1abc9c','#3498db','#6c7bff','#9b59b6','#e91e63','#795548',
+            '#607d8b','#95a5a6','#34495e','#ff6b6b','#ffd93d','#6bcb77',
+            '#4d96ff','#ff922b'
+        ];
+
+        function syncCanvasSize() {
+            offscreen.width = canvas.width;
+            offscreen.height = canvas.height;
+            offCtx.fillStyle = '#ffffff';
+            offCtx.fillRect(0, 0, offscreen.width, offscreen.height);
+        }
+        syncCanvasSize();
+
+        function redrawCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(offscreen, 0, 0);
+            vectorObjects.forEach(obj => drawVectorObject(ctx, obj));
+            if (selectedObjectIndex >= 0 && selectedObjectIndex < vectorObjects.length) {
+                const obj = vectorObjects[selectedObjectIndex];
+                const bbox = getObjectBounds(obj);
+                if (bbox) {
+                    ctx.save();
+                    ctx.strokeStyle = '#6c7bff';
+                    ctx.lineWidth = 2;
+                    ctx.setLineDash([6, 4]);
+                    ctx.strokeRect(bbox.x - 4, bbox.y - 4, bbox.w + 8, bbox.h + 8);
+                    ctx.restore();
+                }
+            }
+        }
+
+        function drawVectorObject(context, obj) {
+            context.save();
+            context.strokeStyle = obj.color;
+            context.fillStyle = obj.color;
+            context.lineWidth = obj.brushSize;
+            context.lineCap = obj.lineCap || 'round';
+            context.lineJoin = obj.lineCap === 'round' ? 'round' : 'miter';
+            context.globalAlpha = obj.opacity != null ? obj.opacity : 1;
+            if (obj.lineStyle === 'dashed') context.setLineDash([obj.brushSize * 3, obj.brushSize * 2]);
+            else if (obj.lineStyle === 'dotted') context.setLineDash([obj.brushSize * 1.2, obj.brushSize * 2]);
+            else context.setLineDash([]);
+
+            context.beginPath();
+            switch (obj.type) {
+                case 'line': context.moveTo(obj.x1, obj.y1); context.lineTo(obj.x2, obj.y2); context.stroke(); break;
+                case 'arrow': drawArrow(context, obj.x1, obj.y1, obj.x2, obj.y2, obj.brushSize); break;
+                case 'rectangle':
+                    if (obj.fillShapes) context.fillRect(obj.x1, obj.y1, obj.x2 - obj.x1, obj.y2 - obj.y1);
+                    else context.strokeRect(obj.x1, obj.y1, obj.x2 - obj.x1, obj.y2 - obj.y1);
+                    break;
+                case 'circle': drawEllipse(context, obj); if (obj.fillShapes) context.fill(); else context.stroke(); break;
+                case 'triangle': drawPolygon(context, getTrianglePoints(obj), obj.fillShapes); break;
+                case 'star': drawPolygon(context, getStarPoints(obj), obj.fillShapes); break;
+                case 'diamond': drawPolygon(context, getDiamondPoints(obj), obj.fillShapes); break;
+                case 'heart': drawHeart(context, obj); if (obj.fillShapes) context.fill(); else context.stroke(); break;
+                case 'text': context.font = `${obj.fontSize}px 'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif`; context.fillText(obj.text, obj.x, obj.y); break;
+            }
+            context.restore();
+        }
+
+        function drawArrow(context, x1, y1, x2, y2, size) {
+            const angle = Math.atan2(y2 - y1, x2 - x1);
+            const headLen = size * 4 + 8;
+            const headW = size * 2.5 + 4;
+            context.beginPath();
+            context.moveTo(x1, y1);
+            context.lineTo(x2 - Math.cos(angle) * headLen * 0.7, y2 - Math.sin(angle) * headLen * 0.7);
+            context.stroke();
+            context.beginPath();
+            context.moveTo(x2, y2);
+            context.lineTo(x2 - Math.cos(angle) * headLen + Math.sin(angle) * headW, y2 - Math.sin(angle) * headLen - Math.cos(angle) * headW);
+            context.lineTo(x2 - Math.cos(angle) * headLen - Math.sin(angle) * headW, y2 - Math.sin(angle) * headLen + Math.cos(angle) * headW);
+            context.closePath();
+            context.fill();
+        }
+
+        function drawEllipse(context, obj) {
+            const rx = Math.abs(obj.x2 - obj.x1) / 2, ry = Math.abs(obj.y2 - obj.y1) / 2;
+            const cx = (obj.x1 + obj.x2) / 2, cy = (obj.y1 + obj.y2) / 2;
+            context.beginPath();
+            context.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+        }
+
+        function getTrianglePoints(obj) {
+            const cx = (obj.x1 + obj.x2) / 2;
+            return [{x: cx, y: obj.y1}, {x: obj.x2, y: obj.y2}, {x: obj.x1, y: obj.y2}];
+        }
+        function getStarPoints(obj) {
+            const cx = (obj.x1 + obj.x2) / 2, cy = (obj.y1 + obj.y2) / 2;
+            const outerR = Math.min(Math.abs(obj.x2 - obj.x1), Math.abs(obj.y2 - obj.y1)) / 2;
+            const innerR = outerR * 0.4;
+            const pts = [];
+            for (let i = 0; i < 10; i++) {
+                const angle = Math.PI / 2 + i * Math.PI / 5;
+                const r = i % 2 === 0 ? outerR : innerR;
+                pts.push({x: cx + Math.cos(angle) * r, y: cy - Math.sin(angle) * r});
+            }
+            return pts;
+        }
+        function getDiamondPoints(obj) {
+            const cx = (obj.x1 + obj.x2) / 2, cy = (obj.y1 + obj.y2) / 2;
+            return [{x: cx, y: obj.y1}, {x: obj.x2, y: cy}, {x: cx, y: obj.y2}, {x: obj.x1, y: cy}];
+        }
+        function drawHeart(context, obj) {
+            const cx = (obj.x1 + obj.x2) / 2, cy = (obj.y1 + obj.y2) / 2;
+            const w = Math.abs(obj.x2 - obj.x1), h = Math.abs(obj.y2 - obj.y1);
+            const s = Math.min(w, h) / 2;
+            context.beginPath();
+            context.moveTo(cx, cy + s * 0.7);
+            context.bezierCurveTo(cx - s * 1.2, cy - s * 0.3, cx - s * 0.8, cy - s * 0.8, cx, cy - s * 0.3);
+            context.bezierCurveTo(cx + s * 0.8, cy - s * 0.8, cx + s * 1.2, cy - s * 0.3, cx, cy + s * 0.7);
+        }
+        function drawPolygon(context, points, filled) {
+            if (points.length < 2) return;
+            context.beginPath();
+            context.moveTo(points[0].x, points[0].y);
+            for (let i = 1; i < points.length; i++) context.lineTo(points[i].x, points[i].y);
+            context.closePath();
+            if (filled) context.fill(); else context.stroke();
+        }
+
+        function getObjectBounds(obj) {
+            switch (obj.type) {
+                case 'line': case 'arrow':
+                    return {x: Math.min(obj.x1, obj.x2), y: Math.min(obj.y1, obj.y2), w: Math.abs(obj.x2 - obj.x1), h: Math.abs(obj.y2 - obj.y1)};
+                case 'rectangle': case 'circle': case 'triangle': case 'star': case 'diamond': case 'heart':
+                    return {x: Math.min(obj.x1, obj.x2), y: Math.min(obj.y1, obj.y2), w: Math.abs(obj.x2 - obj.x1), h: Math.abs(obj.y2 - obj.y1)};
+                case 'text':
+                    ctx.font = `${obj.fontSize}px 'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif`;
+                    const metrics = ctx.measureText(obj.text);
+                    return {x: obj.x, y: obj.y - obj.fontSize, w: metrics.width, h: obj.fontSize};
+                default: return null;
+            }
+        }
+
+        function hitTestObject(obj, px, py) {
+            const threshold = 12;
+            switch (obj.type) {
+                case 'line': case 'arrow': return pointToSegmentDist(px, py, obj.x1, obj.y1, obj.x2, obj.y2) < threshold;
+                case 'rectangle': return px >= Math.min(obj.x1, obj.x2) && px <= Math.max(obj.x1, obj.x2) && py >= Math.min(obj.y1, obj.y2) && py <= Math.max(obj.y1, obj.y2);
+                case 'circle':
+                    const rx = Math.abs(obj.x2 - obj.x1) / 2, ry = Math.abs(obj.y2 - obj.y1) / 2;
+                    const cx = (obj.x1 + obj.x2) / 2, cy = (obj.y1 + obj.y2) / 2;
+                    return ((px - cx) ** 2) / (rx ** 2) + ((py - cy) ** 2) / (ry ** 2) <= 1;
+                case 'triangle': return isPointInPolygon(px, py, getTrianglePoints(obj));
+                case 'star': return isPointInPolygon(px, py, getStarPoints(obj));
+                case 'diamond': return isPointInPolygon(px, py, getDiamondPoints(obj));
+                case 'heart': return isPointInHeart(px, py, obj);
+                case 'text':
+                    const b = getObjectBounds(obj);
+                    return b && px >= b.x && px <= b.x + b.w && py >= b.y && py <= b.y + b.h;
+            }
+            return false;
+        }
+
+        function pointToSegmentDist(px, py, x1, y1, x2, y2) {
+            const vx = x2 - x1, vy = y2 - y1;
+            const wx = px - x1, wy = py - y1;
+            const c1 = vx * wx + vy * wy;
+            if (c1 <= 0) return Math.hypot(px - x1, py - y1);
+            const c2 = vx * vx + vy * vy;
+            if (c2 <= c1) return Math.hypot(px - x2, py - y2);
+            const b = c1 / c2;
+            return Math.hypot(px - (x1 + b * vx), py - (y1 + b * vy));
+        }
+        function isPointInPolygon(px, py, points) {
+            let inside = false;
+            for (let i = 0, j = points.length - 1; i < points.length; j = i++) {
+                const xi = points[i].x, yi = points[i].y;
+                const xj = points[j].x, yj = points[j].y;
+                if ((yi > py) !== (yj > py) && (px < (xj - xi) * (py - yi) / (yj - yi) + xi)) inside = !inside;
+            }
+            return inside;
+        }
+        function isPointInHeart(px, py, obj) {
+            const cx = (obj.x1 + obj.x2) / 2, cy = (obj.y1 + obj.y2) / 2;
+            const w = Math.abs(obj.x2 - obj.x1), h = Math.abs(obj.y2 - obj.y1);
+            const s = Math.min(w, h) / 2;
+            const x = (px - cx) / s, y = (cy - py) / s;
+            return Math.pow(x * x + y * y - 1, 3) - x * x * y * y * y <= 0.05;
+        }
+
+        // 历史记录
+        function captureState() {
+            return { bitmap: offscreen.toDataURL('image/png'), objects: JSON.parse(JSON.stringify(vectorObjects)) };
+        }
+        async function restoreState(state) {
+            return new Promise(resolve => {
+                const img = new Image();
+                img.onload = () => {
+                    offCtx.clearRect(0, 0, offscreen.width, offscreen.height);
+                    offCtx.drawImage(img, 0, 0);
+                    vectorObjects = JSON.parse(JSON.stringify(state.objects));
+                    redrawCanvas();
+                    resolve();
+                };
+                img.src = state.bitmap;
+            });
+        }
+        async function saveHistory() {
+            if (historyIndex < historyStack.length - 1) historyStack = historyStack.slice(0, historyIndex + 1);
+            historyStack.push(captureState());
+            if (historyStack.length > maxHistory) historyStack.shift();
+            else historyIndex++;
+            updateHistoryUI();
+        }
+        async function undo() {
+            if (historyIndex > 0) {
+                historyIndex--;
+                await restoreState(historyStack[historyIndex]);
+                selectedObjectIndex = -1;
+                updateHistoryUI();
+            }
+        }
+        async function redo() {
+            if (historyIndex < historyStack.length - 1) {
+                historyIndex++;
+                await restoreState(historyStack[historyIndex]);
+                selectedObjectIndex = -1;
+                updateHistoryUI();
+            }
+        }
+        function updateHistoryUI() {
+            statusHistory.textContent = `历史: ${historyIndex+1}/${historyStack.length}个快照`;
+            btnUndo.style.opacity = historyIndex > 0 ? '1' : '0.4';
+            btnRedo.style.opacity = historyIndex < historyStack.length - 1 ? '1' : '0.4';
+        }
+
+        function applyOffscreenSettings() {
+            offCtx.strokeStyle = currentColor;
+            offCtx.fillStyle = currentColor;
+            offCtx.lineWidth = brushSize;
+            offCtx.lineCap = lineCap;
+            offCtx.lineJoin = lineCap === 'round' ? 'round' : 'miter';
+            offCtx.globalAlpha = opacity;
+            if (lineStyle === 'dashed') offCtx.setLineDash([brushSize * 3, brushSize * 2]);
+            else if (lineStyle === 'dotted') offCtx.setLineDash([brushSize * 1.2, brushSize * 2]);
+            else offCtx.setLineDash([]);
+        }
+
+        function getCanvasCoords(e) {
+            const rect = canvas.getBoundingClientRect();
+            return {
+                x: (e.clientX - rect.left) * (canvas.width / rect.width),
+                y: (e.clientY - rect.top) * (canvas.height / rect.height)
+            };
+        }
+
+        function saveShapeStartState() { shapeStartImageData = offCtx.getImageData(0, 0, offscreen.width, offscreen.height); }
+        function restoreOffscreenFromImageData() { if (shapeStartImageData) offCtx.putImageData(shapeStartImageData, 0, 0); }
+
+        function drawShapePreview(x1, y1, x2, y2) {
+            restoreOffscreenFromImageData();
+            redrawCanvas();
+            const tmpObj = { type: currentTool, x1, y1, x2, y2, color: currentColor, brushSize, opacity, lineCap, lineStyle, fillShapes };
+            drawVectorObject(ctx, tmpObj);
+        }
+
+        // 鼠标事件
+        canvas.addEventListener('mousedown', (e) => {
+            if (e.button !== 0) return;
+            const { x, y } = getCanvasCoords(e);
+            if (currentTool === 'text') { showTextInput(x, y); return; }
+            if (currentTool === 'fill') { applyOffscreenSettings(); floodFillOffscreen(x, y); saveHistory(); redrawCanvas(); return; }
+            if (currentTool === 'eyedropper') { const color = pickColor(x, y); if(color){ setColor(color); showToast(`取色: ${color}`); } return; }
+            if (currentTool === 'select') {
+                selectedObjectIndex = -1;
+                for (let i = vectorObjects.length - 1; i >= 0; i--) {
+                    if (hitTestObject(vectorObjects[i], x, y)) {
+                        selectedObjectIndex = i;
+                        moveStartMouse = { x, y };
+                        moveStartObjCoords = { ...vectorObjects[i] };
+                        redrawCanvas();
+                        return;
+                    }
+                }
+                redrawCanvas();
+                return;
+            }
+            isDrawing = true; startX = x; startY = y;
+            if (currentTool === 'brush' || currentTool === 'eraser') {
+                applyOffscreenSettings();
+                if (currentTool === 'eraser') { offCtx.globalCompositeOperation = 'destination-out'; offCtx.strokeStyle = 'rgba(0,0,0,1)'; offCtx.setLineDash([]); }
+                offCtx.beginPath(); offCtx.moveTo(x, y); offCtx.lineTo(x, y); offCtx.stroke();
+                redrawCanvas();
+            } else { saveShapeStartState(); }
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            const { x, y } = getCanvasCoords(e);
+            statusCoords.textContent = `坐标: ${Math.round(x)}, ${Math.round(y)}`;
+            if (!isDrawing && currentTool === 'select' && selectedObjectIndex >= 0 && moveStartMouse) {
+                const dx = x - moveStartMouse.x, dy = y - moveStartMouse.y;
+                const obj = vectorObjects[selectedObjectIndex];
+                ['x1','x2','x','y'].forEach(k => { if (moveStartObjCoords[k] !== undefined) obj[k] = moveStartObjCoords[k] + (k==='x'||k==='x1'||k==='x2'?dx:dy); });
+                redrawCanvas(); return;
+            }
+            if (!isDrawing) return;
+            if (currentTool === 'brush' || currentTool === 'eraser') {
+                applyOffscreenSettings();
+                if (currentTool === 'eraser') { offCtx.globalCompositeOperation = 'destination-out'; offCtx.strokeStyle = 'rgba(0,0,0,1)'; offCtx.setLineDash([]); }
+                offCtx.lineTo(x, y); offCtx.stroke();
+                redrawCanvas();
+            } else if (['line','arrow','rectangle','circle','triangle','star','diamond','heart'].includes(currentTool)) {
+                drawShapePreview(startX, startY, x, y);
+            }
+        });
+
+        canvas.addEventListener('mouseup', async (e) => {
+            if (currentTool === 'select' && selectedObjectIndex >= 0 && moveStartMouse) {
+                moveStartMouse = null; moveStartObjCoords = null;
+                await saveHistory(); return;
+            }
+            if (!isDrawing) return;
+            const { x, y } = getCanvasCoords(e);
+            if (currentTool === 'brush' || currentTool === 'eraser') {
+                offCtx.globalCompositeOperation = 'source-over'; offCtx.setLineDash([]);
+                await saveHistory(); redrawCanvas();
+            } else if (['line','arrow','rectangle','circle','triangle','star','diamond','heart'].includes(currentTool)) {
+                restoreOffscreenFromImageData();
+                vectorObjects.push({ type: currentTool, x1: startX, y1: startY, x2: x, y2: y, color: currentColor, brushSize, opacity, lineCap, lineStyle, fillShapes });
+                await saveHistory(); redrawCanvas();
+            }
+            isDrawing = false; shapeStartImageData = null;
+        });
+
+        canvas.addEventListener('wheel', (e) => {
+            if (currentTool === 'eraser') {
+                e.preventDefault();
+                brushSize = Math.min(60, Math.max(1, brushSize + (e.deltaY > 0 ? -1 : 1)));
+                brushSizeSlider.value = brushSize; sizeDisplay.textContent = brushSize;
+                statusSize.textContent = '粗细: ' + brushSize + 'px';
+            }
+        }, { passive: false });
+
+        // 触摸事件
+        canvas.addEventListener('touchstart', (e) => { e.preventDefault(); if(e.touches.length===1){ const t=e.touches[0]; canvas.dispatchEvent(new MouseEvent('mousedown',{clientX:t.clientX,clientY:t.clientY,button:0})); } }, {passive:false});
+        canvas.addEventListener('touchmove', (e) => { e.preventDefault(); if(e.touches.length===1){ const t=e.touches[0]; canvas.dispatchEvent(new MouseEvent('mousemove',{clientX:t.clientX,clientY:t.clientY})); } }, {passive:false});
+        canvas.addEventListener('touchend', (e) => { e.preventDefault(); canvas.dispatchEvent(new MouseEvent('mouseup',{button:0})); });
+
+        function floodFillOffscreen(sx, sy) {
+            const imgData = offCtx.getImageData(0,0,offscreen.width,offscreen.height);
+            const data = imgData.data; const w=offscreen.width, h=offscreen.height;
+            const px=Math.round(sx), py=Math.round(sy);
+            if(px<0||px>=w||py<0||py>=h) return;
+            const idx=(py*w+px)*4; const sr=data[idx], sg=data[idx+1], sb=data[idx+2], sa=data[idx+3];
+            const tmpC=document.createElement('canvas'); tmpC.width=1;tmpC.height=1; const tctx=tmpC.getContext('2d');
+            tctx.fillStyle=currentColor; tctx.fillRect(0,0,1,1); const fd=tctx.getImageData(0,0,1,1).data;
+            if(sr===fd[0]&&sg===fd[1]&&sb===fd[2]&&sa===fd[3]) return;
+            const stack=[[px,py]]; const visited=new Set(); visited.add(py*w+px);
+            while(stack.length){
+                const [x,y]=stack.pop(); const i=(y*w+x)*4;
+                data[i]=fd[0];data[i+1]=fd[1];data[i+2]=fd[2];data[i+3]=fd[3];
+                [[x+1,y],[x-1,y],[x,y+1],[x,y-1]].forEach(([nx,ny])=>{
+                    if(nx>=0&&nx<w&&ny>=0&&ny<h&&!visited.has(ny*w+nx)){
+                        visited.add(ny*w+nx); const ni=(ny*w+nx)*4;
+                        if(Math.abs(data[ni]-sr)<10&&Math.abs(data[ni+1]-sg)<10&&Math.abs(data[ni+2]-sb)<10&&Math.abs(data[ni+3]-sa)<10) stack.push([nx,ny]);
+                    }
+                });
+            }
+            offCtx.putImageData(imgData,0,0);
+        }
+
+        function pickColor(x,y){
+            const px=Math.round(x), py=Math.round(y);
+            if(px<0||px>=canvas.width||py<0||py>=canvas.height) return null;
+            const d=ctx.getImageData(px,py,1,1).data;
+            return '#'+[d[0],d[1],d[2]].map(c=>c.toString(16).padStart(2,'0')).join('');
+        }
+
+        function setTool(tool){
+            currentTool=tool;
+            document.querySelectorAll('.tool-btn').forEach(b=>b.classList.remove('active'));
+            const btn=document.querySelector(`.tool-btn[data-tool="${tool}"]`); if(btn) btn.classList.add('active');
+            canvas.classList.remove('eraser-mode','text-mode','fill-mode');
+            if(tool==='eraser') canvas.classList.add('eraser-mode');
+            if(tool==='text') canvas.classList.add('text-mode');
+            if(tool==='fill') canvas.classList.add('fill-mode');
+            statusTool.textContent='工具: '+({brush:'画笔',eraser:'橡皮',select:'选择',line:'直线',arrow:'箭头',rectangle:'矩形',circle:'圆形',triangle:'三角形',star:'五角星',diamond:'菱形',heart:'心形',text:'文字',fill:'填充',eyedropper:'取色器'}[tool]||tool);
+            removeTextInput();
+            offCtx.globalCompositeOperation='source-over'; offCtx.setLineDash([]);
+            selectedObjectIndex=-1; moveStartMouse=null; redrawCanvas();
+        }
+
+        document.getElementById('toolsPanel').addEventListener('click', (e) => {
+            const btn = e.target.closest('.tool-btn');
+            if (btn) setTool(btn.dataset.tool);
+        });
+
+        function setColor(color){ currentColor=color; customColorInput.value=color; updateColorDots(); statusColor.textContent='颜色: '+color; }
+        function buildColorPresets(){
+            colorPresetsContainer.innerHTML='';
+            colorPresets.forEach(c=>{
+                const d=document.createElement('div'); d.className='color-dot'; d.dataset.color=c; d.style.backgroundColor=c;
+                if(c==='#ffffff') d.style.border='2px solid #ccc';
+                d.onclick=()=>setColor(c);
+                if(c===currentColor) d.classList.add('active');
+                colorPresetsContainer.appendChild(d);
+            });
+            const cd=document.createElement('div'); cd.className='color-dot custom'; cd.onclick=()=>customColorInput.click();
+            colorPresetsContainer.appendChild(cd);
+        }
+        function updateColorDots(){ document.querySelectorAll('.color-dot:not(.custom)').forEach(d=>d.classList.toggle('active',d.dataset.color===currentColor)); }
+        customColorInput.oninput=()=>setColor(customColorInput.value);
+        btnCustomColor.onclick=()=>customColorInput.click();
+
+        brushSizeSlider.oninput=()=>{ brushSize=parseInt(brushSizeSlider.value); sizeDisplay.textContent=brushSize; statusSize.textContent='粗细: '+brushSize+'px'; };
+        opacitySlider.oninput=()=>{ opacity=parseInt(opacitySlider.value)/100; opacityDisplay.textContent=Math.round(opacity*100)+'%'; };
+        btnSizeUp.onclick=()=>{ brushSize=Math.min(60,brushSize+1); brushSizeSlider.value=brushSize; sizeDisplay.textContent=brushSize; };
+        btnSizeDown.onclick=()=>{ brushSize=Math.max(1,brushSize-1); brushSizeSlider.value=brushSize; sizeDisplay.textContent=brushSize; };
+        btnCapRound.onclick=()=>{ lineCap='round'; btnCapRound.classList.add('active'); btnCapSquare.classList.remove('active'); };
+        btnCapSquare.onclick=()=>{ lineCap='square'; btnCapSquare.classList.add('active'); btnCapRound.classList.remove('active'); };
+        btnSolid.onclick=()=>{ lineStyle='solid'; btnSolid.classList.add('active'); btnDashed.classList.remove('active'); btnDotted.classList.remove('active'); };
+        btnDashed.onclick=()=>{ lineStyle='dashed'; btnDashed.classList.add('active'); btnSolid.classList.remove('active'); btnDotted.classList.remove('active'); };
+        btnDotted.onclick=()=>{ lineStyle='dotted'; btnDotted.classList.add('active'); btnSolid.classList.remove('active'); btnDashed.classList.remove('active'); };
+        btnFillToggle.onclick=()=>{ fillShapes=!fillShapes; btnFillToggle.textContent=fillShapes?'🪣 填充':'🖌 描边'; btnFillToggle.classList.toggle('active',fillShapes); };
+        btnUndo.onclick=undo; btnRedo.onclick=redo;
+        btnClear.onclick=()=>{ if(confirm('清空画布？')){ offCtx.fillStyle='#ffffff'; offCtx.fillRect(0,0,offscreen.width,offscreen.height); vectorObjects=[]; selectedObjectIndex=-1; saveHistory(); redrawCanvas(); } };
+
+        canvasSizeSelect.onchange=()=>{
+            if(confirm('改变尺寸将清空画布，继续？')){
+                const [w,h]=canvasSizeSelect.value.split('x').map(Number);
+                canvas.width=w; canvas.height=h; syncCanvasSize();
+                vectorObjects=[]; selectedObjectIndex=-1; historyStack=[]; historyIndex=-1;
+                offCtx.fillStyle='#ffffff'; offCtx.fillRect(0,0,w,h);
+                saveHistory(); redrawCanvas(); resizeCanvasToFit();
+            } else { canvasSizeSelect.value = canvas.width+'x'+canvas.height; }
+        };
+
+        // 文字输入
+        function showTextInput(x,y){
+            removeTextInput(); textInputPos={x,y};
+            const rect=canvas.getBoundingClientRect();
+            const left=rect.left+x/(canvas.width/rect.width), top=rect.top+y/(canvas.height/rect.height);
+            textInputOverlay=document.createElement('input'); textInputOverlay.className='text-input-overlay';
+            textInputOverlay.style.left=left+'px'; textInputOverlay.style.top=top+'px';
+            textInputOverlay.style.fontSize=(brushSize*3+12)+'px'; textInputOverlay.style.color=currentColor;
+            textInputOverlay.placeholder='输入文字...'; document.body.appendChild(textInputOverlay);
+            setTimeout(()=>textInputOverlay.focus(),50);
+            textInputOverlay.addEventListener('keydown',(e)=>{ if(e.key==='Enter'){e.preventDefault();commitText();} else if(e.key==='Escape') removeTextInput(); });
+            textInputOverlay.addEventListener('blur',commitText);
+        }
+        function commitText(){
+            if(!textInputOverlay||!textInputPos) return;
+            const text=textInputOverlay.value.trim();
+            if(text){ vectorObjects.push({type:'text', x:textInputPos.x, y:textInputPos.y+brushSize*3+12, text, fontSize:brushSize*3+12, color:currentColor}); saveHistory(); redrawCanvas(); }
+            removeTextInput();
+        }
+        function removeTextInput(){ if(textInputOverlay){textInputOverlay.remove();textInputOverlay=null;} textInputPos=null; }
+
+        // 保存
+        btnSave.onclick=()=>{
+            const overlay=document.createElement('div'); overlay.className='modal-overlay';
+            overlay.innerHTML=`<div class="modal-box"><h3>保存图片</h3><p>是否添加时间水印？</p><button class="btn btn-success" id="saveYes">是</button><button class="btn" id="saveNo">否</button><button class="btn btn-sm" id="cancelSave">取消</button></div>`;
+            document.body.appendChild(overlay);
+            overlay.querySelector('#saveYes').onclick=()=>{ overlay.remove(); exportImage(true); };
+            overlay.querySelector('#saveNo').onclick=()=>{ overlay.remove(); exportImage(false); };
+            overlay.querySelector('#cancelSave').onclick=()=>overlay.remove();
+        };
+        function exportImage(watermark){
+            const tmp=document.createElement('canvas'); tmp.width=canvas.width; tmp.height=canvas.height;
+            const tctx=tmp.getContext('2d'); tctx.drawImage(offscreen,0,0);
+            vectorObjects.forEach(o=>drawVectorObject(tctx,o));
+            if(watermark){ const ts=new Date().toLocaleString('zh-CN'); tctx.font='bold 20px "Segoe UI"'; tctx.fillStyle='rgba(0,0,0,0.5)'; tctx.fillText(ts, tmp.width-tctx.measureText(ts).width-20, tmp.height-20); }
+            const a=document.createElement('a'); a.download='涂鸦_'+new Date().toISOString().slice(0,19).replace(/:/g,'-')+'.png'; a.href=tmp.toDataURL(); a.click(); showToast('图片已保存');
+        }
+
+        // 录屏
+        function startRecording(){
+            if(isRecording) return;
+            recordedChunks=[]; canvasStream=canvas.captureStream(30);
+            navigator.mediaDevices.getUserMedia({audio:true}).then(a=>{ startMediaRecorder(new MediaStream([...canvasStream.getVideoTracks(),...a.getAudioTracks()])); }).catch(()=>startMediaRecorder(canvasStream));
+        }
+        function startMediaRecorder(stream){
+            const mimes=['video/webm;codecs=vp8','video/webm;codecs=vp9','video/webm']; let opts={};
+            for(const m of mimes) if(MediaRecorder.isTypeSupported(m)){ opts={mimeType:m}; break; }
+            mediaRecorder=new MediaRecorder(stream,opts);
+            mediaRecorder.ondataavailable=e=>{ if(e.data.size) recordedChunks.push(e.data); };
+            mediaRecorder.onstop=()=>{
+                if(!recordedChunks.length){ showToast('❌ 无录制数据'); stopRecordingUI(); return; }
+                const blob=new Blob(recordedChunks,{type:mediaRecorder.mimeType||'video/webm'});
+                const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='录屏_'+new Date().toISOString().slice(0,19).replace(/:/g,'-')+'.webm'; a.click(); URL.revokeObjectURL(url);
+                showToast('✅ 录屏已保存'); stopRecordingUI();
+            };
+            mediaRecorder.start(250); isRecording=true; recordingStartTime=Date.now(); updateRecordingUI(); startTimer();
+        }
+        function stopRecording(){ if(mediaRecorder&&mediaRecorder.state==='recording') mediaRecorder.stop(); if(mediaRecorder&&mediaRecorder.stream) mediaRecorder.stream.getTracks().forEach(t=>t.stop()); if(canvasStream) canvasStream.getTracks().forEach(t=>t.stop()); isRecording=false; stopTimer(); }
+        function startTimer(){ recordingTimer=setInterval(()=>{ const e=Math.floor((Date.now()-recordingStartTime)/1000); recTimeEl.textContent=String(Math.floor(e/60)).padStart(2,'0')+':'+String(e%60).padStart(2,'0'); },500); }
+        function stopTimer(){ if(recordingTimer) clearInterval(recordingTimer); recTimeEl.textContent='00:00'; }
+        function updateRecordingUI(){ btnRec.textContent='⏹ 停止'; btnRec.classList.add('recording'); recIndicator.classList.add('visible'); }
+        function stopRecordingUI(){ btnRec.textContent='⏺ 录制'; btnRec.classList.remove('recording'); recIndicator.classList.remove('visible'); }
+        btnRec.onclick=()=>{ if(isRecording) stopRecording(); else startRecording(); };
+
+        // 键盘快捷键（重点增强：选择工具移动与删除）
+        document.addEventListener('keydown', async (e) => {
+            if (document.activeElement === textInputOverlay) return;
+            const ctrl = e.ctrlKey || e.metaKey;
+
+            if (ctrl && e.key === 'z') { e.preventDefault(); await undo(); }
+            else if (ctrl && e.key === 'y') { e.preventDefault(); await redo(); }
+            else if (ctrl && e.key === 's') { e.preventDefault(); btnSave.click(); }
+            else if (currentTool === 'select' && selectedObjectIndex >= 0) {
+                // 方向键移动选中对象
+                const key = e.key;
+                if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(key)) {
+                    e.preventDefault();
+                    const step = e.shiftKey ? 10 : 1;
+                    const obj = vectorObjects[selectedObjectIndex];
+                    let dx = 0, dy = 0;
+                    if (key === 'ArrowLeft') dx = -step;
+                    else if (key === 'ArrowRight') dx = step;
+                    else if (key === 'ArrowUp') dy = -step;
+                    else if (key === 'ArrowDown') dy = step;
+
+                    ['x1','x2','x','y'].forEach(k => {
+                        if (obj[k] !== undefined) obj[k] += (k === 'x' || k === 'x1' || k === 'x2' ? dx : dy);
+                    });
+                    redrawCanvas();
+                }
+                // Delete / Backspace 删除选中对象
+                else if (key === 'Delete' || key === 'Backspace') {
+                    e.preventDefault();
+                    vectorObjects.splice(selectedObjectIndex, 1);
+                    selectedObjectIndex = -1;
+                    await saveHistory();
+                    redrawCanvas();
+                    showToast('对象已删除');
+                }
+            }
+            else if (!ctrl) {
+                const km = { b:'brush', e:'eraser', v:'select', l:'line', a:'arrow', r:'rectangle', c:'circle', t:'text', g:'fill', i:'eyedropper' };
+                if (km[e.key]) { e.preventDefault(); setTool(km[e.key]); }
+            }
+        });
+
+        function resizeCanvasToFit(){
+            const cw=canvasContainer.clientWidth-40, ch=canvasContainer.clientHeight-40;
+            const ar=canvas.width/canvas.height; let nw,nh;
+            if(cw/ch>ar){ nh=Math.min(ch,canvas.height); nw=nh*ar; } else { nw=Math.min(cw,canvas.width); nh=nw/ar; }
+            canvas.style.width=nw+'px'; canvas.style.height=nh+'px';
+        }
+        window.addEventListener('resize', resizeCanvasToFit);
+
+        let toastTimeout;
+        function showToast(msg){ toast.textContent=msg; toast.classList.add('show'); clearTimeout(toastTimeout); toastTimeout=setTimeout(()=>toast.classList.remove('show'),2000); }
+
+        async function init(){
+            buildColorPresets(); setColor('#000000');
+            brushSize=4; brushSizeSlider.value=4; sizeDisplay.textContent='4'; opacity=1; opacitySlider.value=100; opacityDisplay.textContent='100%';
+            statusSize.textContent='粗细: 4px'; statusColor.textContent='颜色: #000000';
+            syncCanvasSize(); offCtx.fillStyle='#ffffff'; offCtx.fillRect(0,0,offscreen.width,offscreen.height);
+            await saveHistory(); redrawCanvas(); resizeCanvasToFit(); setTool('brush');
+            showToast('✨ 选择工具：方向键移动，Delete删除');
+        }
+        init();
+    })();
+</script>
+</body>
+</html>

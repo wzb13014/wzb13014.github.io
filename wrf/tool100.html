@@ -1,0 +1,1505 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔐 文本加密/解密工具 - 多算法支持</title>
+    <!-- CryptoJS CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js">
+    </script>
+    <style>
+        :root {
+            --bg: #f0f4f8;
+            --card-bg: #ffffff;
+            --text: #1a202c;
+            --text-secondary: #4a5568;
+            --text-muted: #718096;
+            --border: #e2e8f0;
+            --border-focus: #667eea;
+            --primary: #5a67d8;
+            --primary-hover: #4c51bf;
+            --primary-light: #eef2ff;
+            --success: #38a169;
+            --success-hover: #2f855a;
+            --success-light: #f0fff4;
+            --warning: #d69e2e;
+            --warning-hover: #b7791f;
+            --warning-light: #fffff0;
+            --danger: #e53e3e;
+            --danger-hover: #c53030;
+            --danger-light: #fff5f5;
+            --info: #3182ce;
+            --info-light: #ebf8ff;
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.07), 0 2px 4px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.1), 0 4px 10px rgba(0, 0, 0, 0.06);
+            --radius-sm: 8px;
+            --radius: 12px;
+            --radius-lg: 16px;
+            --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            --font-mono: 'SF Mono', 'Cascadia Code', 'Consolas', 'Monaco', 'Courier New', monospace;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #e8edf5 0%, #dce3ed 25%, #eef1f7 50%, #e3e8f2 75%, #f0f3f8 100%);
+            background-attachment: fixed;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: var(--text);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* 背景装饰 */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -200px;
+            right: -150px;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(102, 126, 234, 0.08) 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 0;
+        }
+        body::after {
+            content: '';
+            position: fixed;
+            bottom: -200px;
+            left: -150px;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(72, 187, 120, 0.06) 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 960px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* 主卡片 */
+        .main-card {
+            background: var(--card-bg);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+            padding: 28px 32px 24px;
+            transition: all var(--transition);
+        }
+
+        /* 标题栏 */
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+        .header .logo-icon {
+            width: 44px;
+            height: 44px;
+            background: linear-gradient(135deg, #667eea 0%, #5a67d8 100%);
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: #fff;
+            flex-shrink: 0;
+            box-shadow: 0 4px 12px rgba(90, 103, 216, 0.3);
+        }
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            color: #1a202c;
+            white-space: nowrap;
+        }
+        .header .badge {
+            font-size: 0.75rem;
+            padding: 4px 10px;
+            border-radius: 20px;
+            background: var(--primary-light);
+            color: var(--primary);
+            font-weight: 600;
+            white-space: nowrap;
+            letter-spacing: 0.02em;
+        }
+
+        /* 隐私提示 */
+        .privacy-note {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            background: #f7fafc;
+            padding: 8px 14px;
+            border-radius: 20px;
+            margin-bottom: 20px;
+            border: 1px solid #edf2f7;
+        }
+        .privacy-note .dot {
+            width: 7px;
+            height: 7px;
+            background: #48bb78;
+            border-radius: 50%;
+            flex-shrink: 0;
+            animation: pulse-dot 2s infinite;
+        }
+        @keyframes pulse-dot {
+            0%,
+            100% {
+                box-shadow: 0 0 0 0 rgba(72, 187, 120, 0.5);
+            }
+            50% {
+                box-shadow: 0 0 0 8px rgba(72, 187, 120, 0);
+            }
+        }
+
+        /* 算法选择区域 */
+        .algo-select-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 14px;
+        }
+        .algo-select-row label {
+            font-weight: 600;
+            font-size: 0.9rem;
+            white-space: nowrap;
+            color: var(--text-secondary);
+        }
+        .algo-select-row select {
+            flex: 1;
+            min-width: 200px;
+            padding: 10px 14px;
+            border: 2px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-size: 0.9rem;
+            font-weight: 500;
+            background: #fafbfc;
+            cursor: pointer;
+            transition: all var(--transition);
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23718096' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'%3E%3C/path%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 14px center;
+            padding-right: 38px;
+            color: var(--text);
+        }
+        .algo-select-row select:focus {
+            outline: none;
+            border-color: var(--border-focus);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            background: #fff;
+        }
+        .algo-select-row select:hover {
+            border-color: #c4cfe0;
+        }
+
+        /* 算法信息标签 */
+        .algo-info-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            white-space: nowrap;
+            letter-spacing: 0.02em;
+        }
+        .tag-symmetric {
+            background: #fff7ed;
+            color: #c2410c;
+        }
+        .tag-codec {
+            background: #f0f9ff;
+            color: #0369a1;
+        }
+        .tag-hash {
+            background: #fdf2f8;
+            color: #be185d;
+        }
+
+        /* 密钥输入区域 */
+        .key-section {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+            padding: 14px 16px;
+            background: #fafbfc;
+            border-radius: var(--radius-sm);
+            border: 1px dashed #e2e8f0;
+            transition: all var(--transition);
+        }
+        .key-section.hidden {
+            display: none;
+        }
+        .key-section label {
+            font-weight: 600;
+            font-size: 0.85rem;
+            white-space: nowrap;
+            color: var(--text-secondary);
+            min-width: 50px;
+        }
+        .key-section input {
+            flex: 1;
+            min-width: 140px;
+            padding: 9px 12px;
+            border: 2px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-size: 0.9rem;
+            font-family: var(--font-mono);
+            transition: all var(--transition);
+            background: #fff;
+            color: var(--text);
+        }
+        .key-section input:focus {
+            outline: none;
+            border-color: var(--border-focus);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.08);
+        }
+        .key-section .btn-key-gen {
+            padding: 9px 14px;
+            background: #fff;
+            border: 2px solid #e2e8f0;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 600;
+            white-space: nowrap;
+            transition: all var(--transition);
+            color: var(--text-secondary);
+        }
+        .key-section .btn-key-gen:hover {
+            background: #f7fafc;
+            border-color: #c4cfe0;
+            color: var(--primary);
+        }
+        .key-section .btn-key-gen:active {
+            background: #edf2f7;
+            transform: scale(0.97);
+        }
+
+        /* 文本区域 */
+        .text-areas {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+        @media (max-width: 680px) {
+            .text-areas {
+                grid-template-columns: 1fr;
+            }
+            .main-card {
+                padding: 18px 14px 16px;
+            }
+            .header h1 {
+                font-size: 1.25rem;
+            }
+            .swap-btn-desktop {
+                display: none !important;
+            }
+            .swap-btn-mobile {
+                display: flex !important;
+            }
+        }
+        .text-area-wrapper {
+            position: relative;
+        }
+        .text-area-wrapper .area-label {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 6px;
+            font-weight: 600;
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+            letter-spacing: 0.02em;
+        }
+        .text-area-wrapper .char-count {
+            font-weight: 400;
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            background: #f7fafc;
+            padding: 2px 8px;
+            border-radius: 10px;
+        }
+        .text-area-wrapper textarea {
+            width: 100%;
+            height: 220px;
+            padding: 14px 16px;
+            border: 2px solid var(--border);
+            border-radius: var(--radius);
+            font-size: 0.9rem;
+            font-family: var(--font-mono);
+            resize: vertical;
+            transition: all var(--transition);
+            background: #fafbfc;
+            color: var(--text);
+            line-height: 1.6;
+            letter-spacing: 0.01em;
+        }
+        .text-area-wrapper textarea:focus {
+            outline: none;
+            border-color: var(--border-focus);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.08);
+            background: #fff;
+        }
+        .text-area-wrapper textarea.output-area {
+            background: #f9fafb;
+            cursor: pointer;
+        }
+        .text-area-wrapper textarea.output-area:focus {
+            background: #fff;
+        }
+        .text-area-wrapper textarea.output-area.hash-output {
+            font-family: var(--font-mono);
+            letter-spacing: 0.04em;
+            color: #553c9a;
+            background: #faf9ff;
+        }
+        /* 只读输出 */
+        .text-area-wrapper textarea[readonly].hash-output {
+            cursor: default;
+            background: #faf9ff;
+            border-color: #e9e4f5;
+        }
+
+        /* 按钮行 */
+        .btn-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .btn {
+            padding: 10px 18px;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 0.88rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition);
+            letter-spacing: 0.02em;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+            user-select: none;
+            position: relative;
+            overflow: hidden;
+        }
+        .btn:active {
+            transform: scale(0.96);
+        }
+        .btn-encrypt {
+            background: var(--primary);
+            color: #fff;
+            box-shadow: 0 2px 8px rgba(90, 103, 216, 0.3);
+        }
+        .btn-encrypt:hover {
+            background: var(--primary-hover);
+            box-shadow: 0 4px 14px rgba(90, 103, 216, 0.4);
+            transform: translateY(-1px);
+        }
+        .btn-decrypt {
+            background: #fff;
+            color: var(--primary);
+            border: 2px solid var(--primary);
+        }
+        .btn-decrypt:hover {
+            background: var(--primary-light);
+            border-color: var(--primary-hover);
+            color: var(--primary-hover);
+        }
+        .btn-hash {
+            background: #805ad5;
+            color: #fff;
+            box-shadow: 0 2px 8px rgba(128, 90, 213, 0.3);
+        }
+        .btn-hash:hover {
+            background: #6b46c1;
+            box-shadow: 0 4px 14px rgba(128, 90, 213, 0.4);
+            transform: translateY(-1px);
+        }
+        .btn-copy {
+            background: #fff;
+            color: var(--text-secondary);
+            border: 2px solid #e2e8f0;
+        }
+        .btn-copy:hover {
+            background: #f7fafc;
+            border-color: #c4cfe0;
+            color: var(--text);
+        }
+        .btn-copy.copied {
+            background: var(--success-light);
+            border-color: #48bb78;
+            color: #276749;
+            animation: copy-flash 0.5s ease;
+        }
+        @keyframes copy-flash {
+            0%,
+            100% {
+                box-shadow: 0 0 0 0 rgba(72, 187, 120, 0.4);
+            }
+            50% {
+                box-shadow: 0 0 0 12px rgba(72, 187, 120, 0);
+            }
+        }
+        .btn-swap {
+            background: #fff;
+            color: var(--text-secondary);
+            border: 2px solid #e2e8f0;
+            padding: 10px 12px;
+            font-size: 1.1rem;
+            border-radius: 50%;
+            width: 42px;
+            height: 42px;
+            justify-content: center;
+            min-width: unset;
+        }
+        .btn-swap:hover {
+            background: #f7fafc;
+            border-color: #c4cfe0;
+            color: var(--text);
+            transform: rotate(180deg);
+        }
+        .btn-clear {
+            background: #fff;
+            color: #a0aec0;
+            border: 2px solid #edf2f7;
+        }
+        .btn-clear:hover {
+            background: #fff5f5;
+            border-color: #feb2b2;
+            color: #c53030;
+        }
+        .btn-file {
+            background: #fff;
+            color: var(--text-secondary);
+            border: 2px solid #e2e8f0;
+            font-size: 0.8rem;
+            padding: 8px 12px;
+        }
+        .btn-file:hover {
+            background: #f7fafc;
+            border-color: #c4cfe0;
+        }
+        /* 移动端交换按钮 */
+        .swap-btn-mobile {
+            display: none;
+            justify-content: center;
+            margin: 4px 0;
+        }
+        .swap-btn-desktop {
+            display: flex;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            top: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-120px);
+            background: #1a202c;
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 24px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            z-index: 999;
+            pointer-events: none;
+            transition: transform 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+            letter-spacing: 0.02em;
+        }
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+        }
+        .toast.success {
+            background: #276749;
+        }
+        .toast.error {
+            background: #9b2c2c;
+        }
+
+        /* Footer */
+        .footer-info {
+            text-align: center;
+            margin-top: 18px;
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            letter-spacing: 0.02em;
+        }
+        .footer-info a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+        .footer-info a:hover {
+            text-decoration: underline;
+        }
+
+        /* 选择框分组样式 */
+        .algo-select-row select optgroup {
+            font-weight: 700;
+            color: #4a5568;
+            font-style: normal;
+        }
+        .algo-select-row select option {
+            font-weight: 400;
+            padding: 8px;
+        }
+
+        /* 滚动条美化 */
+        textarea::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        textarea::-webkit-scrollbar-track {
+            background: transparent;
+            border-radius: 10px;
+        }
+        textarea::-webkit-scrollbar-thumb {
+            background: #d1d5db;
+            border-radius: 10px;
+        }
+        textarea::-webkit-scrollbar-thumb:hover {
+            background: #b0b7c3;
+        }
+
+        /* 响应式调整 */
+        @media (max-width: 480px) {
+            .btn-row {
+                gap: 5px;
+            }
+            .btn {
+                padding: 8px 12px;
+                font-size: 0.78rem;
+                gap: 3px;
+            }
+            .btn-swap {
+                width: 34px;
+                height: 34px;
+                padding: 6px;
+                font-size: 0.9rem;
+            }
+            .text-area-wrapper textarea {
+                height: 150px;
+                font-size: 0.82rem;
+            }
+            .key-section {
+                padding: 10px 12px;
+                gap: 6px;
+            }
+            .key-section input {
+                font-size: 0.8rem;
+            }
+            .algo-select-row select {
+                font-size: 0.8rem;
+                padding: 8px 10px;
+                padding-right: 32px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="main-card">
+            <!-- 标题 -->
+            <div class="header">
+                <div class="logo-icon">🔐</div>
+                <h1>文本加密 / 解密工具</h1>
+                <span class="badge">多算法</span>
+            </div>
+
+            <!-- 隐私提示 -->
+            <div class="privacy-note">
+                <span class="dot"></span>
+                所有运算均在您的浏览器本地完成，数据不会上传到任何服务器
+            </div>
+
+            <!-- 算法选择 -->
+            <div class="algo-select-row">
+                <label for="algorithm">📋 算法：</label>
+                <select id="algorithm" title="选择加密/解密算法">
+                    <optgroup label="━━ 对称加密（需要密钥）━━">
+                        <option value="aes" data-type="symmetric" data-param="密钥" data-param-placeholder="输入加密密钥（任意字符串）">🔒 AES 高级加密标准</option>
+                        <option value="xor" data-type="symmetric" data-param="密钥" data-param-placeholder="输入XOR密钥（任意字符串）">🔑 XOR 异或加密</option>
+                        <option value="vigenere" data-type="symmetric" data-param="密钥词" data-param-placeholder="输入密钥词（仅字母，如 SECRET）">📜 维吉尼亚密码 (Vigenère)</option>
+                        <option value="caesar" data-type="symmetric" data-param="位移量" data-param-placeholder="输入位移数字（1-25，默认3）">↔️ 凯撒密码 (Caesar)</option>
+                        <option value="railfence" data-type="symmetric" data-param="栅栏数" data-param-placeholder="输入栅栏数量（2-20，默认3）">🚂 栅栏密码 (Rail Fence)</option>
+                    </optgroup>
+                    <optgroup label="━━ 编码 / 经典密码 ━━">
+                        <option value="base64" data-type="codec" data-param="" data-param-placeholder="">📦 Base64 编码/解码</option>
+                        <option value="rot13" data-type="codec" data-param="" data-param-placeholder="">🔄 ROT13 旋转密码</option>
+                        <option value="morse" data-type="codec" data-param="" data-param-placeholder="">📡 摩斯密码 (Morse Code)</option>
+                    </optgroup>
+                    <optgroup label="━━ 单向哈希（不可逆）━━">
+                        <option value="md5" data-type="hash" data-param="" data-param-placeholder="">🔖 MD5 哈希 (128位)</option>
+                        <option value="sha1" data-type="hash" data-param="" data-param-placeholder="">🔖 SHA-1 哈希 (160位)</option>
+                        <option value="sha256" data-type="hash" data-param="" data-param-placeholder="">🔖 SHA-256 哈希 (256位)</option>
+                        <option value="sha512" data-type="hash" data-param="" data-param-placeholder="">🔖 SHA-512 哈希 (512位)</option>
+                    </optgroup>
+                </select>
+                <span class="algo-info-tag tag-symmetric" id="algoTag">🔒 对称加密</span>
+            </div>
+
+            <!-- 密钥输入 -->
+            <div class="key-section" id="keySection">
+                <label for="keyInput" id="keyLabel">🔑 密钥：</label>
+                <input type="text" id="keyInput" placeholder="输入加密密钥（任意字符串）" autocomplete="off">
+                <button class="btn-key-gen" id="btnGenKey" title="生成随机密钥">🎲 随机生成</button>
+            </div>
+
+            <!-- 文本输入输出区域 -->
+            <div class="text-areas">
+                <!-- 输入区 -->
+                <div class="text-area-wrapper">
+                    <div class="area-label">
+                        📝 <span id="inputLabel">输入文本</span>
+                        <span class="char-count" id="inputCharCount">0 字符</span>
+                    </div>
+                    <textarea id="inputText" placeholder="在此输入要处理的文本..." spellcheck="false"></textarea>
+                    <div style="margin-top:6px; display:flex; gap:6px; flex-wrap:wrap;">
+                        <button class="btn btn-file" id="btnLoadFile" title="从文件加载文本">📂 导入文件</button>
+                        <button class="btn btn-clear" id="btnClearInput" title="清空输入框">✕ 清空输入</button>
+                    </div>
+                </div>
+
+                <!-- 移动端交换按钮 -->
+                <div class="swap-btn-mobile" id="swapBtnMobile">
+                    <button class="btn btn-swap" id="btnSwapMobile" title="交换输入和输出">⇅</button>
+                </div>
+
+                <!-- 输出区 -->
+                <div class="text-area-wrapper">
+                    <div class="area-label">
+                        📤 <span id="outputLabel">输出结果</span>
+                        <span class="char-count" id="outputCharCount">0 字符</span>
+                    </div>
+                    <textarea id="outputText" placeholder="处理结果将显示在这里..." readonly spellcheck="false" class="output-area"></textarea>
+                    <div style="margin-top:6px; display:flex; gap:6px; flex-wrap:wrap;">
+                        <button class="btn btn-copy" id="btnCopy" title="复制输出结果">📋 复制结果</button>
+                        <button class="btn btn-file" id="btnSaveFile" title="保存结果为文件">💾 保存文件</button>
+                        <button class="btn btn-clear" id="btnClearOutput" title="清空输出框">✕ 清空输出</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 操作按钮行 -->
+            <div class="btn-row" style="justify-content:center; margin-top:4px;">
+                <button class="btn btn-encrypt" id="btnEncrypt" title="执行加密/编码/哈希">🔒 加密 / 编码</button>
+                <div class="swap-btn-desktop">
+                    <button class="btn btn-swap" id="btnSwap" title="交换输入和输出">⇅</button>
+                </div>
+                <button class="btn btn-decrypt" id="btnDecrypt" title="执行解密/解码">🔓 解密 / 解码</button>
+                <button class="btn btn-hash" id="btnHash" style="display:none;" title="生成哈希值">🔖 生成哈希</button>
+            </div>
+        </div>
+
+        <!-- 底部信息 -->
+        <div class="footer-info">
+            支持 AES · XOR · 维吉尼亚 · 凯撒 · 栅栏 · Base64 · ROT13 · 摩斯密码 · MD5 · SHA系列 &nbsp;|&nbsp;
+            纯前端运行 · 数据不上传
+        </div>
+    </div>
+
+    <!-- Toast 提示 -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        (function() {
+            // ============ DOM元素缓存 ============
+            const algorithmSelect = document.getElementById('algorithm');
+            const algoTag = document.getElementById('algoTag');
+            const keySection = document.getElementById('keySection');
+            const keyInput = document.getElementById('keyInput');
+            const keyLabel = document.getElementById('keyLabel');
+            const btnGenKey = document.getElementById('btnGenKey');
+            const inputText = document.getElementById('inputText');
+            const outputText = document.getElementById('outputText');
+            const inputCharCount = document.getElementById('inputCharCount');
+            const outputCharCount = document.getElementById('outputCharCount');
+            const inputLabel = document.getElementById('inputLabel');
+            const outputLabel = document.getElementById('outputLabel');
+            const btnEncrypt = document.getElementById('btnEncrypt');
+            const btnDecrypt = document.getElementById('btnDecrypt');
+            const btnHash = document.getElementById('btnHash');
+            const btnCopy = document.getElementById('btnCopy');
+            const btnSwap = document.getElementById('btnSwap');
+            const btnSwapMobile = document.getElementById('btnSwapMobile');
+            const btnClearInput = document.getElementById('btnClearInput');
+            const btnClearOutput = document.getElementById('btnClearOutput');
+            const btnLoadFile = document.getElementById('btnLoadFile');
+            const btnSaveFile = document.getElementById('btnSaveFile');
+            const toast = document.getElementById('toast');
+
+            // ============ 状态 ============
+            let currentAlgoType = 'symmetric'; // 'symmetric' | 'codec' | 'hash'
+            let toastTimer = null;
+
+            // ============ Toast提示 ============
+            function showToast(message, type = '') {
+                if (toastTimer) clearTimeout(toastTimer);
+                toast.textContent = message;
+                toast.className = 'toast ' + type + ' show';
+                toastTimer = setTimeout(() => {
+                    toast.classList.remove('show');
+                    toast.className = 'toast';
+                }, 2200);
+            }
+
+            // ============ 更新字符计数 ============
+            function updateCharCounts() {
+                const inLen = inputText.value.length;
+                const outLen = outputText.value.length;
+                inputCharCount.textContent = inLen + ' 字符' + (inLen > 0 ? ' | ' + new Blob([inputText.value])
+                    .size + ' 字节' : '');
+                outputCharCount.textContent = outLen + ' 字符' + (outLen > 0 ? ' | ' + new Blob([outputText.value])
+                    .size + ' 字节' : '');
+            }
+
+            inputText.addEventListener('input', updateCharCounts);
+            // 监听outputText变化（程序设置时也要更新）
+            const outputObserver = new MutationObserver(updateCharCounts);
+            outputObserver.observe(outputText, { attributes: true, attributeFilter: ['value'] });
+            // 也监听input事件（虽然readonly，但程序设置value会触发）
+            outputText.addEventListener('input', updateCharCounts);
+
+            // ============ 算法切换逻辑 ============
+            function updateUIForAlgorithm() {
+                const selectedOption = algorithmSelect.options[algorithmSelect.selectedIndex];
+                const algoType = selectedOption.getAttribute('data-type');
+                const paramLabel = selectedOption.getAttribute('data-param');
+                const paramPlaceholder = selectedOption.getAttribute('data-param-placeholder');
+                currentAlgoType = algoType;
+
+                // 更新算法类型标签
+                algoTag.className = 'algo-info-tag';
+                if (algoType === 'symmetric') {
+                    algoTag.className += ' tag-symmetric';
+                    algoTag.textContent = '🔒 对称加密';
+                } else if (algoType === 'codec') {
+                    algoTag.className += ' tag-codec';
+                    algoTag.textContent = '📦 编码/密码';
+                } else if (algoType === 'hash') {
+                    algoTag.className += ' tag-hash';
+                    algoTag.textContent = '🔖 单向哈希';
+                }
+
+                // 更新密钥区域
+                if (algoType === 'hash' || algoType === 'codec') {
+                    keySection.classList.add('hidden');
+                } else {
+                    keySection.classList.remove('hidden');
+                    keyLabel.textContent = '🔑 ' + (paramLabel || '密钥') + '：';
+                    keyInput.placeholder = paramPlaceholder || '输入参数...';
+                    // 对于凯撒密码和栅栏密码，调整placeholder
+                    const algoValue = algorithmSelect.value;
+                    if (algoValue === 'caesar') {
+                        keyInput.placeholder = '输入位移数字（1-25，默认3）';
+                        if (!keyInput.value || isNaN(parseInt(keyInput.value))) {
+                            keyInput.value = '3';
+                        }
+                    } else if (algoValue === 'railfence') {
+                        keyInput.placeholder = '输入栅栏数量（2-20，默认3）';
+                        if (!keyInput.value || isNaN(parseInt(keyInput.value))) {
+                            keyInput.value = '3';
+                        }
+                    }
+                }
+
+                // 更新按钮显示
+                if (algoType === 'hash') {
+                    btnEncrypt.style.display = 'none';
+                    btnDecrypt.style.display = 'none';
+                    btnHash.style.display = 'inline-flex';
+                    outputLabel.textContent = '哈希结果（不可逆）';
+                    outputText.className = 'output-area hash-output';
+                    outputText.readOnly = true;
+                } else {
+                    btnEncrypt.style.display = 'inline-flex';
+                    btnDecrypt.style.display = 'inline-flex';
+                    btnHash.style.display = 'none';
+                    outputLabel.textContent = '输出结果';
+                    outputText.className = 'output-area';
+                    outputText.readOnly = true;
+                    if (algoType === 'codec') {
+                        btnEncrypt.textContent = '📦 编码';
+                        btnDecrypt.textContent = '📤 解码';
+                        inputLabel.textContent = '输入文本';
+                    } else {
+                        btnEncrypt.textContent = '🔒 加密';
+                        btnDecrypt.textContent = '🔓 解密';
+                        inputLabel.textContent = '输入文本';
+                    }
+                }
+
+                updateCharCounts();
+            }
+
+            algorithmSelect.addEventListener('change', function() {
+                updateUIForAlgorithm();
+                // 清除输出
+                outputText.value = '';
+                updateCharCounts();
+                // 如果切换到凯撒或栅栏，设置默认值
+                const algoValue = algorithmSelect.value;
+                if (algoValue === 'caesar' && (!keyInput.value || isNaN(parseInt(keyInput.value)))) {
+                    keyInput.value = '3';
+                } else if (algoValue === 'railfence' && (!keyInput.value || isNaN(parseInt(keyInput.value)))) {
+                    keyInput.value = '3';
+                }
+            });
+
+            // ============ 随机密钥生成 ============
+            btnGenKey.addEventListener('click', function() {
+                const algoValue = algorithmSelect.value;
+                if (algoValue === 'caesar') {
+                    // 生成1-25的随机位移
+                    keyInput.value = Math.floor(Math.random() * 24) + 1;
+                } else if (algoValue === 'railfence') {
+                    // 生成2-10的随机栅栏数
+                    keyInput.value = Math.floor(Math.random() * 8) + 2;
+                } else {
+                    // 生成随机字母数字密钥
+                    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+                    const length = Math.floor(Math.random() * 12) + 8;
+                    let key = '';
+                    for (let i = 0; i < length; i++) {
+                        key += chars.charAt(Math.floor(Math.random() * chars.length));
+                    }
+                    keyInput.value = key;
+                }
+                keyInput.focus();
+                keyInput.select();
+                showToast('✅ 随机密钥已生成', 'success');
+            });
+
+            // ============ 加密算法实现 ============
+
+            // --- AES ---
+            function aesEncrypt(text, key) {
+                if (!key) throw new Error('AES需要提供密钥');
+                return CryptoJS.AES.encrypt(text, key).toString();
+            }
+
+            function aesDecrypt(cipherText, key) {
+                if (!key) throw new Error('AES需要提供密钥');
+                const bytes = CryptoJS.AES.decrypt(cipherText, key);
+                const result = bytes.toString(CryptoJS.enc.Utf8);
+                if (!result && cipherText.trim()) {
+                    throw new Error('解密失败，请检查密钥和密文是否正确');
+                }
+                return result;
+            }
+
+            // --- XOR ---
+            function xorCipher(text, key) {
+                if (!key) throw new Error('XOR需要提供密钥');
+                let result = '';
+                for (let i = 0; i < text.length; i++) {
+                    result += String.fromCharCode(text.charCodeAt(i) ^ key.charCodeAt(i % key.length));
+                }
+                // 返回Base64编码以避免不可打印字符问题
+                return CryptoJS.enc.Base64.stringify(CryptoJS.enc.Utf8.parse(result));
+            }
+
+            function xorDecipher(cipherBase64, key) {
+                if (!key) throw new Error('XOR需要提供密钥');
+                const cipherText = CryptoJS.enc.Utf8.stringify(CryptoJS.enc.Base64.parse(cipherBase64));
+                let result = '';
+                for (let i = 0; i < cipherText.length; i++) {
+                    result += String.fromCharCode(cipherText.charCodeAt(i) ^ key.charCodeAt(i % key.length));
+                }
+                return result;
+            }
+
+            // --- 维吉尼亚密码 ---
+            function vigenereEncrypt(text, key) {
+                const cleanKey = key.toUpperCase().replace(/[^A-Z]/g, '');
+                if (!cleanKey) throw new Error('维吉尼亚密码需要有效的字母密钥');
+                let result = '';
+                let keyIndex = 0;
+                for (const char of text) {
+                    if (/[a-zA-Z]/.test(char)) {
+                        const isUpper = char === char.toUpperCase();
+                        const base = isUpper ? 65 : 97;
+                        const shift = cleanKey.charCodeAt(keyIndex % cleanKey.length) - 65;
+                        result += String.fromCharCode((char.charCodeAt(0) - base + shift) % 26 + base);
+                        keyIndex++;
+                    } else {
+                        result += char;
+                    }
+                }
+                return result;
+            }
+
+            function vigenereDecrypt(text, key) {
+                const cleanKey = key.toUpperCase().replace(/[^A-Z]/g, '');
+                if (!cleanKey) throw new Error('维吉尼亚密码需要有效的字母密钥');
+                let result = '';
+                let keyIndex = 0;
+                for (const char of text) {
+                    if (/[a-zA-Z]/.test(char)) {
+                        const isUpper = char === char.toUpperCase();
+                        const base = isUpper ? 65 : 97;
+                        const shift = cleanKey.charCodeAt(keyIndex % cleanKey.length) - 65;
+                        result += String.fromCharCode((char.charCodeAt(0) - base - shift + 26) % 26 + base);
+                        keyIndex++;
+                    } else {
+                        result += char;
+                    }
+                }
+                return result;
+            }
+
+            // --- 凯撒密码 ---
+            function caesarEncrypt(text, shift) {
+                const s = parseInt(shift);
+                if (isNaN(s) || s < 1 || s > 25) throw new Error('凯撒密码位移量需为1-25之间的整数');
+                let result = '';
+                for (const char of text) {
+                    if (/[a-zA-Z]/.test(char)) {
+                        const isUpper = char === char.toUpperCase();
+                        const base = isUpper ? 65 : 97;
+                        result += String.fromCharCode((char.charCodeAt(0) - base + s) % 26 + base);
+                    } else {
+                        result += char;
+                    }
+                }
+                return result;
+            }
+
+            function caesarDecrypt(text, shift) {
+                const s = parseInt(shift);
+                if (isNaN(s) || s < 1 || s > 25) throw new Error('凯撒密码位移量需为1-25之间的整数');
+                return caesarEncrypt(text, 26 - s);
+            }
+
+            // --- 栅栏密码 ---
+            function railFenceEncrypt(text, rails) {
+                const r = parseInt(rails);
+                if (isNaN(r) || r < 2 || r > 100) throw new Error('栅栏数需为2-100之间的整数');
+                if (r >= text.length) return text;
+                const fence = Array.from({ length: r }, () => []);
+                let rail = 0;
+                let direction = 1;
+                for (const char of text) {
+                    fence[rail].push(char);
+                    rail += direction;
+                    if (rail === 0 || rail === r - 1) direction = -direction;
+                }
+                return fence.flat().join('');
+            }
+
+            function railFenceDecrypt(cipher, rails) {
+                const r = parseInt(rails);
+                if (isNaN(r) || r < 2 || r > 100) throw new Error('栅栏数需为2-100之间的整数');
+                if (r >= cipher.length) return cipher;
+                const n = cipher.length;
+                const pattern = [];
+                let rail = 0;
+                let direction = 1;
+                for (let i = 0; i < n; i++) {
+                    pattern.push(rail);
+                    rail += direction;
+                    if (rail === 0 || rail === r - 1) direction = -direction;
+                }
+                const rowCounts = Array(r).fill(0);
+                for (const row of pattern) rowCounts[row]++;
+                const fence = Array.from({ length: r }, () => []);
+                let idx = 0;
+                for (let row = 0; row < r; row++) {
+                    for (let j = 0; j < rowCounts[row]; j++) {
+                        fence[row].push(cipher[idx++]);
+                    }
+                }
+                const rowPointers = Array(r).fill(0);
+                let result = '';
+                for (const row of pattern) {
+                    result += fence[row][rowPointers[row]++];
+                }
+                return result;
+            }
+
+            // --- Base64 ---
+            function base64Encode(text) {
+                return CryptoJS.enc.Base64.stringify(CryptoJS.enc.Utf8.parse(text));
+            }
+
+            function base64Decode(base64Str) {
+                try {
+                    const result = CryptoJS.enc.Utf8.stringify(CryptoJS.enc.Base64.parse(base64Str));
+                    // 验证解码是否有效
+                    const reEncoded = CryptoJS.enc.Base64.stringify(CryptoJS.enc.Utf8.parse(result));
+                    // 宽松匹配：去除空白后比较
+                    if (reEncoded.replace(/\s/g, '') !== base64Str.replace(/\s/g, '') && base64Str.trim().length > 0) {
+                        // 可能是无效的Base64，但尽量返回结果
+                    }
+                    return result;
+                } catch (e) {
+                    throw new Error('Base64解码失败，请检查输入是否为有效的Base64字符串');
+                }
+            }
+
+            // --- ROT13 ---
+            function rot13Transform(text) {
+                let result = '';
+                for (const char of text) {
+                    if (/[a-zA-Z]/.test(char)) {
+                        const isUpper = char === char.toUpperCase();
+                        const base = isUpper ? 65 : 97;
+                        result += String.fromCharCode((char.charCodeAt(0) - base + 13) % 26 + base);
+                    } else {
+                        result += char;
+                    }
+                }
+                return result;
+            }
+
+            // --- 摩斯密码 ---
+            const MORSE_MAP = {
+                'A': '.-',
+                'B': '-...',
+                'C': '-.-.',
+                'D': '-..',
+                'E': '.',
+                'F': '..-.',
+                'G': '--.',
+                'H': '....',
+                'I': '..',
+                'J': '.---',
+                'K': '-.-',
+                'L': '.-..',
+                'M': '--',
+                'N': '-.',
+                'O': '---',
+                'P': '.--.',
+                'Q': '--.-',
+                'R': '.-.',
+                'S': '...',
+                'T': '-',
+                'U': '..-',
+                'V': '...-',
+                'W': '.--',
+                'X': '-..-',
+                'Y': '-.--',
+                'Z': '--..',
+                '0': '-----',
+                '1': '.----',
+                '2': '..---',
+                '3': '...--',
+                '4': '....-',
+                '5': '.....',
+                '6': '-....',
+                '7': '--...',
+                '8': '---..',
+                '9': '----.',
+                '.': '.-.-.-',
+                ',': '--..--',
+                '?': '..--..',
+                '!': '-.-.--',
+                '/': '-..-.',
+                '(': '-.--.',
+                ')': '-.--.-',
+                '&': '.-...',
+                ':': '---...',
+                ';': '-.-.-.',
+                '=': '-...-',
+                '+': '.-.-.',
+                '-': '-....-',
+                '_': '..--.-',
+                '"': '.-..-.',
+                '$': '...-..-',
+                '@': '.--.-.',
+                ' ': '/',
+            };
+            const REVERSE_MORSE_MAP = {};
+            for (const [char, code] of Object.entries(MORSE_MAP)) {
+                if (char !== ' ') {
+                    REVERSE_MORSE_MAP[code] = char;
+                }
+            }
+            // 空格映射
+            REVERSE_MORSE_MAP['/'] = ' ';
+
+            function morseEncode(text) {
+                const upperText = text.toUpperCase();
+                const parts = [];
+                for (const char of upperText) {
+                    if (MORSE_MAP[char] !== undefined) {
+                        parts.push(MORSE_MAP[char]);
+                    } else if (char === ' ') {
+                        parts.push('/');
+                    } else {
+                        // 对于未知字符，保留原字符并用括号标记
+                        parts.push('[' + char + ']');
+                    }
+                }
+                return parts.join(' ');
+            }
+
+            function morseDecode(morseStr) {
+                // 标准化：将多个空格压缩，去除首尾空白
+                const normalized = morseStr.trim().replace(/\s+/g, ' ');
+                const tokens = normalized.split(' ');
+                const resultParts = [];
+                for (const token of tokens) {
+                    if (token === '/') {
+                        resultParts.push(' ');
+                    } else if (REVERSE_MORSE_MAP[token]) {
+                        resultParts.push(REVERSE_MORSE_MAP[token]);
+                    } else if (token.startsWith('[') && token.endsWith(']')) {
+                        resultParts.push(token.slice(1, -1));
+                    } else if (token === '') {
+                        // 跳过空token
+                    } else {
+                        // 未知摩斯码，保留
+                        resultParts.push('¿');
+                    }
+                }
+                return resultParts.join('');
+            }
+
+            // --- 哈希函数 ---
+            function computeHash(text, algo) {
+                switch (algo) {
+                    case 'md5':
+                        return CryptoJS.MD5(text).toString();
+                    case 'sha1':
+                        return CryptoJS.SHA1(text).toString();
+                    case 'sha256':
+                        return CryptoJS.SHA256(text).toString();
+                    case 'sha512':
+                        return CryptoJS.SHA512(text).toString();
+                    default:
+                        throw new Error('未知哈希算法');
+                }
+            }
+
+            // ============ 主操作函数 ============
+            function getKeyParam() {
+                return keyInput.value;
+            }
+
+            function performEncrypt() {
+                const algo = algorithmSelect.value;
+                const text = inputText.value;
+                if (!text && algo !== 'hash') {
+                    showToast('⚠️ 请输入要处理的文本', 'error');
+                    return;
+                }
+                try {
+                    let result;
+                    switch (algo) {
+                        case 'aes':
+                            result = aesEncrypt(text, getKeyParam());
+                            break;
+                        case 'xor':
+                            result = xorCipher(text, getKeyParam());
+                            break;
+                        case 'vigenere':
+                            result = vigenereEncrypt(text, getKeyParam());
+                            break;
+                        case 'caesar':
+                            result = caesarEncrypt(text, getKeyParam() || '3');
+                            break;
+                        case 'railfence':
+                            result = railFenceEncrypt(text, getKeyParam() || '3');
+                            break;
+                        case 'base64':
+                            result = base64Encode(text);
+                            break;
+                        case 'rot13':
+                            result = rot13Transform(text);
+                            break;
+                        case 'morse':
+                            result = morseEncode(text);
+                            break;
+                        default:
+                            throw new Error('请选择有效的加密/编码算法');
+                    }
+                    outputText.value = result;
+                    updateCharCounts();
+                    showToast('✅ 操作成功完成', 'success');
+                } catch (e) {
+                    showToast('❌ ' + e.message, 'error');
+                    console.error('加密/编码错误:', e);
+                }
+            }
+
+            function performDecrypt() {
+                const algo = algorithmSelect.value;
+                const text = inputText.value;
+                if (!text) {
+                    showToast('⚠️ 请输入要处理的文本', 'error');
+                    return;
+                }
+                try {
+                    let result;
+                    switch (algo) {
+                        case 'aes':
+                            result = aesDecrypt(text, getKeyParam());
+                            break;
+                        case 'xor':
+                            result = xorDecipher(text, getKeyParam());
+                            break;
+                        case 'vigenere':
+                            result = vigenereDecrypt(text, getKeyParam());
+                            break;
+                        case 'caesar':
+                            result = caesarDecrypt(text, getKeyParam() || '3');
+                            break;
+                        case 'railfence':
+                            result = railFenceDecrypt(text, getKeyParam() || '3');
+                            break;
+                        case 'base64':
+                            result = base64Decode(text);
+                            break;
+                        case 'rot13':
+                            result = rot13Transform(text); // ROT13加密和解密相同
+                            break;
+                        case 'morse':
+                            result = morseDecode(text);
+                            break;
+                        default:
+                            throw new Error('请选择有效的解密/解码算法');
+                    }
+                    outputText.value = result;
+                    updateCharCounts();
+                    showToast('✅ 操作成功完成', 'success');
+                } catch (e) {
+                    showToast('❌ ' + e.message, 'error');
+                    console.error('解密/解码错误:', e);
+                }
+            }
+
+            function performHash() {
+                const algo = algorithmSelect.value;
+                const text = inputText.value;
+                if (!text) {
+                    showToast('⚠️ 请输入要哈希的文本', 'error');
+                    return;
+                }
+                try {
+                    const result = computeHash(text, algo);
+                    outputText.value = result;
+                    updateCharCounts();
+                    showToast('✅ 哈希生成成功（单向，不可逆）', 'success');
+                } catch (e) {
+                    showToast('❌ ' + e.message, 'error');
+                    console.error('哈希错误:', e);
+                }
+            }
+
+            // ============ 按钮事件绑定 ============
+            btnEncrypt.addEventListener('click', function() {
+                if (currentAlgoType === 'hash') {
+                    performHash();
+                } else {
+                    performEncrypt();
+                }
+            });
+
+            btnDecrypt.addEventListener('click', function() {
+                if (currentAlgoType === 'hash') return;
+                performDecrypt();
+            });
+
+            btnHash.addEventListener('click', function() {
+                performHash();
+            });
+
+            // 交换输入输出
+            function swapInputOutput() {
+                const temp = inputText.value;
+                inputText.value = outputText.value;
+                outputText.value = temp;
+                updateCharCounts();
+                showToast('🔄 输入输出已交换', '');
+                // 聚焦输入框
+                inputText.focus();
+            }
+            btnSwap.addEventListener('click', swapInputOutput);
+            btnSwapMobile.addEventListener('click', swapInputOutput);
+
+            // 复制结果
+            btnCopy.addEventListener('click', function() {
+                const text = outputText.value;
+                if (!text) {
+                    showToast('⚠️ 输出为空，无需复制', 'error');
+                    return;
+                }
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(text).then(() => {
+                        btnCopy.classList.add('copied');
+                        btnCopy.textContent = '✅ 已复制！';
+                        showToast('📋 已复制到剪贴板', 'success');
+                        setTimeout(() => {
+                            btnCopy.classList.remove('copied');
+                            btnCopy.textContent = '📋 复制结果';
+                        }, 1800);
+                    }).catch(() => {
+                        fallbackCopy(text);
+                    });
+                } else {
+                    fallbackCopy(text);
+                }
+            });
+
+            function fallbackCopy(text) {
+                const ta = document.createElement('textarea');
+                ta.value = text;
+                ta.style.position = 'fixed';
+                ta.style.left = '-9999px';
+                ta.style.top = '-9999px';
+                document.body.appendChild(ta);
+                ta.focus();
+                ta.select();
+                try {
+                    document.execCommand('copy');
+                    btnCopy.classList.add('copied');
+                    btnCopy.textContent = '✅ 已复制！';
+                    showToast('📋 已复制到剪贴板', 'success');
+                    setTimeout(() => {
+                        btnCopy.classList.remove('copied');
+                        btnCopy.textContent = '📋 复制结果';
+                    }, 1800);
+                } catch (err) {
+                    showToast('❌ 复制失败，请手动选择复制', 'error');
+                }
+                document.body.removeChild(ta);
+            }
+
+            // 清空按钮
+            btnClearInput.addEventListener('click', function() {
+                inputText.value = '';
+                updateCharCounts();
+                inputText.focus();
+                showToast('🗑️ 输入已清空', '');
+            });
+            btnClearOutput.addEventListener('click', function() {
+                outputText.value = '';
+                updateCharCounts();
+                showToast('🗑️ 输出已清空', '');
+            });
+
+            // 文件导入
+            btnLoadFile.addEventListener('click', function() {
+                const fileInput = document.createElement('input');
+                fileInput.type = 'file';
+                fileInput.accept = '.txt,.text,.md,.csv,.json,.xml,.html,.htm,.js,.css,.log,.cfg,.ini,.yaml,.yml,.*';
+                fileInput.onchange = function(e) {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = function(ev) {
+                        inputText.value = ev.target.result;
+                        updateCharCounts();
+                        showToast('📂 已加载文件：' + file.name, 'success');
+                    };
+                    reader.onerror = function() {
+                        showToast('❌ 文件读取失败', 'error');
+                    };
+                    reader.readAsText(file);
+                };
+                fileInput.click();
+            });
+
+            // 文件保存
+            btnSaveFile.addEventListener('click', function() {
+                const text = outputText.value;
+                if (!text) {
+                    showToast('⚠️ 输出为空，无法保存', 'error');
+                    return;
+                }
+                const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+                a.download = 'encrypted_output_' + timestamp + '.txt';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                showToast('💾 文件已保存', 'success');
+            });
+
+            // 键盘快捷键 Ctrl+Enter 执行加密
+            document.addEventListener('keydown', function(e) {
+                if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                    e.preventDefault();
+                    if (currentAlgoType === 'hash') {
+                        performHash();
+                    } else {
+                        performEncrypt();
+                    }
+                }
+                // Ctrl+Shift+Enter 执行解密
+                if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'Enter') {
+                    e.preventDefault();
+                    if (currentAlgoType !== 'hash') {
+                        performDecrypt();
+                    }
+                }
+            });
+
+            // 点击输出框自动全选
+            outputText.addEventListener('click', function() {
+                if (outputText.value) {
+                    outputText.select();
+                }
+            });
+
+            // ============ 初始化 ============
+            function init() {
+                updateUIForAlgorithm();
+                updateCharCounts();
+                // 默认凯撒密码的密钥
+                if (algorithmSelect.value === 'caesar' && !keyInput.value) {
+                    keyInput.value = '3';
+                }
+                if (algorithmSelect.value === 'railfence' && !keyInput.value) {
+                    keyInput.value = '3';
+                }
+                // 聚焦输入框
+                inputText.focus();
+            }
+
+            init();
+
+            console.log('🔐 文本加密/解密工具已就绪');
+            console.log('  - 支持算法：AES, XOR, Vigenère, Caesar, Rail Fence, Base64, ROT13, Morse, MD5, SHA系列');
+            console.log('  - 快捷键：Ctrl+Enter 加密/编码 | Ctrl+Shift+Enter 解密/解码');
+            console.log('  - 所有运算在浏览器本地完成，数据不上传');
+            console.log('  - CryptoJS版本：' + (CryptoJS.version || '已加载'));
+        })();
+    </script>
+</body>
+</html>

@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>⌨️ 全局快捷键可视化 - KeyVision Pro 最终版</title>
+    <style>
+        :root {
+            --bg: #0d1117;
+            --surface: #161b22;
+            --surface-2: #21262d;
+            --border: #30363d;
+            --text: #e6edf3;
+            --text-secondary: #8b949e;
+            --accent: #58a6ff;
+            --accent-glow: rgba(88,166,255,0.5);
+            --key-bg: #2d333b;
+            --key-text: #e6edf3;
+            --key-border: #444c56;
+            --key-highlight: #58a6ff;
+            --key-highlight-bg: #1a3a5c;
+            --key-highlight-border: #58a6ff;
+            --key-highlight-glow: rgba(88,166,255,0.7);
+            --display-bg: rgba(22,27,34,0.85);
+            --display-border: rgba(88,166,255,0.4);
+            --display-shadow: 0 0 60px rgba(88,166,255,0.35), 0 0 120px rgba(88,166,255,0.15);
+            --display-text: #ffffff;
+            --modifier-bg: #3d2e1a;
+            --modifier-text: #ffb347;
+            --modifier-glow: rgba(255,179,71,0.5);
+            --ripple-color: rgba(88,166,255,0.6);
+            --history-bg: rgba(22,27,34,0.7);
+            --switch-bg: #30363d;
+            --switch-active: #58a6ff;
+            --slider-track: #30363d;
+            --slider-fill: #58a6ff;
+            --scrollbar-bg: #161b22;
+            --scrollbar-thumb: #30363d;
+            --font-mono: 'SF Mono','Cascadia Code','Consolas','Monaco','JetBrains Mono','Fira Code',monospace;
+            --font-sans: 'Inter','Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;
+            --transition-fast: 0.12s cubic-bezier(0.4,0,0.2,1);
+            --transition-normal: 0.25s cubic-bezier(0.4,0,0.2,1);
+            --transition-spring: 0.35s cubic-bezier(0.34,1.56,0.64,1);
+        }
+        [data-theme="light"] {
+            --bg: #f5f7fa; --surface: #ffffff; --surface-2: #eef1f5; --border: #d0d7de;
+            --text: #1a1f2e; --text-secondary: #656d76; --accent: #2563eb;
+            --accent-glow: rgba(37,99,235,0.35); --key-bg: #e8ecf1; --key-text: #1a1f2e;
+            --key-border: #c4cad3; --key-highlight: #2563eb; --key-highlight-bg: #dbeafe;
+            --key-highlight-border: #2563eb; --key-highlight-glow: rgba(37,99,235,0.5);
+            --display-bg: rgba(255,255,255,0.9); --display-border: rgba(37,99,235,0.5);
+            --display-shadow: 0 0 50px rgba(37,99,235,0.25),0 0 100px rgba(37,99,235,0.1);
+            --display-text: #0f172a; --modifier-bg: #fff3cd; --modifier-text: #b45309;
+            --modifier-glow: rgba(180,83,9,0.4); --ripple-color: rgba(37,99,235,0.5);
+            --history-bg: rgba(255,255,255,0.8); --switch-bg: #c4cad3; --switch-active: #2563eb;
+            --slider-track: #d0d7de; --slider-fill: #2563eb; --scrollbar-bg: #f5f7fa; --scrollbar-thumb: #c4cad3;
+        }
+        [data-theme="midnight"] {
+            --bg: #0a0e17; --surface: #111827; --surface-2: #1a1f2e; --border: #1e293b;
+            --text: #e2e8f0; --text-secondary: #94a3b8; --accent: #818cf8;
+            --accent-glow: rgba(129,140,248,0.55); --key-bg: #1e293b; --key-text: #e2e8f0;
+            --key-border: #334155; --key-highlight: #818cf8; --key-highlight-bg: #1e1b4b;
+            --key-highlight-border: #818cf8; --key-highlight-glow: rgba(129,140,248,0.7);
+            --display-bg: rgba(17,24,39,0.88); --display-border: rgba(129,140,248,0.5);
+            --display-shadow: 0 0 70px rgba(129,140,248,0.4),0 0 140px rgba(129,140,248,0.18);
+            --display-text: #f0f0ff; --modifier-bg: #2d1f3d; --modifier-text: #c084fc;
+            --modifier-glow: rgba(192,132,252,0.55); --ripple-color: rgba(129,140,248,0.65);
+            --history-bg: rgba(17,24,39,0.75); --switch-bg: #334155; --switch-active: #818cf8;
+            --slider-track: #334155; --slider-fill: #818cf8; --scrollbar-bg: #0a0e17; --scrollbar-thumb: #334155;
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:var(--font-sans); background:var(--bg); color:var(--text); min-height:100vh; overflow-x:hidden; transition:background var(--transition-normal),color var(--transition-normal); user-select:none; -webkit-user-select:none; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+        .app-container { width:100%; max-width:1400px; padding:16px; display:flex; flex-direction:column; align-items:center; gap:20px; min-height:100vh; justify-content:center; position:relative; }
+        .key-display-zone { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:1000; pointer-events:none; display:flex; flex-direction:column; align-items:center; gap:10px; }
+        .key-display-card { background:var(--display-bg); backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px); border:2px solid var(--display-border); border-radius:28px; padding:28px 40px; min-width:140px; min-height:100px; display:flex; align-items:center; justify-content:center; gap:14px; flex-wrap:wrap; box-shadow:var(--display-shadow); opacity:0; transform:scale(0.35); transition:opacity 0.3s ease,transform var(--transition-spring); position:relative; overflow:visible; }
+        .key-display-card.visible { opacity:1; transform:scale(1); }
+        .key-display-card.hiding { opacity:0; transform:scale(0.6); transition:opacity 0.45s ease,transform 0.4s cubic-bezier(0.4,0,0.6,1); }
+        .key-display-card .key-tag { display:inline-flex; align-items:center; justify-content:center; font-family:var(--font-mono); font-weight:700; font-size:3rem; letter-spacing:-0.02em; color:var(--display-text); background:var(--key-highlight-bg); border:2px solid var(--key-highlight-border); border-radius:16px; padding:10px 22px; min-width:60px; box-shadow:0 0 30px var(--key-highlight-glow); animation:keyPulse 2s ease-in-out infinite; transition:all var(--transition-fast); position:relative; }
+        .key-display-card .key-tag.modifier-key { background:var(--modifier-bg); border-color:var(--modifier-text); color:var(--modifier-text); box-shadow:0 0 30px var(--modifier-glow); }
+        .key-display-card .key-plus { font-size:2.2rem; color:var(--text-secondary); font-weight:300; margin:0 2px; animation:none; }
+        @keyframes keyPulse { 0%,100% { box-shadow:0 0 30px var(--key-highlight-glow); } 50% { box-shadow:0 0 50px var(--key-highlight-glow),0 0 80px var(--key-highlight-glow); } }
+        .ripple-ring { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:100%; height:100%; border-radius:28px; border:3px solid var(--ripple-color); pointer-events:none; animation:rippleOut 0.9s ease-out forwards; opacity:0; }
+        @keyframes rippleOut { 0% { width:90%; height:90%; opacity:1; border-width:4px; } 100% { width:200%; height:200%; opacity:0; border-width:1px; } }
+        .particle-burst { position:absolute; pointer-events:none; top:50%; left:50%; width:0; height:0; }
+        .particle { position:absolute; width:8px; height:8px; border-radius:50%; background:var(--accent); animation:particleFly 0.7s ease-out forwards; opacity:0; }
+        @keyframes particleFly { 0% { opacity:1; transform:translate(0,0) scale(1); } 100% { opacity:0; transform:translate(var(--px),var(--py)) scale(0); } }
+        .live-keys-label { font-family:var(--font-mono); font-size:0.85rem; color:var(--text-secondary); text-align:center; opacity:0; transition:opacity var(--transition-fast); pointer-events:none; min-height:20px; }
+        .live-keys-label.active { opacity:0.8; }
+        .toolbar { position:fixed; top:16px; right:16px; z-index:900; display:flex; gap:8px; align-items:center; }
+        .toolbar-btn { width:42px; height:42px; border-radius:50%; border:1px solid var(--border); background:var(--surface); color:var(--text); cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:1.2rem; transition:all var(--transition-fast); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); position:relative; }
+        .toolbar-btn:hover { background:var(--surface-2); border-color:var(--accent); box-shadow:0 0 16px var(--accent-glow); transform:translateY(-1px); }
+        .toolbar-btn:active { transform:scale(0.93); transition:transform 0.08s ease; }
+        .toolbar-btn .badge { position:absolute; top:-4px; right:-4px; width:18px; height:18px; border-radius:50%; background:var(--accent); color:#fff; font-size:0.65rem; font-weight:700; display:flex; align-items:center; justify-content:center; pointer-events:none; }
+        .toolbar-btn .tooltip { position:absolute; top:110%; left:50%; transform:translateX(-50%); background:var(--surface-2); color:var(--text); font-size:0.7rem; padding:4px 10px; border-radius:6px; white-space:nowrap; opacity:0; pointer-events:none; transition:opacity var(--transition-fast); border:1px solid var(--border); font-family:var(--font-sans); }
+        .toolbar-btn:hover .tooltip { opacity:1; }
+        .settings-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:2000; opacity:0; pointer-events:none; transition:opacity var(--transition-normal); }
+        .settings-overlay.open { opacity:1; pointer-events:auto; }
+        .settings-panel { position:fixed; top:0; right:0; width:400px; max-width:92vw; height:100vh; background:var(--surface); border-left:1px solid var(--border); z-index:2001; transform:translateX(100%); transition:transform var(--transition-spring); display:flex; flex-direction:column; overflow-y:auto; box-shadow:-8px 0 40px rgba(0,0,0,0.4); scrollbar-width:thin; scrollbar-color:var(--scrollbar-thumb) var(--scrollbar-bg); }
+        .settings-panel.open { transform:translateX(0); }
+        .settings-panel::-webkit-scrollbar { width:5px; } .settings-panel::-webkit-scrollbar-track { background:var(--scrollbar-bg); } .settings-panel::-webkit-scrollbar-thumb { background:var(--scrollbar-thumb); border-radius:10px; }
+        .settings-header { display:flex; align-items:center; justify-content:space-between; padding:20px 24px; border-bottom:1px solid var(--border); position:sticky; top:0; background:var(--surface); z-index:5; }
+        .settings-header h3 { font-size:1.2rem; font-weight:700; }
+        .settings-close { width:34px; height:34px; border-radius:50%; border:1px solid var(--border); background:transparent; color:var(--text); cursor:pointer; font-size:1rem; display:flex; align-items:center; justify-content:center; transition:all var(--transition-fast); }
+        .settings-close:hover { background:var(--surface-2); border-color:#f85149; color:#f85149; }
+        .settings-body { padding:20px 24px; display:flex; flex-direction:column; gap:22px; }
+        .setting-group { display:flex; flex-direction:column; gap:8px; }
+        .setting-group label { font-weight:600; font-size:0.85rem; }
+        .setting-row { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+        .setting-desc { font-size:0.75rem; color:var(--text-secondary); }
+        .switch { position:relative; width:48px; height:28px; flex-shrink:0; }
+        .switch input { opacity:0; width:0; height:0; }
+        .switch .slider { position:absolute; cursor:pointer; inset:0; background:var(--switch-bg); border-radius:28px; transition:all var(--transition-fast); }
+        .switch .slider::before { content:''; position:absolute; height:22px; width:22px; left:3px; bottom:3px; background:#fff; border-radius:50%; transition:all var(--transition-fast); box-shadow:0 2px 6px rgba(0,0,0,0.2); }
+        .switch input:checked+.slider { background:var(--switch-active); }
+        .switch input:checked+.slider::before { transform:translateX(20px); }
+        .range-slider { width:100%; -webkit-appearance:none; appearance:none; height:8px; border-radius:8px; background:var(--slider-track); outline:none; cursor:pointer; }
+        .range-slider::-webkit-slider-thumb { -webkit-appearance:none; width:22px; height:22px; border-radius:50%; background:var(--accent); cursor:pointer; border:3px solid var(--bg); box-shadow:0 0 12px var(--accent-glow); }
+        .theme-options { display:flex; gap:8px; }
+        .theme-dot { width:36px; height:36px; border-radius:50%; cursor:pointer; border:3px solid transparent; transition:all var(--transition-fast); }
+        .theme-dot.active { border-color:var(--accent); box-shadow:0 0 20px var(--accent-glow); }
+        .theme-dot.dark { background:#0d1117; } .theme-dot.light { background:#f5f7fa; border:3px solid #c4cad3; } .theme-dot.midnight { background:#0a0e17; }
+        .btn { padding:8px 18px; border-radius:8px; border:1px solid var(--border); background:var(--surface-2); color:var(--text); cursor:pointer; font-size:0.82rem; font-weight:500; transition:all var(--transition-fast); }
+        .btn:hover { background:var(--key-highlight-bg); border-color:var(--accent); box-shadow:0 0 12px var(--accent-glow); }
+        .btn.danger { border-color:#f8514933; color:#f85149; } .btn.danger:hover { background:#f8514911; border-color:#f85149; }
+        .history-panel { position:fixed; bottom:20px; left:50%; transform:translateX(-50%); z-index:800; display:flex; gap:8px; flex-wrap:wrap; justify-content:center; max-width:90vw; padding:10px 16px; background:var(--history-bg); backdrop-filter:blur(12px); border-radius:16px; border:1px solid var(--border); opacity:0; pointer-events:none; transition:all var(--transition-normal); }
+        .history-panel.visible { opacity:1; pointer-events:auto; }
+        .history-chip { font-family:var(--font-mono); font-size:0.78rem; font-weight:600; padding:6px 12px; border-radius:20px; background:var(--key-bg); border:1px solid var(--key-border); color:var(--key-text); white-space:nowrap; animation:chipIn 0.3s cubic-bezier(0.34,1.56,0.64,1); }
+        .history-chip.combo { border-color:var(--modifier-text); background:var(--modifier-bg); color:var(--modifier-text); }
+        @keyframes chipIn { 0%{opacity:0;transform:translateY(16px) scale(0.8)} 100%{opacity:1;transform:translateY(0) scale(1)} }
+        .keyboard-wrapper { position:fixed; bottom:10px; left:50%; transform:translateX(-50%); z-index:700; width:100%; max-width:1350px; padding:8px; opacity:1; transition:all var(--transition-normal); }
+        .keyboard-wrapper.hidden { opacity:0; pointer-events:none; transform:translateX(-50%) translateY(60px); }
+        .virtual-keyboard { background:var(--surface); border-radius:18px; padding:14px 12px 10px; border:1px solid var(--border); box-shadow:0 8px 40px rgba(0,0,0,0.35); display:flex; flex-direction:row; gap:10px; overflow-x:auto; scrollbar-width:thin; }
+        .kb-main { display:flex; flex-direction:column; gap:5px; flex:1 1 auto; min-width:0; }
+        .kb-row { display:flex; gap:4px; justify-content:center; }
+        .kb-numpad { display:grid; grid-template-columns:repeat(4,1fr); gap:4px; flex-shrink:0; margin-left:8px; padding-left:8px; border-left:1px solid var(--border); }
+        .kb-key { font-family:var(--font-mono); font-size:0.7rem; font-weight:600; padding:8px 4px; border-radius:7px; background:var(--key-bg); border:1.5px solid var(--key-border); color:var(--key-text); cursor:pointer; text-align:center; transition:all 0.06s; min-width:28px; flex-shrink:0; display:flex; align-items:center; justify-content:center; position:relative; }
+        .kb-key:hover { background:var(--surface-2); border-color:var(--accent); z-index:2; transform:translateY(-2px); box-shadow:0 4px 12px rgba(0,0,0,0.25); }
+        .kb-key:active { transform:scale(0.9); background:var(--key-highlight-bg); border-color:var(--key-highlight); box-shadow:0 0 16px var(--key-highlight-glow); }
+        .kb-key.highlighted { background:var(--key-highlight-bg)!important; border-color:var(--key-highlight)!important; color:var(--key-highlight)!important; box-shadow:0 0 20px var(--key-highlight-glow)!important; transform:translateY(-3px)!important; animation:kbGlow 0.5s infinite alternate; }
+        @keyframes kbGlow { 0%{box-shadow:0 0 16px var(--key-highlight-glow)} 100%{box-shadow:0 0 30px var(--key-highlight-glow),0 0 50px var(--accent-glow)} }
+        .kb-key .lock-indicator { position:absolute; top:2px; right:2px; width:8px; height:8px; border-radius:50%; background:transparent; border:1px solid transparent; transition: background 0.2s; }
+        .kb-key .lock-indicator.active { background: #57ab5a; border-color: #57ab5a; box-shadow: 0 0 6px #57ab5a; }
+        .kb-key.space-key { flex:6.25; min-width:180px; }
+        .kb-key.w-1 { flex:1; min-width:28px; } .kb-key.w-1-25 { flex:1.25; min-width:34px; } .kb-key.w-1-5 { flex:1.5; min-width:40px; }
+        .kb-key.w-1-75 { flex:1.75; min-width:48px; } .kb-key.w-2 { flex:2; min-width:56px; } .kb-key.w-2-25 { flex:2.25; min-width:62px; }
+        .kb-key.w-2-75 { flex:2.75; min-width:76px; } .kb-key.w-3 { flex:3; min-width:84px; }
+        .kb-numpad .kb-key { padding:8px 4px; min-width:36px; }
+        .kb-numpad .kb-key.span-row-2 { grid-row:span 2; } .kb-numpad .kb-key.span-col-2 { grid-column:span 2; }
+        @media (max-width:1200px) { .kb-numpad { margin-left:4px; padding-left:4px; } .kb-numpad .kb-key { min-width:28px; font-size:0.62rem; } }
+        @media (max-width:900px) { .virtual-keyboard { flex-direction:column; } .kb-numpad { border-left:none; border-top:1px solid var(--border); padding-left:0; margin-left:0; padding-top:8px; } }
+    </style>
+</head>
+<body data-theme="dark">
+    <div class="toolbar" id="toolbar">
+        <button class="toolbar-btn" id="btnKeyboardToggle"><span>⌨️</span><span class="tooltip">虚拟键盘</span></button>
+        <button class="toolbar-btn" id="btnHistoryToggle"><span>📋</span><span class="badge" id="historyCount">0</span><span class="tooltip">按键历史</span></button>
+        <button class="toolbar-btn" id="btnClearHistory"><span>🗑️</span><span class="tooltip">清除历史</span></button>
+        <button class="toolbar-btn" id="btnSettings"><span>⚙️</span><span class="tooltip">设置</span></button>
+    </div>
+
+    <div class="key-display-zone" id="keyDisplayZone">
+        <div class="key-display-card" id="keyDisplayCard"></div>
+        <div class="live-keys-label" id="liveKeysLabel"></div>
+        <div class="particle-burst" id="particleBurst"></div>
+    </div>
+
+    <div class="history-panel visible" id="historyPanel"></div>
+
+    <div class="keyboard-wrapper" id="keyboardWrapper">
+        <div class="virtual-keyboard" id="virtualKeyboard"></div>
+    </div>
+
+    <div class="settings-overlay" id="settingsOverlay"></div>
+    <div class="settings-panel" id="settingsPanel">
+        <div class="settings-header"><h3>⚙️ 设置</h3><button class="settings-close" id="btnSettingsClose">✕</button></div>
+        <div class="settings-body">
+            <div class="setting-group"><label>🌓 主题</label><div class="theme-options"><div class="theme-dot dark active" data-theme-val="dark"></div><div class="theme-dot light" data-theme-val="light"></div><div class="theme-dot midnight" data-theme-val="midnight"></div></div></div>
+            <div class="setting-group"><div class="setting-row"><label>⌨️ 显示虚拟键盘</label><label class="switch"><input type="checkbox" id="settingShowKeyboard" checked><span class="slider"></span></label></div></div>
+            <div class="setting-group"><div class="setting-row"><label>📋 显示按键历史</label><label class="switch"><input type="checkbox" id="settingShowHistory" checked><span class="slider"></span></label></div></div>
+            <div class="setting-group"><div class="setting-row"><label>🔊 点击音效</label><label class="switch"><input type="checkbox" id="settingSound" checked><span class="slider"></span></label></div></div>
+            <div class="setting-group"><div class="setting-row"><label>✨ 粒子特效</label><label class="switch"><input type="checkbox" id="settingParticles" checked><span class="slider"></span></label></div></div>
+            <div class="setting-group"><div class="setting-row"><label>🔄 仅显示组合键 (≥2键)</label><label class="switch"><input type="checkbox" id="settingComboOnly"><span class="slider"></span></label></div><span class="setting-desc">按下单个键时不显示可视化，虚拟键盘高亮也仅在组合键时生效</span></div>
+            <div class="setting-group"><div class="setting-row"><label>🚫 启用组合键排除</label><label class="switch"><input type="checkbox" id="settingExcludeEnable"><span class="slider"></span></label></div></div>
+            <div class="setting-group"><label>排除的组合键（逗号分隔，如 Alt+1）</label><input type="text" id="settingExcludeList" value="Alt+1" style="padding:8px;border-radius:6px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);font-family:var(--font-mono);"></div>
+            <div class="setting-group">
+                <div class="setting-row"><label>⏱️ 一直显示</label><label class="switch"><input type="checkbox" id="settingAlwaysShow"><span class="slider"></span></label></div>
+                <span class="setting-desc">开启后，释放按键后中央显示不会消失（组合键也会一直显示）</span>
+            </div>
+            <div class="setting-group"><label>显示持续时间：<span id="displayDurationVal">1.8</span>秒</label><input type="range" class="range-slider" id="settingDuration" min="0.5" max="5" step="0.1" value="1.8"><span class="setting-desc">仅当“一直显示”关闭时生效</span></div>
+            <div class="setting-group"><label>📝 历史记录上限：<span id="historyMaxVal">20</span></label><input type="range" class="range-slider" id="settingHistoryMax" min="5" max="80" step="5" value="20"></div>
+            <div class="setting-group"><button class="btn danger" id="btnResetAll">🔄 恢复默认</button><button class="btn" id="btnClearStats">📊 清除统计</button></div>
+            <div class="setting-group"><span class="setting-desc" id="statsInfo">按键次数：0</span></div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            const keyDisplayCard = document.getElementById('keyDisplayCard');
+            const liveKeysLabel = document.getElementById('liveKeysLabel');
+            const particleBurst = document.getElementById('particleBurst');
+            const historyPanel = document.getElementById('historyPanel');
+            const historyCountBadge = document.getElementById('historyCount');
+            const virtualKeyboard = document.getElementById('virtualKeyboard');
+            const keyboardWrapper = document.getElementById('keyboardWrapper');
+            const settingsOverlay = document.getElementById('settingsOverlay');
+            const settingsPanel = document.getElementById('settingsPanel');
+            const statsInfo = document.getElementById('statsInfo');
+
+            const pressedKeys = new Set();
+            let hideTimeout = null;
+            let historyEntries = [];
+            let totalKeyPresses = 0;
+            let totalComboPresses = 0;
+            let lastDisplayHTML = '';
+
+            let capsLockOn = false;
+            let numLockOn = false;
+            let scrollLockOn = false;
+
+            let settings = {
+                showKeyboard: true, showHistory: true, soundEnabled: true, particlesEnabled: true,
+                displayDuration: 1.8, historyMax: 20, theme: 'dark',
+                comboOnly: false, excludeEnabled: false, excludeList: "Alt+1", alwaysShow: false
+            };
+            let excludedPatterns = [];
+
+            let audioCtx = null;
+            function getAudioContext() { if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)(); return audioCtx; }
+            function playSound(freq,dur) { if(!settings.soundEnabled) return; try{ const c=getAudioContext(),o=c.createOscillator(),g=c.createGain(); o.type='sine'; o.frequency.setValueAtTime(freq,c.currentTime); o.frequency.exponentialRampToValueAtTime(freq*0.5,c.currentTime+dur); g.gain.setValueAtTime(0.15,c.currentTime); g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+dur); o.connect(g); g.connect(c.destination); o.start(); o.stop(c.currentTime+dur); }catch(e){} }
+            function playComboSound() { if(!settings.soundEnabled) return; [600,900,1200].forEach((f,i)=>{ try{ const c=getAudioContext(),o=c.createOscillator(),g=c.createGain(); o.type='triangle'; o.frequency.setValueAtTime(f,c.currentTime+i*0.04); g.gain.setValueAtTime(0.12,c.currentTime+i*0.04); g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+i*0.04+0.12); o.connect(g); g.connect(c.destination); o.start(c.currentTime+i*0.04); o.stop(c.currentTime+i*0.04+0.12); }catch(e){} }); }
+
+            function parseExcludeList(str) {
+                const patterns = [];
+                if (!str.trim()) return patterns;
+                const items = str.split(',').map(s => s.trim()).filter(s => s.length > 0);
+                for (const item of items) {
+                    const keys = item.split('+').map(k => k.trim()).filter(k => k.length > 0);
+                    if (keys.length > 0) patterns.push(new Set(keys));
+                }
+                return patterns;
+            }
+
+            function updateExcludedPatterns() { excludedPatterns = parseExcludeList(settings.excludeList); }
+
+            function shouldExcludeCurrent() {
+                if (!settings.excludeEnabled || excludedPatterns.length === 0) return false;
+                const names = getCurrentDisplayNames();
+                const nameSet = new Set(names);
+                if (nameSet.size === 0) return false;
+                for (const pattern of excludedPatterns) {
+                    if (pattern.size === nameSet.size && [...pattern].every(k => nameSet.has(k))) return true;
+                }
+                return false;
+            }
+
+            function isModifierCode(code) { return ['ControlLeft','ControlRight','ShiftLeft','ShiftRight','AltLeft','AltRight','MetaLeft','MetaRight'].includes(code); }
+            function getModifierName(code) { return {ControlLeft:'Ctrl',ControlRight:'Ctrl',ShiftLeft:'Shift',ShiftRight:'Shift',AltLeft:'Alt',AltRight:'Alt',MetaLeft:'Win',MetaRight:'Win'}[code]||code; }
+            function getKeyDisplayName(code, key) {
+                // 扩展映射表，包含数字小键盘数字键（只显示数字本身）
+                const m = {
+                    Space:'␣', Enter:'Enter', Backspace:'⌫', Tab:'Tab', CapsLock:'Caps', Escape:'Esc',
+                    Delete:'Del', Insert:'Ins', Home:'Home', End:'End', PageUp:'PgUp', PageDown:'PgDn',
+                    ArrowUp:'↑', ArrowDown:'↓', ArrowLeft:'←', ArrowRight:'→',
+                    PrintScreen:'PrtSc', ScrollLock:'ScrLk', Pause:'Pause', NumLock:'NumLock',
+                    NumpadEnter:'Enter', NumpadAdd:'+', NumpadSubtract:'-', NumpadMultiply:'*', NumpadDivide:'/',
+                    NumpadDecimal:'.',
+                    Numpad0:'0', Numpad1:'1', Numpad2:'2', Numpad3:'3', Numpad4:'4',
+                    Numpad5:'5', Numpad6:'6', Numpad7:'7', Numpad8:'8', Numpad9:'9'
+                };
+                if (m[code]) return m[code];
+                if (key && key.length===1) return key.toUpperCase();
+                if (code.startsWith('Key')) return code.slice(3);
+                if (code.startsWith('Digit')) return code.slice(5);
+                if (code.startsWith('Numpad')) return 'Num'+code.slice(6); // 兜底，但数字已在上方覆盖
+                return key||code;
+            }
+
+            function getCurrentDisplayNames() {
+                const mods=[], regs=[];
+                for (const c of pressedKeys) isModifierCode(c) ? mods.push(getModifierName(c)) : regs.push(getKeyDisplayName(c,null));
+                const u = [...new Set(mods)], ord=[];
+                for (const p of ['Ctrl','Alt','Shift','Win']) if(u.includes(p)) ord.push(p);
+                for (const m of u) if(!ord.includes(m)) ord.push(m);
+                return [...ord, ...regs];
+            }
+
+            function updateDisplay(forceAnim=false) {
+                const names = getCurrentDisplayNames();
+                if (shouldExcludeCurrent()) {
+                    clearTimeout(hideTimeout); hideTimeout = null;
+                    keyDisplayCard.classList.add('hiding'); keyDisplayCard.classList.remove('visible');
+                    liveKeysLabel.textContent = ''; liveKeysLabel.classList.remove('active');
+                    lastDisplayHTML = '';
+                    return;
+                }
+
+                const isCombo = names.length >= 2;
+                const showNow = settings.comboOnly ? isCombo : (names.length > 0);
+
+                if (names.length > 0 && showNow) {
+                    clearTimeout(hideTimeout); hideTimeout = null;
+                    const html = names.map((n,i)=>(i>0?'<span class="key-plus">+</span>':'')+`<span class="key-tag${['Ctrl','Alt','Shift','Win'].includes(n)?' modifier-key':''}">${n}</span>`).join('');
+                    keyDisplayCard.innerHTML = html;
+                    lastDisplayHTML = html;
+                    keyDisplayCard.classList.add('visible'); keyDisplayCard.classList.remove('hiding');
+                    if (forceAnim) { keyDisplayCard.style.transform='scale(0.35)'; requestAnimationFrame(()=>keyDisplayCard.style.transform='scale(1)'); }
+                    liveKeysLabel.textContent = names.join(' + '); liveKeysLabel.classList.add('active');
+                    if (forceAnim && settings.particlesEnabled) spawnParticles();
+                } else {
+                    liveKeysLabel.classList.remove('active');
+                    if (settings.alwaysShow) {
+                        if (lastDisplayHTML) {
+                            keyDisplayCard.innerHTML = lastDisplayHTML;
+                            keyDisplayCard.classList.add('visible'); keyDisplayCard.classList.remove('hiding');
+                        } else {
+                            keyDisplayCard.classList.add('hiding'); keyDisplayCard.classList.remove('visible');
+                        }
+                        clearTimeout(hideTimeout); hideTimeout = null;
+                    } else {
+                        if (lastDisplayHTML && keyDisplayCard.classList.contains('visible')) {
+                            if (!hideTimeout) {
+                                hideTimeout = setTimeout(() => {
+                                    keyDisplayCard.classList.add('hiding'); keyDisplayCard.classList.remove('visible');
+                                    liveKeysLabel.textContent = '';
+                                    setTimeout(() => {
+                                        if (pressedKeys.size === 0 && !settings.alwaysShow) {
+                                            keyDisplayCard.innerHTML = '';
+                                            keyDisplayCard.classList.remove('hiding');
+                                            lastDisplayHTML = '';
+                                        }
+                                    }, 500);
+                                    hideTimeout = null;
+                                }, settings.displayDuration * 1000);
+                            }
+                        } else {
+                            keyDisplayCard.classList.add('hiding'); keyDisplayCard.classList.remove('visible');
+                            liveKeysLabel.textContent = '';
+                            lastDisplayHTML = '';
+                            clearTimeout(hideTimeout); hideTimeout = null;
+                        }
+                    }
+                }
+            }
+
+            function spawnParticles() {
+                const frag=document.createDocumentFragment();
+                for(let i=0;i<18;i++){ const p=document.createElement('div'); p.className='particle'; const a=Math.PI*2/18*i+Math.random()*0.3,d=50+Math.random()*80; p.style.setProperty('--px',Math.cos(a)*d+'px'); p.style.setProperty('--py',Math.sin(a)*d+'px'); p.style.background=['#58a6ff','#818cf8','#ffb347','#7ee787','#ff7b72'][Math.floor(Math.random()*5)]; p.style.width=p.style.height=(5+Math.random()*8)+'px'; frag.appendChild(p); }
+                particleBurst.innerHTML=''; particleBurst.appendChild(frag); setTimeout(()=>particleBurst.innerHTML='',750);
+            }
+
+            function addHistory(names) { if(names.length===0) return; historyEntries.unshift({names:[...names],isCombo:names.length>1||['Ctrl','Alt','Shift','Win'].includes(names[0])}); if(historyEntries.length>settings.historyMax) historyEntries=historyEntries.slice(0,settings.historyMax); totalKeyPresses++; if(historyEntries[0].isCombo) totalComboPresses++; renderHistory(); updateStats(); }
+            function renderHistory() { historyPanel.innerHTML=''; historyEntries.slice(0,15).forEach(e=>{ const c=document.createElement('span'); c.className='history-chip'+(e.isCombo?' combo':''); c.textContent=e.names.join('+'); historyPanel.appendChild(c); }); historyCountBadge.textContent=historyEntries.length; if(settings.showHistory) historyPanel.classList.add('visible'); }
+            function updateStats() { statsInfo.textContent=`按键次数：${totalKeyPresses} | 组合键：${totalComboPresses}`; }
+
+            const mainKeys = [
+                [{c:'Escape',l:'Esc',w:'w-1'},{c:'F1',l:'F1',w:'w-1'},{c:'F2',l:'F2',w:'w-1'},{c:'F3',l:'F3',w:'w-1'},{c:'F4',l:'F4',w:'w-1'},{c:'F5',l:'F5',w:'w-1'},{c:'F6',l:'F6',w:'w-1'},{c:'F7',l:'F7',w:'w-1'},{c:'F8',l:'F8',w:'w-1'},{c:'F9',l:'F9',w:'w-1'},{c:'F10',l:'F10',w:'w-1'},{c:'F11',l:'F11',w:'w-1'},{c:'F12',l:'F12',w:'w-1'},{c:'PrintScreen',l:'PrtSc',w:'w-1'},{c:'ScrollLock',l:'ScrLk',w:'w-1'},{c:'Pause',l:'Pause',w:'w-1'}],
+                [{c:'Backquote',l:'`',w:'w-1'},{c:'Digit1',l:'1',w:'w-1'},{c:'Digit2',l:'2',w:'w-1'},{c:'Digit3',l:'3',w:'w-1'},{c:'Digit4',l:'4',w:'w-1'},{c:'Digit5',l:'5',w:'w-1'},{c:'Digit6',l:'6',w:'w-1'},{c:'Digit7',l:'7',w:'w-1'},{c:'Digit8',l:'8',w:'w-1'},{c:'Digit9',l:'9',w:'w-1'},{c:'Digit0',l:'0',w:'w-1'},{c:'Minus',l:'-',w:'w-1'},{c:'Equal',l:'=',w:'w-1'},{c:'Backspace',l:'⌫',w:'w-2'}],
+                [{c:'Tab',l:'Tab',w:'w-1-5'},{c:'KeyQ',l:'Q',w:'w-1'},{c:'KeyW',l:'W',w:'w-1'},{c:'KeyE',l:'E',w:'w-1'},{c:'KeyR',l:'R',w:'w-1'},{c:'KeyT',l:'T',w:'w-1'},{c:'KeyY',l:'Y',w:'w-1'},{c:'KeyU',l:'U',w:'w-1'},{c:'KeyI',l:'I',w:'w-1'},{c:'KeyO',l:'O',w:'w-1'},{c:'KeyP',l:'P',w:'w-1'},{c:'BracketLeft',l:'[',w:'w-1'},{c:'BracketRight',l:']',w:'w-1'},{c:'Backslash',l:'\\',w:'w-1-5'}],
+                [{c:'CapsLock',l:'Caps',w:'w-1-75'},{c:'KeyA',l:'A',w:'w-1'},{c:'KeyS',l:'S',w:'w-1'},{c:'KeyD',l:'D',w:'w-1'},{c:'KeyF',l:'F',w:'w-1'},{c:'KeyG',l:'G',w:'w-1'},{c:'KeyH',l:'H',w:'w-1'},{c:'KeyJ',l:'J',w:'w-1'},{c:'KeyK',l:'K',w:'w-1'},{c:'KeyL',l:'L',w:'w-1'},{c:'Semicolon',l:';',w:'w-1'},{c:'Quote',l:"'",w:'w-1'},{c:'Enter',l:'Enter',w:'w-2-25'}],
+                [{c:'ShiftLeft',l:'Shift',w:'w-2-25'},{c:'KeyZ',l:'Z',w:'w-1'},{c:'KeyX',l:'X',w:'w-1'},{c:'KeyC',l:'C',w:'w-1'},{c:'KeyV',l:'V',w:'w-1'},{c:'KeyB',l:'B',w:'w-1'},{c:'KeyN',l:'N',w:'w-1'},{c:'KeyM',l:'M',w:'w-1'},{c:'Comma',l:',',w:'w-1'},{c:'Period',l:'.',w:'w-1'},{c:'Slash',l:'/',w:'w-1'},{c:'ShiftRight',l:'Shift',w:'w-2-75'}],
+                [{c:'ControlLeft',l:'Ctrl',w:'w-1-25'},{c:'MetaLeft',l:'Win',w:'w-1-25'},{c:'AltLeft',l:'Alt',w:'w-1-25'},{c:'Space',l:'Space',w:'space-key'},{c:'AltRight',l:'Alt',w:'w-1-25'},{c:'MetaRight',l:'Win',w:'w-1-25'},{c:'ContextMenu',l:'Menu',w:'w-1-25'},{c:'ControlRight',l:'Ctrl',w:'w-1-25'}],
+                [{c:'Insert',l:'Ins',w:'w-1'},{c:'Home',l:'Home',w:'w-1'},{c:'PageUp',l:'PgUp',w:'w-1'},{c:'Delete',l:'Del',w:'w-1'},{c:'End',l:'End',w:'w-1'},{c:'PageDown',l:'PgDn',w:'w-1'},{c:'ArrowLeft',l:'←',w:'w-1'},{c:'ArrowUp',l:'↑',w:'w-1'},{c:'ArrowDown',l:'↓',w:'w-1'},{c:'ArrowRight',l:'→',w:'w-1'}]
+            ];
+            const numpadGrid = [
+                {c:'NumLock',l:'NumLock',r:1,cl:1},{c:'NumpadDivide',l:'/',r:1,cl:2},{c:'NumpadMultiply',l:'*',r:1,cl:3},{c:'NumpadSubtract',l:'-',r:1,cl:4},
+                {c:'Numpad7',l:'7',r:2,cl:1},{c:'Numpad8',l:'8',r:2,cl:2},{c:'Numpad9',l:'9',r:2,cl:3},{c:'NumpadAdd',l:'+',r:2,cl:4,rs:2},
+                {c:'Numpad4',l:'4',r:3,cl:1},{c:'Numpad5',l:'5',r:3,cl:2},{c:'Numpad6',l:'6',r:3,cl:3},
+                {c:'Numpad1',l:'1',r:4,cl:1},{c:'Numpad2',l:'2',r:4,cl:2},{c:'Numpad3',l:'3',r:4,cl:3},{c:'NumpadEnter',l:'Enter',r:4,cl:4,rs:2},
+                {c:'Numpad0',l:'0',r:5,cl:1,cs:2},{c:'NumpadDecimal',l:'.',r:5,cl:3}
+            ];
+
+            function buildKeyboard() {
+                virtualKeyboard.innerHTML='';
+                const main=document.createElement('div'); main.className='kb-main';
+                mainKeys.forEach(row=>{ const r=document.createElement('div'); r.className='kb-row'; row.forEach(k=>{ const el=document.createElement('div'); el.className='kb-key '+k.w; el.textContent=k.l; el.dataset.code=k.c; if(['CapsLock','NumLock','ScrollLock'].includes(k.c)){ const ind=document.createElement('span'); ind.className='lock-indicator'; el.appendChild(ind); } el.addEventListener('pointerdown',e=>{e.preventDefault();simKey(k.c,k.l);}); r.appendChild(el); }); main.appendChild(r); });
+                const num=document.createElement('div'); num.className='kb-numpad';
+                numpadGrid.forEach(k=>{ const el=document.createElement('div'); el.className='kb-key'; el.textContent=k.l; el.dataset.code=k.c; el.style.gridRow=k.r; el.style.gridColumn=k.cl; if(k.rs) el.classList.add('span-row-2'); if(k.cs) el.classList.add('span-col-2'); if('NumLock'===k.c){ const ind=document.createElement('span'); ind.className='lock-indicator'; el.appendChild(ind); } el.addEventListener('pointerdown',e=>{e.preventDefault();simKey(k.c,k.l);}); num.appendChild(el); });
+                virtualKeyboard.appendChild(main); virtualKeyboard.appendChild(num);
+                updateLockIndicators();
+            }
+
+            function updateLockIndicators() {
+                const indicators = virtualKeyboard.querySelectorAll('.lock-indicator');
+                indicators.forEach(ind => {
+                    const parent = ind.parentElement;
+                    if (!parent) return;
+                    const code = parent.dataset.code;
+                    if (code === 'CapsLock') ind.classList.toggle('active', capsLockOn);
+                    else if (code === 'NumLock') ind.classList.toggle('active', numLockOn);
+                    else if (code === 'ScrollLock') ind.classList.toggle('active', scrollLockOn);
+                });
+            }
+
+            function refreshKeyboardHighlights() {
+                const allKeys = virtualKeyboard.querySelectorAll('.kb-key[data-code]');
+                const shouldHighlight = !settings.comboOnly || pressedKeys.size >= 2;
+                allKeys.forEach(el => {
+                    const code = el.dataset.code;
+                    if (pressedKeys.has(code) && shouldHighlight) {
+                        el.classList.add('highlighted');
+                    } else {
+                        el.classList.remove('highlighted');
+                    }
+                });
+            }
+
+            function simKey(code,label) {
+                const isToggleKey = code === 'CapsLock' || code === 'NumLock' || code === 'ScrollLock';
+                if (isToggleKey) {
+                    if (code === 'CapsLock') capsLockOn = !capsLockOn;
+                    else if (code === 'NumLock') numLockOn = !numLockOn;
+                    else if (code === 'ScrollLock') scrollLockOn = !scrollLockOn;
+                    updateLockIndicators();
+                }
+                handleKeyDown(new KeyboardEvent('keydown',{code,key:label,ctrlKey:code==='ControlLeft'||code==='ControlRight',shiftKey:code==='ShiftLeft'||code==='ShiftRight',altKey:code==='AltLeft'||code==='AltRight',metaKey:code==='MetaLeft'||code==='MetaRight',bubbles:true}));
+                setTimeout(()=>handleKeyUp(new KeyboardEvent('keyup',{code,key:label,bubbles:true})),150+Math.random()*200);
+            }
+
+            function handleKeyDown(e) {
+                const code = e.code;
+                if (e.repeat) { refreshKeyboardHighlights(); updateDisplay(false); return; }
+                if (code === 'CapsLock' || code === 'NumLock' || code === 'ScrollLock') {
+                    try { if (e.getModifierState) {
+                        if (code === 'CapsLock') capsLockOn = e.getModifierState('CapsLock');
+                        else if (code === 'NumLock') numLockOn = e.getModifierState('NumLock');
+                        else if (code === 'ScrollLock') scrollLockOn = e.getModifierState('ScrollLock');
+                    }} catch(_){}
+                    updateLockIndicators();
+                }
+                pressedKeys.add(code);
+                refreshKeyboardHighlights();
+                const names=getCurrentDisplayNames();
+                if (names.length>1 && names.some(n=>['Ctrl','Alt','Shift','Win'].includes(n))) playComboSound(); else playSound(isModifierCode(code)?400:800,0.06);
+                updateDisplay(true);
+                if (!settings.comboOnly || names.length>=2) addHistory(names);
+            }
+            function handleKeyUp(e) {
+                pressedKeys.delete(e.code);
+                refreshKeyboardHighlights();
+                updateDisplay(false);
+            }
+
+            function loadSettings() {
+                try { const s=localStorage.getItem('keyvision-settings'); if(s) settings={...settings,...JSON.parse(s)}; } catch(e){}
+                updateExcludedPatterns(); applySettings();
+            }
+            function saveSettings() { try { localStorage.setItem('keyvision-settings',JSON.stringify(settings)); } catch(e){} }
+            function applySettings() {
+                document.body.dataset.theme=settings.theme;
+                document.querySelectorAll('.theme-dot').forEach(d=>d.classList.toggle('active',d.dataset.themeVal===settings.theme));
+                keyboardWrapper.classList.toggle('hidden',!settings.showKeyboard);
+                historyPanel.classList.toggle('visible',settings.showHistory);
+                document.getElementById('settingShowKeyboard').checked=settings.showKeyboard;
+                document.getElementById('settingShowHistory').checked=settings.showHistory;
+                document.getElementById('settingSound').checked=settings.soundEnabled;
+                document.getElementById('settingParticles').checked=settings.particlesEnabled;
+                document.getElementById('settingComboOnly').checked=settings.comboOnly;
+                document.getElementById('settingExcludeEnable').checked=settings.excludeEnabled;
+                document.getElementById('settingExcludeList').value=settings.excludeList;
+                document.getElementById('settingAlwaysShow').checked=settings.alwaysShow;
+                document.getElementById('settingDuration').value=settings.displayDuration;
+                document.getElementById('displayDurationVal').textContent=settings.displayDuration;
+                document.getElementById('settingHistoryMax').value=settings.historyMax;
+                document.getElementById('historyMaxVal').textContent=settings.historyMax;
+                updateToolbar(); updateStats();
+                refreshKeyboardHighlights();
+            }
+            function updateToolbar() {
+                const kb=document.getElementById('btnKeyboardToggle'), h=document.getElementById('btnHistoryToggle');
+                kb.style.boxShadow=settings.showKeyboard?'0 0 14px var(--accent-glow)':''; kb.style.borderColor=settings.showKeyboard?'var(--accent)':'var(--border)';
+                h.style.boxShadow=settings.showHistory?'0 0 14px var(--accent-glow)':''; h.style.borderColor=settings.showHistory?'var(--accent)':'var(--border)';
+            }
+
+            document.getElementById('btnKeyboardToggle').onclick=()=>{ settings.showKeyboard=!settings.showKeyboard; saveSettings(); applySettings(); };
+            document.getElementById('btnHistoryToggle').onclick=()=>{ settings.showHistory=!settings.showHistory; saveSettings(); applySettings(); };
+            document.getElementById('btnClearHistory').onclick=()=>{ historyEntries=[]; historyPanel.innerHTML=''; historyCountBadge.textContent='0'; totalKeyPresses=totalComboPresses=0; updateStats(); };
+            document.getElementById('btnSettings').onclick=()=>{ settingsOverlay.classList.add('open'); settingsPanel.classList.add('open'); };
+            document.getElementById('btnSettingsClose').onclick=()=>{ settingsOverlay.classList.remove('open'); settingsPanel.classList.remove('open'); };
+            settingsOverlay.onclick=e=>{ if(e.target===settingsOverlay){ settingsOverlay.classList.remove('open'); settingsPanel.classList.remove('open'); } };
+            document.getElementById('settingShowKeyboard').onchange=function(){ settings.showKeyboard=this.checked; saveSettings(); applySettings(); };
+            document.getElementById('settingShowHistory').onchange=function(){ settings.showHistory=this.checked; saveSettings(); applySettings(); };
+            document.getElementById('settingSound').onchange=function(){ settings.soundEnabled=this.checked; saveSettings(); };
+            document.getElementById('settingParticles').onchange=function(){ settings.particlesEnabled=this.checked; saveSettings(); };
+            document.getElementById('settingComboOnly').onchange=function(){ settings.comboOnly=this.checked; saveSettings(); updateDisplay(false); refreshKeyboardHighlights(); };
+            document.getElementById('settingExcludeEnable').onchange=function(){ settings.excludeEnabled=this.checked; saveSettings(); updateDisplay(false); };
+            document.getElementById('settingExcludeList').oninput=function(){ settings.excludeList=this.value; updateExcludedPatterns(); saveSettings(); updateDisplay(false); };
+            document.getElementById('settingAlwaysShow').onchange=function(){ settings.alwaysShow=this.checked; saveSettings(); updateDisplay(false); };
+            document.getElementById('settingDuration').oninput=function(){ settings.displayDuration=+this.value; document.getElementById('displayDurationVal').textContent=this.value; saveSettings(); };
+            document.getElementById('settingHistoryMax').oninput=function(){ settings.historyMax=+this.value; document.getElementById('historyMaxVal').textContent=this.value; if(historyEntries.length>settings.historyMax) historyEntries=historyEntries.slice(0,settings.historyMax); renderHistory(); saveSettings(); };
+            document.getElementById('btnResetAll').onclick=()=>{
+                settings={showKeyboard:true,showHistory:true,soundEnabled:true,particlesEnabled:true,displayDuration:1.8,historyMax:20,theme:'dark',comboOnly:false,excludeEnabled:false,excludeList:"Alt+1",alwaysShow:false};
+                updateExcludedPatterns(); saveSettings(); applySettings();
+                pressedKeys.clear(); keyDisplayCard.innerHTML=''; lastDisplayHTML=''; keyDisplayCard.classList.remove('visible','hiding'); liveKeysLabel.textContent='';
+            };
+            document.getElementById('btnClearStats').onclick=()=>{ totalKeyPresses=totalComboPresses=0; updateStats(); };
+            document.querySelectorAll('.theme-dot').forEach(d=>d.onclick=function(){ settings.theme=this.dataset.themeVal; saveSettings(); applySettings(); });
+
+            document.addEventListener('keydown',handleKeyDown,{passive:false});
+            document.addEventListener('keyup',handleKeyUp);
+            window.addEventListener('blur',()=>{ pressedKeys.clear(); refreshKeyboardHighlights(); updateDisplay(false); });
+
+            buildKeyboard(); loadSettings(); updateDisplay(false);
+            console.log('⌨️ KeyVision Pro 最终版 (数字小键盘显示纯数字) 已就绪');
+        })();
+    </script>
+</body>
+</html>

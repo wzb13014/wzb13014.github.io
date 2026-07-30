@@ -1,0 +1,1735 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=2.0, user-scalable=yes">
+    <title>安全检查整改通知单</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js">
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js">
+    </script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        html,
+        body {
+            width: 100%;
+            overflow-x: hidden;
+        }
+        input,
+        textarea,
+        select {
+            -webkit-touch-callout: default;
+        }
+        body {
+            font-family: "Microsoft YaHei", "微软雅黑", sans-serif;
+            background: #e8e8e8;
+            color: #333;
+            min-height: 100vh;
+        }
+        .header {
+            background: linear-gradient(135deg, #8B0000 0%, #C41E3A 100%);
+            color: white;
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .header h1 {
+            font-size: 20px;
+            font-weight: 600;
+            letter-spacing: 2px;
+            flex: 1;
+            text-align: center;
+            white-space: nowrap;
+        }
+        .header-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            align-items: center;
+            flex-shrink: 0;
+            justify-content: center;
+        }
+        .btn {
+            padding: 10px 14px;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+            white-space: nowrap;
+            touch-action: manipulation;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+        .btn-primary {
+            background: #fff;
+            color: #C41E3A;
+            font-weight: 600;
+        }
+        .btn-primary:hover {
+            background: #f0f0f0;
+            transform: translateY(-1px);
+        }
+        .btn-primary:active {
+            background: #e8e8e8;
+            transform: translateY(0);
+        }
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.15);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.25);
+        }
+        .btn-secondary:active {
+            background: rgba(255, 255, 255, 0.35);
+        }
+        .btn-danger {
+            background: #666;
+            color: #fff;
+        }
+        .btn-danger:hover {
+            background: #555;
+        }
+        .btn-sm {
+            padding: 5px 10px;
+            font-size: 12px;
+        }
+        .main-container {
+            display: flex;
+            padding: 15px;
+            gap: 20px;
+            min-height: calc(100vh - 70px);
+        }
+        .form-section {
+            width: 440px;
+            flex-shrink: 0;
+            background: #fff;
+            border-radius: 6px;
+            padding: 20px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+            overflow-y: auto;
+            max-height: calc(100vh - 110px);
+            position: sticky;
+            top: 90px;
+            transition: all 0.3s;
+            -webkit-overflow-scrolling: touch;
+        }
+        .form-section h2 {
+            font-size: 18px;
+            color: #C41E3A;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #C41E3A;
+        }
+        .form-group {
+            margin-bottom: 14px;
+        }
+        .form-group label {
+            display: block;
+            font-size: 14px;
+            color: #333;
+            margin-bottom: 6px;
+            font-weight: 500;
+        }
+        .form-group label .required {
+            color: #C41E3A;
+            margin-right: 3px;
+        }
+        .form-group input[type="text"],
+        .form-group input[type="date"],
+        .form-group input[type="number"],
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            font-family: inherit;
+            transition: border-color 0.2s;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #C41E3A;
+            box-shadow: 0 0 0 2px rgba(196, 30, 58, 0.1);
+        }
+        .form-group textarea {
+            resize: vertical;
+            min-height: 60px;
+            line-height: 1.6;
+        }
+        .form-row {
+            display: flex;
+            gap: 12px;
+        }
+        .form-row .form-group {
+            flex: 1;
+        }
+        .form-section-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #333;
+            margin: 18px 0 10px 0;
+            padding-left: 10px;
+            border-left: 3px solid #C41E3A;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .form-section-title .toggle-wrap {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            font-weight: normal;
+        }
+        .toggle-switch {
+            position: relative;
+            width: 44px;
+            height: 24px;
+            display: inline-block;
+            cursor: pointer;
+        }
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .toggle-slider {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            border-radius: 24px;
+            transition: 0.3s;
+        }
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            border-radius: 50%;
+            transition: 0.3s;
+        }
+        .toggle-switch input:checked+.toggle-slider {
+            background-color: #C41E3A;
+        }
+        .toggle-switch input:checked+.toggle-slider:before {
+            transform: translateX(20px);
+        }
+        .preview-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px;
+            min-width: 0;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        .preview-toolbar {
+            width: 100%;
+            max-width: 900px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+        .preview-toolbar span {
+            font-size: 14px;
+            color: #666;
+        }
+        .zoom-controls {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+        .zoom-btn {
+            width: 36px;
+            height: 36px;
+            border: 1px solid #ccc;
+            background: #fff;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            touch-action: manipulation;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+        .zoom-btn:hover {
+            background: #f5f5f5;
+        }
+        .zoom-btn:active {
+            background: #e8e8e8;
+        }
+        #previewWrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transform-origin: top center;
+            transition: transform 0.3s;
+            width: auto;
+        }
+        .a4-paper {
+            width: 210mm;
+            min-height: 297mm;
+            flex-shrink: 0;
+            background: #fff;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            padding: 37mm 26mm 35mm 28mm;
+            position: relative;
+            font-family: "FangSong", "仿宋", "STFangsong", serif;
+            color: #000;
+            margin-bottom: 0;
+            transform: none;
+        }
+        .paper-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .issuing-department {
+            font-family: "SimSun", "宋体", "STSong", serif;
+            font-size: 28px;
+            font-weight: bold;
+            color: #C41E3A;
+            letter-spacing: 4px;
+            margin-bottom: 10px;
+        }
+        .red-line {
+            height: 3px;
+            background: #C41E3A;
+            margin-bottom: 15px;
+            position: relative;
+        }
+        .red-line::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: -1px;
+            width: 80px;
+            height: 5px;
+            background: #C41E3A;
+        }
+        .red-line::after {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: -1px;
+            width: 80px;
+            height: 5px;
+            background: #C41E3A;
+        }
+        .doc-number {
+            text-align: left;
+            font-size: 16px;
+            margin-bottom: 25px;
+            color: #333;
+        }
+        .doc-title {
+            font-family: "SimSun", "宋体", "STSong", serif;
+            font-size: 26px;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 25px;
+            letter-spacing: 2px;
+        }
+        .receiving-dept {
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+        .receiving-dept strong {
+            font-weight: normal;
+        }
+        .content-section {
+            font-size: 16px;
+            line-height: 1.8;
+            text-indent: 2em;
+            margin-bottom: 15px;
+        }
+        .section-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin: 20px 0 10px 0;
+            text-indent: 0;
+        }
+        .info-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            font-size: 15px;
+            table-layout: fixed;
+        }
+        .info-table th,
+        .info-table td {
+            border: 1px solid #000;
+            padding: 10px 12px;
+            text-align: left;
+            vertical-align: top;
+            word-break: break-all;
+            line-height: 1.6;
+        }
+        .info-table th {
+            background: #f9f9f9;
+            font-weight: bold;
+            width: 120px;
+            text-align: center;
+            vertical-align: middle;
+        }
+        .evidence-images-preview {
+            margin-top: 8px;
+        }
+        .evidence-images-preview .img-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
+        }
+        .evidence-images-preview .img-item {
+            position: relative;
+            width: 100%;
+            padding-top: 75%;
+            overflow: hidden;
+            border: 1px solid #ddd;
+            background: #f9f9f9;
+        }
+        .evidence-images-preview .img-item img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .evidence-images-preview .img-item .img-watermark {
+            position: absolute;
+            bottom: 2px;
+            right: 4px;
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.9);
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+            z-index: 2;
+            font-family: Arial, sans-serif;
+        }
+        .rectification-req {
+            font-size: 16px;
+            line-height: 1.8;
+            text-indent: 2em;
+            margin: 10px 0;
+            white-space: pre-line;
+        }
+        .signature-area {
+            margin-top: 40px;
+            text-align: right;
+            position: relative;
+        }
+        .signature-area.hidden {
+            display: none;
+        }
+        .issuer {
+            font-size: 16px;
+            margin-bottom: 10px;
+            margin-right: 40px;
+        }
+        .issue-date {
+            font-size: 16px;
+            margin-right: 40px;
+        }
+        .seal {
+            position: absolute;
+            right: 30px;
+            bottom: -10px;
+            width: 110px;
+            height: 110px;
+            border: 3px solid #C41E3A;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: "SimSun", "宋体", serif;
+            font-size: 14px;
+            color: #C41E3A;
+            transform: rotate(-15deg);
+            opacity: 0.8;
+            font-weight: bold;
+            text-align: center;
+            line-height: 1.4;
+            letter-spacing: 2px;
+        }
+        .seal-inner {
+            width: 90px;
+            height: 90px;
+            border: 1px solid #C41E3A;
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        .footer-note {
+            position: absolute;
+            bottom: 20mm;
+            left: 28mm;
+            right: 26mm;
+            display: flex;
+            justify-content: flex-end;
+            font-size: 12px;
+            color: #666;
+            border-top: 1px solid #ddd;
+            padding-top: 8px;
+        }
+        .watermark {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-30deg);
+            font-size: 80px;
+            color: rgba(196, 30, 58, 0.08);
+            font-weight: bold;
+            letter-spacing: 20px;
+            pointer-events: none;
+            white-space: nowrap;
+            z-index: 10;
+        }
+        .image-upload-area {
+            border: 2px dashed #ccc;
+            border-radius: 6px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: #fafafa;
+            margin-bottom: 12px;
+        }
+        .image-upload-area:hover {
+            border-color: #C41E3A;
+            background: #fff5f5;
+        }
+        .image-upload-area:active {
+            border-color: #C41E3A;
+            background: #fff0f0;
+        }
+        .image-upload-area.dragover {
+            border-color: #C41E3A;
+            background: #fff5f5;
+        }
+        .image-upload-area .upload-icon {
+            font-size: 36px;
+            margin-bottom: 8px;
+        }
+        .image-upload-area p {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 4px;
+        }
+        .image-upload-area .upload-hint {
+            font-size: 12px;
+            color: #999;
+        }
+        .image-list {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        .image-list .image-item {
+            position: relative;
+            width: 100%;
+            padding-top: 100%;
+            overflow: hidden;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+        .image-list .image-item img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .image-list .image-item .remove-btn {
+            position: absolute;
+            top: 3px;
+            right: 3px;
+            width: 22px;
+            height: 22px;
+            background: rgba(255, 0, 0, 0.8);
+            color: #fff;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            line-height: 1;
+        }
+        .image-list .image-item .img-index {
+            position: absolute;
+            bottom: 2px;
+            left: 2px;
+            background: rgba(0, 0, 0, 0.6);
+            color: #fff;
+            font-size: 10px;
+            padding: 1px 5px;
+            border-radius: 2px;
+        }
+        .checkbox-inline {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 12px;
+            font-size: 13px;
+            color: #555;
+        }
+        .checkbox-inline input {
+            width: auto;
+            transform: scale(1.2);
+            flex-shrink: 0;
+        }
+        .checkbox-inline label {
+            margin: 0;
+            cursor: pointer;
+            font-weight: normal;
+        }
+        .export-options {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .export-options select {
+            padding: 8px 10px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+            font-size: 14px;
+            background: rgba(255, 255, 255, 0.15);
+            color: #fff;
+            cursor: pointer;
+            -webkit-appearance: none;
+            appearance: none;
+            min-height: 40px;
+            text-align: center;
+            text-align-last: center;
+        }
+        .export-options select option {
+            color: #333;
+            text-align: center;
+        }
+        .loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .loading.active {
+            display: flex;
+        }
+        .loading-content {
+            background: #fff;
+            padding: 30px 50px;
+            border-radius: 6px;
+            text-align: center;
+        }
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #f0f0f0;
+            border-top-color: #C41E3A;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+        .toast {
+            position: fixed;
+            top: 80px;
+            right: 30px;
+            background: #333;
+            color: #fff;
+            padding: 12px 24px;
+            border-radius: 4px;
+            opacity: 0;
+            transform: translateY(-20px);
+            transition: all 0.3s;
+            z-index: 2000;
+            max-width: 80vw;
+        }
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .toast.success {
+            background: #28a745;
+        }
+        .toast.error {
+            background: #dc3545;
+        }
+        .collapsible-content {
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+        .collapsible-content.collapsed {
+            max-height: 0 !important;
+            opacity: 0;
+            pointer-events: none;
+        }
+        .evidence-page {
+            width: 210mm;
+            min-height: 297mm;
+            flex-shrink: 0;
+            background: #fff;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            padding: 25mm;
+            margin-top: 0;
+            font-family: "FangSong", "仿宋", "STFangsong", serif;
+            color: #000;
+            display: none;
+            transform: none;
+        }
+        .evidence-page-title {
+            font-family: "SimSun", "宋体", "STSong", serif;
+            font-size: 22px;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #C41E3A;
+        }
+        .evidence-page-subtitle {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        .evidence-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        .evidence-grid .evidence-item {
+            border: 1px solid #ddd;
+            padding: 8px;
+            background: #fafafa;
+            text-align: center;
+        }
+        .evidence-grid .evidence-item img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        .evidence-grid .evidence-item .evidence-caption {
+            font-size: 12px;
+            text-align: center;
+            margin-top: 6px;
+            color: #666;
+        }
+        @media (max-width: 1024px) {
+            .main-container {
+                flex-direction: column;
+                padding: 10px;
+            }
+            .form-section {
+                width: 100%;
+                position: static;
+                max-height: none;
+                margin-bottom: 20px;
+            }
+            .header h1 {
+                font-size: 18px;
+            }
+            .btn {
+                padding: 8px 10px;
+                font-size: 13px;
+                min-height: 40px;
+            }
+        }
+        @media (max-width: 768px) {
+            .header {
+                padding: 10px 15px;
+                flex-direction: column;
+                align-items: center;
+            }
+            .header h1 {
+                font-size: 17px;
+                text-align: center;
+                flex: none;
+            }
+            .header-actions {
+                width: 100%;
+                justify-content: center;
+                gap: 6px;
+            }
+            .btn {
+                min-height: 44px;
+                padding: 0 12px;
+                font-size: 14px;
+                flex: 1;
+                min-width: fit-content;
+            }
+            .export-options {
+                width: 100%;
+                justify-content: center;
+            }
+            .export-options select {
+                flex: 1;
+                min-height: 44px;
+            }
+            .form-row {
+                flex-direction: column;
+                gap: 0;
+            }
+            .form-group input[type="text"],
+            .form-group input[type="date"],
+            .form-group input[type="number"],
+            .form-group textarea,
+            .form-group select {
+                min-height: 44px;
+                font-size: 16px;
+            }
+            .image-list {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            .image-upload-area {
+                padding: 25px 15px;
+            }
+            .preview-section {
+                padding: 5px;
+            }
+            .zoom-btn {
+                width: 44px;
+                height: 44px;
+                font-size: 20px;
+            }
+            .evidence-grid {
+                grid-template-columns: 1fr;
+            }
+            .toast {
+                top: 70px;
+                right: 50%;
+                transform: translateX(50%) translateY(-20px);
+                text-align: center;
+            }
+            .toast.show {
+                transform: translateX(50%) translateY(0);
+            }
+            .loading-content {
+                padding: 25px 35px;
+                margin: 0 20px;
+            }
+        }
+        @media (max-width: 480px) {
+            .btn {
+                min-height: 44px;
+                padding: 0 10px;
+                font-size: 13px;
+            }
+            .export-options select {
+                font-size: 13px;
+                padding: 0 8px;
+            }
+            .image-list {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .preview-toolbar {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>安全检查整改通知单</h1>
+        <div class="header-actions">
+            <button class="btn btn-primary" onclick="exportPDF()">📄 导出PDF</button>
+            <div class="export-options">
+                <select id="exportQuality">
+                    <option value="high">高清打印</option>
+                    <option value="standard" selected>标准清晰</option>
+                    <option value="compressed">最小体积</option>
+                </select>
+                <select id="imageExportMode">
+                    <option value="long">长图拼接</option>
+                    <option value="embed" selected>嵌入通知单</option>
+                </select>
+                <button class="btn btn-primary" onclick="exportImage('jpg')">🖼️ 导出图片</button>
+            </div>
+            <button class="btn btn-secondary" onclick="resetForm()">🔄 重置</button>
+        </div>
+    </div>
+    <div class="main-container">
+        <div class="form-section">
+            <h2>通知单信息填写</h2>
+            <div class="form-section-title">基本信息</div>
+            <div class="form-group">
+                <label><span class="required">*</span>审核类型</label>
+                <input type="text" id="issuingDepartment" placeholder="请输入审核类型" oninput="debouncedUpdate()">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label><span class="required">*</span>通知单编号</label>
+                    <input type="text" id="documentNumber" placeholder="自动生成" oninput="debouncedUpdate()">
+                </div>
+                <div class="form-group">
+                    <label><span class="required">*</span>发文日期</label>
+                    <input type="date" id="issueDate" oninput="onIssueDateChange()">
+                </div>
+            </div>
+            <div class="form-group">
+                <label><span class="required">*</span>主送单位（责任部门）</label>
+                <input type="text" id="receivingDepartment" placeholder="请输入主送单位名称" oninput="debouncedUpdate()">
+            </div>
+            <div class="form-group">
+                <label>水印文字</label>
+                <input type="text" id="watermarkText" value="安全检查" oninput="debouncedUpdate()">
+            </div>
+            <div class="form-section-title">问题信息</div>
+            <div class="form-group">
+                <label><span class="required">*</span>问题标题</label>
+                <input type="text" id="problemTitle" placeholder="简要描述问题" oninput="debouncedUpdate()">
+            </div>
+            <div class="form-group">
+                <label><span class="required">*</span>问题详细描述</label>
+                <textarea id="problemDescription" placeholder="请详细描述发现的安全问题" oninput="debouncedUpdate()"></textarea>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label><span class="required">*</span>发生地点</label>
+                    <input type="text" id="location" placeholder="问题发生地点" oninput="debouncedUpdate()">
+                </div>
+                <div class="form-group">
+                    <label><span class="required">*</span>发生日期</label>
+                    <input type="date" id="occurrenceDate" oninput="debouncedUpdate()">
+                </div>
+            </div>
+            <div class="form-group">
+                <label><span class="required">*</span>责任部门</label>
+                <input type="text" id="responsibleDept" placeholder="请输入责任部门" oninput="debouncedUpdate()">
+            </div>
+            <div class="form-group">
+                <label><span class="required">*</span>佐证图片（可多选）</label>
+                <div class="image-upload-area" id="uploadArea" onclick="document.getElementById('imageInput').click()">
+                    <div class="upload-icon">📷</div>
+                    <p>点击或拖拽图片到此处上传</p>
+                    <p class="upload-hint">支持批量选择，JPG/PNG格式</p>
+                </div>
+                <input type="file" id="imageInput" accept="image/*" multiple style="display:none" onchange="handleImageUpload(event)">
+                <div class="image-list" id="imageList"></div>
+                <div class="checkbox-inline">
+                    <input type="checkbox" id="watermarkEnabled" checked onchange="toggleWatermark()">
+                    <label for="watermarkEnabled">启用时间水印</label>
+                </div>
+            </div>
+            <div class="form-section-title">整改要求</div>
+            <div class="form-group">
+                <label><span class="required">*</span>整改要求</label>
+                <textarea id="rectificationRequirement" placeholder="请详细说明整改要求和措施" oninput="debouncedUpdate()"></textarea>
+            </div>
+            <div class="form-group">
+                <label><span class="required">*</span>整改期限</label>
+                <input type="date" id="deadline" oninput="debouncedUpdate()">
+            </div>
+            <div class="form-section-title">
+                签发信息
+                <div class="toggle-wrap">
+                    <span id="signToggleLabel">隐藏</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="showSignature" onchange="toggleSignature()">
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <span style="margin-left:8px;">印章</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="showSeal" onchange="toggleSeal()">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+            <div class="collapsible-content collapsed" id="signatureContent">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>签发人</label>
+                        <input type="text" id="issuer" placeholder="请输入签发人姓名" oninput="debouncedUpdate()">
+                    </div>
+                    <div class="form-group">
+                        <label>联系电话</label>
+                        <input type="text" id="contact" placeholder="选填" oninput="debouncedUpdate()">
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="preview-section">
+            <div class="preview-toolbar">
+                <span>📄 A4 预览</span>
+                <div class="zoom-controls">
+                    <button class="zoom-btn" onclick="zoomOut()">−</button>
+                    <span id="zoomLevel" style="font-size: 14px; padding: 0 6px;">100%</span>
+                    <button class="zoom-btn" onclick="zoomIn()">+</button>
+                    <button class="zoom-btn" onclick="resetZoom()" title="重置">⟲</button>
+                </div>
+            </div>
+            <div id="previewWrapper">
+                <div id="a4Paper" class="a4-paper">
+                    <div class="watermark" id="preview_watermark">安全检查</div>
+                    <div class="paper-header">
+                        <div class="issuing-department" id="preview_issuingDepartment"></div>
+                        <div class="red-line"></div>
+                    </div>
+                    <div class="doc-number" id="preview_documentNumber">JXHR20260711001</div>
+                    <div class="doc-title">安全检查整改通知单</div>
+                    <div class="receiving-dept">
+                        <strong id="preview_receivingDepartment"></strong>
+                    </div>
+                    <div class="content-section">
+                        根据安全检查工作计划，本人于 <span id="preview_occurrenceDate">____年__月__日</span> 对
+                        <span id="preview_inspectedDept">________</span> 进行了安全检查。现将检查发现的问题及整改要求通知如下：
+                    </div>
+                    <div class="section-title">一、检查发现的主要问题</div>
+                    <table class="info-table">
+                        <tr><th>问题标题</th><td id="preview_problemTitle"></td></tr>
+                        <tr><th>发生地点</th><td id="preview_location"></td></tr>
+                        <tr><th>责任部门</th><td id="preview_responsibleDept"></td></tr>
+                        <tr><th>发生日期</th><td id="preview_occurrenceDate2"></td></tr>
+                        <tr><th>问题描述</th><td id="preview_problemDescription"></td></tr>
+                        <tr><th>异常佐证</th><td>
+                                <div class="evidence-images-preview" id="preview_evidenceImages">
+                                    <div class="img-grid" id="preview_evidenceImagesGrid"></div>
+                                </div>
+                            </td></tr>
+                    </table>
+                    <div class="section-title">二、整改要求</div>
+                    <div class="rectification-req" id="preview_rectificationRequirement"></div>
+                    <div class="content-section">
+                        请务必高度重视，严格按照上述要求进行整改，并于 <span id="preview_deadline">____年__月__日</span> 前回复整改报告。
+                    </div>
+                    <div class="content-section">特此通知。</div>
+                    <div class="signature-area" id="preview_signatureArea">
+                        <div class="seal" id="preview_seal" style="display:none;"><div class="seal-inner"></div><span id="preview_sealText"></span></div>
+                        <div class="issuer">签发人：<span id="preview_issuer">________</span></div>
+                        <div class="issue-date" id="preview_issueDate">____年__月__日</div>
+                    </div>
+                    <div class="footer-note">
+                        <span>联系人：<span id="preview_contact">________</span></span>
+                    </div>
+                </div>
+                <div id="evidencePage" class="evidence-page">
+                    <div class="evidence-page-title">异常佐证图片附件</div>
+                    <div class="evidence-page-subtitle" id="evidencePageSubtitle">对应通知单编号：JXHR20260711001</div>
+                    <div class="evidence-grid" id="evidenceGrid"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="loading" id="loading">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <div id="loadingText">正在处理...</div>
+        </div>
+    </div>
+    <div class="toast" id="toast"></div>
+
+    <script>
+        const STORAGE_KEY = 'safety_notice_data_v2';
+        const A4_WIDTH_PX = 794;
+        const A4_HEIGHT_PX = 1123;
+        let currentZoom = 1;
+        let evidenceImages = [];
+
+        function debounce(func, wait) {
+            if (wait === void 0) { wait = 300; }
+            var timeout;
+            return function executedFunction() {
+                var args = [];
+                for (var _i = 0; _i < arguments.length; _i++) {
+                    args[_i] = arguments[_i];
+                }
+                var later = function () {
+                    clearTimeout(timeout);
+                    func.apply(void 0, args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        var debouncedUpdate = debounce(function () {
+            updatePreview();
+            saveData();
+        }, 300);
+
+        function getExportConfig() {
+            var quality = document.getElementById('exportQuality').value;
+            var configMap = {
+                high: { scale: 3, quality: 0.95, desc: '高清打印' },
+                standard: { scale: 2, quality: 0.85, desc: '标准清晰' },
+                compressed: { scale: 1.5, quality: 0.7, desc: '最小体积' }
+            };
+            return configMap[quality] || configMap.standard;
+        }
+
+        function init() {
+            var issuingDept = document.getElementById('issuingDepartment');
+            if (!issuingDept.value) issuingDept.value = '安全专项检查';
+
+            setupDragUpload();
+            loadData();
+            setDefaultDates();
+            generateDocNumber();
+            document.getElementById('showSeal').checked = false;
+            document.getElementById('preview_seal').style.display = 'none';
+            document.getElementById('showSignature').checked = false;
+            document.getElementById('signatureContent').classList.add('collapsed');
+            document.getElementById('signToggleLabel').textContent = '隐藏';
+
+            updatePreview();
+            adjustZoom();
+            setupInputAutoScroll();
+            window.addEventListener('resize', adjustZoom);
+        }
+
+        function setupInputAutoScroll() {
+            var inputs = document.querySelectorAll('input, textarea, select');
+            inputs.forEach(function (el) {
+                el.addEventListener('focus', function () {
+                    setTimeout(function () {
+                        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }, 350);
+                });
+            });
+        }
+
+        function setupDragUpload() {
+            var uploadArea = document.getElementById('uploadArea');
+            uploadArea.addEventListener('dragover', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                this.classList.add('dragover');
+            });
+            uploadArea.addEventListener('dragleave', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                this.classList.remove('dragover');
+            });
+            uploadArea.addEventListener('drop', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                this.classList.remove('dragover');
+                var files = e.dataTransfer.files;
+                processImageFiles(files);
+            });
+        }
+
+        function handleImageUpload(event) {
+            var files = event.target.files;
+            processImageFiles(files);
+            event.target.value = '';
+        }
+
+        function processImageFiles(files) {
+            var validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif', 'image/webp'];
+            var added = 0;
+            for (var i = 0; i < files.length; i++) {
+                var file = files[i];
+                if (validTypes.includes(file.type)) {
+                    var reader = new FileReader();
+                    reader.onload = function (e) {
+                        evidenceImages.push({
+                            src: e.target.result,
+                            name: file.name,
+                            date: new Date()
+                        });
+                        renderImageList();
+                        updatePreview();
+                        saveData();
+                    };
+                    reader.readAsDataURL(file);
+                    added++;
+                }
+            }
+            if (added > 0) showToast("\u5DF2\u6DFB\u52A0 " + added + " \u5F20\u56FE\u7247");
+        }
+
+        function removeImage(index) {
+            evidenceImages.splice(index, 1);
+            renderImageList();
+            updatePreview();
+            saveData();
+        }
+
+        function renderImageList() {
+            var container = document.getElementById('imageList');
+            container.innerHTML = '';
+            evidenceImages.forEach(function (img, index) {
+                var div = document.createElement('div');
+                div.className = 'image-item';
+                div.innerHTML = "\n                    <img src=\"" + img.src + "\" alt=\"\u4F50\u8BC1\u56FE\u7247" + (index + 1) + "\">\n                    <div class=\"remove-btn\" onclick=\"removeImage(" + index + ")\">\u00D7</div>\n                    <div class=\"img-index\">" + (index + 1) + "</div>\n                ";
+                container.appendChild(div);
+            });
+        }
+
+        function generateDocNumber() {
+            var docNumInput = document.getElementById('documentNumber');
+            if (docNumInput.value && docNumInput.value !== '') return;
+            var today = new Date();
+            var year = today.getFullYear();
+            var month = String(today.getMonth() + 1).padStart(2, '0');
+            var day = String(today.getDate()).padStart(2, '0');
+            docNumInput.value = "JXHR" + year + month + day + "001";
+        }
+
+        function onIssueDateChange() {
+            generateDocNumber();
+            updatePreview();
+            saveData();
+        }
+
+        function setDefaultDates() {
+            var today = new Date();
+            var todayStr = today.toISOString().split('T')[0];
+            var issueDateEl = document.getElementById('issueDate');
+            if (!issueDateEl.value) issueDateEl.value = todayStr;
+            var occDateEl = document.getElementById('occurrenceDate');
+            if (!occDateEl.value) occDateEl.value = todayStr;
+            var deadlineEl = document.getElementById('deadline');
+            if (!deadlineEl.value) {
+                var d = new Date();
+                d.setDate(d.getDate() + 3);
+                deadlineEl.value = d.toISOString().split('T')[0];
+            }
+        }
+
+        function toggleWatermark() {
+            updatePreview();
+            saveData();
+        }
+
+        function toggleSignature() {
+            var checkbox = document.getElementById('showSignature');
+            var content = document.getElementById('signatureContent');
+            var label = document.getElementById('signToggleLabel');
+            if (checkbox.checked) {
+                content.classList.remove('collapsed');
+                label.textContent = '显示';
+            } else {
+                content.classList.add('collapsed');
+                label.textContent = '隐藏';
+            }
+            updatePreview();
+            saveData();
+        }
+
+        function toggleSeal() {
+            var show = document.getElementById('showSeal').checked;
+            document.getElementById('preview_seal').style.display = show ? 'flex' : 'none';
+            saveData();
+        }
+
+        function adjustZoom() {
+            var wrapper = document.getElementById('previewWrapper');
+            var container = wrapper.parentElement;
+            var containerWidth = container.clientWidth - 20;
+            var wrapperWidth = wrapper.scrollWidth;
+            if (containerWidth < wrapperWidth) {
+                currentZoom = containerWidth / wrapperWidth;
+            } else {
+                currentZoom = 1;
+            }
+            applyZoom();
+        }
+
+        function zoomIn() {
+            currentZoom = Math.min(currentZoom + 0.1, 2);
+            applyZoom();
+        }
+
+        function zoomOut() {
+            currentZoom = Math.max(currentZoom - 0.1, 0.3);
+            applyZoom();
+        }
+
+        function resetZoom() {
+            adjustZoom();
+        }
+
+        function applyZoom() {
+            var wrapper = document.getElementById('previewWrapper');
+            wrapper.style.transform = 'scale(' + currentZoom + ')';
+            document.getElementById('zoomLevel').textContent = Math.round(currentZoom * 100) + '%';
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr) return '____年__月__日';
+            var date = new Date(dateStr);
+            return date.getFullYear() + "\u5E74" + (date.getMonth() + 1) + "\u6708" + date.getDate() + "\u65E5";
+        }
+
+        function formatDateTime(date) {
+            var d = new Date(date);
+            var y = d.getFullYear();
+            var m = String(d.getMonth() + 1).padStart(2, '0');
+            var day = String(d.getDate()).padStart(2, '0');
+            var h = String(d.getHours()).padStart(2, '0');
+            var min = String(d.getMinutes()).padStart(2, '0');
+            return y + "-" + m + "-" + day + " " + h + ":" + min;
+        }
+
+        function getVal(id) { return document.getElementById(id).value || ''; }
+
+        function setPreview(id, value) {
+            var el = document.getElementById(id);
+            if (el) el.textContent = value || '';
+        }
+
+        function updatePreview() {
+            var issuingDept = getVal('issuingDepartment') || '';
+            setPreview('preview_issuingDepartment', issuingDept);
+            setPreview('preview_sealText', issuingDept);
+
+            var receivingDept = getVal('receivingDepartment') || '';
+            setPreview('preview_receivingDepartment', receivingDept ? receivingDept + '：' : '');
+            setPreview('preview_inspectedDept', receivingDept || '________');
+
+            setPreview('preview_documentNumber', getVal('documentNumber') || 'JXHR' + new Date().getFullYear() + '0101001');
+            setPreview('preview_problemTitle', getVal('problemTitle'));
+            setPreview('preview_location', getVal('location'));
+            setPreview('preview_responsibleDept', getVal('responsibleDept'));
+            setPreview('preview_problemDescription', getVal('problemDescription'));
+            setPreview('preview_rectificationRequirement', getVal('rectificationRequirement'));
+
+            var occDate = formatDate(getVal('occurrenceDate'));
+            setPreview('preview_occurrenceDate', occDate);
+            setPreview('preview_occurrenceDate2', occDate);
+            setPreview('preview_deadline', formatDate(getVal('deadline')));
+            setPreview('preview_issueDate', formatDate(getVal('issueDate')));
+            setPreview('preview_issuer', getVal('issuer') || '________');
+            setPreview('preview_contact', getVal('contact') || '________');
+
+            // 水印文字
+            var watermarkText = getVal('watermarkText') || '安全检查';
+            document.getElementById('preview_watermark').textContent = watermarkText;
+
+            var showSig = document.getElementById('showSignature').checked;
+            document.getElementById('preview_signatureArea').style.display = showSig ? 'block' : 'none';
+
+            var showSeal = document.getElementById('showSeal').checked;
+            document.getElementById('preview_seal').style.display = showSeal ? 'flex' : 'none';
+
+            renderPreviewEvidenceImages();
+            document.getElementById('evidencePageSubtitle').textContent = '\u5BF9\u5E94\u901A\u77E5\u5355\u7F16\u53F7\uFF1A' + (getVal(
+                'documentNumber') || 'JXHR20260711001');
+            renderEvidencePage();
+        }
+
+        function renderPreviewEvidenceImages() {
+            var grid = document.getElementById('preview_evidenceImagesGrid');
+            var watermarkEnabled = document.getElementById('watermarkEnabled').checked;
+            grid.innerHTML = '';
+            var displayImages = evidenceImages.slice(0, 3);
+            displayImages.forEach(function (img, index) {
+                var div = document.createElement('div');
+                div.className = 'img-item';
+                var watermarkHtml = '';
+                if (watermarkEnabled) {
+                    watermarkHtml = "<div class=\"img-watermark\">" + formatDateTime(img.date) + "</div>";
+                }
+                div.innerHTML = "<img src=\"" + img.src + "\" alt=\"\u4F50\u8BC1" + (index + 1) + "\">" + watermarkHtml;
+                grid.appendChild(div);
+            });
+            if (evidenceImages.length > 3) {
+                var div = document.createElement('div');
+                div.className = 'img-item';
+                div.style.background = '#f0f0f0';
+                div.innerHTML = "<div style=\"position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:14px;color:#666;\">+" + (
+                    evidenceImages.length - 3) + "</div>";
+                grid.appendChild(div);
+            }
+            document.getElementById('preview_evidenceImages').style.display = evidenceImages.length > 0 ? 'block' : 'none';
+        }
+
+        function renderEvidencePage() {
+            var grid = document.getElementById('evidenceGrid');
+            var watermarkEnabled = document.getElementById('watermarkEnabled').checked;
+            grid.innerHTML = '';
+            evidenceImages.forEach(function (img, index) {
+                var div = document.createElement('div');
+                div.className = 'evidence-item';
+                var captionHtml = watermarkEnabled ?
+                    "<div class=\"evidence-caption\" style=\"color:#555;\">\u62CD\u6444\u65F6\u95F4\uFF1A" + formatDateTime(img
+                    .date) + "</div>" :
+                    '';
+                div.innerHTML = "\n                    <img src=\"" + img.src + "\" alt=\"\u4F50\u8BC1\u56FE\u7247" + (index + 1) + "\">\n                    " +
+                    captionHtml + "\n                ";
+                grid.appendChild(div);
+            });
+            var evidencePage = document.getElementById('evidencePage');
+            if (evidenceImages.length > 0) {
+                evidencePage.style.display = 'block';
+            } else {
+                evidencePage.style.display = 'none';
+            }
+        }
+
+        function showToast(message, type) {
+            if (type === void 0) { type = 'success'; }
+            var toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = 'toast show ' + type;
+            setTimeout(function () { toast.className = 'toast'; }, 3000);
+        }
+
+        function showLoading(text) {
+            if (text === void 0) { text = '正在处理...'; }
+            document.getElementById('loadingText').textContent = text;
+            document.getElementById('loading').classList.add('active');
+        }
+
+        function hideLoading() {
+            document.getElementById('loading').classList.remove('active');
+        }
+
+        function saveData() {
+            var data = {};
+            var fields = [
+                'issuingDepartment', 'documentNumber', 'issueDate', 'receivingDepartment',
+                'watermarkText',
+                'problemTitle', 'problemDescription', 'location', 'responsibleDept',
+                'occurrenceDate', 'rectificationRequirement', 'deadline',
+                'issuer', 'contact', 'showSignature', 'watermarkEnabled', 'showSeal'
+            ];
+            fields.forEach(function (field) {
+                var el = document.getElementById(field);
+                if (el) {
+                    data[field] = (el.type === 'checkbox') ? el.checked : el.value;
+                }
+            });
+            data.evidenceImages = evidenceImages;
+            try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (e) {}
+        }
+
+        function loadData() {
+            try {
+                var saved = localStorage.getItem(STORAGE_KEY);
+                if (saved) {
+                    var data = JSON.parse(saved);
+                    Object.keys(data).forEach(function (key) {
+                        if (key === 'evidenceImages') {
+                            evidenceImages = data[key] || [];
+                            renderImageList();
+                            return;
+                        }
+                        var el = document.getElementById(key);
+                        if (el) {
+                            if (el.type === 'checkbox') el.checked = data[key] || false;
+                            else el.value = data[key] || '';
+                        }
+                    });
+                    var showSig = data.showSignature || false;
+                    document.getElementById('signatureContent').classList.toggle('collapsed', !showSig);
+                    document.getElementById('signToggleLabel').textContent = showSig ? '显示' : '隐藏';
+                    var showSeal = data.showSeal || false;
+                    document.getElementById('preview_seal').style.display = showSeal ? 'flex' : 'none';
+                }
+            } catch (e) {}
+        }
+
+        function resetForm() {
+            if (!confirm('确定要清空所有数据吗？此操作不可恢复。')) return;
+            localStorage.removeItem(STORAGE_KEY);
+            document.querySelectorAll('.form-section input, .form-section textarea').forEach(function (input) {
+                if (input.type !== 'checkbox') input.value = '';
+            });
+            evidenceImages = [];
+            renderImageList();
+            document.getElementById('watermarkEnabled').checked = true;
+            document.getElementById('showSignature').checked = false;
+            document.getElementById('signatureContent').classList.add('collapsed');
+            document.getElementById('signToggleLabel').textContent = '隐藏';
+            document.getElementById('showSeal').checked = false;
+            document.getElementById('preview_seal').style.display = 'none';
+            document.getElementById('issuingDepartment').value = '安全专项检查';
+            document.getElementById('watermarkText').value = '安全检查';
+            setDefaultDates();
+            generateDocNumber();
+            updatePreview();
+            showToast('已重置所有数据');
+        }
+
+        function validateForm() {
+            var requiredTextIds = ['issuingDepartment', 'receivingDepartment', 'problemTitle', 'problemDescription', 'location',
+                'responsibleDept', 'rectificationRequirement'
+            ];
+            var dateIds = ['issueDate', 'occurrenceDate', 'deadline'];
+            for (var i = 0; i < requiredTextIds.length; i++) {
+                var id = requiredTextIds[i];
+                var val = document.getElementById(id).value.trim();
+                if (!val) {
+                    var label = document.querySelector('label[for="' + id + '"]');
+                    var labelText = label ? label.textContent.replace('*', '').trim() : id;
+                    showToast('\u8BF7\u586B\u5199 ' + labelText, 'error');
+                    return false;
+                }
+            }
+            for (var j = 0; j < dateIds.length; j++) {
+                var id2 = dateIds[j];
+                if (!document.getElementById(id2).value) {
+                    showToast('\u8BF7\u9009\u62E9\u65E5\u671F', 'error');
+                    return false;
+                }
+            }
+            if (evidenceImages.length === 0) {
+                showToast('\u8BF7\u4E0A\u4F20\u81F3\u5C11\u4E00\u5F20\u4F50\u8BC1\u56FE\u7247', 'error');
+                return false;
+            }
+            return true;
+        }
+
+        async function exportPDF() {
+            if (!validateForm()) return;
+            var config = getExportConfig();
+            showLoading("\u6B63\u5728\u751F\u6210" + config.desc + "PDF...");
+            try {
+                var jsPDF = window.jspdf.jsPDF;
+                var pdf = new jsPDF('p', 'mm', 'a4');
+                var pdfWidth = pdf.internal.pageSize.getWidth();
+                var pdfHeight = pdf.internal.pageSize.getHeight();
+
+                var canvas1 = await renderElementToCanvas('a4Paper', config.scale);
+                var imgData1 = canvas1.toDataURL('image/jpeg', config.quality);
+                var imgHeight1 = (canvas1.height / canvas1.width) * pdfWidth;
+                pdf.addImage(imgData1, 'JPEG', 0, 0, pdfWidth, Math.min(imgHeight1, pdfHeight));
+
+                if (evidenceImages.length > 0) {
+                    var canvas2 = await renderElementToCanvas('evidencePage', config.scale);
+                    var imgData2 = canvas2.toDataURL('image/jpeg', config.quality);
+                    var imgHeight2 = (canvas2.height / canvas2.width) * pdfWidth;
+                    pdf.addPage();
+                    pdf.addImage(imgData2, 'JPEG', 0, 0, pdfWidth, Math.min(imgHeight2, pdfHeight));
+                }
+
+                var docNum = getVal('documentNumber') || '安全检查整改通知单';
+                pdf.save(docNum + '.pdf');
+                hideLoading();
+                showToast("PDF\u5BFC\u51FA\u6210\u529F\uFF08" + config.desc + "\uFF09", 'success');
+            } catch (error) {
+                hideLoading();
+                console.error(error);
+                showToast('PDF导出失败：' + error.message, 'error');
+            }
+        }
+
+        // ========== 修复后的导出图片函数 ==========
+        async function exportImage(format = 'jpg') {
+            if (!validateForm()) return;
+            var mode = document.getElementById('imageExportMode').value;
+            var config = getExportConfig();
+            showLoading("正在生成" + config.desc + "图片...");
+            try {
+                var finalCanvas;
+                if (mode === 'long' && evidenceImages.length > 0) {
+                    var canvas1 = await renderElementToCanvas('a4Paper', config.scale);
+                    var canvas2 = await renderElementToCanvas('evidencePage', config.scale);
+                    var width = Math.max(canvas1.width, canvas2.width);
+                    var height = canvas1.height + canvas2.height + 30;
+                    finalCanvas = document.createElement('canvas');
+                    finalCanvas.width = width;
+                    finalCanvas.height = height;
+                    var ctx = finalCanvas.getContext('2d');
+                    ctx.fillStyle = '#e8e8e8';
+                    ctx.fillRect(0, 0, width, height);
+                    ctx.drawImage(canvas1, (width - canvas1.width) / 2, 0);
+                    ctx.drawImage(canvas2, (width - canvas2.width) / 2, canvas1.height + 30);
+                } else {
+                    finalCanvas = await renderElementToCanvas('a4Paper', config.scale);
+                }
+                var mimeType = format === 'png' ? 'image/png' : 'image/jpeg';
+                var quality = config.quality;
+                var filename = (getVal('documentNumber') || '安全检查整改通知单') + '.' + format;
+                var isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+                // 使用 toBlob 生成图片 (比 toDataURL 更高效，且无大小限制)
+                finalCanvas.toBlob(async function(blob) {
+                    if (!blob) {
+                        hideLoading();
+                        showToast('图片生成失败，请重试', 'error');
+                        return;
+                    }
+                    try {
+                        // 移动端优先使用原生分享 API
+                        if (isMobile && navigator.share) {
+                            try {
+                                var file = new File([blob], filename, { type: mimeType });
+                                // 检测是否可以分享文件
+                                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                                    await navigator.share({
+                                        files: [file],
+                                        title: '安全检查整改通知单'
+                                    });
+                                    hideLoading();
+                                    showToast('图片已分享', 'success');
+                                    return;
+                                } else if (!navigator.canShare) {
+                                    // 部分浏览器支持 share 但不支持 canShare，直接尝试
+                                    await navigator.share({
+                                        files: [file],
+                                        title: '安全检查整改通知单'
+                                    });
+                                    hideLoading();
+                                    showToast('图片已分享', 'success');
+                                    return;
+                                }
+                            } catch (shareErr) {
+                                // 用户取消分享 — 不视为错误
+                                if (shareErr.name === 'AbortError') {
+                                    hideLoading();
+                                    showToast('已取消分享', 'success');
+                                    return;
+                                }
+                                // 其他分享错误，回退到下载
+                                console.warn('分享失败，回退到下载', shareErr);
+                            }
+                        }
+
+                        // 使用 Blob URL 下载 (兼容所有现代浏览器，包括移动端)
+                        var url = URL.createObjectURL(blob);
+                        var link = document.createElement('a');
+                        link.download = filename;
+                        link.href = url;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        // 延迟释放 URL
+                        setTimeout(function() { URL.revokeObjectURL(url); }, 10000);
+                        hideLoading();
+                        showToast('图片导出成功！', 'success');
+                    } catch (err) {
+                        // 如果 Blob URL 下载失败，回退到在新窗口显示图片 (让用户长按保存)
+                        console.error('Blob下载失败，尝试回退:', err);
+                        try {
+                            var dataUrl = finalCanvas.toDataURL(mimeType, quality);
+                            var newWindow = window.open('_blank');
+                            if (newWindow) {
+                                newWindow.document.write('<html><head><title>安全检查整改通知单</title><meta name="viewport" content="width=device-width,initial-scale=1.0"></head><body style="margin:0;display:flex;justify-content:center;background:#f0f0f0;"><img src="' + dataUrl + '" style="max-width:100%;height:auto;margin:20px 0;" alt="安全检查整改通知单"></body></html>');
+                                newWindow.document.close();
+                                showToast('图片已打开，请长按保存到手机', 'success');
+                            } else {
+                                // 连新窗口都无法打开，尝试直接在当前页面显示下载链接
+                                var fallbackLink = document.createElement('a');
+                                fallbackLink.download = filename;
+                                fallbackLink.href = dataUrl;
+                                fallbackLink.textContent = '点击下载图片';
+                                fallbackLink.style.display = 'block';
+                                fallbackLink.style.padding = '12px 24px';
+                                fallbackLink.style.background = '#C41E3A';
+                                fallbackLink.style.color = '#fff';
+                                fallbackLink.style.borderRadius = '4px';
+                                fallbackLink.style.textAlign = 'center';
+                                fallbackLink.style.textDecoration = 'none';
+                                fallbackLink.style.margin = '20px auto';
+                                fallbackLink.style.maxWidth = '300px';
+                                var toast = document.getElementById('toast');
+                                toast.innerHTML = '下载失败，请点击下方链接手动下载<br>';
+                                toast.appendChild(fallbackLink);
+                                toast.className = 'toast show error';
+                                setTimeout(function() {
+                                    if (toast.contains(fallbackLink)) {
+                                        toast.removeChild(fallbackLink);
+                                    }
+                                    toast.className = 'toast';
+                                }, 30000);
+                                hideLoading();
+                            }
+                        } catch (e) {
+                            hideLoading();
+                            showToast('导出失败：' + e.message, 'error');
+                        }
+                    }
+                }, mimeType, quality);
+            } catch (err) {
+                hideLoading();
+                console.error(err);
+                showToast('图片导出失败：' + err.message, 'error');
+            }
+        }
+        // ========== 修复结束 ==========
+
+        async function renderElementToCanvas(elementId, scale) {
+            var exportContainer = document.createElement('div');
+            exportContainer.style.cssText = "\n                position: fixed;\n                top: -99999px;\n                left: 0;\n                width: 2000px;\n                height: auto;\n                overflow: visible;\n                z-index: -99999;\n                pointer-events: none;\n                background: #ffffff;\n            ";
+            document.body.appendChild(exportContainer);
+
+            try {
+                var originEl = document.getElementById(elementId);
+                var cloneEl = originEl.cloneNode(true);
+                cloneEl.removeAttribute('class');
+                cloneEl.removeAttribute('style');
+
+                cloneEl.style.cssText = "\n                    width: " + A4_WIDTH_PX + "px !important;\n                    min-height: " + A4_HEIGHT_PX + "px !important;\n                    margin: 0 !important;\n                    padding: 140px 98px 132px 106px !important;\n                    box-shadow: none !important;\n                    position: relative !important;\n                    top: 0 !important;\n                    left: 0 !important;\n                    transform: none !important;\n                    flex-shrink: 0 !important;\n                    display: block !important;\n                    opacity: 1 !important;\n                    background: #ffffff !important;\n                    font-family: \"FangSong\", \"\u4EFF\u5B8B\", \"STFangsong\", serif !important;\n                    color: #000 !important;\n                    box-sizing: border-box !important;\n                ";
+
+                exportContainer.appendChild(cloneEl);
+                await new Promise(function (resolve) { return setTimeout(resolve, 200); });
+
+                var canvas = await html2canvas(cloneEl, {
+                    scale: scale,
+                    useCORS: true,
+                    allowTaint: true,
+                    backgroundColor: '#ffffff',
+                    logging: false,
+                    letterRendering: true,
+                    windowWidth: cloneEl.scrollWidth,
+                    windowHeight: cloneEl.scrollHeight,
+                    x: 0,
+                    y: 0,
+                    scrollX: 0,
+                    scrollY: 0
+                });
+
+                return canvas;
+            } finally {
+                document.body.removeChild(exportContainer);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

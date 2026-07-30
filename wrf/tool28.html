@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>⏱️ 全能计时器 Pro - 独立悬浮窗版</title>
+    <style>
+        :root {
+            --bg: #f0f2f5;
+            --surface: #ffffff;
+            --surface-2: #f7f8fa;
+            --text: #1a1a2e;
+            --text-secondary: #6b7280;
+            --text-muted: #9ca3af;
+            --border: #e5e7eb;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+            --shadow: 0 4px 24px rgba(0,0,0,0.08);
+            --shadow-lg: 0 20px 60px rgba(0,0,0,0.12);
+            --accent: #4f6ef7;
+            --accent-light: #eef1ff;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --success: #10b981;
+            --tomato: #e8533f;
+            --ring-bg: #e8ecf1;
+            --radius: 20px;
+            --transition: 0.25s cubic-bezier(0.4,0,0.2,1);
+            --font-mono: 'Cascadia Code', 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+        }
+        .dark {
+            --bg: #0f1117;
+            --surface: #1a1d27;
+            --surface-2: #22252f;
+            --text: #e8eaed;
+            --text-secondary: #a0a5b4;
+            --text-muted: #6b7080;
+            --border: #2a2d38;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
+            --shadow: 0 4px 24px rgba(0,0,0,0.4);
+            --shadow-lg: 0 20px 60px rgba(0,0,0,0.5);
+            --accent: #6c8cff;
+            --accent-light: #1e2440;
+            --danger: #f87171;
+            --warning: #fbbf24;
+            --success: #34d399;
+            --tomato: #f26b5e;
+            --ring-bg: #2a2d38;
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            transition: background var(--transition), color var(--transition);
+            user-select: none;
+        }
+        .app-container {
+            width: 100%;
+            max-width: 500px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+        }
+        .top-bar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+            justify-content: space-between;
+            flex-wrap: wrap;
+        }
+        .mode-tabs {
+            display: flex;
+            background: var(--surface);
+            border-radius: 12px;
+            padding: 4px;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border);
+        }
+        .mode-tab {
+            padding: 8px 14px;
+            border-radius: 9px;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all var(--transition);
+        }
+        .mode-tab.active { background: var(--accent); color: #fff; }
+        .icon-btn {
+            width: 38px; height: 38px;
+            border-radius: 50%;
+            border: 1px solid var(--border);
+            background: var(--surface);
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 17px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: var(--shadow-sm);
+        }
+        .icon-btn:hover { background: var(--surface-2); }
+        .timer-circle-wrapper { position: relative; width: 260px; height: 260px; cursor: pointer; }
+        .timer-svg { width:100%; height:100%; transform:rotate(-90deg); filter:drop-shadow(var(--shadow-lg)); }
+        .ring-bg { fill:none; stroke:var(--ring-bg); stroke-width:10; }
+        .ring-progress {
+            fill:none; stroke:var(--accent); stroke-width:10;
+            stroke-linecap:round; transition: stroke-dashoffset 0.08s linear;
+        }
+        .timer-display {
+            position:absolute; inset:0;
+            display:flex; flex-direction:column;
+            align-items:center; justify-content:center;
+            pointer-events: none;
+        }
+        .time-text { font-family:var(--font-mono); font-size:44px; font-weight:700; }
+        .time-millis { font-family:var(--font-mono); font-size:20px; color:var(--text-secondary); margin-top:4px; }
+        .phase-label { font-size:12px; color:var(--text-muted); margin-top:6px; }
+        .phase-label.pulse { animation: pulse 1.2s infinite; }
+        @keyframes pulse { 0%,100%{opacity:0.6;} 50%{opacity:1;} }
+        .presets-row { display:flex; flex-wrap:wrap; gap:6px; justify-content:center; }
+        .preset-btn {
+            padding:6px 12px; border-radius:20px;
+            border:1px solid var(--border);
+            background:var(--surface); color:var(--text-secondary);
+            font-size:13px; font-weight:600; cursor:pointer;
+        }
+        .preset-btn.active-preset { background:var(--accent); color:#fff; }
+        .custom-time-input { display:flex; align-items:center; gap:4px; margin-left:6px; }
+        .custom-time-input input { width:36px; padding:4px; text-align:center; border-radius:8px; border:1px solid var(--border); background:var(--surface); color:var(--text); font-weight:600; }
+        .tomato-info { display:flex; align-items:center; gap:10px; font-size:13px; color:var(--text-secondary); }
+        .tomato-dot { width:10px; height:10px; border-radius:50%; display:inline-block; margin:0 2px; background:var(--border); }
+        .tomato-dot.done { background:var(--tomato); }
+        .tomato-dot.current { background:var(--tomato); animation: blink 0.8s infinite; }
+        .toggle-switch { width:36px; height:20px; background:var(--border); border-radius:10px; position:relative; cursor:pointer; }
+        .toggle-switch.on { background:var(--accent); }
+        .toggle-switch::after { content:''; position:absolute; top:2px; left:2px; width:16px; height:16px; background:#fff; border-radius:50%; transition:left var(--transition); }
+        .toggle-switch.on::after { left:18px; }
+        .controls-row { display:flex; gap:12px; align-items:center; justify-content:center; }
+        .btn { border:none; cursor:pointer; font-weight:700; transition: all var(--transition); font-family:inherit; display:flex; align-items:center; justify-content:center; }
+        .btn-start { width:64px; height:64px; border-radius:50%; background:var(--accent); color:#fff; box-shadow:0 8px 24px rgba(79,110,247,0.4); font-size:15px; }
+        .btn-start.running { background:var(--warning); }
+        .btn-secondary { width:48px; height:48px; border-radius:50%; background:var(--surface); color:var(--text-secondary); border:1px solid var(--border); }
+        .btn-secondary:disabled { opacity:0.4; }
+        .records-section { width:100%; background:var(--surface); border-radius:var(--radius); box-shadow:var(--shadow); border:1px solid var(--border); overflow:hidden; }
+        .records-header { display:flex; justify-content:space-between; padding:12px 16px; cursor:pointer; font-weight:700; }
+        .records-list { max-height:0; overflow-y:auto; transition:max-height 0.4s; }
+        .records-section.open .records-list { max-height:260px; border-top:1px solid var(--border); }
+        .record-item { display:flex; justify-content:space-between; padding:8px 16px; font-family:var(--font-mono); font-size:13px; border-bottom:1px solid var(--border); }
+        .record-best { color:var(--success); background:var(--success-light); padding:2px 6px; border-radius:8px; }
+        .completion-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; z-index:200; }
+        .completion-dialog { background:var(--surface); border-radius:var(--radius); padding:24px; text-align:center; box-shadow:var(--shadow-lg); }
+    </style>
+</head>
+<body>
+<div class="app-container">
+    <div class="top-bar">
+        <div class="mode-tabs" id="modeTabs">
+            <button class="mode-tab active" data-mode="stopwatch">⏱ 秒表</button>
+            <button class="mode-tab" data-mode="countdown">⏳ 倒计时</button>
+            <button class="mode-tab" data-mode="pomodoro">🍅 番茄钟</button>
+        </div>
+        <div style="display:flex; gap:6px;">
+            <button class="icon-btn" id="muteToggle">🔊</button>
+            <button class="icon-btn" id="miniFloatToggle" title="打开独立悬浮窗 (可任意调整大小)">🖥️</button>
+            <button class="icon-btn" id="themeToggle">🌙</button>
+        </div>
+    </div>
+
+    <div class="timer-circle-wrapper" id="timerCircleWrapper" title="点击进入全屏">
+        <svg class="timer-svg" viewBox="0 0 260 260">
+            <circle class="ring-bg" cx="130" cy="130" r="110"/>
+            <circle class="ring-progress" id="ringProgress" cx="130" cy="130" r="110" stroke-dasharray="691.15" stroke-dashoffset="0"/>
+        </svg>
+        <div class="timer-display">
+            <div class="time-text" id="timeText">00:00</div>
+            <div class="time-millis" id="timeMillis">00</div>
+            <div class="phase-label" id="phaseLabel"></div>
+        </div>
+    </div>
+
+    <div class="presets-row" id="presetsRow" style="display:none;">
+        <button class="preset-btn" data-preset="60">1分</button>
+        <button class="preset-btn" data-preset="180">3分</button>
+        <button class="preset-btn active-preset" data-preset="300">5分</button>
+        <button class="preset-btn" data-preset="600">10分</button>
+        <button class="preset-btn" data-preset="900">15分</button>
+        <button class="preset-btn" data-preset="1800">30分</button>
+        <button class="preset-btn" data-preset="3600">60分</button>
+        <div class="custom-time-input">
+            <input type="number" id="customHours" value="0"> : <input type="number" id="customMinutes" value="5"> : <input type="number" id="customSeconds" value="0">
+            <button class="preset-btn" id="applyCustomBtn">设定</button>
+        </div>
+    </div>
+
+    <div class="tomato-info" id="tomatoInfo" style="display:none;">
+        <span id="tomatoStageText">🍅 专注工作</span>
+        <span id="tomatoDots"></span>
+        <span id="tomatoCycleText">第 1/4 轮</span>
+        <span id="todayTomatoCount">🍅 今日: 0</span>
+        <label class="auto-switch-label" id="autoSwitchLabel">
+            <span class="toggle-switch on" id="toggleSwitch"></span> 自动
+        </label>
+    </div>
+
+    <div class="controls-row">
+        <button class="btn btn-secondary" id="btnLap" disabled>⚑</button>
+        <button class="btn btn-start" id="btnStart">开 始</button>
+        <button class="btn btn-secondary" id="btnReset">↺</button>
+    </div>
+
+    <div class="records-section open" id="recordsSection">
+        <div class="records-header" id="recordsHeader">
+            <span>📋 记录 <span id="recordsCount">(0)</span></span>
+            <span style="display:flex; gap:8px;"><button class="preset-btn" id="clearRecordsBtn" style="font-size:11px;">清空</button> <span>▼</span></span>
+        </div>
+        <div class="records-list" id="recordsList"><div class="records-empty">暂无记录</div></div>
+    </div>
+</div>
+
+<div class="completion-overlay" id="completionOverlay" style="display:none;">
+    <div class="completion-dialog">
+        <div class="completion-icon" id="completionIcon">🔔</div>
+        <div class="completion-title" id="completionTitle">时间到！</div>
+        <div class="completion-subtitle" id="completionSubtitle"></div>
+        <button class="completion-btn" id="completionDismissBtn">确 定</button>
+    </div>
+</div>
+
+<script>
+    (() => {
+        // ==================== DOM 元素 ====================
+        const modeTabs = document.getElementById('modeTabs');
+        const themeToggle = document.getElementById('themeToggle');
+        const muteToggle = document.getElementById('muteToggle');
+        const miniFloatToggle = document.getElementById('miniFloatToggle');
+        const timerCircleWrapper = document.getElementById('timerCircleWrapper');
+        const ringProgress = document.getElementById('ringProgress');
+        const timeText = document.getElementById('timeText');
+        const timeMillis = document.getElementById('timeMillis');
+        const phaseLabel = document.getElementById('phaseLabel');
+        const presetsRow = document.getElementById('presetsRow');
+        const tomatoInfo = document.getElementById('tomatoInfo');
+        const tomatoStageText = document.getElementById('tomatoStageText');
+        const tomatoDots = document.getElementById('tomatoDots');
+        const tomatoCycleText = document.getElementById('tomatoCycleText');
+        const todayTomatoCount = document.getElementById('todayTomatoCount');
+        const toggleSwitch = document.getElementById('toggleSwitch');
+        const autoSwitchLabel = document.getElementById('autoSwitchLabel');
+        const btnStart = document.getElementById('btnStart');
+        const btnLap = document.getElementById('btnLap');
+        const btnReset = document.getElementById('btnReset');
+        const recordsSection = document.getElementById('recordsSection');
+        const recordsHeader = document.getElementById('recordsHeader');
+        const recordsList = document.getElementById('recordsList');
+        const recordsCount = document.getElementById('recordsCount');
+        const clearRecordsBtn = document.getElementById('clearRecordsBtn');
+        const completionOverlay = document.getElementById('completionOverlay');
+        const completionIcon = document.getElementById('completionIcon');
+        const completionTitle = document.getElementById('completionTitle');
+        const completionSubtitle = document.getElementById('completionSubtitle');
+        const completionDismissBtn = document.getElementById('completionDismissBtn');
+        const customHours = document.getElementById('customHours');
+        const customMinutes = document.getElementById('customMinutes');
+        const customSeconds = document.getElementById('customSeconds');
+        const applyCustomBtn = document.getElementById('applyCustomBtn');
+
+        const CIRCUMFERENCE = 2 * Math.PI * 110;
+        let currentMode = 'stopwatch';
+        let isRunning = false;
+        let animationId = null;
+        let records = [];
+        let bestLapTime = null;
+        let muted = false;
+        let theme = localStorage.getItem('timer-theme') || 'light';
+
+        // 计时状态变量
+        let stopwatchStartTime = null, stopwatchAccumulated = 0, stopwatchLastLapTime = 0;
+        let countdownTotalMs = 5 * 60 * 1000, countdownRemainingMs = countdownTotalMs, countdownTargetTime = null, countdownCompleted = false;
+        const WORK_MS = 25 * 60 * 1000, SHORT_MS = 5 * 60 * 1000, LONG_MS = 15 * 60 * 1000;
+        let pomodoroPhase = 'work', pomodoroCycle = 0, pomodoroRemaining = WORK_MS, pomodoroTotal = WORK_MS, pomodoroTarget = null;
+        let autoSwitch = true, pomodoroPhaseDone = false;
+
+        // 悬浮窗通信
+        const channel = new BroadcastChannel('timer-channel');
+        let popupWindow = null;
+
+        // ==================== 工具函数 ====================
+        function playBeep(freq = 800, dur = 180, type = 'sine', vol = 0.3) {
+            if (muted) return;
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = type; osc.frequency.setValueAtTime(freq, ctx.currentTime);
+                gain.gain.setValueAtTime(vol, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur/1000);
+                osc.connect(gain); gain.connect(ctx.destination);
+                osc.start(); osc.stop(ctx.currentTime + dur/1000);
+            } catch(e){}
+        }
+        function completionSound() { playBeep(660,150); setTimeout(()=>playBeep(880,150),160); setTimeout(()=>playBeep(1100,280),320); }
+        function lapSound() { playBeep(1000,60); }
+        function clickSound() { playBeep(500,40); }
+
+        function formatTime(ms, showMillis=false) {
+            const abs = Math.max(0, ms);
+            const h = Math.floor(abs/3600000), m = Math.floor((abs%3600000)/60000), s = Math.floor((abs%60000)/1000), cs = Math.floor((abs%1000)/10);
+            let main = h>0 ? `${String(h).padStart(2,'0')}:` : '';
+            main += `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+            return { main, millis: showMillis ? String(cs).padStart(2,'0') : '' };
+        }
+
+        function getCurrentMs() {
+            if (currentMode === 'stopwatch') return isRunning && stopwatchStartTime ? stopwatchAccumulated + (Date.now() - stopwatchStartTime) : stopwatchAccumulated;
+            else if (currentMode === 'countdown') return countdownRemainingMs;
+            else return pomodoroRemaining;
+        }
+
+        function getStatePayload() {
+            return {
+                mode: currentMode,
+                running: isRunning,
+                remaining: getCurrentMs(),
+                total: currentMode === 'countdown' ? countdownTotalMs : (currentMode === 'pomodoro' ? pomodoroTotal : 0),
+                phase: phaseLabel.textContent,
+                phaseDone: (currentMode === 'countdown' && countdownCompleted) || (currentMode === 'pomodoro' && pomodoroPhaseDone),
+                pomodoroPhase: pomodoroPhase,
+                pomodoroCycle: pomodoroCycle,
+                theme: theme,
+            };
+        }
+
+        // 广播状态 (即使页面隐藏也定时发送)
+        let backgroundInterval = null;
+        function startBackgroundBroadcast() {
+            if (backgroundInterval) return;
+            backgroundInterval = setInterval(() => {
+                channel.postMessage({ type: 'state', payload: getStatePayload() });
+            }, 200);
+        }
+        function stopBackgroundBroadcast() {
+            if (backgroundInterval) { clearInterval(backgroundInterval); backgroundInterval = null; }
+        }
+
+        function broadcastState() {
+            channel.postMessage({ type: 'state', payload: getStatePayload() });
+        }
+
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                startBackgroundBroadcast();
+            } else {
+                stopBackgroundBroadcast();
+                if (isRunning && !animationId) {
+                    animationId = requestAnimationFrame(animate);
+                }
+            }
+        });
+
+        // ==================== 显示更新 ====================
+        function updateDisplay() {
+            const ms = getCurrentMs();
+            const f = formatTime(ms, currentMode === 'stopwatch');
+            timeText.textContent = f.main;
+            timeMillis.textContent = f.millis;
+        }
+
+        function updateRing() {
+            let progress = 1;
+            const ms = getCurrentMs();
+            if (currentMode === 'stopwatch') progress = ((ms/1000)%60)/60;
+            else if (currentMode === 'countdown') progress = countdownTotalMs ? ms / countdownTotalMs : 0;
+            else progress = pomodoroTotal ? ms / pomodoroTotal : 0;
+            ringProgress.style.strokeDashoffset = CIRCUMFERENCE * (1 - Math.min(1, Math.max(0, progress)));
+        }
+
+        function updateButtons() {
+            btnStart.textContent = isRunning ? '暂 停' : '开 始';
+            btnStart.classList.toggle('running', isRunning);
+            if (currentMode === 'stopwatch') btnLap.disabled = !isRunning;
+            const blocked = (currentMode === 'countdown' && countdownCompleted) || (currentMode === 'pomodoro' && pomodoroPhaseDone);
+            btnStart.style.opacity = blocked && !isRunning ? '0.5' : '1';
+            btnStart.style.pointerEvents = blocked && !isRunning ? 'none' : 'auto';
+        }
+
+        function updatePhase() {
+            phaseLabel.classList.remove('pulse');
+            if (currentMode === 'stopwatch') phaseLabel.textContent = isRunning ? '计时中...' : '就绪';
+            else if (currentMode === 'countdown') phaseLabel.textContent = countdownCompleted ? '⏰ 时间到！' : (isRunning ? '倒计时中...' : '设置时间');
+            else phaseLabel.textContent = pomodoroPhaseDone ? '✅ 阶段完成' : (isRunning ? {work:'🍅 专注中',shortBreak:'☕ 短休息',longBreak:'🌴 长休息'}[pomodoroPhase] : '准备');
+            if ((isRunning && currentMode!=='pomodoro') || countdownCompleted || pomodoroPhaseDone) phaseLabel.classList.add('pulse');
+        }
+
+        function updateTomatoUI() {
+            tomatoStageText.textContent = {work:'🍅 专注工作',shortBreak:'☕ 短休息',longBreak:'🌴 长休息'}[pomodoroPhase];
+            let dots = '';
+            for(let i=0;i<4;i++) {
+                let cls = 'tomato-dot';
+                if(i < pomodoroCycle) cls += ' done';
+                if(i === pomodoroCycle && pomodoroPhase === 'work') cls += ' current';
+                dots += `<span class="${cls}"></span>`;
+            }
+            tomatoDots.innerHTML = dots;
+            tomatoCycleText.textContent = `第 ${Math.min(pomodoroCycle+1,4)}/4 轮`;
+            updateTodayTomato();
+        }
+        function updateTodayTomato() {
+            const today = new Date().toLocaleDateString();
+            const stored = JSON.parse(localStorage.getItem('pomodoro_today') || '{}');
+            const count = stored[today] || 0;
+            todayTomatoCount.textContent = `🍅 今日: ${count}`;
+        }
+        function incrementTodayTomato() {
+            const today = new Date().toLocaleDateString();
+            const stored = JSON.parse(localStorage.getItem('pomodoro_today') || '{}');
+            stored[today] = (stored[today] || 0) + 1;
+            localStorage.setItem('pomodoro_today', JSON.stringify(stored));
+            updateTodayTomato();
+        }
+
+        // ==================== 动画循环 ====================
+        function animate() {
+            if (!isRunning) return;
+            updateDisplay();
+            updateRing();
+            updatePhase();
+            if (currentMode === 'countdown') {
+                const now = Date.now();
+                const rem = countdownTargetTime ? Math.max(0, countdownTargetTime - now) : countdownRemainingMs;
+                if (rem <= 0 && !countdownCompleted) { countdownRemainingMs = 0; countdownCompleted = true; handleCountdownDone(); }
+                else countdownRemainingMs = rem;
+            } else if (currentMode === 'pomodoro') {
+                const now = Date.now();
+                const rem = pomodoroTarget ? Math.max(0, pomodoroTarget - now) : pomodoroRemaining;
+                if (rem <= 0 && !pomodoroPhaseDone) { pomodoroRemaining = 0; pomodoroPhaseDone = true; handlePomodoroDone(); }
+                else pomodoroRemaining = rem;
+            }
+            broadcastState();
+            animationId = requestAnimationFrame(animate);
+        }
+
+        function startTimer() {
+            if (isRunning) return;
+            if ((currentMode === 'countdown' && countdownCompleted) || (currentMode === 'pomodoro' && pomodoroPhaseDone)) return;
+            isRunning = true;
+            const now = Date.now();
+            if (currentMode === 'stopwatch') stopwatchStartTime = now;
+            else if (currentMode === 'countdown') countdownTargetTime = now + countdownRemainingMs;
+            else pomodoroTarget = now + pomodoroRemaining;
+            updateButtons(); updatePhase();
+            animationId = requestAnimationFrame(animate);
+            broadcastState();
+        }
+
+        function pauseTimer() {
+            if (!isRunning) return;
+            isRunning = false;
+            const now = Date.now();
+            if (currentMode === 'stopwatch') { stopwatchAccumulated += now - stopwatchStartTime; stopwatchStartTime = null; }
+            else if (currentMode === 'countdown') { countdownRemainingMs = Math.max(0, countdownTargetTime - now); countdownTargetTime = null; }
+            else { pomodoroRemaining = Math.max(0, pomodoroTarget - now); pomodoroTarget = null; }
+            if (animationId) { cancelAnimationFrame(animationId); animationId = null; }
+            updateDisplay(); updateRing(); updateButtons(); updatePhase();
+            broadcastState();
+        }
+
+        function resetTimer() {
+            pauseTimer();
+            stopwatchAccumulated = 0; stopwatchLastLapTime = 0;
+            countdownRemainingMs = countdownTotalMs; countdownCompleted = false;
+            pomodoroPhase = 'work'; pomodoroCycle = 0; pomodoroRemaining = WORK_MS; pomodoroTotal = WORK_MS; pomodoroPhaseDone = false;
+            updateDisplay(); updateRing(); updateButtons(); updatePhase(); updateTomatoUI();
+            hideCompletion();
+            broadcastState();
+        }
+
+        function toggleStartPause() {
+            if (isRunning) pauseTimer();
+            else {
+                if (currentMode === 'countdown' && countdownCompleted) resetTimer();
+                if (currentMode === 'pomodoro' && pomodoroPhaseDone) advancePomodoro();
+                startTimer();
+            }
+            clickSound();
+        }
+
+        function lap() {
+            if (currentMode !== 'stopwatch' || !isRunning) return;
+            const total = getCurrentMs(), lapTime = total - stopwatchLastLapTime;
+            stopwatchLastLapTime = total;
+            records.push({index: records.length+1, total, lap: lapTime});
+            if (!bestLapTime || lapTime < bestLapTime) bestLapTime = lapTime;
+            renderRecords(); lapSound();
+        }
+
+        function handleCountdownDone() {
+            pauseTimer();
+            completionSound();
+            showCompletion('⏰','时间到！',`倒计时 ${formatTime(countdownTotalMs).main} 结束`);
+            addCompletionRecord('倒计时', countdownTotalMs);
+        }
+
+        function handlePomodoroDone() {
+            pauseTimer();
+            completionSound();
+            const names = {work:'专注工作',shortBreak:'短休息',longBreak:'长休息'};
+            if (pomodoroPhase === 'work') incrementTodayTomato();
+            showCompletion(pomodoroPhase==='work'?'🍅':'☕', `${names[pomodoroPhase]}完成`, `时长 ${formatTime(pomodoroTotal).main}`);
+            addCompletionRecord(`番茄·${names[pomodoroPhase]}`, pomodoroTotal);
+            if (autoSwitch) setTimeout(()=>{ if(pomodoroPhaseDone){ advancePomodoro(); startTimer(); hideCompletion(); } }, 2500);
+        }
+
+        function advancePomodoro() {
+            if (pomodoroPhase === 'work') {
+                pomodoroCycle++;
+                if (pomodoroCycle >= 4) { pomodoroPhase = 'longBreak'; pomodoroRemaining = LONG_MS; pomodoroTotal = LONG_MS; pomodoroCycle = 0; }
+                else { pomodoroPhase = 'shortBreak'; pomodoroRemaining = SHORT_MS; pomodoroTotal = SHORT_MS; }
+            } else { pomodoroPhase = 'work'; pomodoroRemaining = WORK_MS; pomodoroTotal = WORK_MS; }
+            pomodoroPhaseDone = false;
+            updateTomatoUI(); updateDisplay(); updateRing(); updatePhase(); updateButtons();
+            broadcastState();
+        }
+
+        function addCompletionRecord(type, ms) { records.push({index: records.length+1, total: ms, lap: ms, type}); renderRecords(); }
+        function renderRecords() {
+            recordsCount.textContent = `(${records.length})`;
+            if (!records.length) { recordsList.innerHTML = '<div class="records-empty">暂无记录</div>'; return; }
+            let html = '';
+            [...records].reverse().forEach(r => {
+                const t = formatTime(r.total, true), l = formatTime(r.lap, true);
+                const best = bestLapTime && r.lap === bestLapTime && !r.type;
+                html += `<div class="record-item"><span>#${r.index}</span><span>${t.main}.${t.millis}</span><span>分段 ${l.main}.${l.millis}</span>${best?'<span class="record-best">🏆最佳</span>':''}${r.type?`<span>${r.type}</span>`:''}</div>`;
+            });
+            recordsList.innerHTML = html;
+        }
+        function showCompletion(icon,title,sub) { completionIcon.textContent=icon; completionTitle.textContent=title; completionSubtitle.textContent=sub; completionOverlay.style.display='flex'; }
+        function hideCompletion() { completionOverlay.style.display='none'; }
+
+        // ==================== 模式切换 ====================
+        function switchMode(mode) {
+            if (isRunning) pauseTimer();
+            resetTimer();
+            currentMode = mode;
+            document.querySelectorAll('.mode-tab').forEach(t => t.classList.toggle('active', t.dataset.mode === mode));
+            presetsRow.style.display = mode === 'countdown' ? 'flex' : 'none';
+            tomatoInfo.style.display = mode === 'pomodoro' ? 'flex' : 'none';
+            btnLap.style.display = mode === 'stopwatch' ? 'flex' : 'none';
+            if (mode === 'countdown') { countdownTotalMs = 5*60*1000; countdownRemainingMs = countdownTotalMs; updatePresetActive(); }
+            records = []; bestLapTime = null; renderRecords();
+            broadcastState();
+        }
+        function updatePresetActive() {
+            document.querySelectorAll('.preset-btn[data-preset]').forEach(b => b.classList.toggle('active-preset', parseInt(b.dataset.preset)*1000 === countdownTotalMs));
+            customHours.value = Math.floor(countdownTotalMs/3600000);
+            customMinutes.value = Math.floor((countdownTotalMs%3600000)/60000);
+            customSeconds.value = Math.floor((countdownTotalMs%60000)/1000);
+        }
+        function applyCustomTime() {
+            if (isRunning) return;
+            const h = parseInt(customHours.value)||0, m = parseInt(customMinutes.value)||0, s = parseInt(customSeconds.value)||0;
+            const total = (h*3600 + m*60 + s)*1000;
+            if (total <= 0) return;
+            countdownTotalMs = total; countdownRemainingMs = total; countdownCompleted = false;
+            updateDisplay(); updateRing(); updateButtons(); updatePhase(); updatePresetActive();
+            broadcastState();
+        }
+
+        // ==================== 独立悬浮窗 (精简版) ====================
+        function openPopupWindow() {
+            if (popupWindow && !popupWindow.closed) { popupWindow.focus(); return; }
+            const width = 280, height = 280;
+            const left = window.screen.width - width - 50, top = 100;
+            popupWindow = window.open('', 'timer-popup', `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=no,status=no`);
+            if (!popupWindow) { alert('请允许浏览器弹出窗口以使用独立悬浮窗功能。'); return; }
+            const popupHTML = `
+            <!DOCTYPE html>
+            <html>
+            <head><meta charset="UTF-8"><title>计时器</title>
+            <style>
+                :root { --bg: #f0f2f5; --surface: #ffffff; --text: #1a1a2e; --accent: #4f6ef7; --border: #e5e7eb; --shadow: 0 4px 12px rgba(0,0,0,0.1); }
+                .dark { --bg: #1a1d27; --surface: #22252f; --text: #e8eaed; --accent: #6c8cff; --border: #2a2d38; }
+                * { margin:0; padding:0; box-sizing:border-box; }
+                body {
+                    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+                    background: var(--bg); color: var(--text);
+                    display: flex; flex-direction: column; align-items: center; justify-content: center;
+                    min-height: 100vh; padding: 16px; transition: background 0.3s; user-select: none;
+                    font-variant-numeric: tabular-nums;
+                }
+                .popup-time { font-family: 'Cascadia Code', monospace; font-size: 42px; font-weight: 700; }
+                .popup-millis { font-family: 'Cascadia Code', monospace; font-size: 22px; color: #6b7280; margin-top: 4px; }
+                .dark .popup-millis { color: #a0a5b4; }
+                .popup-btn {
+                    margin-top: 24px; padding: 10px 24px; border-radius: 30px; border: 1px solid var(--border);
+                    background: var(--surface); color: var(--text); cursor: pointer;
+                    font-weight: 600; box-shadow: var(--shadow); transition: 0.2s; font-size: 15px;
+                }
+                .popup-btn:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+            </style>
+            </head>
+            <body>
+                <div class="popup-time" id="popupTime">00:00</div>
+                <div class="popup-millis" id="popupMillis">00</div>
+                <button class="popup-btn" id="popupRestore">返回主窗口</button>
+                <script>
+                    const channel = new BroadcastChannel('timer-channel');
+                    const timeEl = document.getElementById('popupTime');
+                    const millisEl = document.getElementById('popupMillis');
+                    const restoreBtn = document.getElementById('popupRestore');
+
+                    let localState = {
+                        mode: 'stopwatch',
+                        running: false,
+                        remaining: 0,
+                        total: 0,
+                        theme: 'light',
+                        timestamp: Date.now()
+                    };
+                    let localTimer = null;
+
+                    function applyTheme(t) { document.body.className = t === 'dark' ? 'dark' : ''; }
+
+                    function formatTime(ms, showMillis) {
+                        const abs = Math.max(0, ms);
+                        const h = Math.floor(abs/3600000), m = Math.floor((abs%3600000)/60000), s = Math.floor((abs%60000)/1000), cs = Math.floor((abs%1000)/10);
+                        let main = h>0 ? String(h).padStart(2,'0') + ':' : '';
+                        main += String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+                        return { main, millis: showMillis ? String(cs).padStart(2,'0') : '' };
+                    }
+
+                    function updateLocalDisplay() {
+                        let ms = localState.remaining;
+                        if (localState.running) {
+                            const elapsed = Date.now() - localState.timestamp;
+                            if (localState.mode === 'stopwatch') ms = localState.remaining + elapsed;
+                            else ms = Math.max(0, localState.remaining - elapsed);
+                        }
+                        const showMillis = localState.mode === 'stopwatch';
+                        const f = formatTime(ms, showMillis);
+                        timeEl.textContent = f.main;
+                        millisEl.textContent = f.millis;
+                    }
+
+                    function startLocalTimer() { if (localTimer) return; localTimer = setInterval(updateLocalDisplay, 50); }
+                    function stopLocalTimer() { if (localTimer) { clearInterval(localTimer); localTimer = null; } }
+
+                    channel.onmessage = (e) => {
+                        if (e.data && e.data.type === 'state') {
+                            const p = e.data.payload;
+                            localState = {
+                                mode: p.mode,
+                                running: p.running,
+                                remaining: p.remaining,
+                                total: p.total,
+                                theme: p.theme || 'light',
+                                timestamp: Date.now()
+                            };
+                            applyTheme(localState.theme);
+                            updateLocalDisplay();
+                            if (localState.running) startLocalTimer();
+                            else stopLocalTimer();
+                        }
+                    };
+
+                    restoreBtn.addEventListener('click', () => {
+                        window.close();
+                        if (window.opener && !window.opener.closed) {
+                            window.opener.focus();
+                        }
+                    });
+
+                    channel.postMessage({ command: 'requestState' });
+
+                    window.addEventListener('beforeunload', () => {
+                        stopLocalTimer();
+                        channel.close();
+                    });
+                <\/script>
+            </body>
+            </html>`;
+            popupWindow.document.write(popupHTML);
+            popupWindow.document.close();
+            popupWindow.addEventListener('beforeunload', () => { popupWindow = null; });
+        }
+
+        // 监听悬浮窗命令 (目前只保留 requestState 用于初始化)
+        channel.onmessage = (e) => {
+            if (e.data && e.data.command === 'requestState') broadcastState();
+        };
+
+        // ==================== 事件绑定 ====================
+        themeToggle.addEventListener('click', () => {
+            theme = document.body.classList.contains('dark') ? 'light' : 'dark';
+            document.body.classList.toggle('dark', theme === 'dark');
+            themeToggle.textContent = theme === 'dark' ? '☀️' : '🌙';
+            localStorage.setItem('timer-theme', theme);
+            clickSound();
+            broadcastState();
+        });
+        muteToggle.addEventListener('click', () => { muted = !muted; muteToggle.textContent = muted ? '🔇' : '🔊'; clickSound(); });
+        miniFloatToggle.addEventListener('click', () => { openPopupWindow(); clickSound(); });
+        modeTabs.addEventListener('click', e => { const tab = e.target.closest('.mode-tab'); if(tab) { switchMode(tab.dataset.mode); clickSound(); } });
+        btnStart.addEventListener('click', toggleStartPause);
+        btnLap.addEventListener('click', lap);
+        btnReset.addEventListener('click', () => { resetTimer(); clickSound(); });
+        presetsRow.addEventListener('click', e => {
+            const btn = e.target.closest('.preset-btn[data-preset]');
+            if (!btn || currentMode !== 'countdown' || isRunning) return;
+            const sec = parseInt(btn.dataset.preset);
+            countdownTotalMs = sec*1000; countdownRemainingMs = countdownTotalMs; countdownCompleted = false;
+            updateDisplay(); updateRing(); updateButtons(); updatePhase(); updatePresetActive();
+            broadcastState();
+        });
+        applyCustomBtn.addEventListener('click', () => { applyCustomTime(); clickSound(); });
+        autoSwitchLabel.addEventListener('click', () => { autoSwitch = !autoSwitch; toggleSwitch.classList.toggle('on', autoSwitch); clickSound(); });
+        clearRecordsBtn.addEventListener('click', (e) => { e.stopPropagation(); records = []; bestLapTime = null; stopwatchLastLapTime = 0; renderRecords(); clickSound(); });
+        recordsHeader.addEventListener('click', () => recordsSection.classList.toggle('open'));
+        completionDismissBtn.addEventListener('click', () => {
+            hideCompletion();
+            if (currentMode === 'pomodoro' && pomodoroPhaseDone && !autoSwitch) { advancePomodoro(); updateDisplay(); updateRing(); updateButtons(); updatePhase(); }
+            clickSound();
+        });
+        completionOverlay.addEventListener('click', e => { if(e.target === completionOverlay) completionDismissBtn.click(); });
+
+        // 键盘快捷键
+        document.addEventListener('keydown', e => {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+            if (e.code === 'Space') { e.preventDefault(); toggleStartPause(); }
+            else if (e.code === 'KeyR') { e.preventDefault(); resetTimer(); clickSound(); }
+            else if (e.code === 'KeyL' && currentMode === 'stopwatch') { e.preventDefault(); lap(); }
+            else if (e.code === 'ArrowLeft') { e.preventDefault(); switchMode({stopwatch:'pomodoro',countdown:'stopwatch',pomodoro:'countdown'}[currentMode]); }
+            else if (e.code === 'ArrowRight') { e.preventDefault(); switchMode({stopwatch:'countdown',countdown:'pomodoro',pomodoro:'stopwatch'}[currentMode]); }
+        });
+
+        // 初始化
+        if (theme === 'dark') { document.body.classList.add('dark'); themeToggle.textContent = '☀️'; }
+        ringProgress.style.strokeDasharray = CIRCUMFERENCE;
+        updateDisplay(); updateRing(); updateButtons(); updatePhase(); updateTomatoUI();
+        broadcastState();
+
+        window.addEventListener('beforeunload', () => {
+            stopBackgroundBroadcast();
+            if (popupWindow && !popupWindow.closed) popupWindow.close();
+            channel.close();
+        });
+
+        console.log('✅ 独立悬浮窗版计时器已启动 (悬浮窗精简为仅显示时间和返回按钮)');
+    })();
+</script>
+</body>
+</html>

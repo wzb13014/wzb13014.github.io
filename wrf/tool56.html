@@ -1,0 +1,1529 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文字转语音 - Text to Speech</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8fafc;
+            --bg-tertiary: #f1f5f9;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --text-muted: #94a3b8;
+            --border-color: #e2e8f0;
+            --accent-color: #6366f1;
+            --accent-hover: #4f46e5;
+            --accent-light: #e0e7ff;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+            --radius-sm: 6px;
+            --radius-md: 10px;
+            --radius-lg: 16px;
+        }
+
+        [data-theme="dark"] {
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-tertiary: #334155;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --border-color: #334155;
+            --accent-color: #818cf8;
+            --accent-hover: #6366f1;
+            --accent-light: #312e81;
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+            --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.4), 0 2px 4px -1px rgba(0,0,0,0.3);
+            --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.4), 0 4px 6px -2px rgba(0,0,0,0.3);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            padding: 30px 0 20px;
+        }
+
+        header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-color), #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+        }
+
+        header p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        .theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            box-shadow: var(--shadow-sm);
+            transition: all 0.3s;
+            z-index: 100;
+        }
+
+        .theme-toggle:hover {
+            transform: scale(1.1);
+            box-shadow: var(--shadow-md);
+        }
+
+        .card {
+            background: var(--bg-primary);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+            padding: 24px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border-color);
+        }
+
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-primary);
+        }
+
+        .card-title .icon {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--accent-light);
+            color: var(--accent-color);
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+
+        .text-input-wrapper {
+            position: relative;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 180px;
+            padding: 16px;
+            border: 2px solid var(--border-color);
+            border-radius: var(--radius-md);
+            font-size: 1rem;
+            font-family: inherit;
+            resize: vertical;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            transition: border-color 0.3s, box-shadow 0.3s;
+            line-height: 1.6;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        textarea::placeholder {
+            color: var(--text-muted);
+        }
+
+        .text-stats {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 10px;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .text-stats .chars-warning {
+            color: var(--warning-color);
+        }
+
+        .quick-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+
+        .quick-btn {
+            padding: 6px 12px;
+            font-size: 0.8rem;
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .quick-btn:hover {
+            background: var(--accent-light);
+            color: var(--accent-color);
+            border-color: var(--accent-color);
+        }
+
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .control-label {
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .control-value {
+            font-weight: 600;
+            color: var(--accent-color);
+        }
+
+        select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            font-size: 0.9rem;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: border-color 0.2s;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: var(--accent-color);
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: var(--bg-tertiary);
+            border-radius: 3px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            background: var(--accent-color);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            background: var(--accent-color);
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+        }
+
+        .playback-controls {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            border: none;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-color), #8b5cf6);
+            color: white;
+            box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
+            transform: translateY(-1px);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: var(--border-color);
+        }
+
+        .btn-secondary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, var(--success-color), #059669);
+            color: white;
+            box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);
+        }
+
+        .btn-success:hover {
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.5);
+            transform: translateY(-1px);
+        }
+
+        .btn-danger {
+            background: var(--danger-color);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        .btn-icon {
+            width: 44px;
+            height: 44px;
+            padding: 0;
+            justify-content: center;
+            font-size: 1.1rem;
+            border-radius: 50%;
+        }
+
+        .progress-section {
+            margin-top: 20px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: var(--bg-tertiary);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-color), #8b5cf6);
+            border-radius: 4px;
+            transition: width 0.1s linear;
+            width: 0%;
+        }
+
+        .progress-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.85rem;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--text-muted);
+        }
+
+        .status-dot.playing {
+            background: var(--success-color);
+            animation: pulse 1.5s infinite;
+        }
+
+        .status-dot.paused {
+            background: var(--warning-color);
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .download-section {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .download-options {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .download-options label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+        }
+
+        .highlight-text {
+            padding: 16px;
+            background: var(--bg-secondary);
+            border-radius: var(--radius-md);
+            line-height: 1.8;
+            font-size: 0.95rem;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+        }
+
+        .highlight-text .word {
+            transition: all 0.2s;
+            padding: 2px 4px;
+            border-radius: 4px;
+        }
+
+        .highlight-text .word.active {
+            background: var(--accent-light);
+            color: var(--accent-color);
+            font-weight: 600;
+        }
+
+        .history-list {
+            max-height: 250px;
+            overflow-y: auto;
+        }
+
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding: 12px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: background-color 0.2s;
+            border-bottom: 1px solid var(--border-color);
+            gap: 10px;
+        }
+
+        .history-item:last-child {
+            border-bottom: none;
+        }
+
+        .history-item:hover {
+            background: var(--bg-secondary);
+        }
+
+        .history-item .text-preview {
+            flex: 1;
+            font-size: 0.9rem;
+            color: var(--text-primary);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+
+        .history-item .history-meta {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            white-space: nowrap;
+        }
+
+        .history-item .history-actions {
+            display: flex;
+            gap: 4px;
+        }
+
+        .history-actions button {
+            width: 28px;
+            height: 28px;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            transition: all 0.2s;
+        }
+
+        .history-actions button:hover {
+            background: var(--bg-tertiary);
+            color: var(--accent-color);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 30px;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .empty-state .icon {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            opacity: 0.5;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--text-primary);
+            color: var(--bg-primary);
+            padding: 12px 24px;
+            border-radius: var(--radius-sm);
+            font-size: 0.9rem;
+            box-shadow: var(--shadow-lg);
+            z-index: 1000;
+            transition: transform 0.3s ease;
+            pointer-events: none;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .toast.error {
+            background: var(--danger-color);
+            color: white;
+        }
+
+        .toast.success {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .shortcut-hint {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            background: var(--bg-tertiary);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+
+        .row {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .row > * {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        @media (max-width: 640px) {
+            .container {
+                padding: 10px;
+            }
+
+            header h1 {
+                font-size: 1.5rem;
+            }
+
+            .card {
+                padding: 16px;
+            }
+
+            .playback-controls {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .theme-toggle {
+                top: 10px;
+                right: 10px;
+                width: 38px;
+                height: 38px;
+                font-size: 1rem;
+            }
+        }
+
+        .checkbox-group {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .checkbox-item input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+            accent-color: var(--accent-color);
+        }
+
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid transparent;
+            border-top-color: currentColor;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .voice-filter {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+
+        .filter-tag {
+            padding: 4px 10px;
+            font-size: 0.75rem;
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .filter-tag.active {
+            background: var(--accent-color);
+            color: white;
+            border-color: var(--accent-color);
+        }
+    </style>
+</head>
+<body>
+    <button class="theme-toggle" id="themeToggle" title="切换主题">🌙</button>
+
+    <div class="container">
+        <header>
+            <h1>🎙️ 文字转语音</h1>
+            <p>输入文字，选择语音，一键生成自然流畅的语音</p>
+        </header>
+
+        <div class="card">
+            <div class="card-title">
+                <span class="icon">📝</span>
+                输入文本
+            </div>
+            <div class="quick-actions">
+                <button class="quick-btn" onclick="insertSample('news')">📰 新闻示例</button>
+                <button class="quick-btn" onclick="insertSample('story')">📖 故事示例</button>
+                <button class="quick-btn" onclick="insertSample('poem')">📜 诗词示例</button>
+                <button class="quick-btn" onclick="clearText()">🗑️ 清空</button>
+            </div>
+            <div class="text-input-wrapper">
+                <textarea id="textInput" placeholder="请输入要转换的文字...
+
+支持中英文及多种语言，长文本会自动分段朗读。
+快捷键：Ctrl+Enter 播放 / Space 暂停继续 / Esc 停止"></textarea>
+            </div>
+            <div class="text-stats">
+                <span>字符数: <span id="charCount">0</span> / 估计时长: <span id="estDuration">0秒</span></span>
+                <span id="charWarning" class="chars-warning" style="display:none;">文本较长，将分段朗读</span>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">
+                <span class="icon">⚙️</span>
+                语音设置
+            </div>
+            
+            <div class="voice-filter">
+                <span class="filter-tag active" data-filter="all">全部</span>
+                <span class="filter-tag" data-filter="zh">中文</span>
+                <span class="filter-tag" data-filter="en">英文</span>
+                <span class="filter-tag" data-filter="ja">日文</span>
+                <span class="filter-tag" data-filter="ko">韩文</span>
+            </div>
+
+            <div class="controls-grid">
+                <div class="control-group">
+                    <label class="control-label">
+                        <span>选择语音</span>
+                    </label>
+                    <select id="voiceSelect">
+                        <option value="">加载中...</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label class="control-label">
+                        <span>语速</span>
+                        <span class="control-value" id="rateValue">1.0x</span>
+                    </label>
+                    <input type="range" id="rateSlider" min="0.5" max="2" step="0.1" value="1">
+                </div>
+
+                <div class="control-group">
+                    <label class="control-label">
+                        <span>音调</span>
+                        <span class="control-value" id="pitchValue">1.0</span>
+                    </label>
+                    <input type="range" id="pitchSlider" min="0" max="2" step="0.1" value="1">
+                </div>
+
+                <div class="control-group">
+                    <label class="control-label">
+                        <span>音量</span>
+                        <span class="control-value" id="volumeValue">100%</span>
+                    </label>
+                    <input type="range" id="volumeSlider" min="0" max="1" step="0.05" value="1">
+                </div>
+            </div>
+
+            <div style="margin-top: 16px;">
+                <div class="checkbox-group">
+                    <label class="checkbox-item">
+                        <input type="checkbox" id="autoScroll" checked>
+                        自动滚动高亮
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" id="highlightEnabled" checked>
+                        文本高亮
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">
+                <span class="icon">▶️</span>
+                播放控制
+            </div>
+            
+            <div class="playback-controls">
+                <button class="btn btn-primary" id="playBtn" onclick="play()">
+                    <span>▶️</span> 播放
+                </button>
+                <button class="btn btn-secondary" id="pauseBtn" onclick="pause()" disabled>
+                    <span>⏸️</span> 暂停
+                </button>
+                <button class="btn btn-secondary" id="resumeBtn" onclick="resume()" disabled style="display:none;">
+                    <span>⏯️</span> 继续
+                </button>
+                <button class="btn btn-secondary" id="stopBtn" onclick="stop()" disabled>
+                    <span>⏹️</span> 停止
+                </button>
+                <button class="btn btn-secondary" onclick="replay()">
+                    <span>🔄</span> 重播
+                </button>
+            </div>
+
+            <div class="progress-section">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <div class="progress-info">
+                    <span class="status-indicator">
+                        <span class="status-dot" id="statusDot"></span>
+                        <span id="statusText">就绪</span>
+                    </span>
+                    <span><span id="currentTime">0:00</span> / <span id="totalTime">0:00</span></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">
+                <span class="icon">⬇️</span>
+                下载语音
+            </div>
+            <div class="download-section">
+                <button class="btn btn-success" id="downloadBtn" onclick="downloadAudio()">
+                    <span>💾</span> 下载语音文件
+                </button>
+                <button class="btn btn-secondary" onclick="openAudioInNewTab()" title="在新标签页打开音频">
+                    <span>🔊</span> 试听
+                </button>
+            </div>
+            <div style="margin-top: 12px;">
+                <div class="checkbox-group">
+                    <label class="checkbox-item">
+                        <input type="checkbox" id="downloadAfterPlay">
+                        播放后自动下载
+                    </label>
+                </div>
+            </div>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 10px;">
+                💡 提示：使用百度TTS语音合成，下载功能需要网络连接。
+                <br>📥 如果浏览器直接打开了音频而不是下载，请在音频上右键选择"音频另存为"来保存文件。
+                <br>📝 支持中英文，长文本建议分段下载（建议每段不超过200字）。
+            </p>
+        </div>
+
+        <div class="card" id="highlightCard">
+            <div class="card-title">
+                <span class="icon">✨</span>
+                实时朗读
+            </div>
+            <div class="highlight-text" id="highlightText">
+                <span class="text-muted" style="color: var(--text-muted);">播放时文本将在这里实时高亮显示...</span>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">
+                <span class="icon">📋</span>
+                历史记录
+                <span style="margin-left: auto; font-size: 0.8rem; color: var(--text-muted); font-weight: normal;">
+                    最近 <span id="historyCount">0</span> 条
+                </span>
+            </div>
+            <div class="history-list" id="historyList">
+                <div class="empty-state">
+                    <div class="icon">📭</div>
+                    暂无历史记录
+                </div>
+            </div>
+            <div style="margin-top: 12px; text-align: right;">
+                <button class="btn btn-secondary" style="padding: 8px 16px; font-size: 0.85rem;" onclick="clearHistory()">
+                    清空历史
+                </button>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">
+                <span class="icon">⌨️</span>
+                快捷键
+            </div>
+            <div class="controls-grid" style="grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: var(--bg-secondary); border-radius: var(--radius-sm);">
+                    <span style="font-size: 0.85rem;">暂停/继续</span>
+                    <span class="shortcut-hint">Space*</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: var(--bg-secondary); border-radius: var(--radius-sm);">
+                    <span style="font-size: 0.85rem;">开始播放</span>
+                    <span class="shortcut-hint">Ctrl+Enter</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: var(--bg-secondary); border-radius: var(--radius-sm);">
+                    <span style="font-size: 0.85rem;">停止</span>
+                    <span class="shortcut-hint">Esc</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: var(--bg-secondary); border-radius: var(--radius-sm);">
+                    <span style="font-size: 0.85rem;">重播</span>
+                    <span class="shortcut-hint">R</span>
+                </div>
+            </div>
+            <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 10px;">
+                * 空格键仅在播放中暂停/继续，未播放时可正常滚动页面
+            </p>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        let synth = window.speechSynthesis;
+        let voices = [];
+        let currentUtterance = null;
+        let isPlaying = false;
+        let isPaused = false;
+        let currentProgress = 0;
+        let totalDuration = 0;
+        let progressInterval = null;
+        let mediaRecorder = null;
+        let recordedChunks = [];
+        let history = JSON.parse(localStorage.getItem('tts_history') || '[]');
+        let currentVoiceFilter = 'all';
+
+        const samples = {
+            news: '人工智能技术正在以前所未有的速度发展。据最新研究报告显示，全球AI市场规模预计将在未来五年内增长三倍以上。各大科技公司纷纷加大投入，在自然语言处理、计算机视觉、自动驾驶等领域取得了突破性进展。专家表示，AI将深刻改变我们的工作和生活方式。',
+            story: '从前，在一个遥远的山村里，住着一位勤劳善良的小女孩。她每天都会去山上放羊，同时认真学习。有一天，她在森林里发现了一只受伤的小鸟。她细心地照料它，直到小鸟康复飞回蓝天。后来，这只小鸟带来了神奇的礼物，让小女孩的生活变得更加美好。',
+            poem: '床前明月光，疑是地上霜。举头望明月，低头思故乡。\n\n春眠不觉晓，处处闻啼鸟。夜来风雨声，花落知多少。'
+        };
+
+        function init() {
+            loadVoices();
+            if (speechSynthesis.onvoiceschanged !== undefined) {
+                speechSynthesis.onvoiceschanged = loadVoices;
+            }
+
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            setTheme(savedTheme);
+
+            const textInput = document.getElementById('textInput');
+            textInput.addEventListener('input', updateStats);
+
+            document.getElementById('rateSlider').addEventListener('input', updateRate);
+            document.getElementById('pitchSlider').addEventListener('input', updatePitch);
+            document.getElementById('volumeSlider').addEventListener('input', updateVolume);
+
+            document.querySelectorAll('.filter-tag').forEach(tag => {
+                tag.addEventListener('click', () => {
+                    document.querySelectorAll('.filter-tag').forEach(t => t.classList.remove('active'));
+                    tag.classList.add('active');
+                    currentVoiceFilter = tag.dataset.filter;
+                    populateVoiceList();
+                });
+            });
+
+            document.addEventListener('keydown', handleKeyboard);
+            updateStats();
+            renderHistory();
+        }
+
+        function loadVoices() {
+            voices = synth.getVoices();
+            populateVoiceList();
+        }
+
+        function populateVoiceList() {
+            const select = document.getElementById('voiceSelect');
+            select.innerHTML = '';
+
+            let filteredVoices = voices;
+            if (currentVoiceFilter !== 'all') {
+                filteredVoices = voices.filter(v => v.lang.toLowerCase().startsWith(currentVoiceFilter));
+            }
+
+            if (filteredVoices.length === 0) {
+                const option = document.createElement('option');
+                option.textContent = '没有找到匹配的语音';
+                option.disabled = true;
+                select.appendChild(option);
+                return;
+            }
+
+            filteredVoices.forEach((voice, index) => {
+                const option = document.createElement('option');
+                option.value = voices.indexOf(voice);
+                option.textContent = `${voice.name} (${voice.lang})${voice.default ? ' - 默认' : ''}`;
+                if (voice.default) {
+                    option.selected = true;
+                }
+                select.appendChild(option);
+            });
+
+            const zhVoice = voices.find(v => v.lang.startsWith('zh'));
+            if (zhVoice && currentVoiceFilter === 'all') {
+                select.value = voices.indexOf(zhVoice);
+            }
+        }
+
+        function updateStats() {
+            const text = document.getElementById('textInput').value;
+            const charCount = text.length;
+            document.getElementById('charCount').textContent = charCount;
+
+            const rate = parseFloat(document.getElementById('rateSlider').value);
+            const estSeconds = Math.ceil(charCount / 5 / rate);
+            document.getElementById('estDuration').textContent = formatTime(estSeconds);
+
+            document.getElementById('charWarning').style.display = charCount > 500 ? 'inline' : 'none';
+        }
+
+        function updateRate() {
+            const value = document.getElementById('rateSlider').value;
+            document.getElementById('rateValue').textContent = value + 'x';
+            updateStats();
+        }
+
+        function updatePitch() {
+            const value = document.getElementById('pitchSlider').value;
+            document.getElementById('pitchValue').textContent = value;
+        }
+
+        function updateVolume() {
+            const value = document.getElementById('volumeSlider').value;
+            document.getElementById('volumeValue').textContent = Math.round(value * 100) + '%';
+        }
+
+        function formatTime(seconds) {
+            const min = Math.floor(seconds / 60);
+            const sec = seconds % 60;
+            return `${min}:${sec.toString().padStart(2, '0')}`;
+        }
+
+        function getSelectedVoice() {
+            const select = document.getElementById('voiceSelect');
+            const index = parseInt(select.value);
+            return voices[index] || voices[0];
+        }
+
+        function play() {
+            const text = document.getElementById('textInput').value.trim();
+            if (!text) {
+                showToast('请先输入要朗读的文字', 'error');
+                return;
+            }
+
+            if (isPaused) {
+                resume();
+                return;
+            }
+
+            stop();
+            addToHistory(text);
+            speak(text);
+        }
+
+        function speak(text) {
+            const utterance = new SpeechSynthesisUtterance(text);
+            const voice = getSelectedVoice();
+            
+            if (voice) {
+                utterance.voice = voice;
+            }
+
+            utterance.rate = parseFloat(document.getElementById('rateSlider').value);
+            utterance.pitch = parseFloat(document.getElementById('pitchSlider').value);
+            utterance.volume = parseFloat(document.getElementById('volumeSlider').value);
+
+            totalDuration = estimateDuration(text, utterance.rate);
+            currentProgress = 0;
+            updateProgressUI();
+
+            if (document.getElementById('highlightEnabled').checked) {
+                setupHighlight(text);
+            }
+
+            utterance.onstart = () => {
+                isPlaying = true;
+                isPaused = false;
+                updatePlaybackButtons();
+                updateStatus('playing', '正在播放');
+                startProgressTracking();
+            };
+
+            utterance.onend = () => {
+                isPlaying = false;
+                isPaused = false;
+                updatePlaybackButtons();
+                updateStatus('ready', '播放完成');
+                stopProgressTracking();
+                currentProgress = 100;
+                updateProgressUI();
+                showToast('播放完成', 'success');
+                
+                if (document.getElementById('downloadAfterPlay').checked) {
+                    setTimeout(() => {
+                        downloadAudio();
+                    }, 300);
+                }
+            };
+
+            utterance.onerror = (event) => {
+                console.error('Speech error:', event);
+                isPlaying = false;
+                isPaused = false;
+                updatePlaybackButtons();
+                updateStatus('ready', '播放出错');
+                stopProgressTracking();
+                showToast('播放出错: ' + event.error, 'error');
+            };
+
+            utterance.onboundary = (event) => {
+                if (event.name === 'word' && document.getElementById('highlightEnabled').checked) {
+                    highlightWord(event.charIndex);
+                }
+            };
+
+            currentUtterance = utterance;
+            synth.speak(utterance);
+        }
+
+        function pause() {
+            if (synth.speaking && !synth.paused) {
+                synth.pause();
+                isPaused = true;
+                updatePlaybackButtons();
+                updateStatus('paused', '已暂停');
+                stopProgressTracking();
+            }
+        }
+
+        function resume() {
+            if (synth.paused) {
+                synth.resume();
+                isPaused = false;
+                updatePlaybackButtons();
+                updateStatus('playing', '正在播放');
+                startProgressTracking();
+            }
+        }
+
+        function stop() {
+            synth.cancel();
+            isPlaying = false;
+            isPaused = false;
+            currentUtterance = null;
+            currentProgress = 0;
+            updatePlaybackButtons();
+            updateStatus('ready', '就绪');
+            stopProgressTracking();
+            updateProgressUI();
+            clearHighlight();
+        }
+
+        function replay() {
+            const text = document.getElementById('textInput').value.trim();
+            if (!text) {
+                showToast('请先输入要朗读的文字', 'error');
+                return;
+            }
+            stop();
+            setTimeout(() => speak(text), 100);
+        }
+
+        function updatePlaybackButtons() {
+            document.getElementById('playBtn').disabled = isPlaying && !isPaused;
+            document.getElementById('pauseBtn').disabled = !isPlaying || isPaused;
+            document.getElementById('pauseBtn').style.display = isPlaying && !isPaused ? 'flex' : 'none';
+            document.getElementById('resumeBtn').disabled = !isPaused;
+            document.getElementById('resumeBtn').style.display = isPaused ? 'flex' : 'none';
+            document.getElementById('stopBtn').disabled = !isPlaying && !isPaused;
+        }
+
+        function updateStatus(state, text) {
+            const dot = document.getElementById('statusDot');
+            dot.className = 'status-dot ' + state;
+            document.getElementById('statusText').textContent = text;
+        }
+
+        function estimateDuration(text, rate) {
+            const chars = text.length;
+            return Math.ceil(chars / 5 / rate);
+        }
+
+        function startProgressTracking() {
+            if (progressInterval) clearInterval(progressInterval);
+            const startTime = Date.now();
+            
+            progressInterval = setInterval(() => {
+                if (!isPlaying || isPaused) return;
+                const elapsed = (Date.now() - startTime) / 1000;
+                currentProgress = Math.min(100, (elapsed / totalDuration) * 100);
+                updateProgressUI();
+            }, 100);
+        }
+
+        function stopProgressTracking() {
+            if (progressInterval) {
+                clearInterval(progressInterval);
+                progressInterval = null;
+            }
+        }
+
+        function updateProgressUI() {
+            document.getElementById('progressFill').style.width = currentProgress + '%';
+            const currentSec = Math.floor((currentProgress / 100) * totalDuration);
+            document.getElementById('currentTime').textContent = formatTime(currentSec);
+            document.getElementById('totalTime').textContent = formatTime(totalDuration);
+        }
+
+        function setupHighlight(text) {
+            const container = document.getElementById('highlightText');
+            const words = text.split(/(\s+|[，。！？、；：""''（）【】《》,.!?;:()\[\]<>])/);
+            container.innerHTML = words.map((w, i) => 
+                `<span class="word" data-index="${i}">${w}</span>`
+            ).join('');
+        }
+
+        function highlightWord(charIndex) {
+            const container = document.getElementById('highlightText');
+            const words = container.querySelectorAll('.word');
+            let currentPos = 0;
+            let activeWord = null;
+
+            words.forEach(word => {
+                word.classList.remove('active');
+                const wordLen = word.textContent.length;
+                if (currentPos <= charIndex && charIndex < currentPos + wordLen) {
+                    activeWord = word;
+                }
+                currentPos += wordLen;
+            });
+
+            if (activeWord) {
+                activeWord.classList.add('active');
+                if (document.getElementById('autoScroll').checked) {
+                    const containerRect = container.getBoundingClientRect();
+                    const wordRect = activeWord.getBoundingClientRect();
+                    
+                    const wordTop = wordRect.top - containerRect.top + container.scrollTop;
+                    const wordBottom = wordRect.bottom - containerRect.top + container.scrollTop;
+                    const containerHeight = container.clientHeight;
+                    
+                    const scrollMiddle = container.scrollTop + containerHeight / 2;
+                    const wordMiddle = (wordTop + wordBottom) / 2;
+                    
+                    if (wordTop < container.scrollTop + 20 || wordBottom > container.scrollTop + containerHeight - 20) {
+                        container.scrollTo({
+                            top: wordMiddle - containerHeight / 2,
+                            behavior: 'smooth'
+                        });
+                    }
+                }
+            }
+        }
+
+        function clearHighlight() {
+            const container = document.getElementById('highlightText');
+            container.innerHTML = '<span style="color: var(--text-muted);">播放时文本将在这里实时高亮显示...</span>';
+        }
+
+        function insertSample(type) {
+            document.getElementById('textInput').value = samples[type];
+            updateStats();
+        }
+
+        function clearText() {
+            document.getElementById('textInput').value = '';
+            updateStats();
+        }
+
+        async function downloadAudio() {
+            const text = document.getElementById('textInput').value.trim();
+            if (!text) {
+                showToast('请先输入要转换的文字', 'error');
+                return;
+            }
+
+            const btn = document.getElementById('downloadBtn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<span class="loading"></span> 生成中...';
+            btn.disabled = true;
+
+            try {
+                addToHistory(text);
+                const audioUrl = getAudioUrl(text);
+                const result = await tryDownload(audioUrl, `tts_${Date.now()}.mp3`);
+                
+                if (result === 'downloaded') {
+                    showToast('下载成功', 'success');
+                } else {
+                    showToast('已在新标签页打开，请右键"另存为"保存音频', 'success');
+                }
+            } catch (error) {
+                console.error('Download error:', error);
+                showToast('下载失败，请检查网络连接', 'error');
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        async function tryDownload(url, filename) {
+            try {
+                const response = await fetch(url, { 
+                    mode: 'cors',
+                    credentials: 'omit'
+                });
+                
+                if (response.ok) {
+                    const blob = await response.blob();
+                    if (blob.size > 100) {
+                        const blobUrl = URL.createObjectURL(blob);
+                        triggerDownload(blobUrl, filename);
+                        setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
+                        return 'downloaded';
+                    }
+                }
+            } catch (e) {
+                console.log('Fetch download failed:', e);
+            }
+            
+            try {
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = filename;
+                link.rel = 'noopener';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                return 'downloaded';
+            } catch (e) {
+                console.log('Direct link download failed:', e);
+            }
+            
+            window.open(url, '_blank', 'noopener');
+            return 'opened';
+        }
+
+        function getAudioUrl(text) {
+            const voice = getSelectedVoice();
+            let lang = 'zh-CN';
+            if (voice) {
+                lang = voice.lang;
+            }
+
+            const encodedText = encodeURIComponent(text);
+            const rate = parseFloat(document.getElementById('rateSlider').value);
+            
+            const baiduLang = lang.startsWith('zh') ? 'zh' : (lang.startsWith('en') ? 'en' : 'zh');
+            const baiduSpeed = Math.round(rate * 5);
+            return `https://fanyi.baidu.com/gettts?lan=${baiduLang}&text=${encodedText}&spd=${baiduSpeed}&source=web`;
+        }
+
+        function triggerDownload(url, filename) {
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => {
+                document.body.removeChild(a);
+            }, 100);
+        }
+
+        function openAudioInNewTab() {
+            const text = document.getElementById('textInput').value.trim();
+            if (!text) {
+                showToast('请先输入要转换的文字', 'error');
+                return;
+            }
+            const audioUrl = getAudioUrl(text);
+            window.open(audioUrl, '_blank', 'noopener');
+            showToast('已在新标签页打开', 'success');
+        }
+
+        function addToHistory(text) {
+            const item = {
+                id: Date.now(),
+                text: text.substring(0, 100),
+                fullText: text,
+                time: new Date().toLocaleString('zh-CN'),
+                voice: getSelectedVoice()?.name || '默认'
+            };
+
+            history.unshift(item);
+            if (history.length > 20) {
+                history = history.slice(0, 20);
+            }
+
+            localStorage.setItem('tts_history', JSON.stringify(history));
+            renderHistory();
+        }
+
+        function renderHistory() {
+            const container = document.getElementById('historyList');
+            document.getElementById('historyCount').textContent = history.length;
+
+            if (history.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="icon">📭</div>
+                        暂无历史记录
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = history.map(item => `
+                <div class="history-item" onclick="loadFromHistory(${item.id})">
+                    <div class="text-preview">${escapeHtml(item.text)}</div>
+                    <div class="history-meta">
+                        <div>${item.voice}</div>
+                        <div>${item.time}</div>
+                    </div>
+                    <div class="history-actions" onclick="event.stopPropagation()">
+                        <button onclick="playHistory(${item.id})" title="播放">▶️</button>
+                        <button onclick="deleteHistory(${item.id})" title="删除">🗑️</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function loadFromHistory(id) {
+            const item = history.find(h => h.id === id);
+            if (item) {
+                document.getElementById('textInput').value = item.fullText;
+                updateStats();
+                showToast('已加载历史记录', 'success');
+            }
+        }
+
+        function playHistory(id) {
+            const item = history.find(h => h.id === id);
+            if (item) {
+                document.getElementById('textInput').value = item.fullText;
+                updateStats();
+                play();
+            }
+        }
+
+        function deleteHistory(id) {
+            history = history.filter(h => h.id !== id);
+            localStorage.setItem('tts_history', JSON.stringify(history));
+            renderHistory();
+            showToast('已删除', 'success');
+        }
+
+        function clearHistory() {
+            if (confirm('确定要清空所有历史记录吗？')) {
+                history = [];
+                localStorage.removeItem('tts_history');
+                renderHistory();
+                showToast('历史记录已清空', 'success');
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function setTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            localStorage.setItem('theme', theme);
+            const btn = document.getElementById('themeToggle');
+            btn.textContent = theme === 'dark' ? '☀️' : '🌙';
+        }
+
+        function toggleTheme() {
+            const current = document.documentElement.getAttribute('data-theme');
+            setTheme(current === 'dark' ? 'light' : 'dark');
+        }
+
+        document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+
+        function showToast(message, type = '') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = 'toast ' + type;
+            toast.classList.add('show');
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        function handleKeyboard(e) {
+            if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') {
+                if (e.ctrlKey && e.key === 'Enter') {
+                    e.preventDefault();
+                    play();
+                }
+                return;
+            }
+
+            if (e.target.closest('.highlight-text') || e.target.closest('.history-list')) {
+                return;
+            }
+
+            switch(e.key) {
+                case ' ':
+                    if (isPlaying || isPaused) {
+                        e.preventDefault();
+                        if (isPaused) {
+                            resume();
+                        } else {
+                            pause();
+                        }
+                    }
+                    break;
+                case 'Escape':
+                    stop();
+                    break;
+                case 'r':
+                case 'R':
+                    replay();
+                    break;
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>

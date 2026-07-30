@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>部门编号查询</title>
+    <!-- 引入Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入Font Awesome -->
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    
+    <!-- 配置Tailwind自定义颜色，模仿企业微信风格 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        wechat: {
+                            primary: '#27AE60', // 企业微信主色调-绿色
+                            secondary: '#F5F5F5', // 次要背景色
+                            text: '#333333', // 主要文字色
+                            lightText: '#666666', // 次要文字色
+                            border: '#E5E5E5', // 边框颜色
+                            hover: '#F0F7F0', // 悬停背景色
+                            search: '#EBEBEB' // 搜索框背景色
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- 自定义工具类 -->
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .department-card {
+                @apply flex justify-between items-center p-4 border-b border-wechat-border hover:bg-wechat-hover transition-colors duration-200;
+            }
+            .search-input {
+                @apply w-full bg-wechat-search rounded-md py-2 px-4 pl-10 focus:outline-none focus:ring-2 focus:ring-wechat-primary/30 transition-all duration-200;
+            }
+            .region-btn {
+                @apply px-4 py-2 rounded-md transition-all duration-200 font-medium;
+            }
+            .region-btn-active {
+                @apply bg-wechat-primary text-white;
+            }
+            .region-btn-inactive {
+                @apply bg-white text-wechat-text hover:bg-gray-100;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans text-wechat-text">
+    <!-- 页面容器 -->
+    <div class="max-w-3xl mx-auto bg-white min-h-screen shadow-sm">
+        <!-- 头部 -->
+        <header class="bg-wechat-primary text-white p-4 shadow-md">
+            <div class="flex items-center justify-center">
+                <i class="fa fa-building-o mr-2 text-lg"></i>
+                <h1 class="text-xl font-medium">部门编号查询</h1>
+            </div>
+        </header>
+        
+        <!-- 地区切换 -->
+        <div class="p-3 border-b border-wechat-border bg-wechat-secondary flex justify-center gap-2">
+            <button id="szBtn" class="region-btn region-btn-active">
+                <i class="fa fa-map-marker mr-1"></i>深圳
+            </button>
+            <button id="ncBtn" class="region-btn region-btn-inactive">
+                <i class="fa fa-map-marker mr-1"></i>南昌
+            </button>
+        </div>
+        
+        <!-- 搜索区域 -->
+        <div class="p-4 border-b border-wechat-border">
+            <div class="relative">
+                <i class="fa fa-search absolute left-3 top-1/2 -translate-y-1/2 text-wechat-lightText"></i>
+                <input 
+                    type="text" 
+                    id="searchInput" 
+                    placeholder="请输入部门名称或编号搜索..." 
+                    class="search-input"
+                >
+            </div>
+            <div class="mt-3 text-sm text-wechat-lightText flex items-center">
+                <i class="fa fa-info-circle mr-1"></i>
+                <span>支持部门名称或编号的模糊搜索</span>
+            </div>
+        </div>
+        
+        <!-- 部门列表区域 -->
+        <div id="departmentList" class="divide-y divide-wechat-border">
+            <!-- 部门列表将通过JavaScript动态生成 -->
+        </div>
+        
+        <!-- 无结果提示 -->
+        <div id="noResult" class="hidden p-10 text-center text-wechat-lightText">
+            <i class="fa fa-search-minus text-4xl mb-3 opacity-30"></i>
+            <p>未找到匹配的部门</p>
+        </div>
+        
+        <!-- 底部信息 -->
+        <footer class="p-4 text-center text-xs text-wechat-lightText border-t border-wechat-border">
+            <p>企业内部部门编号查询系统 v1.1</p>
+        </footer>
+    </div>
+
+    <script>
+        // 部门数据 - 深圳
+        const szDepartments = [
+            { name: '总经办', code: 'GM' },
+            { name: '市场部', code: 'MKT' },
+            { name: '产品管理部', code: 'PM' },
+            { name: '项目管理部', code: 'CPM' },
+            { name: '研发部', code: 'RD' },
+            { name: '品质部', code: 'QA' },
+            { name: 'ME部', code: 'ME' },
+            { name: '采购开发部', code: 'PUR' },
+            { name: '文控中心', code: 'DCC' },
+            { name: 'IE部', code: 'IE' },
+            { name: '人事行政部', code: 'HR' },
+            { name: '计划及物料部', code: 'PMC' },
+            { name: '仓库', code: 'WH' },
+            { name: '电子部', code: 'PD' },
+            { name: '注塑部', code: 'PL' },
+            { name: '工模部', code: 'MD' },
+            { name: '财务部', code: 'FD' },
+            { name: 'NPI部', code: 'NPI' },
+            { name: 'PE部', code: 'PE' },
+            { name: 'MIS部', code: 'MIS' }
+        ];
+
+        // 部门数据 - 南昌
+        const ncDepartments = [
+            { name: '研发部', code: 'RD' },
+            { name: '品质部', code: 'QA' },
+            { name: '制造工程部', code: 'PIE' },
+            { name: 'NPI部', code: 'NPI' },
+            { name: '文控中心', code: 'DCC' },
+            { name: '人事行政部', code: 'HR' },
+            { name: '计划及物料部', code: 'PMC' },
+            { name: '仓库', code: 'WH' },
+            { name: '电子部', code: 'MFG' },
+            { name: '注塑部', code: 'PL' },
+            { name: '工模部', code: 'MD' },
+            { name: '财务部', code: 'FD' }
+        ];
+
+        // 当前激活的地区和部门数据
+        let currentRegion = 'sz'; // 'sz' 表示深圳，'nc' 表示南昌
+        let currentDepartments = szDepartments;
+
+        // 获取DOM元素
+        const departmentList = document.getElementById('departmentList');
+        const searchInput = document.getElementById('searchInput');
+        const noResult = document.getElementById('noResult');
+        const szBtn = document.getElementById('szBtn');
+        const ncBtn = document.getElementById('ncBtn');
+
+        // 初始化部门列表
+        function renderDepartments(depts) {
+            // 清空列表
+            departmentList.innerHTML = '';
+            
+            // 检查是否有结果
+            if (depts.length === 0) {
+                noResult.classList.remove('hidden');
+                return;
+            }
+            
+            // 隐藏无结果提示
+            noResult.classList.add('hidden');
+            
+            // 渲染部门列表
+            depts.forEach(dept => {
+                const deptElement = document.createElement('div');
+                deptElement.className = 'department-card';
+                
+                // 部门信息容器
+                const infoContainer = document.createElement('div');
+                
+                // 部门名称
+                const nameElement = document.createElement('div');
+                nameElement.className = 'font-medium';
+                nameElement.textContent = dept.name;
+                
+                // 部门编号（次要信息）
+                const codeElement = document.createElement('div');
+                codeElement.className = 'text-sm text-wechat-lightText mt-1';
+                codeElement.textContent = `部门编号: ${dept.code}`;
+                
+                infoContainer.appendChild(nameElement);
+                infoContainer.appendChild(codeElement);
+                
+                // 右侧箭头图标
+                const arrowElement = document.createElement('i');
+                arrowElement.className = 'fa fa-angle-right text-wechat-lightText';
+                
+                deptElement.appendChild(infoContainer);
+                deptElement.appendChild(arrowElement);
+                
+                // 添加点击事件 - 复制部门编号
+                deptElement.addEventListener('click', () => {
+                    copyToClipboard(dept.code);
+                    showToast(`已复制 ${dept.name} 编号: ${dept.code}`);
+                });
+                
+                departmentList.appendChild(deptElement);
+            });
+        }
+
+        // 搜索功能
+        function searchDepartments(query) {
+            if (!query) {
+                // 如果查询为空，显示当前地区的所有部门
+                return currentDepartments;
+            }
+            
+            const lowerQuery = query.toLowerCase();
+            // 过滤匹配的部门（名称或编号包含查询内容）
+            return currentDepartments.filter(dept => 
+                dept.name.toLowerCase().includes(lowerQuery) || 
+                dept.code.toLowerCase().includes(lowerQuery)
+            );
+        }
+
+        // 切换地区
+        function switchRegion(region) {
+            currentRegion = region;
+            currentDepartments = region === 'sz' ? szDepartments : ncDepartments;
+            
+            // 更新按钮样式
+            if (region === 'sz') {
+                szBtn.classList.remove('region-btn-inactive');
+                szBtn.classList.add('region-btn-active');
+                ncBtn.classList.remove('region-btn-active');
+                ncBtn.classList.add('region-btn-inactive');
+            } else {
+                ncBtn.classList.remove('region-btn-inactive');
+                ncBtn.classList.add('region-btn-active');
+                szBtn.classList.remove('region-btn-active');
+                szBtn.classList.add('region-btn-inactive');
+            }
+            
+            // 清空搜索框并重新渲染
+            searchInput.value = '';
+            renderDepartments(currentDepartments);
+            
+            // 显示地区切换提示
+            showToast(`已切换至${region === 'sz' ? '深圳' : '南昌'}地区部门`);
+        }
+
+        // 复制到剪贴板
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).catch(err => {
+                console.error('无法复制文本: ', err);
+            });
+        }
+
+        // 显示提示消息
+        function showToast(message) {
+            // 检查是否已存在toast
+            let toast = document.getElementById('toast');
+            if (toast) {
+                clearTimeout(toast.timeout);
+                document.body.removeChild(toast);
+            }
+            
+            // 创建新toast
+            toast = document.createElement('div');
+            toast.id = 'toast';
+            toast.className = 'fixed bottom-5 left-1/2 -translate-x-1/2 bg-wechat-text text-white px-4 py-2 rounded-md shadow-lg z-50 transition-all duration-300 opacity-0';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            // 显示toast
+            setTimeout(() => {
+                toast.classList.replace('opacity-0', 'opacity-100');
+            }, 10);
+            
+            // 3秒后隐藏
+            toast.timeout = setTimeout(() => {
+                toast.classList.replace('opacity-100', 'opacity-0');
+                setTimeout(() => {
+                    document.body.removeChild(toast);
+                }, 300);
+            }, 3000);
+        }
+
+        // 初始化页面
+        renderDepartments(currentDepartments);
+
+        // 搜索输入事件监听
+        searchInput.addEventListener('input', (e) => {
+            const results = searchDepartments(e.target.value);
+            renderDepartments(results);
+        });
+
+        // 支持键盘搜索
+        searchInput.addEventListener('keyup', (e) => {
+            if (e.key === 'Enter') {
+                const results = searchDepartments(e.target.value);
+                renderDepartments(results);
+            }
+        });
+
+        // 地区切换事件监听
+        szBtn.addEventListener('click', () => switchRegion('sz'));
+        ncBtn.addEventListener('click', () => switchRegion('nc'));
+    </script>
+</body>
+</html>

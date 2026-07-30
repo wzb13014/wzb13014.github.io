@@ -1,0 +1,1351 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>计算器</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --apple-gray-light: #f5f5f7;
+            --apple-gray-dark: #1d1d1f;
+            --apple-gray-medium: #86868b;
+            --apple-gray-border: #d2d2d7;
+            --apple-orange: #ff9500;
+            --apple-orange-light: #ffb143;
+            --apple-orange-dark: #cc7700;
+            --apple-button-light: #fbfbfd;
+            --apple-button-dark: #2c2c2e;
+            --apple-display-light: #000;
+            --apple-display-dark: #fff;
+            --apple-green: #30d158;
+            --apple-blue: #007aff;
+            --apple-purple: #af52de;
+            --apple-red: #ff3b30;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: var(--apple-gray-light);
+            padding: 20px;
+            transition: background-color 0.3s;
+        }
+        
+        body.dark-mode {
+            background-color: #000;
+            --apple-gray-light: #1d1d1f;
+            --apple-gray-border: #424245;
+            --apple-button-light: #2c2c2e;
+            --apple-display-light: #fff;
+        }
+        
+        .calculator-container {
+            width: 100%;
+            max-width: 420px;
+            min-width: 320px;
+            background-color: var(--apple-gray-light);
+            border-radius: 32px;
+            box-shadow: 
+                0 15px 60px rgba(0, 0, 0, 0.12),
+                0 5px 20px rgba(0, 0, 0, 0.08),
+                inset 0 1px 0 rgba(255, 255, 255, 0.6);
+            overflow: hidden;
+            transition: all 0.3s;
+            border: 1px solid var(--apple-gray-border);
+            position: relative;
+            overflow: visible;
+        }
+        
+        body.dark-mode .calculator-container {
+            box-shadow: 
+                0 15px 60px rgba(0, 0, 0, 0.5),
+                0 5px 20px rgba(0, 0, 0, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        }
+        
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 22px 10px;
+            color: var(--apple-gray-medium);
+            font-size: 0.9rem;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            background-color: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            position: relative;
+            z-index: 10;
+        }
+        
+        body.dark-mode .status-bar {
+            color: #8e8e93;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            background-color: rgba(30, 30, 30, 0.8);
+        }
+        
+        .status-left {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-weight: 600;
+        }
+        
+        .time {
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+        
+        .status-right {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .display-area {
+            padding: 30px 25px;
+            text-align: right;
+            min-height: 180px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .display-area::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 25px;
+            right: 25px;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(0,0,0,0.1), transparent);
+        }
+        
+        body.dark-mode .display-area::after {
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+        }
+        
+        .previous-operation {
+            font-size: 1.3rem;
+            color: var(--apple-gray-medium);
+            min-height: 32px;
+            word-break: break-all;
+            overflow-wrap: break-word;
+            opacity: 0.9;
+            margin-bottom: 8px;
+            font-weight: 400;
+        }
+        
+        .current-operation {
+            font-size: 4rem;
+            font-weight: 300;
+            color: var(--apple-display-light);
+            word-break: break-all;
+            overflow-wrap: break-word;
+            line-height: 1.1;
+            letter-spacing: -1px;
+        }
+        
+        .buttons-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 14px;
+            padding: 25px;
+            background-color: transparent;
+        }
+        
+        .calc-btn {
+            border: none;
+            height: 74px;
+            border-radius: 50%;
+            font-size: 1.9rem;
+            font-weight: 400;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            user-select: none;
+            background-color: var(--apple-button-light);
+            color: #000;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.08);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .calc-btn::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border-radius: 50%;
+            background: radial-gradient(circle at center, rgba(255,255,255,0.3) 0%, transparent 70%);
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        
+        .calc-btn:hover::after {
+            opacity: 0.6;
+        }
+        
+        body.dark-mode .calc-btn {
+            background-color: var(--apple-button-dark);
+            color: #fff;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+        }
+        
+        .calc-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
+        }
+        
+        body.dark-mode .calc-btn:hover {
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+        }
+        
+        .calc-btn:active {
+            transform: scale(0.94);
+            transition: transform 0.1s;
+        }
+        
+        .number-btn, .decimal-btn {
+            background-color: #f2f2f7;
+            color: #000;
+        }
+        
+        .number-btn:hover, .decimal-btn:hover {
+            background-color: #e5e5ea;
+        }
+        
+        body.dark-mode .number-btn, body.dark-mode .decimal-btn {
+            background-color: #3a3a3c;
+            color: #fff;
+        }
+        
+        body.dark-mode .number-btn:hover, body.dark-mode .decimal-btn:hover {
+            background-color: #48484a;
+        }
+        
+        .operation-btn {
+            background-color: var(--apple-orange);
+            color: white;
+        }
+        
+        .operation-btn:hover {
+            background-color: var(--apple-orange-light);
+        }
+        
+        .operation-btn.active {
+            background-color: white;
+            color: var(--apple-orange);
+        }
+        
+        .operation-btn.active:hover {
+            background-color: #f5f5f7;
+        }
+        
+        body.dark-mode .operation-btn.active {
+            background-color: #fff;
+            color: var(--apple-orange);
+        }
+        
+        body.dark-mode .operation-btn.active:hover {
+            background-color: #f2f2f7;
+        }
+        
+        .special-btn {
+            background-color: #a5a5ac;
+            color: #000;
+        }
+        
+        .special-btn:hover {
+            background-color: #b8b8be;
+        }
+        
+        body.dark-mode .special-btn {
+            background-color: #616161;
+            color: #fff;
+        }
+        
+        body.dark-mode .special-btn:hover {
+            background-color: #707070;
+        }
+        
+        .scientific-btn {
+            background-color: #e5e5ea;
+            color: #000;
+            font-size: 1.3rem;
+            font-weight: 500;
+        }
+        
+        .scientific-btn:hover {
+            background-color: #d1d1d6;
+        }
+        
+        body.dark-mode .scientific-btn {
+            background-color: #3a3a3c;
+            color: #fff;
+        }
+        
+        body.dark-mode .scientific-btn:hover {
+            background-color: #48484a;
+        }
+        
+        .zero-btn {
+            grid-column: span 2;
+            border-radius: 37px;
+            justify-content: flex-start;
+            padding-left: 32px;
+        }
+        
+        .mode-toggle {
+            display: flex;
+            justify-content: center;
+            padding: 15px 25px 5px;
+            gap: 15px;
+        }
+        
+        .mode-btn {
+            background: transparent;
+            border: 1px solid var(--apple-gray-border);
+            border-radius: 20px;
+            padding: 10px 20px;
+            font-size: 0.95rem;
+            color: var(--apple-gray-medium);
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            font-weight: 500;
+            letter-spacing: 0.3px;
+        }
+        
+        .mode-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        body.dark-mode .mode-btn {
+            border-color: #424245;
+            color: #8e8e93;
+        }
+        
+        .mode-btn.active {
+            background-color: var(--apple-orange);
+            color: white;
+            border-color: var(--apple-orange);
+            box-shadow: 0 4px 12px rgba(255, 149, 0, 0.3);
+        }
+        
+        .mode-btn.active:hover {
+            background-color: var(--apple-orange-light);
+            box-shadow: 0 6px 16px rgba(255, 149, 0, 0.4);
+        }
+        
+        .theme-toggle {
+            position: absolute;
+            top: 30px;
+            right: 30px;
+            width: 62px;
+            height: 32px;
+            background-color: #e5e5ea;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            padding: 0 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+        
+        .theme-toggle:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        body.dark-mode .theme-toggle {
+            background-color: #3a3a3c;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .theme-toggle::before {
+            content: '☀️';
+            position: absolute;
+            left: 8px;
+            font-size: 0.8rem;
+            transition: opacity 0.3s;
+        }
+        
+        body.dark-mode .theme-toggle::before {
+            content: '🌙';
+            left: auto;
+            right: 8px;
+        }
+        
+        .toggle-circle {
+            width: 26px;
+            height: 26px;
+            background-color: white;
+            border-radius: 50%;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        body.dark-mode .toggle-circle {
+            transform: translateX(30px);
+            background-color: #1d1d1f;
+        }
+        
+        /* 科学计算器按钮 */
+        .scientific-buttons {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 12px;
+            padding: 0 25px 25px;
+            opacity: 1;
+            max-height: 400px;
+            overflow: hidden;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        
+        .scientific-buttons.hidden {
+            max-height: 0;
+            padding: 0 25px;
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        /* 响应式调整 */
+        @media (max-width: 480px) {
+            .calculator-container {
+                max-width: 100%;
+                border-radius: 24px;
+            }
+            
+            .current-operation {
+                font-size: 3.2rem;
+            }
+            
+            .calc-btn {
+                height: 68px;
+                font-size: 1.7rem;
+            }
+            
+            .scientific-btn {
+                font-size: 1.2rem;
+            }
+            
+            .buttons-grid {
+                gap: 12px;
+                padding: 20px;
+            }
+            
+            .zero-btn {
+                padding-left: 28px;
+            }
+            
+            .theme-toggle {
+                top: 20px;
+                right: 20px;
+            }
+            
+            .scientific-buttons {
+                grid-template-columns: repeat(4, 1fr);
+                gap: 10px;
+                padding: 0 20px 20px;
+            }
+            
+            .scientific-buttons.hidden {
+                padding: 0 20px;
+            }
+            
+            .display-area {
+                padding: 25px 20px;
+                min-height: 160px;
+            }
+            
+            .mode-toggle {
+                padding: 12px 20px 5px;
+            }
+        }
+        
+        @media (min-width: 768px) {
+            .calculator-container {
+                max-width: 450px;
+            }
+        }
+        
+        @media (max-height: 700px) {
+            .display-area {
+                min-height: 140px;
+                padding: 20px 25px;
+            }
+            
+            .current-operation {
+                font-size: 3.2rem;
+            }
+            
+            .calc-btn {
+                height: 68px;
+            }
+        }
+        
+        @media (max-width: 380px) {
+            .scientific-buttons {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            
+            .calc-btn {
+                height: 62px;
+                font-size: 1.6rem;
+            }
+            
+            .scientific-btn {
+                font-size: 1.1rem;
+            }
+        }
+        
+        /* 苹果动态效果 */
+        @keyframes buttonPress {
+            0% { transform: scale(1); }
+            50% { transform: scale(0.94); }
+            100% { transform: scale(1); }
+        }
+        
+        .calc-btn.pressed {
+            animation: buttonPress 0.2s ease;
+        }
+        
+        /* 优雅的字体 */
+        @font-face {
+            font-family: 'SF Pro Display';
+            font-weight: 300;
+            src: local('SF Pro Display Light');
+        }
+        
+        @font-face {
+            font-family: 'SF Pro Display';
+            font-weight: 400;
+            src: local('SF Pro Display Regular');
+        }
+        
+        /* 选中状态指示器 */
+        .calc-btn.selected {
+            outline: 3px solid rgba(0, 122, 255, 0.5);
+            outline-offset: 3px;
+        }
+        
+        body.dark-mode .calc-btn.selected {
+            outline: 3px solid rgba(10, 132, 255, 0.6);
+        }
+        
+        /* 计算器底座效果 */
+        .calculator-container::before {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 20px;
+            right: 20px;
+            height: 8px;
+            background-color: rgba(0, 0, 0, 0.05);
+            border-radius: 50%;
+            z-index: -1;
+            filter: blur(5px);
+        }
+        
+        body.dark-mode .calculator-container::before {
+            background-color: rgba(0, 0, 0, 0.2);
+        }
+        
+        /* 科学函数标签样式 */
+        .scientific-btn[data-action="sin"],
+        .scientific-btn[data-action="cos"],
+        .scientific-btn[data-action="tan"] {
+            background-color: rgba(175, 82, 222, 0.15);
+            color: var(--apple-purple);
+        }
+        
+        .scientific-btn[data-action="sin"]:hover,
+        .scientific-btn[data-action="cos"]:hover,
+        .scientific-btn[data-action="tan"]:hover {
+            background-color: rgba(175, 82, 222, 0.25);
+        }
+        
+        .scientific-btn[data-action="log"],
+        .scientific-btn[data-action="ln"] {
+            background-color: rgba(0, 122, 255, 0.15);
+            color: var(--apple-blue);
+        }
+        
+        .scientific-btn[data-action="log"]:hover,
+        .scientific-btn[data-action="ln"]:hover {
+            background-color: rgba(0, 122, 255, 0.25);
+        }
+        
+        .scientific-btn[data-action="sqrt"],
+        .scientific-btn[data-action="square"],
+        .scientific-btn[data-action="power"] {
+            background-color: rgba(48, 209, 88, 0.15);
+            color: var(--apple-green);
+        }
+        
+        .scientific-btn[data-action="sqrt"]:hover,
+        .scientific-btn[data-action="square"]:hover,
+        .scientific-btn[data-action="power"]:hover {
+            background-color: rgba(48, 209, 88, 0.25);
+        }
+        
+        .scientific-btn[data-action="pi"],
+        .scientific-btn[data-action="e"] {
+            background-color: rgba(255, 149, 0, 0.15);
+            color: var(--apple-orange);
+        }
+        
+        .scientific-btn[data-action="pi"]:hover,
+        .scientific-btn[data-action="e"]:hover {
+            background-color: rgba(255, 149, 0, 0.25);
+        }
+        
+        .scientific-btn[data-action="factorial"],
+        .scientific-btn[data-action="reciprocal"] {
+            background-color: rgba(255, 59, 48, 0.15);
+            color: var(--apple-red);
+        }
+        
+        .scientific-btn[data-action="factorial"]:hover,
+        .scientific-btn[data-action="reciprocal"]:hover {
+            background-color: rgba(255, 59, 48, 0.25);
+        }
+        
+        body.dark-mode .scientific-btn {
+            color: #fff;
+        }
+        
+        /* 滚动条样式 */
+        .scientific-buttons {
+            overflow-y: auto;
+            max-height: 280px;
+        }
+        
+        .scientific-buttons::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .scientific-buttons::-webkit-scrollbar-track {
+            background: transparent;
+            border-radius: 10px;
+        }
+        
+        .scientific-buttons::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+        }
+        
+        body.dark-mode .scientific-buttons::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="theme-toggle" id="theme-toggle">
+        <div class="toggle-circle"></div>
+    </div>
+    
+    <div class="calculator-container" id="calculator">
+        <div class="status-bar">
+            <div class="status-left">
+                <div class="time" id="current-time">9:41</div>
+            </div>
+            <div class="status-right">
+                <i class="fas fa-signal"></i>
+                <i class="fas fa-wifi"></i>
+                <i class="fas fa-battery-three-quarters"></i>
+            </div>
+        </div>
+        
+        <div class="display-area">
+            <div class="previous-operation" id="previous-operation"></div>
+            <div class="current-operation" id="current-operation">0</div>
+        </div>
+        
+        <div class="mode-toggle">
+            <button class="mode-btn active" id="basic-mode-btn">基本</button>
+            <button class="mode-btn" id="scientific-mode-btn">科学</button>
+        </div>
+        
+        <div class="scientific-buttons hidden" id="scientific-buttons">
+            <button class="calc-btn scientific-btn" data-action="sin">sin</button>
+            <button class="calc-btn scientific-btn" data-action="cos">cos</button>
+            <button class="calc-btn scientific-btn" data-action="tan">tan</button>
+            <button class="calc-btn scientific-btn" data-action="log">log</button>
+            <button class="calc-btn scientific-btn" data-action="ln">ln</button>
+            <button class="calc-btn scientific-btn" data-action="sqrt">√</button>
+            <button class="calc-btn scientific-btn" data-action="square">x²</button>
+            <button class="calc-btn scientific-btn" data-action="power">xʸ</button>
+            <button class="calc-btn scientific-btn" data-action="factorial">x!</button>
+            <button class="calc-btn scientific-btn" data-action="pi">π</button>
+            <button class="calc-btn scientific-btn" data-action="e">e</button>
+            <button class="calc-btn scientific-btn" data-action="reciprocal">1/x</button>
+            <button class="calc-btn scientific-btn" data-action="percent">%</button>
+            <button class="calc-btn scientific-btn" data-action="left-paren">(</button>
+            <button class="calc-btn scientific-btn" data-action="right-paren">)</button>
+            <button class="calc-btn scientific-btn" data-action="exp">eˣ</button>
+            <button class="calc-btn scientific-btn" data-action="ten-power">10ˣ</button>
+            <button class="calc-btn scientific-btn" data-action="abs">|x|</button>
+            <button class="calc-btn scientific-btn" data-action="floor">floor</button>
+            <button class="calc-btn scientific-btn" data-action="ceil">ceil</button>
+        </div>
+        
+        <div class="buttons-grid">
+            <button class="calc-btn special-btn" data-action="clear">AC</button>
+            <button class="calc-btn special-btn" data-action="toggle-sign">±</button>
+            <button class="calc-btn special-btn" data-action="percent">%</button>
+            <button class="calc-btn operation-btn" data-action="divide">÷</button>
+            
+            <button class="calc-btn number-btn" data-number="7">7</button>
+            <button class="calc-btn number-btn" data-number="8">8</button>
+            <button class="calc-btn number-btn" data-number="9">9</button>
+            <button class="calc-btn operation-btn" data-action="multiply">×</button>
+            
+            <button class="calc-btn number-btn" data-number="4">4</button>
+            <button class="calc-btn number-btn" data-number="5">5</button>
+            <button class="calc-btn number-btn" data-number="6">6</button>
+            <button class="calc-btn operation-btn" data-action="subtract">−</button>
+            
+            <button class="calc-btn number-btn" data-number="1">1</button>
+            <button class="calc-btn number-btn" data-number="2">2</button>
+            <button class="calc-btn number-btn" data-number="3">3</button>
+            <button class="calc-btn operation-btn" data-action="add">+</button>
+            
+            <button class="calc-btn number-btn zero-btn" data-number="0">0</button>
+            <button class="calc-btn decimal-btn" data-action="decimal">.</button>
+            <button class="calc-btn operation-btn" data-action="equals">=</button>
+        </div>
+    </div>
+
+    <script>
+        // 计算器状态
+        const calculator = {
+            currentOperand: '0',
+            previousOperand: '',
+            operation: null,
+            waitingForNewOperand: false,
+            isScientificMode: false,
+            memory: 0,
+            lastResult: null,
+            scientificFunction: null,
+            isScientificFunctionSelected: false,
+            selectedButton: null
+        };
+
+        // DOM元素
+        const currentOperationDisplay = document.getElementById('current-operation');
+        const previousOperationDisplay = document.getElementById('previous-operation');
+        const basicModeBtn = document.getElementById('basic-mode-btn');
+        const scientificModeBtn = document.getElementById('scientific-mode-btn');
+        const scientificButtons = document.getElementById('scientific-buttons');
+        const themeToggle = document.getElementById('theme-toggle');
+        const currentTimeElement = document.getElementById('current-time');
+
+        // 更新显示
+        function updateDisplay() {
+            currentOperationDisplay.textContent = formatDisplayNumber(calculator.currentOperand);
+            
+            // 显示之前的操作
+            if (calculator.scientificFunction) {
+                previousOperationDisplay.textContent = `${calculator.scientificFunction}(${calculator.previousOperand || ''})`;
+            } else if (calculator.operation) {
+                const operationSymbol = getOperationSymbol(calculator.operation);
+                previousOperationDisplay.textContent = `${calculator.previousOperand} ${operationSymbol}`;
+            } else {
+                previousOperationDisplay.textContent = calculator.previousOperand;
+            }
+            
+            // 更新操作按钮状态
+            document.querySelectorAll('.operation-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            if (calculator.operation && !calculator.scientificFunction) {
+                const activeBtn = document.querySelector(`[data-action="${calculator.operation}"]`);
+                if (activeBtn) activeBtn.classList.add('active');
+            }
+        }
+
+        // 格式化显示数字
+        function formatDisplayNumber(numStr) {
+            if (numStr === '' || numStr === 'Error') return numStr;
+            
+            // 如果是科学函数结果，直接返回
+            if (numStr.includes('sin') || numStr.includes('cos') || numStr.includes('tan') || 
+                numStr.includes('log') || numStr.includes('ln') || numStr === 'π' || numStr === 'e') {
+                return numStr;
+            }
+            
+            let num = parseFloat(numStr);
+            if (isNaN(num)) return 'Error';
+            
+            // 如果数字太大或太小，使用科学计数法
+            if (Math.abs(num) >= 1e12 || (Math.abs(num) < 1e-6 && num !== 0)) {
+                return num.toExponential(6).replace('e', 'E');
+            }
+            
+            // 处理小数位数
+            const decimalPlaces = (numStr.split('.')[1] || '').length;
+            if (decimalPlaces > 8) {
+                return num.toFixed(8);
+            }
+            
+            // 添加千位分隔符（只对整数部分）
+            const parts = numStr.split('.');
+            parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+            return parts.join('.');
+        }
+
+        // 添加数字
+        function addNumber(number) {
+            if (calculator.waitingForNewOperand) {
+                calculator.currentOperand = number;
+                calculator.waitingForNewOperand = false;
+            } else {
+                calculator.currentOperand = calculator.currentOperand === '0' ? number : calculator.currentOperand + number;
+            }
+            
+            // 如果选择了科学函数，更新previousOperand
+            if (calculator.scientificFunction && !calculator.isScientificFunctionSelected) {
+                calculator.isScientificFunctionSelected = true;
+            }
+            
+            updateDisplay();
+        }
+
+        // 添加小数点
+        function addDecimal() {
+            if (calculator.waitingForNewOperand) {
+                calculator.currentOperand = '0.';
+                calculator.waitingForNewOperand = false;
+            } else if (!calculator.currentOperand.includes('.')) {
+                calculator.currentOperand += '.';
+            }
+            updateDisplay();
+        }
+
+        // 选择运算
+        function chooseOperation(op) {
+            // 如果有科学函数正在等待，先执行科学函数
+            if (calculator.scientificFunction && calculator.currentOperand !== '0') {
+                executeScientificFunction();
+            }
+            
+            if (calculator.currentOperand === '' || calculator.currentOperand === 'Error') return;
+            
+            if (calculator.previousOperand !== '' && calculator.operation && !calculator.waitingForNewOperand) {
+                compute();
+            }
+            
+            calculator.operation = op;
+            calculator.previousOperand = calculator.currentOperand;
+            calculator.waitingForNewOperand = true;
+            updateDisplay();
+        }
+
+        // 执行计算
+        function compute() {
+            // 如果有科学函数，执行科学函数
+            if (calculator.scientificFunction && calculator.currentOperand !== '0') {
+                executeScientificFunction();
+                return;
+            }
+            
+            if (calculator.operation === null || calculator.waitingForNewOperand) return;
+            
+            const prev = parseFloat(calculator.previousOperand);
+            const current = parseFloat(calculator.currentOperand);
+            
+            if (isNaN(prev) || isNaN(current)) return;
+            
+            let result;
+            try {
+                switch (calculator.operation) {
+                    case 'add':
+                        result = prev + current;
+                        break;
+                    case 'subtract':
+                        result = prev - current;
+                        break;
+                    case 'multiply':
+                        result = prev * current;
+                        break;
+                    case 'divide':
+                        if (current === 0) {
+                            throw new Error("Division by zero");
+                        }
+                        result = prev / current;
+                        break;
+                    default:
+                        return;
+                }
+                
+                // 处理结果
+                calculator.currentOperand = formatResult(result);
+                calculator.lastResult = result;
+                calculator.operation = null;
+                calculator.previousOperand = '';
+                calculator.waitingForNewOperand = true;
+            } catch (error) {
+                calculator.currentOperand = 'Error';
+                calculator.operation = null;
+                calculator.previousOperand = '';
+                calculator.waitingForNewOperand = true;
+            }
+            
+            updateDisplay();
+        }
+
+        // 格式化结果
+        function formatResult(result) {
+            // 如果结果是整数，返回整数形式
+            if (Number.isInteger(result)) {
+                return result.toString();
+            }
+            
+            // 限制小数位数
+            const rounded = Math.round(result * 100000000) / 100000000;
+            
+            // 移除末尾的零
+            return rounded.toString().replace(/(\.\d*?[1-9])0+$/, "$1").replace(/\.$/, "");
+        }
+
+        // 获取运算符号
+        function getOperationSymbol(op) {
+            switch (op) {
+                case 'add': return '+';
+                case 'subtract': return '−';
+                case 'multiply': return '×';
+                case 'divide': return '÷';
+                default: return '';
+            }
+        }
+
+        // 清除计算器
+        function clearCalculator() {
+            calculator.currentOperand = '0';
+            calculator.previousOperand = '';
+            calculator.operation = null;
+            calculator.waitingForNewOperand = false;
+            calculator.scientificFunction = null;
+            calculator.isScientificFunctionSelected = false;
+            
+            // 清除选中状态
+            if (calculator.selectedButton) {
+                calculator.selectedButton.classList.remove('selected');
+                calculator.selectedButton = null;
+            }
+            
+            updateDisplay();
+        }
+
+        // 切换正负号
+        function toggleSign() {
+            const current = parseFloat(calculator.currentOperand);
+            if (isNaN(current)) return;
+            
+            calculator.currentOperand = (-current).toString();
+            updateDisplay();
+        }
+
+        // 百分比计算
+        function calculatePercent() {
+            const current = parseFloat(calculator.currentOperand);
+            if (isNaN(current)) return;
+            
+            calculator.currentOperand = (current / 100).toString();
+            updateDisplay();
+        }
+
+        // 选择科学函数
+        function selectScientificFunction(func) {
+            // 如果已经有数字，立即计算
+            if (calculator.currentOperand !== '0' && calculator.currentOperand !== '' && calculator.currentOperand !== 'Error') {
+                executeScientificFunction(func);
+            } else {
+                // 否则记录科学函数，等待输入数字
+                calculator.scientificFunction = func;
+                calculator.previousOperand = calculator.currentOperand;
+                calculator.isScientificFunctionSelected = false;
+                calculator.waitingForNewOperand = true;
+                updateDisplay();
+            }
+        }
+
+        // 执行科学函数
+        function executeScientificFunction(func = calculator.scientificFunction) {
+            if (!func && calculator.scientificFunction) {
+                func = calculator.scientificFunction;
+            }
+            
+            if (!func) return;
+            
+            const current = parseFloat(calculator.currentOperand);
+            if (isNaN(current) && func !== 'pi' && func !== 'e') return;
+            
+            let result;
+            let displayText = '';
+            
+            try {
+                switch (func) {
+                    case 'sin':
+                        result = Math.sin(current * Math.PI / 180); // 转换为弧度
+                        displayText = `sin(${current})`;
+                        break;
+                    case 'cos':
+                        result = Math.cos(current * Math.PI / 180);
+                        displayText = `cos(${current})`;
+                        break;
+                    case 'tan':
+                        result = Math.tan(current * Math.PI / 180);
+                        displayText = `tan(${current})`;
+                        break;
+                    case 'log':
+                        if (current <= 0) throw new Error("Invalid input for log");
+                        result = Math.log10(current);
+                        displayText = `log(${current})`;
+                        break;
+                    case 'ln':
+                        if (current <= 0) throw new Error("Invalid input for ln");
+                        result = Math.log(current);
+                        displayText = `ln(${current})`;
+                        break;
+                    case 'sqrt':
+                        if (current < 0) throw new Error("Invalid input for sqrt");
+                        result = Math.sqrt(current);
+                        displayText = `√(${current})`;
+                        break;
+                    case 'square':
+                        result = current * current;
+                        displayText = `sqr(${current})`;
+                        break;
+                    case 'power':
+                        // 幂运算需要两个操作数，这里只处理平方
+                        result = current * current;
+                        displayText = `pow(${current}, 2)`;
+                        break;
+                    case 'factorial':
+                        if (current < 0 || !Number.isInteger(current)) throw new Error("Invalid input for factorial");
+                        if (current > 170) throw new Error("Number too large for factorial");
+                        result = factorial(current);
+                        displayText = `fact(${current})`;
+                        break;
+                    case 'pi':
+                        result = Math.PI;
+                        displayText = 'π';
+                        break;
+                    case 'e':
+                        result = Math.E;
+                        displayText = 'e';
+                        break;
+                    case 'reciprocal':
+                        if (current === 0) throw new Error("Division by zero");
+                        result = 1 / current;
+                        displayText = `1/(${current})`;
+                        break;
+                    case 'percent':
+                        result = current / 100;
+                        displayText = `${current}%`;
+                        break;
+                    case 'exp':
+                        result = Math.exp(current);
+                        displayText = `exp(${current})`;
+                        break;
+                    case 'ten-power':
+                        result = Math.pow(10, current);
+                        displayText = `10^${current}`;
+                        break;
+                    case 'abs':
+                        result = Math.abs(current);
+                        displayText = `abs(${current})`;
+                        break;
+                    case 'floor':
+                        result = Math.floor(current);
+                        displayText = `floor(${current})`;
+                        break;
+                    case 'ceil':
+                        result = Math.ceil(current);
+                        displayText = `ceil(${current})`;
+                        break;
+                    default:
+                        return;
+                }
+                
+                calculator.previousOperand = displayText;
+                
+                if (func === 'pi' || func === 'e') {
+                    calculator.currentOperand = displayText;
+                } else {
+                    calculator.currentOperand = formatResult(result);
+                }
+                
+                calculator.scientificFunction = null;
+                calculator.isScientificFunctionSelected = false;
+                calculator.waitingForNewOperand = true;
+                updateDisplay();
+            } catch (error) {
+                calculator.currentOperand = 'Error';
+                calculator.previousOperand = '';
+                calculator.scientificFunction = null;
+                calculator.isScientificFunctionSelected = false;
+                calculator.waitingForNewOperand = true;
+                updateDisplay();
+            }
+        }
+
+        // 计算阶乘
+        function factorial(n) {
+            if (n === 0 || n === 1) return 1;
+            let result = 1;
+            for (let i = 2; i <= n; i++) {
+                result *= i;
+            }
+            return result;
+        }
+
+        // 切换计算器模式
+        function toggleMode(isScientific) {
+            calculator.isScientificMode = isScientific;
+            
+            if (isScientific) {
+                basicModeBtn.classList.remove('active');
+                scientificModeBtn.classList.add('active');
+                scientificButtons.classList.remove('hidden');
+                
+                // 科学模式展开后滚动到底部
+                setTimeout(() => {
+                    scientificButtons.scrollTop = scientificButtons.scrollHeight;
+                }, 100);
+            } else {
+                scientificModeBtn.classList.remove('active');
+                basicModeBtn.classList.add('active');
+                scientificButtons.classList.add('hidden');
+                
+                // 退出科学模式时清除科学函数状态
+                calculator.scientificFunction = null;
+                calculator.isScientificFunctionSelected = false;
+                updateDisplay();
+            }
+        }
+
+        // 切换主题
+        function toggleTheme() {
+            document.body.classList.toggle('dark-mode');
+            const isDarkMode = document.body.classList.contains('dark-mode');
+            localStorage.setItem('calculatorDarkMode', isDarkMode);
+        }
+
+        // 更新当前时间
+        function updateTime() {
+            const now = new Date();
+            const hours = now.getHours().toString().padStart(2, '0');
+            const minutes = now.getMinutes().toString().padStart(2, '0');
+            currentTimeElement.textContent = `${hours}:${minutes}`;
+        }
+
+        // 按钮点击效果
+        function addButtonPressEffect(button) {
+            button.classList.add('pressed');
+            setTimeout(() => {
+                button.classList.remove('pressed');
+            }, 200);
+        }
+
+        // 选中按钮
+        function selectButton(button) {
+            // 清除之前选中的按钮
+            if (calculator.selectedButton) {
+                calculator.selectedButton.classList.remove('selected');
+            }
+            
+            // 设置新的选中按钮
+            calculator.selectedButton = button;
+            button.classList.add('selected');
+            
+            // 3秒后自动清除选中状态
+            setTimeout(() => {
+                if (calculator.selectedButton === button) {
+                    button.classList.remove('selected');
+                    calculator.selectedButton = null;
+                }
+            }, 3000);
+        }
+
+        // 事件监听
+        document.addEventListener('DOMContentLoaded', () => {
+            // 检查存储的主题偏好
+            const isDarkMode = localStorage.getItem('calculatorDarkMode') === 'true';
+            if (isDarkMode) {
+                document.body.classList.add('dark-mode');
+            }
+            
+            // 更新时间
+            updateTime();
+            setInterval(updateTime, 60000);
+            
+            // 按钮点击事件
+            document.querySelectorAll('.calc-btn').forEach(button => {
+                button.addEventListener('click', () => {
+                    addButtonPressEffect(button);
+                    selectButton(button);
+                    
+                    const action = button.dataset.action;
+                    const number = button.dataset.number;
+                    
+                    if (number) {
+                        addNumber(number);
+                        return;
+                    }
+                    
+                    switch (action) {
+                        case 'clear':
+                            clearCalculator();
+                            break;
+                        case 'toggle-sign':
+                            toggleSign();
+                            break;
+                        case 'percent':
+                            if (calculator.isScientificMode) {
+                                selectScientificFunction('percent');
+                            } else {
+                                calculatePercent();
+                            }
+                            break;
+                        case 'decimal':
+                            addDecimal();
+                            break;
+                        case 'equals':
+                            compute();
+                            break;
+                        case 'add':
+                        case 'subtract':
+                        case 'multiply':
+                        case 'divide':
+                            chooseOperation(action);
+                            break;
+                        case 'sin':
+                        case 'cos':
+                        case 'tan':
+                        case 'log':
+                        case 'ln':
+                        case 'sqrt':
+                        case 'square':
+                        case 'power':
+                        case 'factorial':
+                        case 'pi':
+                        case 'e':
+                        case 'reciprocal':
+                        case 'exp':
+                        case 'ten-power':
+                        case 'abs':
+                        case 'floor':
+                        case 'ceil':
+                            selectScientificFunction(action);
+                            break;
+                    }
+                });
+            });
+            
+            // 模式切换按钮事件
+            basicModeBtn.addEventListener('click', () => toggleMode(false));
+            scientificModeBtn.addEventListener('click', () => toggleMode(true));
+            
+            // 主题切换事件
+            themeToggle.addEventListener('click', toggleTheme);
+            
+            // 键盘支持
+            document.addEventListener('keydown', (event) => {
+                const key = event.key;
+                
+                // 防止重复触发
+                if (event.repeat) return;
+                
+                // 找到对应的按钮并添加效果
+                let button = null;
+                
+                if (key >= '0' && key <= '9') {
+                    button = document.querySelector(`[data-number="${key}"]`);
+                    if (button) {
+                        addButtonPressEffect(button);
+                        selectButton(button);
+                    }
+                    addNumber(key);
+                } else if (key === '.') {
+                    button = document.querySelector('[data-action="decimal"]');
+                    if (button) {
+                        addButtonPressEffect(button);
+                        selectButton(button);
+                    }
+                    addDecimal();
+                } else if (key === '+') {
+                    button = document.querySelector('[data-action="add"]');
+                    if (button) {
+                        addButtonPressEffect(button);
+                        selectButton(button);
+                    }
+                    chooseOperation('add');
+                } else if (key === '-') {
+                    button = document.querySelector('[data-action="subtract"]');
+                    if (button) {
+                        addButtonPressEffect(button);
+                        selectButton(button);
+                    }
+                    chooseOperation('subtract');
+                } else if (key === '*') {
+                    button = document.querySelector('[data-action="multiply"]');
+                    if (button) {
+                        addButtonPressEffect(button);
+                        selectButton(button);
+                    }
+                    chooseOperation('multiply');
+                } else if (key === '/') {
+                    event.preventDefault();
+                    button = document.querySelector('[data-action="divide"]');
+                    if (button) {
+                        addButtonPressEffect(button);
+                        selectButton(button);
+                    }
+                    chooseOperation('divide');
+                } else if (key === 'Enter' || key === '=') {
+                    event.preventDefault();
+                    button = document.querySelector('[data-action="equals"]');
+                    if (button) {
+                        addButtonPressEffect(button);
+                        selectButton(button);
+                    }
+                    compute();
+                } else if (key === 'Escape' || key === 'Delete') {
+                    button = document.querySelector('[data-action="clear"]');
+                    if (button) {
+                        addButtonPressEffect(button);
+                        selectButton(button);
+                    }
+                    clearCalculator();
+                }
+            });
+            
+            // 初始显示
+            updateDisplay();
+        });
+    </script>
+</body>
+</html>

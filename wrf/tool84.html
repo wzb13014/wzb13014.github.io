@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>幸运抽奖 · Pro</title>
+<style>
+:root{
+  --bg:#0a0c18; --bg2:#11142a; --panel:#151a32; --panel2:#1d2444;
+  --line:#2a3258; --text:#eef1ff; --muted:#9aa3c7; --accent:#7c5cff;
+  --accent2:#ff5d9e; --good:#3ee2a0; --warn:#ffb454; --bad:#ff5d6c;
+  --radius:16px; --shadow:0 10px 40px rgba(0,0,0,.45);
+}
+html[data-theme="light"]{
+  --bg:#eef1fa; --bg2:#e3e8f6; --panel:#ffffff; --panel2:#f2f5fc;
+  --line:#d6ddf0; --text:#1a1f38; --muted:#5e678c; --shadow:0 10px 40px rgba(50,70,140,.14);
+}
+*{box-sizing:border-box} html,body{margin:0;height:100%}
+body{font-family:"Segoe UI",-apple-system,"Microsoft YaHei",system-ui,sans-serif;color:var(--text);
+  background:radial-gradient(1200px 800px at 85% -10%,rgba(124,92,255,.20),transparent 60%),
+             radial-gradient(900px 700px at -10% 110%,rgba(255,93,158,.16),transparent 55%),var(--bg);
+  min-height:100%}
+.app{display:grid;grid-template-columns:350px 1fr;gap:14px;padding:14px;max-width:1400px;margin:0 auto}
+@media(max-width:980px){.app{grid-template-columns:1fr}}
+header.topbar{grid-column:1/-1;display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  background:linear-gradient(120deg,var(--panel),var(--panel2));border:1px solid var(--line);
+  padding:12px 18px;border-radius:var(--radius);box-shadow:var(--shadow)}
+.logo{font-size:22px;font-weight:800;letter-spacing:.5px;
+  background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.title-edit{border:none;background:transparent;color:var(--muted);font-size:14px;font-style:italic;outline:none;
+  border-bottom:1px dashed var(--line);padding:2px 4px;min-width:150px}
+.spacer{flex:1}
+.stats{display:flex;gap:10px;flex-wrap:wrap}
+.stat{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:6px 12px;text-align:center;min-width:66px}
+.stat b{display:block;font-size:18px;color:var(--accent)} .stat span{font-size:11px;color:var(--muted)}
+.icon-btn{background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:10px;padding:8px 12px;cursor:pointer;font-size:13px;transition:.15s}
+.icon-btn:hover{border-color:var(--accent);color:var(--accent)}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);display:flex;flex-direction:column;min-height:0}
+.panel h3{margin:0;padding:14px 16px;font-size:14px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px}
+.panel h3 .count{margin-left:auto;background:var(--panel2);border:1px solid var(--line);border-radius:20px;padding:1px 9px;font-size:12px;color:var(--muted)}
+.panel .body{padding:12px 14px;overflow:auto;flex:1}
+.add-row{display:flex;gap:6px;margin-bottom:8px}
+.add-row input{flex:1;min-width:0}
+input,select,textarea{background:var(--bg2);border:1px solid var(--line);color:var(--text);border-radius:9px;padding:8px 10px;font-size:13px;outline:none;width:100%}
+input:focus,select:focus,textarea:focus{border-color:var(--accent)}
+.btn{background:var(--accent);border:none;color:#fff;border-radius:9px;padding:8px 13px;cursor:pointer;font-size:13px;font-weight:600;white-space:nowrap;transition:.15s}
+.btn:hover{filter:brightness(1.08)} .btn.ghost{background:var(--panel2);border:1px solid var(--line);color:var(--text)}
+.btn.ghost:hover{border-color:var(--accent);color:var(--accent)} .btn.sm{padding:5px 9px;font-size:12px}
+.btn.pink{background:linear-gradient(90deg,var(--accent),var(--accent2))} .btn:disabled{opacity:.45;cursor:not-allowed}
+.mini-actions{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.list{display:flex;flex-direction:column;gap:6px;max-height:540px;overflow:auto}
+.pitem{display:flex;align-items:center;gap:8px;background:var(--bg2);border:1px solid var(--line);border-radius:9px;padding:7px 9px}
+.pinfo{flex:1;min-width:0}
+.pitem .nm{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pitem .meta{font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pitem.drawn{opacity:.4;text-decoration:line-through} .pitem .x{cursor:pointer;color:var(--muted);font-weight:700;flex-shrink:0}
+.pitem .x:hover{color:var(--bad)} .empty{color:var(--muted);text-align:center;padding:20px 0;font-size:13px}
+.stage-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:18px}
+.stage{width:100%;max-width:560px;height:300px;border-radius:18px;overflow:hidden;position:relative;
+  background:linear-gradient(160deg,var(--panel2),var(--bg2));border:1px solid var(--line);
+  display:flex;align-items:center;justify-content:center;box-shadow:inset 0 0 50px rgba(0,0,0,.3)}
+.stage canvas{display:block;max-width:100%}
+.slot-reel{position:relative;width:300px;height:120px;overflow:hidden;border-radius:12px;
+  background:linear-gradient(var(--panel2),var(--bg2));border:1px solid var(--line);box-shadow:inset 0 0 30px rgba(0,0,0,.4)}
+.slot-reel::before,.slot-reel::after{content:"";position:absolute;left:0;right:0;height:34px;z-index:3;pointer-events:none}
+.slot-reel::before{top:0;background:linear-gradient(var(--panel2),transparent)}
+.slot-reel::after{bottom:0;background:linear-gradient(transparent,var(--panel2))}
+.slot-strip{position:absolute;left:0;right:0;top:0;will-change:transform}
+.slot-tile{height:60px;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:800;
+  background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.flash-name{font-size:60px;font-weight:900;letter-spacing:2px;text-align:center;padding:0 20px;
+  background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.stage .hint{position:absolute;bottom:10px;left:0;right:0;text-align:center;font-size:12px;color:var(--muted);z-index:4}
+.winners-grid{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;max-width:700px}
+.controls{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;align-items:center;max-width:780px}
+.field{display:flex;flex-direction:column;gap:3px;font-size:11px;color:var(--muted)} .field select,.field input{width:118px}
+.switch{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
+body.present .topbar,body.present .footer-note{display:none}
+body.present .app{grid-template-columns:1fr;height:100vh;padding:0;max-width:none}
+body.present .panel:not(#stagePanel){display:none}
+body.present #stagePanel{grid-column:1/-1;height:100vh;border-radius:0;border:none}
+body.present #stagePanel .body{padding:0}
+body.present .stage{height:100%;max-width:none;border-radius:0}
+canvas#confetti{position:fixed;inset:0;pointer-events:none;z-index:900}
+.toast{position:fixed;left:50%;top:20px;transform:translateX(-50%);background:var(--panel);border:1px solid var(--accent);color:var(--text);padding:10px 18px;border-radius:10px;box-shadow:var(--shadow);z-index:950;font-size:14px;opacity:0;transition:.25s}
+.toast.show{opacity:1;top:28px}
+.footer-note{grid-column:1/-1;text-align:center;color:var(--muted);font-size:12px;padding:2px 0 10px}
+.footer-note kbd{background:var(--panel2);border:1px solid var(--line);border-radius:5px;padding:1px 6px;font-size:11px}
+.modal-mask{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:800;display:none;align-items:center;justify-content:center}
+.modal-mask.show{display:flex}
+.modal{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;width:min(580px,92vw);box-shadow:var(--shadow);max-height:88vh;overflow:auto}
+.modal h4{margin:0 0 12px;font-size:15px;display:flex;align-items:center}
+.modal .closex{margin-left:auto;cursor:pointer;color:var(--muted);font-size:18px}
+.modal textarea{height:150px;resize:vertical;font-family:ui-monospace,Menlo,Consolas,monospace}
+.modal .row{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
+.tier-row{display:flex;gap:8px;margin-bottom:8px;align-items:center}
+.tier-row input.tname{flex:2} .tier-row input.tcount{width:64px;flex:none}
+.sec-title{font-size:13px;color:var(--accent);margin:14px 0 8px;font-weight:700;border-top:1px solid var(--line);padding-top:12px}
+.chk-row{display:flex;align-items:flex-start;gap:8px;margin:8px 2px 2px;font-size:13px;color:var(--text);cursor:pointer;line-height:1.5}
+.chk-row input{margin-top:3px;width:15px;height:15px;accent-color:var(--accent);flex:none}
+.snd-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
+.snd-row select{flex:1;min-width:160px}
+.snd-file{font-size:12px;color:var(--muted)}
+.hist-item{background:var(--bg2);border:1px solid var(--line);border-radius:9px;padding:8px 10px;margin-bottom:7px;font-size:13px}
+.hist-item .h-top{display:flex;justify-content:space-between;align-items:center;gap:6px}
+.hist-item .h-win{font-weight:700;color:var(--good)} .hist-item .h-tier{font-size:11px;color:var(--accent);background:var(--panel2);border:1px solid var(--line);border-radius:20px;padding:1px 8px}
+.hist-item .h-time{font-size:11px;color:var(--muted);margin-top:3px} .hist-item .h-undo{cursor:pointer;font-size:11px;color:var(--accent)}
+.hist-item .h-undo:hover{text-decoration:underline}
+::-webkit-scrollbar{width:9px;height:9px}::-webkit-scrollbar-thumb{background:var(--line);border-radius:8px}
+
+/* ===== 全屏舞台 ===== */
+#overlay{position:fixed;inset:0;z-index:700;display:none;align-items:center;justify-content:center;
+  background:radial-gradient(circle at 50% 40%,rgba(124,92,255,.25),transparent 60%),#05060f;flex-direction:column}
+#overlay.show{display:flex;animation:fade .4s ease}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.ov-stage{position:relative;width:min(94vw,660px);height:min(72vh,540px);display:flex;align-items:center;justify-content:center}
+.ov-glow{position:absolute;width:120%;height:120%;border-radius:50%;
+  background:radial-gradient(circle,rgba(124,92,255,.35),transparent 60%);filter:blur(30px);animation:pulse 2.4s ease-in-out infinite}
+@keyframes pulse{0%,100%{transform:scale(.9);opacity:.6}50%{transform:scale(1.1);opacity:1}}
+.ov-ring{position:absolute;width:88%;height:88%;border-radius:50%;
+  background:conic-gradient(from 0deg,transparent,rgba(255,93,158,.6),transparent 60%,rgba(124,92,255,.6),transparent);
+  -webkit-mask:radial-gradient(circle,transparent 60%,#000 61%);mask:radial-gradient(circle,transparent 60%,#000 61%);animation:spin 6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ov-wheel{position:relative;z-index:2}
+.ov-flash{position:relative;z-index:2;font-size:clamp(40px,9vw,92px);font-weight:900;letter-spacing:3px;text-align:center;
+  background:linear-gradient(90deg,#fff,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:0 0 40px rgba(124,92,255,.6)}
+.ov-slot{position:relative;z-index:2;width:min(80vw,360px);height:150px;overflow:hidden;border-radius:16px;
+  background:linear-gradient(#1a1f3a,#0c0f20);border:2px solid rgba(124,92,255,.5);box-shadow:inset 0 0 40px rgba(0,0,0,.6),0 0 30px rgba(124,92,255,.3)}
+.ov-slot::before,.ov-slot::after{content:"";position:absolute;left:0;right:0;height:44px;z-index:3;pointer-events:none}
+.ov-slot::before{top:0;background:linear-gradient(#0c0f20,transparent)} .ov-slot::after{bottom:0;background:linear-gradient(transparent,#0c0f20)}
+.ov-slot-strip{position:absolute;left:0;right:0;top:0;will-change:transform}
+.ov-galaxy{position:absolute;inset:0;width:100%;height:100%;z-index:2;border-radius:18px}
+.ov-slot-tile{height:75px;display:flex;align-items:center;justify-content:center;font-size:34px;font-weight:900;
+  background:linear-gradient(90deg,#fff,var(--accent));-webkit-background-clip:text;background-clip:text;color:transparent}
+.ov-barrage{position:fixed;inset:0;overflow:hidden;z-index:5;display:none}
+.bc{position:absolute;left:0;white-space:nowrap;font-weight:800;font-size:24px;
+  background:linear-gradient(90deg,#fff,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;color:transparent}
+@keyframes barrageMove{from{transform:translateX(100vw)}to{transform:translateX(-110%)}}
+.ov-grid{position:relative;z-index:2;display:grid;grid-template-columns:repeat(6,1fr);gap:12px;width:min(94vw,820px);max-height:72vh;overflow:auto;padding:8px}
+.sg-card{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:14px 6px;text-align:center;font-weight:700;font-size:15px;color:#cfd8ff;opacity:.30;filter:saturate(.55);transition:.15s;backdrop-filter:blur(2px)}
+.sg-card.hot{opacity:1;filter:none;background:linear-gradient(140deg,var(--accent),var(--accent2));color:#fff;box-shadow:0 0 32px rgba(124,92,255,.85);transform:scale(1.08);z-index:3}
+.sg-light{position:absolute;width:170px;height:170px;border-radius:50%;pointer-events:none;transform:translate(-50%,-50%);
+  background:radial-gradient(circle,rgba(255,255,255,.6),rgba(124,92,255,.28) 42%,transparent 70%);
+  box-shadow:0 0 80px 38px rgba(124,92,255,.45);transition:left .18s ease,top .18s ease;z-index:1}
+.reveal{position:relative;z-index:6;text-align:center;display:none}
+.reveal.show{display:block;animation:pop .6s ease}
+.reveal .r-label{font-size:15px;color:var(--accent2);letter-spacing:3px;margin-bottom:8px}
+.reveal .r-name{font-size:clamp(44px,10vw,100px);font-weight:900;line-height:1.1;
+  background:linear-gradient(90deg,#fff,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:0 0 50px rgba(124,92,255,.7);animation:pop .7s ease}
+.reveal .r-sub{font-size:18px;color:var(--muted);margin-top:6px}
+.reveal .r-cards{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-top:18px}
+.reveal .r-card{background:linear-gradient(140deg,var(--accent),var(--accent2));color:#fff;border-radius:14px;padding:12px 20px;font-weight:800;font-size:20px;box-shadow:var(--shadow);animation:pop .5s ease}
+.ov-hint{position:absolute;bottom:26px;left:0;right:0;text-align:center;color:#aab;font-size:13px;z-index:7}
+.ov-close{position:absolute;top:18px;right:22px;z-index:9;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;border-radius:10px;padding:8px 14px;cursor:pointer;font-size:13px}
+.ov-close:hover{background:rgba(255,255,255,.22)}
+@keyframes pop{0%{transform:scale(.4);opacity:0}60%{transform:scale(1.12)}100%{transform:scale(1);opacity:1}}
+</style>
+</head>
+<body>
+<canvas id="confetti"></canvas>
+<div class="toast" id="toast"></div>
+
+<div class="app">
+  <header class="topbar">
+    <div class="logo">🎉 幸运抽奖 Pro</div>
+    <input class="title-edit" id="drawTitle" value="幸运大抽奖" title="点击修改活动标题">
+    <div class="spacer"></div>
+    <div class="stats">
+      <div class="stat"><b id="stTotal">0</b><span>总人数</span></div>
+      <div class="stat"><b id="stRemaining">0</b><span>可抽</span></div>
+      <div class="stat"><b id="stDrawn">0</b><span>已抽</span></div>
+      <div class="stat"><b id="stRounds">0</b><span>轮次</span></div>
+    </div>
+    <button class="icon-btn" id="recBtn" title="中奖记录">🏆 记录</button>
+    <button class="icon-btn" id="themeBtn" title="切换主题">🌗</button>
+    <button class="icon-btn" id="soundBtn" title="音效开关">🔊</button>
+    <button class="icon-btn" id="fsBtn" title="仅舞台全屏">⛶</button>
+    <button class="icon-btn" id="setBtn" title="奖项与设置">⚙️</button>
+  </header>
+
+  <!-- 左：参与者 -->
+  <section class="panel">
+    <h3>📋 参与者 <span class="count" id="pCount">0</span></h3>
+    <div class="body">
+      <div class="add-row">
+        <input id="nameInput" placeholder="姓名" onkeydown="if(event.key==='Enter')addOne()">
+        <input id="deptInput" placeholder="部门" style="width:80px">
+        <input id="idInput" placeholder="工号" style="width:80px">
+        <button class="btn" onclick="addOne()">＋</button>
+      </div>
+      <div class="mini-actions">
+        <button class="btn ghost sm" onclick="openBatch()">批量粘贴</button>
+        <button class="btn ghost sm" onclick="importFile()">导入文件</button>
+        <button class="btn ghost sm" onclick="openExport()">导出名单</button>
+        <button class="btn ghost sm" onclick="resetDrawn()">恢复未抽</button>
+        <button class="btn ghost sm" onclick="clearParticipants()" style="color:var(--bad)">清空</button>
+      </div>
+      <div class="list" id="plist"></div>
+      <input type="file" id="fileInput" accept=".txt,.csv" style="display:none" onchange="handleFile(event)">
+    </div>
+  </section>
+
+  <!-- 中：舞台 -->
+  <section class="panel" id="stagePanel">
+    <h3>🎯 抽奖舞台</h3>
+    <div class="body stage-wrap">
+      <div class="stage" id="stage">
+        <canvas id="wheelCanvas" width="520" height="520" style="display:none"></canvas>
+        <div class="slot-reel" id="slotReel" style="display:none"><div class="slot-strip" id="slotStrip"></div></div>
+        <div class="flash-name" id="flashName" style="display:none">准备就绪</div>
+        <div class="flash-name" id="modePreview" style="display:none"></div>
+        <div class="hint" id="stageHint">选择模式后点击「开始抽奖」</div>
+      </div>
+      <div class="winners-grid" id="winnersGrid"></div>
+      <div class="controls">
+        <div class="field"><span>抽取模式</span>
+          <select id="modeSel">
+            <option value="wheel">🎡 幸运大转盘</option>
+            <option value="slot">🎰 3D 滚筒</option>
+            <option value="flash">✨ 炫光闪名</option>
+            <option value="barrage">💬 弹幕飞驰</option>
+            <option value="galaxy">🌌 星河汇聚</option>
+          </select>
+        </div>
+        <div class="field"><span>奖项</span><select id="tierSel"></select></div>
+        <div class="field"><span>动画(秒)</span><input type="number" id="animSec" min="1.5" max="12" value="4" step="0.5"></div>
+        <label class="switch"><input type="checkbox" id="noDup" checked> 禁止重复</label>
+        <label class="switch"><input type="checkbox" id="soundChk" checked> 音效</label>
+        <button class="btn pink" id="drawBtn" style="font-size:16px;padding:11px 26px" onclick="startDraw()">🎲 开始抽奖</button>
+      </div>
+    </div>
+  </section>
+
+  <div class="footer-note">
+    快捷键：<kbd>空格/回车</kbd> 开始·停止 · <kbd>Esc</kbd> 关闭/退出全屏 · 数据自动保存在本机浏览器
+  </div>
+</div>
+
+<!-- 批量粘贴 -->
+<div class="modal-mask" id="batchModal"><div class="modal">
+  <h4>批量添加参与者 <span class="closex" onclick="closeBatch()">✕</span></h4>
+  <p style="font-size:12px;color:var(--muted);margin:0 0 8px">每行一个，支持 <code>姓名|部门|工号</code> 或 <code>姓名,部门,工号</code>。</p>
+  <textarea id="batchText" placeholder="张三|研发部|1001&#10;李四|市场部|1002"></textarea>
+  <div class="row"><button class="btn ghost" onclick="closeBatch()">取消</button><button class="btn" onclick="applyBatch()">添加</button></div>
+</div></div>
+
+<!-- 设置：奖项 + 音效 -->
+<div class="modal-mask" id="setModal"><div class="modal">
+  <h4>⚙️ 奖项与音效设置 <span class="closex" onclick="saveSettings()">✕</span></h4>
+  <div class="sec-title">奖项（名称与名额均可自定义）</div>
+  <div id="tierList"></div>
+  <div class="row" style="justify-content:flex-start"><button class="btn ghost sm" onclick="addTier()">＋ 新增奖项</button></div>
+  <div class="sec-title">抽奖音效</div>
+  <div class="snd-row">
+    <select id="soundModeSel">
+      <option value="drum">🥁 鼓点（默认）</option>
+      <option value="fanfare">🎺 号角</option>
+      <option value="electronic">🎛️ 电子</option>
+      <option value="classic">🎻 经典</option>
+      <option value="custom">📁 自定义（上传音乐）</option>
+    </select>
+  </div>
+  <div class="snd-row" id="sndFileRow" style="display:none">
+    <input type="file" id="soundFileInput" accept="audio/*" onchange="uploadSound(event)" style="width:auto">
+    <span class="snd-file" id="sndFileName"></span>
+    <button class="btn ghost sm" onclick="playCustomPreview()">试听</button>
+  </div>
+  <div class="sec-title">抽奖流程选项</div>
+  <label class="chk-row"><input type="checkbox" id="strictSeqChk"> <span>连续抽完所有奖项（抽完1等自动抽2等，直到全部抽完）</span></label>
+  <label class="chk-row"><input type="checkbox" id="strictSecChk"> <span>严格动画时长（填几秒就跑几秒，时间到才出结果；关闭则持续滚动，需手动停止）</span></label>
+  <div class="row"><button class="btn" onclick="saveSettings()">保存</button></div>
+</div></div>
+
+<!-- 导出名单 -->
+<div class="modal-mask" id="expModal"><div class="modal" style="width:min(380px,92vw)">
+  <h4>导出名单 <span class="closex" onclick="closeExport()">✕</span></h4>
+  <p style="font-size:12px;color:var(--muted);margin:0 0 12px">请选择导出格式：</p>
+  <div class="mini-actions" style="justify-content:center">
+    <button class="btn" onclick="doExport('txt')">📄 TXT</button>
+    <button class="btn" onclick="doExport('csv')">📊 CSV</button>
+  </div>
+</div></div>
+
+<!-- 中奖记录弹窗 -->
+<div class="modal-mask" id="histModal"><div class="modal">
+  <h4>🏆 中奖记录 <span class="closex" onclick="closeHistory()">✕</span></h4>
+  <div class="mini-actions">
+    <button class="btn ghost sm" onclick="copyWinners()">复制名单</button>
+    <button class="btn ghost sm" onclick="exportHistory('csv')">导出CSV</button>
+    <button class="btn ghost sm" onclick="exportHistory('json')">导出JSON</button>
+    <button class="btn ghost sm" onclick="clearHistory()" style="color:var(--bad)">清空记录</button>
+  </div>
+  <div id="histList"></div>
+</div></div>
+
+<!-- 全屏舞台 -->
+<div id="overlay">
+  <button class="ov-close" onclick="closeOverlay()">✕ 关闭 (Esc)</button>
+  <div class="ov-stage" id="ovStage">
+    <div class="ov-glow"></div>
+    <div class="ov-ring"></div>
+    <canvas id="ovWheel" width="520" height="520" class="ov-wheel" style="display:none"></canvas>
+    <div class="ov-slot" id="ovSlot" style="display:none"><div class="ov-slot-strip" id="ovSlotStrip"></div></div>
+    <div class="ov-flash" id="ovFlash" style="display:none">准备就绪</div>
+    <canvas id="ovGalaxy" class="ov-galaxy" style="display:none"></canvas>
+    <div class="reveal" id="reveal">
+      <div class="r-label" id="rLabel">🎊 恭喜中奖 🎊</div>
+      <div class="r-name" id="rName"></div>
+      <div class="r-sub" id="rSub"></div>
+      <div class="r-cards" id="rCards"></div>
+    </div>
+  </div>
+  <div class="ov-barrage" id="ovBarrage"></div>
+  <div class="ov-hint" id="ovHint">抽取中…</div>
+</div>
+
+<script>
+(function(){
+"use strict";
+const LS_KEY="lucky_draw_pro_v4";
+const DEFAULT_STATE={
+  participants:[],history:[],title:"幸运大抽奖",theme:"dark",sound:true,
+  mode:"wheel",animSec:4,noDup:true,soundMode:"drum",soundFile:"",
+  strictSeq:false,strictSec:true,
+  tiers:[{id:"t1",name:"一等奖",count:1},{id:"t2",name:"二等奖",count:2},{id:"t3",name:"三等奖",count:3}],
+  currentTier:"t1"
+};
+let state=JSON.parse(JSON.stringify(DEFAULT_STATE));
+
+/* ---------- 持久化（带校验迁移，绝不因旧数据崩溃） ---------- */
+function clone(o){return JSON.parse(JSON.stringify(o));}
+function migrate(data){
+  const s=JSON.parse(JSON.stringify(DEFAULT_STATE));
+  if(data&&typeof data==="object"){
+    for(const k in DEFAULT_STATE){
+      if(!(k in data)) continue;
+      const def=DEFAULT_STATE[k], val=data[k];
+      if(Array.isArray(def)){ if(Array.isArray(val)) s[k]=val; }
+      else if(typeof def==="number"){ if(typeof val==="number"&&!isNaN(val)) s[k]=val; }
+      else if(typeof def==="boolean"){ if(typeof val==="boolean") s[k]=val; }
+      else if(typeof def==="string"){ if(typeof val==="string") s[k]=val; }
+    }
+  }
+  if(!Array.isArray(s.participants)) s.participants=[];
+  s.participants=s.participants.map(p=>({id:p&&p.id||(Date.now().toString(36)+Math.random().toString(36).slice(2,6)),
+    name:String(p&&p.name||"").trim(),dept:String(p&&p.dept||"").trim(),empid:String(p&&p.empid||"").trim(),
+    drawn:!!(p&&p.drawn)})).filter(p=>p.name);
+  if(!Array.isArray(s.tiers)||!s.tiers.length) s.tiers=clone(DEFAULT_STATE.tiers);
+  s.tiers.forEach((t,i)=>{ if(!t.id)t.id="t"+(i+1); t.name=String(t.name||("奖项"+(i+1))); t.count=Math.max(1,parseInt(t.count)||1); });
+  if(!s.tiers.find(t=>t.id===s.currentTier)) s.currentTier=s.tiers[0].id;
+  if(!Array.isArray(s.history)) s.history=[];
+  return s;
+}
+function save(){try{localStorage.setItem(LS_KEY,JSON.stringify(state));}catch(e){}}
+function load(){try{const r=localStorage.getItem(LS_KEY);if(r)state=migrate(JSON.parse(r));}catch(e){state=migrate(null);}}
+
+const $=id=>document.getElementById(id);
+function toast(m){const t=$("toast");t.textContent=m;t.classList.add("show");clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove("show"),1700);}
+function uniqId(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
+function download(name,content){const b=new Blob([content],{type:"text/plain;charset=utf-8"});const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);}
+function sample(arr){return arr[(Math.random()*arr.length)|0];}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
+
+/* ---------- 参与者 ---------- */
+function addParticipant(name,dept,empid){
+  name=(name||"").trim();if(!name)return false;
+  state.participants.push({id:uniqId(),name,dept:(dept||"").trim(),empid:(empid||"").trim(),drawn:false});
+  return true;
+}
+function addOne(){
+  const n=$("nameInput").value,d=$("deptInput").value,i=$("idInput").value;
+  if(addParticipant(n,d,i)){$("nameInput").value="";$("deptInput").value="";$("idInput").value="";renderParticipants();save();toast("已添加："+n.trim());}
+  else toast("请输入姓名");
+}
+function removeParticipant(id){state.participants=state.participants.filter(p=>p.id!==id);renderParticipants();save();}
+function clearParticipants(){if(!state.participants.length)return;if(confirm("确定清空所有参与者？")){state.participants=[];renderParticipants();save();}}
+function resetDrawn(){state.participants.forEach(p=>p.drawn=false);renderParticipants();save();toast("已恢复全部为未抽");}
+function metaLine(p){return [p.dept,p.empid].filter(Boolean).map(esc).join(" · ");}
+function exportParticipants(){download("参与者名单.txt",state.participants.map(p=>`${p.name}|${p.dept||""}|${p.empid||""}`).join("\n"));}
+function exportParticipantsCSV(){
+  let csv="姓名,部门,工号\n";
+  state.participants.forEach(p=>{csv+=`"${p.name}","${p.dept||""}","${p.empid||""}"\n`;});
+  download("参与者名单.csv",csv);toast("已导出 CSV");
+}
+function renderParticipants(){
+  const el=$("plist");el.innerHTML="";$("pCount").textContent=state.participants.length;
+  $("stTotal").textContent=state.participants.length;
+  $("stRemaining").textContent=state.participants.filter(p=>!p.drawn).length;
+  $("stDrawn").textContent=state.participants.filter(p=>p.drawn).length;
+  if(!state.participants.length){el.innerHTML='<div class="empty">还没有参与者，先在左侧添加吧～</div>';return;}
+  state.participants.forEach(p=>{
+    const d=document.createElement("div");d.className="pitem"+(p.drawn?" drawn":"");
+    d.innerHTML=`<div class="pinfo"><div class="nm">${esc(p.name)}</div>`+(metaLine(p)?`<div class="meta">${metaLine(p)}</div>`:"")+`</div><span class="x" title="删除">✕</span>`;
+    d.querySelector(".x").onclick=()=>removeParticipant(p.id);el.appendChild(d);
+  });
+}
+
+/* ---------- 批量 / 文件 ---------- */
+function openBatch(){$("batchModal").classList.add("show");$("batchText").focus();}
+function closeBatch(){$("batchModal").classList.remove("show");}
+function parseLine(line){
+  line=line.trim();if(!line)return null;
+  let parts=line.split("|");if(parts.length<2)parts=line.split(",");
+  return {name:parts[0],dept:parts[1]||"",empid:parts[2]||""};
+}
+function applyBatch(){
+  let added=0;$("batchText").value.split(/\r?\n/).forEach(line=>{const p=parseLine(line);if(p&&addParticipant(p.name,p.dept,p.empid))added++;});
+  closeBatch();$("batchText").value="";renderParticipants();save();toast(`成功添加 ${added} 人`);
+}
+function importFile(){$("fileInput").click();}
+function handleFile(e){
+  const f=e.target.files[0];if(!f)return;const r=new FileReader();
+  r.onload=()=>{let added=0;r.result.split(/\r?\n/).map(s=>s.trim()).filter(Boolean).forEach(line=>{
+    const p=parseLine(line);if(p&&addParticipant(p.name,p.dept,p.empid))added++;
+  });renderParticipants();save();toast(`从文件导入 ${added} 人`);};
+  r.readAsText(f);e.target.value="";
+}
+
+/* ---------- 导出弹窗 ---------- */
+function openExport(){$("expModal").classList.add("show");}
+function closeExport(){$("expModal").classList.remove("show");}
+function doExport(fmt){if(fmt==="csv")exportParticipantsCSV();else exportParticipants();closeExport();}
+
+/* ---------- 奖项 ---------- */
+function renderTierSel(){
+  const sel=$("tierSel");sel.innerHTML="";
+  if(!state.tiers.length){const o=document.createElement("option");o.value="";o.textContent="（无奖项，按人数抽）";sel.appendChild(o);return;}
+  state.tiers.forEach(t=>{const o=document.createElement("option");o.value=t.id;o.textContent=`${t.name} ×${t.count}`;sel.appendChild(o);});
+  if(!state.tiers.find(t=>t.id===state.currentTier))state.currentTier=state.tiers[0].id;
+  sel.value=state.currentTier;
+}
+function renderTierEdit(){
+  const el=$("tierList");el.innerHTML="";
+  state.tiers.forEach((t,i)=>{
+    const d=document.createElement("div");d.className="tier-row";
+    d.innerHTML=`<input class="tname" value="${esc(t.name)}" data-i="${i}" data-k="name">
+      <input class="tcount" type="number" min="1" value="${t.count}" data-i="${i}" data-k="count">
+      <button class="btn ghost sm" data-del="${i}">✕</button>`;
+    el.appendChild(d);
+  });
+  el.querySelectorAll("input").forEach(inp=>inp.oninput=()=>{const i=+inp.dataset.i,k=inp.dataset.k;state.tiers[i][k]=k==="count"?Math.max(1,parseInt(inp.value)||1):inp.value;});
+  el.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{state.tiers.splice(+b.dataset.del,1);renderTierEdit();});
+}
+function addTier(){state.tiers.push({id:uniqId(),name:"新奖项",count:1});renderTierEdit();}
+
+/* ---------- 音效设置 ---------- */
+function openSet(){$("setModal").classList.add("show");renderTierEdit();$("soundModeSel").value=state.soundMode;
+  $("sndFileRow").style.display=state.soundMode==="custom"?"flex":"none";
+  $("sndFileName").textContent=state.soundFile?"已上传音乐✔":"尚未上传";
+  $("strictSeqChk").checked=!!state.strictSeq;
+  $("strictSecChk").checked=!!state.strictSec;}
+function saveSettings(){$("setModal").classList.remove("show");state.strictSeq=$("strictSeqChk").checked;state.strictSec=$("strictSecChk").checked;renderTierSel();save();toast("设置已保存");}
+function uploadSound(e){
+  const f=e.target.files[0];if(!f)return;
+  const rd=new FileReader();rd.onload=()=>{state.soundFile=rd.result;$("sndFileName").textContent="已上传："+f.name+"✔";save();};
+  rd.readAsDataURL(f);e.target.value="";
+}
+function playCustomPreview(){
+  if(!state.soundFile){toast("请先上传音乐");return;}
+  const a=new Audio(state.soundFile);a.volume=0.7;a.play().catch(()=>toast("无法播放"));
+}
+
+/* ---------- 抽奖核心：池子 / 名额 ---------- */
+function pool(){
+  const arr=state.participants;
+  return state.noDup?arr.filter(p=>!p.drawn):arr.slice();
+}
+function getCount(){const t=state.tiers.find(t=>t.id===state.currentTier);return t?Math.max(1,t.count):1;}
+
+/* ---------- 音频引擎 ---------- */
+let actx=null;
+function audio(){
+  if(!actx){try{actx=new (window.AudioContext||window.webkitAudioContext)();}catch(e){}}
+  if(actx&&actx.state==="suspended"){actx.resume().catch(()=>{});}
+  return actx;
+}
+function tone(freq,dur,type,vol){
+  if(!state.sound||!$("soundChk").checked)return;
+  const c=audio();if(!c)return;
+  const o=c.createOscillator(),g=c.createGain();
+  o.type=type||"sine";o.frequency.value=freq;
+  const v=vol||0.12,t=c.currentTime;
+  g.gain.setValueAtTime(0.0001,t);
+  g.gain.exponentialRampToValueAtTime(v,t+0.012);
+  g.gain.exponentialRampToValueAtTime(0.0001,t+(dur||0.15));
+  o.connect(g);g.connect(c.destination);o.start(t);o.stop(t+(dur||0.15)+0.03);
+}
+function fanfare(){[523,659,784,1047].forEach((f,i)=>setTimeout(()=>tone(f,0.25,"triangle",0.14),i*110));}
+let spinTimer=null,spinAudio=null;
+function startSpinSound(){
+  if(!state.sound||!$("soundChk").checked)return null;
+  audio();
+  if(state.soundMode==="custom"&&state.soundFile){
+    try{spinAudio=new Audio(state.soundFile);spinAudio.loop=true;spinAudio.volume=0.55;spinAudio.play().catch(()=>{});}catch(e){}
+    return ()=>{if(spinAudio){try{spinAudio.pause();spinAudio.currentTime=0;}catch(e){}spinAudio=null;}};
+  }
+  const m=state.soundMode==="custom"?"drum":state.soundMode;
+  spinTimer=setInterval(()=>{
+    if(m==="drum"){tone(110,0.14,"sine",0.22);if(Math.random()<0.5)tone(1700,0.03,"square",0.10);}
+    else if(m==="fanfare"){const sc=[392,494,587,659,784];tone(sc[(Math.random()*sc.length)|0],0.16,"sawtooth",0.10);}
+    else if(m==="electronic"){tone(180+Math.random()*620,0.05,"square",0.09);}
+    else if(m==="classic"){const sc=[262,330,392,494];tone(sc[(Math.random()*sc.length)|0],0.18,"triangle",0.11);}
+  },m==="electronic"?95:150);
+  return ()=>{if(spinTimer){clearInterval(spinTimer);spinTimer=null;}};
+}
+function stopSpinSound(stopFn){if(stopFn)stopFn();}
+
+/* ---------- 五彩纸屑 ---------- */
+const cv=$("confetti"),cx=cv.getContext("2d");let parts=[],confOn=false;
+function resize(){cv.width=innerWidth;cv.height=innerHeight;}addEventListener("resize",resize);resize();
+function launchConfetti(){
+  const cs=["#7c5cff","#ff5d9e","#3ee2a0","#ffb454","#ffffff","#5cc8ff"];
+  for(let i=0;i<160;i++)parts.push({x:Math.random()*cv.width,y:-20-Math.random()*cv.height*0.3,r:4+Math.random()*7,
+    c:cs[(Math.random()*cs.length)|0],vx:(Math.random()-0.5)*3.5,vy:2+Math.random()*4.5,rot:Math.random()*6.28,vr:(Math.random()-0.5)*0.35});
+  if(!confOn){confOn=true;requestAnimationFrame(confLoop);}
+}
+function confLoop(){
+  cx.clearRect(0,0,cv.width,cv.height);
+  parts.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=0.04;p.rot+=p.vr;});
+  parts=parts.filter(p=>p.y<cv.height+40);
+  parts.forEach(p=>{cx.save();cx.translate(p.x,p.y);cx.rotate(p.rot);cx.fillStyle=p.c;cx.fillRect(-p.r/2,-p.r/2,p.r,p.r*0.6);cx.restore();});
+  if(parts.length)requestAnimationFrame(confLoop);else{cx.clearRect(0,0,cv.width,cv.height);confOn=false;}
+}
+
+/* ---------- 转盘绘制 ---------- */
+function drawWheelViz(canvas,rotation,labels,highlightIdx){
+  const c=canvas.getContext("2d");const W=canvas.width,H=canvas.height;const cxp=W/2,cyp=H/2,R=W/2-14;
+  const n=labels.length;const seg=2*Math.PI/n;c.clearRect(0,0,W,H);
+  for(let i=0;i<n;i++){
+    const a0=rotation+i*seg-Math.PI/2,a1=a0+seg;
+    c.beginPath();c.moveTo(cxp,cyp);c.arc(cxp,cyp,R,a0,a1);c.closePath();
+    c.fillStyle=highlightIdx===i?"#7c5cff":(i%2?"#2a2150":"#352a63");c.fill();
+    c.strokeStyle="rgba(255,255,255,.12)";c.lineWidth=2;c.stroke();
+    if(highlightIdx===i){c.save();c.shadowColor="#fff";c.shadowBlur=25;c.fill();c.restore();}
+    if(n<=40){c.save();c.translate(cxp,cyp);c.rotate(a0+seg/2);c.textAlign="right";c.textBaseline="middle";
+      c.fillStyle="#fff";c.font="bold 16px 'Microsoft YaHei',sans-serif";
+      let nm=labels[i];if(nm.length>7)nm=nm.slice(0,6)+"…";c.fillText(nm,R-22,0);c.restore();}
+  }
+  c.beginPath();c.arc(cxp,cyp,R,0,2*Math.PI);c.lineWidth=6;c.strokeStyle="#7c5cff";c.stroke();
+  c.beginPath();c.arc(cxp,cyp,R+8,0,2*Math.PI);c.lineWidth=2;c.strokeStyle="rgba(255,93,158,.6)";c.stroke();
+  c.beginPath();c.arc(cxp,cyp,30,0,2*Math.PI);c.fillStyle="#0a0c18";c.fill();c.strokeStyle="#7c5cff";c.lineWidth=3;c.stroke();
+  c.fillStyle="#fff";c.font="bold 22px sans-serif";c.textAlign="center";c.textBaseline="middle";c.fillText("GO",cxp,cyp);
+  c.beginPath();c.moveTo(cxp,cyp-R-16);c.lineTo(cxp-14,cyp-R+8);c.lineTo(cxp+14,cyp-R+8);c.closePath();
+  c.fillStyle="#ff5d9e";c.fill();c.strokeStyle="#fff";c.lineWidth=2;c.stroke();
+}
+
+/* ---------- 显示控制 ---------- */
+function showOnly(which){
+  const stage=$("ovStage");
+  if(which==="barrage"){stage.style.display="none";$("ovBarrage").style.display="block";}
+  else{stage.style.display="flex";$("ovBarrage").style.display="none";}
+  $("ovWheel").style.display=which==="wheel"?"block":"none";
+  $("ovSlot").style.display=which==="slot"?"block":"none";
+  $("ovFlash").style.display=which==="flash"?"block":"none";
+  $("ovGalaxy").style.display=which==="galaxy"?"block":"none";
+  $("reveal").classList.remove("show");
+}
+let wheelRot=0;
+function safeAnimate(done,sec,runner,loop){
+  let finished=false;
+  const finish=()=>{if(finished)return;finished=true;if(safety)clearTimeout(safety);done();};
+  const safety=loop?null:setTimeout(finish,sec*1000+1200);
+  runner(finish);
+  return finish;
+}
+
+/* ---------- 五种动画（均带安全兜底，必回调） ---------- */
+function animWheel(winner,poolArr,sec,done){
+  const c=$("ovWheel");showOnly("wheel");$("ovHint").textContent="转盘转动中…";
+  const n=poolArr.length;const visN=Math.min(Math.max(n,14),60);
+  let labels=[];
+  if(n<=60)labels=poolArr.map(p=>p.name);
+  else for(let i=0;i<visN;i++)labels.push(sample(poolArr).name);
+  let k;if(n<=60)k=poolArr.indexOf(winner);else k=(Math.random()*visN)|0;
+  labels[k]=winner.name;
+  const seg=2*Math.PI/visN;
+  const landing=(2*Math.PI-(k*seg+seg/2))%(2*Math.PI);
+  let target=wheelRot-(wheelRot%(2*Math.PI))+landing;
+  while(target<=wheelRot)target+=2*Math.PI;target+=5*2*Math.PI;
+  const start=wheelRot,dur=sec*1000;let t0=performance.now();let lastTick=-999;const loop=!state.strictSec;
+  const runner=finish=>{
+    function frame(t){
+      if(stopRequested){wheelRot=target;drawWheelViz(c,wheelRot,labels,k);finish();return;}
+      const p=Math.min(1,(t-t0)/dur);const e=1-Math.pow(1-p,3);
+      wheelRot=start+(target-start)*e;
+      const idx=Math.floor((wheelRot+Math.PI/2)/seg);
+      if(idx!==lastTick&&p<0.98){lastTick=idx;tone(1700,0.03,"square",0.10);}
+      drawWheelViz(c,wheelRot,labels,-1);
+      if(p<1)requestAnimationFrame(frame);
+      else if(loop){wheelRot=start;t0=performance.now();requestAnimationFrame(frame);}
+      else{drawWheelViz(c,wheelRot,labels,k);finish();}
+    }
+    requestAnimationFrame(frame);
+  };
+  safeAnimate(done,sec,runner,loop);
+}
+function animSlot(winner,poolArr,sec,done){
+  const slot=$("ovSlot"),strip=$("ovSlotStrip");showOnly("slot");$("ovHint").textContent="滚筒滚动中…";
+  const tileH=75;const L=Math.min(poolArr.length,50);
+  let seq=[];for(let i=0;i<L;i++)seq.push(sample(poolArr).name);seq.push(winner.name);
+  strip.innerHTML=seq.map(n=>`<div class="ov-slot-tile">${esc(n)}</div>`).join("");
+  const totalH=seq.length*tileH;
+  const offset=-(totalH-tileH);
+  const loop=!state.strictSec;
+  let t0=performance.now(),dur=sec*1000,lastTick=-1;
+  const kick=()=>{strip.style.transition=`transform ${dur}ms cubic-bezier(.18,.9,.25,1)`;strip.style.transform=`translateY(${offset}px)`;strip.style.filter="blur(1.4px)";};
+  strip.style.transition="none";strip.style.transform="translateY(0px)";strip.style.filter="none";void strip.offsetHeight;
+  kick();
+  const runner=finish=>{
+    function spin(){
+      if(stopRequested){strip.style.transition="none";strip.style.transform=`translateY(${offset}px)`;strip.style.filter="blur(0)";finish();return;}
+      const p=Math.min(1,(performance.now()-t0)/dur);const idx=Math.floor(p*seq.length);
+      if(idx!==lastTick){lastTick=idx;tone(1700,0.03,"square",0.10);}
+      if(p<1)requestAnimationFrame(spin);
+      else if(loop){strip.style.transition="none";strip.style.transform="translateY(0px)";void strip.offsetHeight;t0=performance.now();kick();requestAnimationFrame(spin);}
+      else{strip.style.filter="blur(0)";finish();}
+    }
+    requestAnimationFrame(spin);
+  };
+  safeAnimate(done,sec,runner,loop);
+}
+function animFlash(winner,poolArr,sec,done){
+  const f=$("ovFlash");showOnly("flash");$("ovHint").textContent="闪烁抽取中…";
+  let t0=performance.now(),dur=sec*1000;let last=0;const loop=!state.strictSec;
+  const runner=finish=>{
+    function frame(t){
+      if(stopRequested){f.textContent=winner.name;finish();return;}
+      if(t-t0<dur){f.textContent=sample(poolArr).name;if(t-last>120){last=t;tone(1700,0.03,"square",0.10);}requestAnimationFrame(frame);}
+      else if(loop){t0=performance.now();requestAnimationFrame(frame);}
+      else{f.textContent=winner.name;finish();}
+    }
+    requestAnimationFrame(frame);
+  };
+  safeAnimate(done,sec,runner,loop);
+}
+function animBarrage(winner,poolArr,sec,done){
+  const b=$("ovBarrage");showOnly("barrage");$("ovHint").textContent="弹幕飞驰中…";
+  b.innerHTML="";const M=Math.min(poolArr.length,130);
+  for(let i=0;i<M;i++){
+    const ch=document.createElement("div");ch.className="bc";
+    const nm=(i===0)?winner.name:sample(poolArr).name;ch.textContent=nm;
+    ch.style.top=(2+Math.random()*92)+"%";
+    ch.style.fontSize=(18+Math.random()*22)+"px";
+    ch.style.opacity=(0.55+Math.random()*0.45).toFixed(2);
+    const dur=3+Math.random()*3.5;ch.style.animation=`barrageMove ${dur}s linear infinite`;
+    ch.style.animationDelay=(-Math.random()*dur)+"s";
+    if(i===0){ch.style.fontSize="40px";ch.style.fontWeight="900";ch.style.opacity="1";}
+    b.appendChild(ch);
+  }
+  let t0=performance.now(),dur=sec*1000;const loop=!state.strictSec;
+  const runner=finish=>{
+    function frame(t){
+      if(stopRequested){b.innerHTML="";finish();return;}
+      if(t-t0>=dur){
+        if(loop){t0=performance.now();requestAnimationFrame(frame);}
+        else{b.innerHTML="";finish();return;}
+      } else requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  };
+  safeAnimate(done,sec,runner,loop);
+}
+function animGalaxy(winner,poolArr,sec,done){
+  const cv=$("ovGalaxy");showOnly("galaxy");$("ovHint").textContent="星河汇聚中…";
+  const c=cv.getContext("2d");
+  const fit=()=>{cv.width=cv.clientWidth||660;cv.height=cv.clientHeight||520;};
+  fit();
+  const W=cv.width,H=cv.height,cxp=W/2,cyp=H/2;
+  const cs=["#7c5cff","#ff5d9e","#3ee2a0","#ffb454","#5cc8ff","#ffffff"];
+  const N=240,stars=[];
+  for(let i=0;i<N;i++)stars.push({a:Math.random()*6.2832,r:Math.max(W,H)*(0.18+Math.random()*0.5),
+    sp:0.5+Math.random()*1.6,sz:1+Math.random()*2.6,col:cs[(Math.random()*cs.length)|0],tw:Math.random()*6.2832});
+  let t0=performance.now(),dur=sec*1000;let lastTick=0;const loop=!state.strictSec;
+  const runner=finish=>{
+    function frame(t){
+      if(stopRequested){c.clearRect(0,0,W,H);finish();return;}
+      const p=Math.min(1,(t-t0)/dur);
+      c.clearRect(0,0,W,H);
+      const prog=1-Math.pow(1-p,2);
+      const orbR=Math.max(W,H)*(0.04+prog*0.11);
+      const og=c.createRadialGradient(cxp,cyp,0,cxp,cyp,orbR*2+50);
+      og.addColorStop(0,"rgba(255,255,255,"+(0.55*prog)+")");
+      og.addColorStop(0.35,"rgba(124,92,255,"+(0.6*prog)+")");
+      og.addColorStop(1,"rgba(124,92,255,0)");
+      c.fillStyle=og;c.beginPath();c.arc(cxp,cyp,orbR*2+50,0,6.2832);c.fill();
+      stars.forEach(s=>{
+        const r=s.r*(1-prog*0.85), a=s.a+(t/1000)*s.sp*(1-prog*0.7);
+        const x=cxp+Math.cos(a)*r, y=cyp+Math.sin(a)*r;
+        const tw=0.55+0.45*Math.sin(t/300+s.tw);
+        c.globalAlpha=tw;c.fillStyle=s.col;c.beginPath();c.arc(x,y,s.sz*(1+prog*1.2),0,6.2832);c.fill();
+      });
+      c.globalAlpha=1;
+      if(t-lastTick>150){lastTick=t;tone(1700,0.03,"square",0.08);}
+      if(p<1)requestAnimationFrame(frame);
+      else if(loop){c.clearRect(0,0,W,H);t0=performance.now();requestAnimationFrame(frame);}
+      else{
+        c.fillStyle="rgba(255,255,255,0.92)";c.beginPath();c.arc(cxp,cyp,orbR*1.4,0,6.2832);c.fill();
+        setTimeout(()=>{c.clearRect(0,0,W,H);finish();},260);
+      }
+    }
+    requestAnimationFrame(frame);
+  };
+  safeAnimate(done,sec,runner,loop);
+}
+
+/* ---------- 主流程（单点编排，必到揭晓） ---------- */
+let drawing=false,stopRequested=false,seqActive=false,seqTimer=null;let seqQueue=[];
+function startDraw(){
+  if(drawing){stopRequested=true;return;}      // 再次点击 = 提前停止
+  if(!state.tiers.length){toast("已无设置奖项，请点击 ⚙️ 设置奖项");openSet();return;}
+  if(!state.participants.length){toast("请先添加参与者");return;}
+  audio();                                       // 用户手势中解锁音频
+  if(state.strictSeq){
+    if(!pool().length){toast("已无设置奖项，可设置奖项或抽取指定奖项");openSet();return;}
+    seqActive=true;seqQueue=state.tiers.map((t,i)=>i);
+    nextSeq();return;
+  }
+  const p=pool();
+  if(!p.length){toast("没有可抽取的参与者了 🎊");return;}
+  const mode=$("modeSel").value;
+  const sec=clamp(parseFloat($("animSec").value)||4,1.5,12);
+  const idx=state.tiers.findIndex(t=>t.id===state.currentTier);
+  drawTier(idx<0?0:idx);
+}
+function drawTier(idx){
+  const tier=state.tiers[idx];
+  if(!tier){if(seqActive)nextSeq();return;}
+  const p=pool();
+  if(!p.length){
+    if(seqActive){toast(`「${tier.name}」已无可抽人员`);nextSeq();}
+    else{toast("没有可抽取的参与者了 🎊");}
+    return;
+  }
+  state.currentTier=tier.id;
+  const count=Math.min(tier.count,p.length);
+  drawing=true;stopRequested=false;
+  $("drawBtn").textContent="⏹ 停止";
+  openOverlay();
+  const mode=$("modeSel").value;
+  const sec=clamp(parseFloat($("animSec").value)||4,1.5,12);
+  if(!stopRequested)runAnimations(mode,sec,count);
+}
+function nextSeq(){
+  if(seqTimer){clearTimeout(seqTimer);seqTimer=null;}
+  while(seqQueue.length){
+    const idx=seqQueue.shift();
+    const tier=state.tiers[idx];
+    if(!tier){continue;}
+    if(pool().length===0){toast(`「${tier.name}」已无可抽人员`);continue;}
+    drawTier(idx);return;
+  }
+  seqActive=false;
+  if($("overlay").classList.contains("show"))closeOverlay();
+  toast("🎉 所有已设置奖项均已抽取完毕");
+}
+function runAnimations(mode,sec,count){
+  const stopFn=startSpinSound();
+  const poolBase=state.noDup?state.participants.filter(p=>!p.drawn):state.participants.slice();
+  const acc=[];
+  function pickOne(){
+    const remaining=poolBase.filter(x=>!x.drawn);
+    if(!remaining.length)return null;
+    return sample(remaining);
+  }
+  function next(){
+    if(stopRequested){finish(acc,stopFn,mode);return;}
+    if(acc.length>=count){finish(acc,stopFn,mode);return;}
+    const winner=pickOne();
+    if(!winner){finish(acc,stopFn,mode);return;}
+    if(state.noDup)winner.drawn=true;
+    renderParticipants();
+    const cb=()=>{
+      acc.push(winner);
+      if(acc.length<count&&!stopRequested)setTimeout(next,650);
+      else finish(acc,stopFn,mode);
+    };
+    if(mode==="wheel")animWheel(winner,poolBase,sec,cb);
+    else if(mode==="slot")animSlot(winner,poolBase,sec,cb);
+    else if(mode==="barrage")animBarrage(winner,poolBase,sec,cb);
+    else if(mode==="galaxy")animGalaxy(winner,poolBase,sec,cb);
+    else animFlash(winner,poolBase,sec,cb);
+  }
+  function finish(winners,stopFn,mode){
+    stopSpinSound(stopFn);
+    finishDraw(winners,mode);
+  }
+  setTimeout(next,300);
+}
+function finishDraw(winners,mode){
+  drawing=false;stopRequested=false;$("drawBtn").textContent="🎲 开始抽奖";
+  if(!winners.length){toast("没有抽中任何人");closeOverlay();return;}
+  showReveal(winners);
+  const t=state.tiers.find(t=>t.id===state.currentTier);
+  const round={id:uniqId(),time:new Date().toLocaleString("zh-CN"),names:winners.map(w=>w.name),
+    tiers:t?t.name:"",depts:winners.map(w=>w.dept),ids:winners.map(w=>w.empid),title:state.title};
+  state.history.unshift(round);$("stRounds").textContent=state.history.length;
+  renderHistory();save();
+  if(seqActive){
+    if(seqQueue.length>0){$("ovHint").textContent="即将抽取下一项…（点击空白 / Esc 结束）";seqTimer=setTimeout(nextSeq,2600);}
+    else{seqActive=false;$("ovHint").textContent="🎉 全部奖项已抽取完毕，点击空白 / Esc 关闭";}
+  }
+}
+function showReveal(winners){
+  showOnly("_none");
+  const t=state.tiers.find(t=>t.id===state.currentTier);
+  $("ovHint").textContent="点击空白处或按 Esc 关闭";
+  const rev=$("reveal");rev.classList.add("show");
+  const rName=$("rName"),rCards=$("rCards"),rLabel=$("rLabel"),rSub=$("rSub");
+  if(winners.length===1){
+    rLabel.textContent=`🎊 恭喜获得「${t?t.name:"大奖"}」🎊`;
+    rName.textContent=winners[0].name;
+    const sub=[winners[0].dept,winners[0].empid].filter(Boolean).join(" · ");
+    rSub.textContent=sub;rSub.style.display=sub?"block":"none";rCards.innerHTML="";
+  }else{
+    rLabel.textContent=`🎊 恭喜获得「${t?t.name:"奖项"}」🎊`;
+    rName.textContent=`共 ${winners.length} 名`;
+    rSub.style.display="none";
+    rCards.innerHTML=winners.map(w=>{
+      const sub=[w.dept,w.empid].filter(Boolean).join(" · ");
+      return `<div class="r-card">${esc(w.name)}${sub?`<br><span style="font-size:13px;opacity:.85">${esc(sub)}</span>`:""}</div>`;
+    }).join("");
+  }
+  fanfare();launchConfetti();burstParticles();
+}
+function burstParticles(){
+  const stage=$("ovStage");const cs=["#7c5cff","#ff5d9e","#3ee2a0","#ffb454","#5cc8ff","#fff"];
+  for(let i=0;i<80;i++){const s=document.createElement("div");
+    const ang=Math.random()*Math.PI*2,dist=60+Math.random()*180;
+    s.style.cssText=`position:absolute;left:50%;top:50%;width:7px;height:7px;border-radius:50%;background:${cs[(Math.random()*cs.length)|0]};box-shadow:0 0 10px currentColor;pointer-events:none;z-index:6;transition:transform 1s cubic-bezier(.1,.7,.3,1),opacity 1s`;stage.appendChild(s);
+    requestAnimationFrame(()=>{s.style.transform=`translate(${Math.cos(ang)*dist}px,${Math.sin(ang)*dist}px) scale(0)`;s.style.opacity="0";});
+    setTimeout(()=>s.remove(),1100);
+  }
+}
+function openOverlay(){$("overlay").classList.add("show");$("reveal").classList.remove("show");}
+function closeOverlay(){
+  if(seqTimer){clearTimeout(seqTimer);seqTimer=null;}
+  seqActive=false;
+  stopSpinSound(null);
+  $("overlay").classList.remove("show");
+  $("ovBarrage").innerHTML="";$("reveal").classList.remove("show");
+  $("drawBtn").textContent="🎲 开始抽奖";
+  drawing=false;stopRequested=false;
+}
+
+/* ---------- 历史弹窗 ---------- */
+function openHistory(){$("histModal").classList.add("show");renderHistory();}
+function closeHistory(){$("histModal").classList.remove("show");}
+function renderHistory(){
+  const el=$("histList");el.innerHTML="";
+  if(!state.history.length){el.innerHTML='<div class="empty">暂无中奖记录</div>';return;}
+  state.history.forEach(h=>{
+    const d=document.createElement("div");d.className="hist-item";
+    const sub=h.names.map((nm,i)=>{const s=[h.depts&&h.depts[i],h.ids&&h.ids[i]].filter(Boolean).join(" · ");return s?`${nm}（${s}）`:nm;});
+    d.innerHTML=`<div class="h-top"><span class="h-win">🏅 ${esc(h.names.join("、"))}</span>`+
+      (h.tiers?`<span class="h-tier">${esc(h.tiers)}</span>`:"")+`<span class="h-undo">撤回</span></div>`+
+      `<div class="h-time">${esc(h.time)} · ${esc(h.title||"")}</div>`;
+    d.querySelector(".h-undo").onclick=()=>undoRound(h.id);el.appendChild(d);
+  });
+}
+function undoRound(id){
+  const idx=state.history.findIndex(h=>h.id===id);if(idx<0)return;
+  state.history[idx].names.forEach(nm=>{const p=state.participants.find(p=>p.name===nm&&p.drawn);if(p)p.drawn=false;});
+  state.history.splice(idx,1);renderHistory();renderParticipants();save();toast("已撤回该轮");
+}
+function clearHistory(){if(!state.history.length)return;if(confirm("确定清空所有中奖记录？")){state.history=[];renderHistory();save();}}
+function exportHistory(type){
+  if(!state.history.length){toast("没有记录可导出");return;}
+  if(type==="csv"){let csv="时间,活动,奖项,中奖者,部门,工号\n";state.history.forEach(h=>{
+    h.names.forEach((nm,i)=>{const d=(h.depts&&h.depts[i])||"",id=(h.ids&&h.ids[i])||"";csv+=`"${h.time}","${h.title||""}","${h.tiers||""}","${nm}","${d}","${id}"\n`;});});
+    download("中奖记录.csv",csv);}
+  else download("中奖记录.json",JSON.stringify(state.history,null,2));
+  toast("已导出");
+}
+function copyWinners(){
+  if(!state.history.length){toast("暂无记录");return;}
+  const text=state.history.map(h=>{const pre=h.tiers?h.tiers+'："':"";return pre+h.names.join("、");}).join("\n");
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(text).then(()=>toast("已复制中奖名单"),()=>fallbackCopy(text));
+  else fallbackCopy(text);
+}
+function fallbackCopy(t){const ta=document.createElement("textarea");ta.value=t;document.body.appendChild(ta);ta.select();
+  try{document.execCommand("copy");toast("已复制中奖名单");}catch(e){toast("复制失败，请手动选择");}ta.remove();}
+
+/* ---------- 主题 / 仅舞台全屏 ---------- */
+function applyTheme(){document.documentElement.setAttribute("data-theme",state.theme);}
+function toggleTheme(){state.theme=state.theme==="dark"?"light":"dark";applyTheme();save();}
+function toggleSound(){$("soundChk").checked=!$("soundChk").checked;state.sound=$("soundChk").checked;$("soundBtn").textContent=state.sound?"🔊":"🔇";save();}
+function toggleFS(){
+  if(!document.fullscreenElement){
+    document.body.classList.add("present");
+    if(document.documentElement.requestFullscreen)document.documentElement.requestFullscreen().catch(()=>{});
+  }else{
+    document.body.classList.remove("present");
+    if(document.exitFullscreen)document.exitFullscreen().catch(()=>{});
+  }
+}
+document.addEventListener("fullscreenchange",()=>{if(!document.fullscreenElement)document.body.classList.remove("present");});
+
+/* ---------- 事件绑定 ---------- */
+function bind(){
+  $("drawTitle").value=state.title;
+  $("drawTitle").addEventListener("input",e=>{state.title=e.target.value;save();});
+  $("modeSel").value=state.mode;$("animSec").value=state.animSec;$("noDup").checked=state.noDup;
+  $("modeSel").onchange=e=>{state.mode=e.target.value;save();previewMode();};
+  $("animSec").onchange=e=>{state.animSec=clamp(parseFloat(e.target.value)||4,1.5,12);save();};
+  $("noDup").onchange=e=>{state.noDup=e.target.checked;save();};
+  $("themeBtn").onclick=toggleTheme;$("soundBtn").onclick=toggleSound;$("fsBtn").onclick=toggleFS;
+  $("setBtn").onclick=openSet;$("recBtn").onclick=openHistory;
+  $("soundChk").onchange=e=>{$("soundBtn").textContent=e.target.checked?"🔊":"🔇";state.sound=e.target.checked;save();};
+  $("soundModeSel").onchange=e=>{state.soundMode=e.target.value;$("sndFileRow").style.display=e.target.value==="custom"?"flex":"none";save();};
+  $("tierSel").onchange=e=>{state.currentTier=e.target.value;save();};
+  $("batchModal").addEventListener("click",e=>{if(e.target.id==="batchModal")closeBatch();});
+  $("setModal").addEventListener("click",e=>{if(e.target.id==="setModal")saveSettings();});
+  $("expModal").addEventListener("click",e=>{if(e.target.id==="expModal")closeExport();});
+  $("histModal").addEventListener("click",e=>{if(e.target.id==="histModal")closeHistory();});
+  $("overlay").addEventListener("click",e=>{
+    if(e.target.id!=="overlay")return;
+    if(drawing)stopRequested=true;          // 绘制中点击空白 = 提前结束并揭晓
+    else closeOverlay();                     // 结果展示中点击空白 = 关闭
+  });
+  document.addEventListener("keydown",e=>{
+    if(e.target.tagName==="INPUT"||e.target.tagName==="TEXTAREA")return;
+    const overlayShown=$("overlay").classList.contains("show");
+    const inModal=$("histModal").classList.contains("show")||$("setModal").classList.contains("show")||$("expModal").classList.contains("show")||$("batchModal").classList.contains("show");
+    if(e.code==="Space"||e.code==="Enter"){
+      if(overlayShown){ e.preventDefault(); if(drawing)stopRequested=true; else closeOverlay(); }
+      else if(e.target.tagName!=="BUTTON"&&!inModal){ e.preventDefault(); startDraw(); }
+    }
+    if(e.code==="Escape"){
+      if(overlayShown){ if(drawing)stopRequested=true; else closeOverlay(); }
+      else if($("histModal").classList.contains("show"))closeHistory();
+      else if($("setModal").classList.contains("show"))saveSettings();
+      else if($("expModal").classList.contains("show"))closeExport();
+      else if($("batchModal").classList.contains("show"))closeBatch();
+      else if(document.body.classList.contains("present")){document.body.classList.remove("present");if(document.exitFullscreen)document.exitFullscreen().catch(()=>{});}
+    }
+  });
+  previewMode();
+}
+function previewMode(){
+  const m=$("modeSel").value,canvas=$("wheelCanvas"),slot=$("slotReel"),flash=$("flashName"),prev=$("modePreview");
+  canvas.style.display=slot.style.display=flash.style.display=prev.style.display="none";
+  const p=pool();
+  if(!p.length){$("stageHint").textContent="请先添加参与者";return;}
+  $("stageHint").textContent="选择模式后点击「开始抽奖」";
+  if(m==="wheel"){
+    canvas.style.display="block";
+    if(p.length>60){prev.style.display="block";prev.textContent="🎡 转盘（千人规模已自动采样优化）";canvas.style.display="none";}
+    else drawWheelViz(canvas,0,p.map(x=>x.name),-1);
+  }else if(m==="slot"){
+    slot.style.display="block";const strip=$("slotStrip");strip.style.transform="translateY(0)";
+    strip.innerHTML=p.slice(0,6).map(x=>`<div class="slot-tile">${esc(x.name)}</div>`).join("")+`<div class="slot-tile">${esc(p[0].name)}</div>`;
+  }else if(m==="flash"){flash.style.display="block";flash.textContent=sample(p).name;}
+  else if(m==="barrage"){prev.style.display="block";prev.textContent="💬 弹幕飞驰（全屏）";}
+  else{prev.style.display="block";prev.textContent="🌌 星河汇聚";}
+}
+
+/* ---------- 初始化 ---------- */
+load();applyTheme();$("soundBtn").textContent=state.sound?"🔊":"🔇";$("soundChk").checked=state.sound;
+bind();renderParticipants();renderTierSel();renderHistory();$("stRounds").textContent=state.history.length;
+
+window.addOne=addOne;window.openBatch=openBatch;window.closeBatch=closeBatch;window.applyBatch=applyBatch;
+window.importFile=importFile;window.handleFile=handleFile;window.clearParticipants=clearParticipants;window.resetDrawn=resetDrawn;
+window.openExport=openExport;window.closeExport=closeExport;window.doExport=doExport;
+window.startDraw=startDraw;window.openSet=openSet;window.addTier=addTier;window.saveSettings=saveSettings;
+window.uploadSound=uploadSound;window.playCustomPreview=playCustomPreview;
+window.openHistory=openHistory;window.closeHistory=closeHistory;window.closeOverlay=closeOverlay;
+window.exportHistory=exportHistory;window.clearHistory=clearHistory;window.copyWinners=copyWinners;
+})();
+</script>
+</body>
+</html>

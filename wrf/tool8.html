@@ -1,0 +1,698 @@
+<html lang="zh-CN"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>时间计划小程序</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <!-- 添加SheetJS库用于Excel导出 -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    
+    <!-- Tailwind 配置 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'win-blue': '#0078D4',
+                        'win-light-blue': '#E3F2FD',
+                        'win-gray': '#F3F2F1',
+                        'win-dark-gray': '#EDEBE9',
+                        'win-text': '#1D1D1F',
+                        'win-text-secondary': '#6E6E73',
+                        'win-border': '#E1DFDD',
+                    },
+                    fontFamily: {
+                        'win': ['Segoe UI', 'system-ui', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        'win': '0 2px 10px rgba(0, 0, 0, 0.1)',
+                        'win-hover': '0 4px 14px rgba(0, 0, 0, 0.15)',
+                    }
+                },
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .win-transition {
+                transition: all 0.2s ease-in-out;
+            }
+            .win-scrollbar {
+                scrollbar-width: thin;
+                scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
+            }
+            .win-scrollbar::-webkit-scrollbar {
+                width: 6px;
+            }
+            .win-scrollbar::-webkit-scrollbar-thumb {
+                background-color: rgba(156, 163, 175, 0.5);
+                border-radius: 3px;
+            }
+            .loading-spinner {
+                animation: spin 1s linear infinite;
+            }
+            @keyframes spin {
+                from { transform: rotate(0deg); }
+                to { transform: rotate(360deg); }
+            }
+            .weekday-btn {
+                @apply px-3 py-1.5 rounded-lg border border-win-border hover:border-win-blue hover:bg-win-light-blue/30 text-sm cursor-pointer win-transition;
+            }
+            .weekday-btn.active {
+                @apply bg-win-blue text-white border-win-blue;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-gray-50 to-gray-100 font-win text-win-text min-h-screen flex flex-col">
+    <!-- 标题栏 -->
+    <header class="bg-white border-b border-win-border py-4 px-6 md:px-10 shadow-sm">
+        <div class="container mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <i class="fa fa-calendar-check-o text-win-blue text-2xl"></i>
+                <h1 class="text-xl md:text-2xl font-semibold">时间计划小程序</h1>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主内容区 -->
+    <main class="flex-grow container mx-auto p-4 md:p-6 lg:p-10">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- 左侧配置面板 -->
+            <div class="lg:col-span-1">
+                <div class="bg-white rounded-xl shadow-win p-5 win-transition hover:shadow-win-hover">
+                    <h2 class="text-lg font-semibold mb-4 flex items-center">
+                        <i class="fa fa-sliders text-win-blue mr-2"></i>计划配置
+                    </h2>
+                    
+                    <form id="scheduleForm" class="space-y-5">
+                        <!-- 时间间隔选择 -->
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-win-text-secondary">时间间隔</label>
+                            <select id="interval" class="w-full px-3 py-2 border border-win-border rounded-lg focus:ring-2 focus:ring-win-blue/30 focus:border-win-blue outline-none win-transition">
+                                <option value="week">每周</option>
+                                <option value="month">每月</option>
+                                <option value="quarter">每季度</option>
+                                <option value="halfYear">每半年</option>
+                                <option value="year">每1年</option>
+                                <option value="2year">每2年</option>
+                                <option value="3year">每3年</option>
+                                <option value="5year">每5年</option>
+                                <option value="10year">每10年</option>
+                            </select>
+                        </div>
+                        
+                        <!-- 起始日期 -->
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-win-text-secondary">起始日期</label>
+                            <input type="date" id="startDate" class="w-full px-3 py-2 border border-win-border rounded-lg focus:ring-2 focus:ring-win-blue/30 focus:border-win-blue outline-none win-transition">
+                        </div>
+                        
+                        <!-- 计划数量 -->
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-win-text-secondary">计划数量</label>
+                            <input type="number" id="count" min="1" max="100" value="10" class="w-full px-3 py-2 border border-win-border rounded-lg focus:ring-2 focus:ring-win-blue/30 focus:border-win-blue outline-none win-transition">
+                        </div>
+                        
+                        <!-- 周末选项 -->
+                        <div class="space-y-3 pt-2">
+                            <label class="block text-sm font-medium text-win-text-secondary">周末选项</label>
+                            <div class="flex space-x-4">
+                                <label class="inline-flex items-center cursor-pointer">
+                                    <input type="radio" name="weekend" value="include" checked="" class="sr-only peer">
+                                    <div class="w-5 h-5 border border-win-border rounded-full flex items-center justify-center peer-checked:border-win-blue peer-checked:bg-win-blue win-transition">
+                                        <div class="w-2 h-2 rounded-full bg-white opacity-0 peer-checked:opacity-100 win-transition"></div>
+                                    </div>
+                                    <span class="ml-2 text-sm">含周末</span>
+                                </label>
+                                
+                                <label class="inline-flex items-center cursor-pointer">
+                                    <input type="radio" name="weekend" value="exclude" class="sr-only peer">
+                                    <div class="w-5 h-5 border border-win-border rounded-full flex items-center justify-center peer-checked:border-win-blue peer-checked:bg-win-blue win-transition">
+                                        <div class="w-2 h-2 rounded-full bg-white opacity-0 peer-checked:opacity-100 win-transition"></div>
+                                    </div>
+                                    <span class="ml-2 text-sm">不含周末</span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- 星期过滤选项 - 只保留指定星期 -->
+                        <div class="space-y-3 pt-2">
+                            <label class="block text-sm font-medium text-win-text-secondary">星期过滤</label>
+                            <div class="flex space-x-4">
+                                <label class="inline-flex items-center cursor-pointer">
+                                    <input type="radio" name="weekdayFilter" value="specific" checked="" class="sr-only peer">
+                                    <div class="w-5 h-5 border border-win-border rounded-full flex items-center justify-center peer-checked:border-win-blue peer-checked:bg-win-blue win-transition">
+                                        <div class="w-2 h-2 rounded-full bg-white opacity-0 peer-checked:opacity-100 win-transition"></div>
+                                    </div>
+                                    <span class="ml-2 text-sm">指定星期</span>
+                                </label>
+                            </div>
+                            
+                            <!-- 特定星期选择按钮组 -->
+                            <div id="specificWeekdayGroup" class="grid grid-cols-3 gap-2 mt-3">
+                                <div class="weekday-btn active" data-weekday="0">星期日</div>
+                                <div class="weekday-btn" data-weekday="1">星期一</div>
+                                <div class="weekday-btn" data-weekday="2">星期二</div>
+                                <div class="weekday-btn" data-weekday="3">星期三</div>
+                                <div class="weekday-btn" data-weekday="4">星期四</div>
+                                <div class="weekday-btn" data-weekday="5">星期五</div>
+                                <div class="weekday-btn" data-weekday="6">星期六</div>
+                            </div>
+                        </div>
+                        
+                        <!-- 生成按钮 -->
+                        <button type="submit" id="generateBtn" class="w-full bg-win-blue hover:bg-win-blue/90 text-white py-2.5 px-4 rounded-lg font-medium flex items-center justify-center space-x-2 win-transition transform hover:scale-[1.02] active:scale-[0.98]">
+                            <i class="fa fa-calendar-plus-o"></i>
+                            <span>生成计划</span>
+                        </button>
+                    </form>
+                </div>
+                
+                <!-- 信息卡片 -->
+                <div class="bg-win-light-blue/50 rounded-xl p-5 mt-6 border border-win-blue/20">
+                    <h3 class="font-medium text-win-blue flex items-center">
+                        <i class="fa fa-info-circle mr-2"></i>使用说明
+                    </h3>
+                    <ul class="mt-3 text-sm text-win-text-secondary space-y-2">
+                        <li class="flex items-start">
+                            <i class="fa fa-check-circle text-win-blue mt-1 mr-2"></i>
+                            <span>选择合适的时间间隔和起始日期</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fa fa-check-circle text-win-blue mt-1 mr-2"></i>
+                            <span>设置需要生成的计划数量和周末选项</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fa fa-check-circle text-win-blue mt-1 mr-2"></i>
+                            <span>请选择特定星期来生成计划</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- 右侧结果展示 -->
+            <div class="lg:col-span-2">
+                <div class="bg-white rounded-xl shadow-win h-full p-5 win-transition hover:shadow-win-hover flex flex-col">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-lg font-semibold flex items-center">
+                            <i class="fa fa-list-alt text-win-blue mr-2"></i>计划结果
+                        </h2>
+                        <div class="flex space-x-2">
+                            <button id="copyBtn" class="px-3 py-1.5 text-sm border border-win-border rounded-lg hover:bg-win-gray flex items-center space-x-1 win-transition">
+                                <i class="fa fa-copy"></i>
+                                <span>复制</span>
+                            </button>
+                            <button id="exportBtn" class="px-3 py-1.5 text-sm border border-win-border rounded-lg hover:bg-win-gray flex items-center space-x-1 win-transition">
+                                <i class="fa fa-download"></i>
+                                <span>导出Excel</span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- 结果列表 -->
+                    <div id="resultContainer" class="flex-grow overflow-auto win-scrollbar">
+                        <div class="flex items-center justify-center h-64 text-win-text-secondary">
+                            <div class="text-center">
+                                <i class="fa fa-calendar-o text-4xl mb-3 opacity-30"></i>
+                                <p>请配置计划参数并点击生成按钮</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 底部状态栏 -->
+    <footer class="bg-white border-t border-win-border py-3 px-6 md:px-10 mt-6">
+        <div class="container mx-auto flex justify-center items-center text-sm text-win-text-secondary">
+            <div>© 2023 时间计划小程序</div>
+        </div>
+    </footer>
+
+    <!-- 加载中遮罩 -->
+    <div id="loadingMask" class="fixed inset-0 bg-black/30 flex items-center justify-center z-50 opacity-0 pointer-events-none win-transition">
+        <div class="bg-white rounded-xl p-6 flex items-center space-x-3 shadow-lg">
+            <i class="fa fa-circle-o-notch loading-spinner text-win-blue text-2xl"></i>
+            <span class="font-medium">正在生成计划...</span>
+        </div>
+    </div>
+
+    <!-- 通知提示 -->
+    <div id="notification" class="fixed bottom-5 right-5 bg-white shadow-win rounded-lg p-4 transform translate-y-20 opacity-0 win-transition flex items-center space-x-3 max-w-xs">
+        <i id="notificationIcon" class="fa fa-check-circle text-green-500 text-xl"></i>
+        <div>
+            <p id="notificationTitle" class="font-medium"></p>
+            <p id="notificationMessage" class="text-sm text-win-text-secondary"></p>
+        </div>
+        <button id="closeNotification" class="ml-2 text-win-text-secondary hover:text-win-text">
+            <i class="fa fa-times"></i>
+        </button>
+    </div>
+
+    <script>
+        // 设置默认日期为今天
+        document.addEventListener('DOMContentLoaded', () => {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('startDate').value = today;
+            
+            // 初始化时根据周末选项设置星期显示
+            updateWeekdayVisibility();
+            
+            // 特定星期按钮点击事件
+            const weekdayButtons = document.querySelectorAll('.weekday-btn');
+            weekdayButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    // 移除其他按钮的active类
+                    weekdayButtons.forEach(b => b.classList.remove('active'));
+                    // 给当前点击的按钮添加active类
+                    btn.classList.add('active');
+                });
+            });
+            
+            // 周末选项切换时更新星期可见性
+            const weekendRadios = document.querySelectorAll('input[name="weekend"]');
+            weekendRadios.forEach(radio => {
+                radio.addEventListener('change', updateWeekdayVisibility);
+            });
+            
+            // 表单提交事件
+            document.getElementById('scheduleForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                generateSchedule();
+            });
+            
+            // 复制按钮事件
+            document.getElementById('copyBtn').addEventListener('click', copyResults);
+            
+            // 导出按钮事件
+            document.getElementById('exportBtn').addEventListener('click', exportResults);
+            
+            // 关闭通知按钮事件
+            document.getElementById('closeNotification').addEventListener('click', hideNotification);
+        });
+        
+        // 根据周末选项更新星期可见性和选中状态
+        function updateWeekdayVisibility() {
+            const weekendOption = document.querySelector('input[name="weekend"]:checked').value;
+            const weekdayButtons = document.querySelectorAll('.weekday-btn');
+            
+            // 先移除所有按钮的选中状态
+            weekdayButtons.forEach(btn => btn.classList.remove('active'));
+            
+            // 获取当前选中的星期（可能被隐藏）
+            let activeWeekday = null;
+            const previouslyActiveBtn = document.querySelector('.weekday-btn.active');
+            if (previouslyActiveBtn) {
+                activeWeekday = parseInt(previouslyActiveBtn.dataset.weekday);
+            }
+            
+            // 不含周末时，隐藏星期日(0)和星期六(6)
+            if (weekendOption === 'exclude') {
+                let hasVisibleActive = false;
+                
+                weekdayButtons.forEach(btn => {
+                    const weekday = parseInt(btn.dataset.weekday);
+                    if (weekday === 0 || weekday === 6) {
+                        btn.classList.add('hidden');
+                    } else {
+                        btn.classList.remove('hidden');
+                        // 如果之前选中的是这个工作日，保持选中状态
+                        if (activeWeekday === weekday) {
+                            btn.classList.add('active');
+                            hasVisibleActive = true;
+                        }
+                    }
+                });
+                
+                // 如果没有可见的选中项，默认选中第一个工作日（星期一）
+                if (!hasVisibleActive) {
+                    const firstWorkday = document.querySelector('.weekday-btn[data-weekday="1"]');
+                    if (firstWorkday) {
+                        firstWorkday.classList.add('active');
+                    }
+                }
+            } 
+            // 含周末时，显示所有星期
+            else {
+                weekdayButtons.forEach(btn => {
+                    btn.classList.remove('hidden');
+                });
+                
+                // 如果有之前选中的星期，恢复选中状态，否则默认选中星期日
+                if (activeWeekday !== null && activeWeekday >= 0 && activeWeekday <= 6) {
+                    const activeBtn = document.querySelector(`.weekday-btn[data-weekday="${activeWeekday}"]`);
+                    if (activeBtn) {
+                        activeBtn.classList.add('active');
+                        return;
+                    }
+                }
+                
+                // 默认选中星期日
+                const defaultBtn = document.querySelector('.weekday-btn[data-weekday="0"]');
+                if (defaultBtn) {
+                    defaultBtn.classList.add('active');
+                }
+            }
+        }
+        
+        // 显示加载状态
+        function showLoading() {
+            const loadingMask = document.getElementById('loadingMask');
+            loadingMask.classList.remove('opacity-0', 'pointer-events-none');
+            loadingMask.classList.add('opacity-100', 'pointer-events-auto');
+            // 禁用生成按钮
+            document.getElementById('generateBtn').disabled = true;
+        }
+        
+        // 隐藏加载状态
+        function hideLoading() {
+            const loadingMask = document.getElementById('loadingMask');
+            loadingMask.classList.remove('opacity-100', 'pointer-events-auto');
+            loadingMask.classList.add('opacity-0', 'pointer-events-none');
+            // 启用生成按钮
+            document.getElementById('generateBtn').disabled = false;
+        }
+        
+        // 获取选中的特定星期
+        function getSelectedSpecificWeekday() {
+            const activeBtn = document.querySelector('.weekday-btn.active:not(.hidden)');
+            return activeBtn ? parseInt(activeBtn.dataset.weekday) : 1; // 默认星期一（确保是工作日）
+        }
+        
+        // 获取星期文本
+        function getWeekdayText(weekdayIndex) {
+            // JavaScript中getDay()返回0=星期日，1=星期一...6=星期六
+            const days = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+            return days[weekdayIndex];
+        }
+        
+        // 获取日期对应的实际星期索引
+        function getActualWeekdayIndex(date) {
+            // JavaScript的getDay()返回0=星期日，1=星期一...6=星期六
+            return date.getDay();
+        }
+        
+        // 获取类型文本和样式
+        function getTypeInfo(weekdayIndex) {
+            const isWeekend = weekdayIndex === 0 || weekdayIndex === 6;
+            return {
+                text: isWeekend ? '周末' : '工作日',
+                className: isWeekend ? 'text-red-500' : 'text-green-500'
+            };
+        }
+        
+        // 生成计划
+        async function generateSchedule() {
+            showLoading();
+            
+            // 使用setTimeout将计算放入异步队列，避免界面冻结
+            await new Promise(resolve => setTimeout(resolve, 0));
+            
+            try {
+                const interval = document.getElementById('interval').value;
+                const startDate = new Date(document.getElementById('startDate').value);
+                const count = parseInt(document.getElementById('count').value);
+                const weekendOption = document.querySelector('input[name="weekend"]:checked').value;
+                
+                const scheduleDates = [];
+                let currentDate = new Date(startDate);
+                const includeWeekend = weekendOption === 'include';
+                const specificWeekday = getSelectedSpecificWeekday();
+                
+                let generatedCount = 0;
+                // 为防止无限循环，添加最大尝试次数
+                let maxTotalAttempts = count * 100; // 每个计划最多尝试100次
+                let totalAttempts = 0;
+                
+                while (generatedCount < count && totalAttempts < maxTotalAttempts) {
+                    // 获取当前日期的实际星期
+                    const actualWeekday = getActualWeekdayIndex(currentDate);
+                    let isValidDate = true;
+                    
+                    // 检查是否符合周末选项
+                    if (!includeWeekend && (actualWeekday === 0 || actualWeekday === 6)) {
+                        isValidDate = false;
+                    }
+                    
+                    // 必须符合特定星期
+                    if (actualWeekday !== specificWeekday) {
+                        isValidDate = false;
+                    }
+                    
+                    // 如果日期有效，则添加到计划
+                    if (isValidDate) {
+                        // 获取类型信息
+                        const typeInfo = getTypeInfo(actualWeekday);
+                        
+                        // 存储计划数据
+                        scheduleDates.push({
+                            date: new Date(currentDate),
+                            weekdayIndex: actualWeekday,
+                            weekdayText: getWeekdayText(actualWeekday),
+                            typeText: typeInfo.text,
+                            typeClassName: typeInfo.className
+                        });
+                        
+                        generatedCount++;
+                        // 按选定间隔推进日期
+                        currentDate = addInterval(currentDate, interval, 1);
+                    } else {
+                        // 日期无效，只推进一天
+                        currentDate = addInterval(currentDate, 'day', 1);
+                    }
+                    
+                    totalAttempts++;
+                    
+                    // 每检查50个日期，给浏览器一点时间处理UI
+                    if (totalAttempts % 50 === 0) {
+                        await new Promise(resolve => setTimeout(resolve, 0));
+                    }
+                }
+                
+                if (generatedCount < count) {
+                    showNotification('警告', `无法生成足够的计划，仅生成了${generatedCount}个符合条件的日期`, 'exclamation-triangle', 'orange-500');
+                } else {
+                    showNotification('成功', '计划已生成', 'check-circle', 'green-500');
+                }
+                
+                displayResults(scheduleDates);
+            } catch (error) {
+                console.error('生成计划时出错:', error);
+                showNotification('错误', '生成计划失败，请重试', 'exclamation-circle', 'red-500');
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        // 根据间隔添加时间
+        function addInterval(date, interval, amount) {
+            const newDate = new Date(date);
+            
+            switch (interval) {
+                case 'day':
+                    newDate.setDate(newDate.getDate() + amount);
+                    break;
+                case 'week':
+                    newDate.setDate(newDate.getDate() + amount * 7);
+                    break;
+                case 'month':
+                    newDate.setMonth(newDate.getMonth() + amount);
+                    break;
+                case 'quarter':
+                    newDate.setMonth(newDate.getMonth() + amount * 3);
+                    break;
+                case 'halfYear':
+                    newDate.setMonth(newDate.getMonth() + amount * 6);
+                    break;
+                case 'year':
+                    newDate.setFullYear(newDate.getFullYear() + amount);
+                    break;
+                case '2year':
+                    newDate.setFullYear(newDate.getFullYear() + amount * 2);
+                    break;
+                case '3year':
+                    newDate.setFullYear(newDate.getFullYear() + amount * 3);
+                    break;
+                case '5year':
+                    newDate.setFullYear(newDate.getFullYear() + amount * 5);
+                    break;
+                case '10year':
+                    newDate.setFullYear(newDate.getFullYear() + amount * 10);
+                    break;
+            }
+            
+            return newDate;
+        }
+        
+        // 格式化日期为 yyyy-mm-dd
+        function formatDate(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+        
+        // 显示结果
+        function displayResults(items) {
+            const container = document.getElementById('resultContainer');
+            container.innerHTML = '';
+            
+            if (items.length === 0) {
+                container.innerHTML = `
+                    <div class="flex items-center justify-center h-64 text-win-text-secondary">
+                        <div class="text-center">
+                            <i class="fa fa-calendar-o text-4xl mb-3 opacity-30"></i>
+                            <p>没有生成任何计划，请检查配置参数</p>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+            
+            // 创建表格
+            const table = document.createElement('table');
+            table.className = 'w-full border-collapse';
+            
+            // 表头
+            const thead = document.createElement('thead');
+            thead.className = 'border-b border-win-border';
+            
+            thead.innerHTML = `
+                <tr>
+                    <th class="py-3 px-4 text-left text-sm font-semibold text-win-text-secondary">序号</th>
+                    <th class="py-3 px-4 text-left text-sm font-semibold text-win-text-secondary">日期</th>
+                    <th class="py-3 px-4 text-left text-sm font-semibold text-win-text-secondary">星期</th>
+                    <th class="py-3 px-4 text-left text-sm font-semibold text-win-text-secondary">类型</th>
+                </tr>
+            `;
+            table.appendChild(thead);
+            
+            // 表体
+            const tbody = document.createElement('tbody');
+            
+            items.forEach((item, index) => {
+                const tr = document.createElement('tr');
+                tr.className = 'border-b border-win-border hover:bg-win-gray/50 win-transition';
+                
+                tr.innerHTML = `
+                    <td class="py-3 px-4">${index + 1}</td>
+                    <td class="py-3 px-4">${formatDate(item.date)}</td>
+                    <td class="py-3 px-4 font-medium">${item.weekdayText}</td>
+                    <td class="py-3 px-4">
+                        <span class="inline-flex items-center ${item.typeClassName}">
+                            <i class="fa fa-circle text-xs mr-1"></i>${item.typeText}
+                        </span>
+                    </td>
+                `;
+                
+                tbody.appendChild(tr);
+            });
+            
+            table.appendChild(tbody);
+            container.appendChild(table);
+        }
+        
+        // 复制结果
+        function copyResults() {
+            const table = document.querySelector('#resultContainer table');
+            if (!table) {
+                showNotification('错误', '没有可复制的计划', 'exclamation-circle', 'red-500');
+                return;
+            }
+            
+            let text = '序号\t日期\t星期\t类型\n';
+            
+            const rows = table.querySelectorAll('tbody tr');
+            rows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                text += `${cells[0].textContent}\t${cells[1].textContent}\t${cells[2].textContent}\t${cells[3].textContent.trim()}\n`;
+            });
+            
+            navigator.clipboard.writeText(text).then(() => {
+                showNotification('成功', '计划已复制到剪贴板', 'check-circle', 'green-500');
+            }).catch(err => {
+                showNotification('错误', '复制失败，请手动复制', 'exclamation-circle', 'red-500');
+                console.error('复制失败:', err);
+            });
+        }
+        
+        // 导出为Excel
+        function exportResults() {
+            const table = document.querySelector('#resultContainer table');
+            if (!table) {
+                showNotification('错误', '没有可导出的计划', 'exclamation-circle', 'red-500');
+                return;
+            }
+            
+            // 准备导出数据
+            const exportData = [];
+            // 获取表头文本
+            const headers = table.querySelectorAll('thead th');
+            const headerTexts = Array.from(headers).map(header => header.textContent.trim());
+            exportData.push(headerTexts);
+            
+            // 添加数据行
+            const rows = table.querySelectorAll('tbody tr');
+            rows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                const rowData = Array.from(cells).map(cell => {
+                    // 提取类型文本（去除图标）
+                    if (cell.querySelector('span')) {
+                        return cell.querySelector('span').textContent.trim();
+                    }
+                    return cell.textContent.trim();
+                });
+                exportData.push(rowData);
+            });
+            
+            // 创建工作簿和工作表
+            const ws = XLSX.utils.aoa_to_sheet(exportData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "时间计划");
+            
+            // 获取文件名信息
+            const intervalText = document.getElementById('interval').options[document.getElementById('interval').selectedIndex].text;
+            const startDate = document.getElementById('startDate').value;
+            const fileName = `时间计划_${intervalText}_${startDate}.xlsx`;
+            
+            // 导出文件
+            XLSX.writeFile(wb, fileName);
+            
+            showNotification('成功', '计划已导出为Excel文件', 'check-circle', 'green-500');
+        }
+        
+        // 显示通知
+        function showNotification(title, message, icon, color) {
+            const notification = document.getElementById('notification');
+            const notificationTitle = document.getElementById('notificationTitle');
+            const notificationMessage = document.getElementById('notificationMessage');
+            const notificationIcon = document.getElementById('notificationIcon');
+            
+            notificationTitle.textContent = title;
+            notificationMessage.textContent = message;
+            notificationIcon.className = `fa fa-${icon} text-${color} text-xl`;
+            
+            // 显示通知
+            notification.classList.remove('translate-y-20', 'opacity-0');
+            notification.classList.add('translate-y-0', 'opacity-100');
+            
+            // 3秒后自动隐藏
+            setTimeout(hideNotification, 3000);
+        }
+        
+        // 隐藏通知
+        function hideNotification() {
+            const notification = document.getElementById('notification');
+            notification.classList.remove('translate-y-0', 'opacity-100');
+            notification.classList.add('translate-y-20', 'opacity-0');
+        }
+    </script>
+
+
+</body></html>

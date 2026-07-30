@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>全能年龄计算器</title>
+<style>
+  :root{
+    --bg:#0f141b; --panel:#161d27; --panel2:#1c2532; --line:#2a3543;
+    --text:#e6edf3; --muted:#90a0b0; --accent:#4ea1ff; --accent2:#36d399;
+    --warn:#ffb454; --pink:#ff6b9d; --radius:14px;
+    --shadow:0 8px 30px rgba(0,0,0,.35);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:-apple-system,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;
+    background:radial-gradient(1200px 600px at 80% -10%,#1b2940 0%,var(--bg) 55%);
+    color:var(--text); line-height:1.55; padding:24px 16px 60px;
+  }
+  .wrap{max-width:980px;margin:0 auto}
+  header{text-align:center;margin-bottom:22px}
+  header h1{font-size:26px;letter-spacing:.5px;background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;color:transparent}
+  header p{color:var(--muted);font-size:13px;margin-top:6px}
+  .tabs{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:18px}
+  .tab{cursor:pointer;padding:9px 18px;border:1px solid var(--line);background:var(--panel);color:var(--muted);border-radius:999px;font-size:14px;transition:.2s}
+  .tab.active{background:linear-gradient(90deg,var(--accent),#3b82f6);color:#fff;border-color:transparent;box-shadow:0 4px 14px rgba(78,161,255,.3)}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);margin-bottom:18px}
+  .card h2{font-size:15px;color:var(--accent);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+  .card h2::before{content:"";width:4px;height:16px;background:var(--accent);border-radius:3px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+  .field label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}
+  .field input,.field select{
+    width:100%;padding:11px 12px;border-radius:10px;border:1px solid var(--line);
+    background:var(--panel2);color:var(--text);font-size:14px;outline:none;transition:.2s;
+  }
+  .field input:focus,.field select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(78,161,255,.15)}
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:6px}
+  .switch{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);cursor:pointer;user-select:none}
+  .switch input{accent-color:var(--accent);width:16px;height:16px}
+  .btn{cursor:pointer;border:none;border-radius:10px;padding:11px 16px;font-size:14px;font-weight:600;transition:.2s}
+  .btn-primary{background:linear-gradient(90deg,var(--accent),#3b82f6);color:#fff}
+  .btn-primary:hover{filter:brightness(1.08)}
+  .btn-ghost{background:var(--panel2);color:var(--muted);border:1px solid var(--line)}
+  .btn-ghost:hover{color:var(--text);border-color:var(--accent)}
+  .hero{text-align:center;background:linear-gradient(135deg,#16243a,#1a2330);border:1px solid var(--line);border-radius:var(--radius);padding:26px 18px;margin-bottom:18px;box-shadow:var(--shadow)}
+  .hero .big{font-size:34px;font-weight:700;letter-spacing:.5px}
+  .hero .big b{color:var(--accent)}
+  .hero .sub{color:var(--muted);font-size:13px;margin-top:8px}
+  .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+  .stat{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:14px;text-align:center}
+  .stat .v{font-size:22px;font-weight:700;color:var(--accent2)}
+  .stat .k{font-size:12px;color:var(--muted);margin-top:4px}
+  .tags{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}
+  .tag{background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:8px 14px;font-size:13px}
+  .tag b{color:var(--accent)}
+  .bar{height:14px;background:var(--panel2);border-radius:99px;overflow:hidden;border:1px solid var(--line)}
+  .bar > i{display:block;height:100%;background:linear-gradient(90deg,var(--accent2),var(--warn));width:0;transition:width .6s}
+  .bar-label{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:6px}
+  .hidden{display:none}
+  .foot{text-align:center;color:var(--muted);font-size:12px;margin-top:24px}
+  .toast{position:fixed;left:50%;bottom:30px;transform:translateX(-50%) translateY(20px);background:#1f2a38;border:1px solid var(--accent);color:#fff;padding:11px 20px;border-radius:10px;opacity:0;transition:.3s;z-index:99;box-shadow:var(--shadow)}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th,td{text-align:left;padding:10px 8px;border-bottom:1px solid var(--line)}
+  th{color:var(--muted);font-weight:600;font-size:13px}
+  .hint{font-size:12px;color:var(--warn);margin-top:6px}
+  @media(max-width:560px){.hero .big{font-size:26px}.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>🎂 全能年龄计算器</h1>
+    <p>精确年龄 · 生日倒计时 · 生命进度 · 日期差 · 双人年龄差</p>
+  </header>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="main">年龄计算</div>
+    <div class="tab" data-tab="proj">年龄推算</div>
+    <div class="tab" data-tab="two">双人年龄差</div>
+  </div>
+
+  <!-- ============ MAIN ============ -->
+  <section id="main">
+    <div class="card">
+      <h2>基本信息</h2>
+      <div class="grid">
+        <div class="field"><label>姓名 / 昵称（可选）</label><input id="name" placeholder="例如：小明" maxlength="20"></div>
+        <div class="field"><label>出生日期 *</label><input id="birth" type="date" value="2000-01-01"></div>
+        <div class="field"><label>出生时间（可选，更精确）</label><input id="birthTime" type="time" value="00:00"></div>
+        <div class="field"><label>截止日期</label><input id="end" type="date" value=""></div>
+      </div>
+      <div class="row">
+        <label class="switch"><input id="useToday" type="checkbox" checked> 截止日期用“现在”</label>
+        <label class="switch"><input id="realtime" type="checkbox" checked> 实时刷新（每秒）</label>
+      </div>
+      <div class="row" style="margin-top:14px">
+        <button class="btn btn-primary" id="calcBtn">立即计算</button>
+        <button class="btn btn-ghost" id="copyBtn">复制结果</button>
+        <button class="btn btn-ghost" id="resetBtn">重置</button>
+      </div>
+      <div class="hint" id="mainHint"></div>
+    </div>
+
+    <div class="hero">
+      <div class="big" id="heroBig">—</div>
+      <div class="sub" id="heroSub">请输入出生日期后点击“立即计算”</div>
+    </div>
+
+    <div class="card">
+      <h2>精确分解</h2>
+      <div class="stat-grid">
+        <div class="stat"><div class="v" id="sYears">0</div><div class="k">岁</div></div>
+        <div class="stat"><div class="v" id="sMonths">0</div><div class="k">个月（总）</div></div>
+        <div class="stat"><div class="v" id="sWeeks">0</div><div class="k">周</div></div>
+        <div class="stat"><div class="v" id="sDays">0</div><div class="k">天</div></div>
+        <div class="stat"><div class="v" id="sHours">0</div><div class="k">小时</div></div>
+        <div class="stat"><div class="v" id="sMins">0</div><div class="k">分钟</div></div>
+        <div class="stat"><div class="v" id="sSecs">0</div><div class="k">秒</div></div>
+        <div class="stat"><div class="v" id="sTotalDays">0</div><div class="k">累计天数</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>出生档案</h2>
+      <div class="tags" id="birthTags"></div>
+    </div>
+
+    <div class="card">
+      <h2>🎁 下次生日倒计时</h2>
+      <div class="stat-grid">
+        <div class="stat"><div class="v" id="nbDays">—</div><div class="k">天</div></div>
+        <div class="stat"><div class="v" id="nbHours">—</div><div class="k">小时</div></div>
+        <div class="stat"><div class="v" id="nbMins">—</div><div class="k">分钟</div></div>
+        <div class="stat"><div class="v" id="nbSecs">—</div><div class="k">秒</div></div>
+      </div>
+      <div class="tags" id="nbTags" style="margin-top:14px"></div>
+    </div>
+
+    <div class="card">
+      <h2>🪪 周岁 / 虚岁</h2>
+      <div class="stat-grid">
+        <div class="stat"><div class="v" id="ageZhou">0</div><div class="k">周岁（满岁）</div></div>
+        <div class="stat"><div class="v" id="ageXu">0</div><div class="k">虚岁（约）</div></div>
+      </div>
+      <div class="tags" id="zhouTags" style="margin-top:14px"></div>
+    </div>
+
+    <div class="card">
+      <h2>🏁 人生里程碑</h2>
+      <div class="tags" id="msTags" style="margin-top:4px"></div>
+      <div class="stat-grid" id="msGrid" style="margin-top:14px"></div>
+      <div class="hint">里程碑含：成年、而立、不惑、知天命、花甲、古稀、杖朝、期颐等常见节点，按公历生日推算。</div>
+    </div>
+
+    <div class="card">
+      <h2>📊 工作日 / 周末统计</h2>
+      <div class="stat-grid">
+        <div class="stat"><div class="v" id="wkDays">0</div><div class="k">工作日（周一至周五）</div></div>
+        <div class="stat"><div class="v" id="wkEnds">0</div><div class="k">周末（周六周日）</div></div>
+        <div class="stat"><div class="v" id="wkRatio">0%</div><div class="k">工作日占比</div></div>
+      </div>
+      <div class="tags" id="wkTags" style="margin-top:14px"></div>
+    </div>
+  </section>
+
+  <!-- ============ PROJ ============ -->
+  <section id="proj" class="hidden">
+    <div class="card">
+      <h2>🎯 目标年龄倒计时</h2>
+      <div class="hint">基于「年龄计算」页设置的出生日期：<b id="projBirth">—</b></div>
+      <div class="grid">
+        <div class="field"><label>目标年龄（岁）</label><input id="targetAge" type="number" min="0" max="200" value="18"></div>
+      </div>
+      <div class="row" style="margin-top:14px"><button class="btn btn-primary" id="projBtn">计算</button></div>
+      <div class="tags" id="projTags" style="margin-top:14px"></div>
+      <div class="stat-grid" id="projGrid" style="margin-top:14px"></div>
+    </div>
+
+    <div class="card">
+      <h2>📅 指定日期看年龄</h2>
+      <div class="hint">输入任意过去或未来日期，查看你那天是几岁零几个月几天。</div>
+      <div class="grid">
+        <div class="field"><label>指定日期</label><input id="projDate" type="date"></div>
+      </div>
+      <div class="row" style="margin-top:14px"><button class="btn btn-primary" id="projDateBtn">计算</button></div>
+      <div class="tags" id="projDateTags" style="margin-top:14px"></div>
+    </div>
+  </section>
+
+  <!-- ============ TWO ============ -->
+  <section id="two" class="hidden">
+    <div class="card">
+      <h2>两个人的年龄差</h2>
+      <div class="grid">
+        <div class="field"><label>人物 A 名称</label><input id="aName" placeholder="A" value="A"></div>
+        <div class="field"><label>A 出生日期 *</label><input id="aDate" type="date"></div>
+        <div class="field"><label>人物 B 名称</label><input id="bName" placeholder="B" value="B"></div>
+        <div class="field"><label>B 出生日期 *</label><input id="bDate" type="date"></div>
+      </div>
+      <div class="row" style="margin-top:14px"><button class="btn btn-primary" id="twoBtn">计算年龄差</button></div>
+    </div>
+    <div class="card">
+      <h2>结果</h2>
+      <table>
+        <thead><tr><th>项目</th><th id="twoHeadA">A</th><th id="twoHeadB">B</th></tr></thead>
+        <tbody>
+          <tr><td>当前年龄</td><td id="twoAgeA">—</td><td id="twoAgeB">—</td></tr>
+          <tr><td>出生星期</td><td id="twoWkA">—</td><td id="twoWkB">—</td></tr>
+          <tr><td>星座</td><td id="twoZoA">—</td><td id="twoZoB">—</td></tr>
+          <tr><td>生肖</td><td id="twoShA">—</td><td id="twoShB">—</td></tr>
+        </tbody>
+      </table>
+      <div class="tags" id="twoTags" style="margin-top:14px"></div>
+    </div>
+  </section>
+
+  <div class="foot">数据均在本地浏览器计算，不会上传。 · 默认按公历（阳历）处理 · 北半球季节</div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const MS = 86400000;
+const WD = ["星期日","星期一","星期二","星期三","星期四","星期五","星期六"];
+const SHENGXIAO = ["鼠","牛","虎","兔","龙","蛇","马","羊","猴","鸡","狗","猪"];
+const SEASON = m => (m>=3&&m<=5)?"春季":(m>=6&&m<=8)?"夏季":(m>=9&&m<=11)?"秋季":"冬季";
+
+// 星座
+function zodiac(m, d){
+  const z=[["摩羯座",1,19],["水瓶座",2,18],["双鱼座",3,20],["白羊座",4,19],
+          ["金牛座",5,20],["双子座",6,21],["巨蟹座",7,22],["狮子座",8,22],
+          ["处女座",9,22],["天秤座",10,23],["天蝎座",11,22],["射手座",12,21],["摩羯座",12,31]];
+  for(const [n,mm,dd] of z){ if(m<mm||(m===mm&&d<=dd)) return n; }
+  return "摩羯座";
+}
+function shengxiao(y){ return SHENGXIAO[(y-4)%12]; }
+function isLeap(y){ return (y%4===0&&y%100!==0)||y%400===0; }
+function dayOfYear(dt){ const s=new Date(dt.getFullYear(),0,0); return Math.floor((dt-s)/MS); }
+function weekOfYear(dt){
+  const d=new Date(Date.UTC(dt.getFullYear(),dt.getMonth(),dt.getDate()));
+  const day=d.getUTCDay()||7; d.setUTCDate(d.getUTCDate()+4-day);
+  const yr=d.getUTCFullYear(); const first=new Date(Date.UTC(yr,0,1));
+  return Math.ceil((((d-first)/MS)+1)/7);
+}
+
+// 计算 年/月/日 差值
+function ymd(birth, end){
+  let y=end.getFullYear()-birth.getFullYear();
+  let m=end.getMonth()-birth.getMonth();
+  let d=end.getDate()-birth.getDate();
+  if(d<0){ m--; const pm=new Date(end.getFullYear(),end.getMonth(),0); d+=pm.getDate(); }
+  if(m<0){ y--; m+=12; }
+  return {y,m,d};
+}
+
+// 统计工作日 / 周末（按周一至周五为工作日）
+function weekdayStats(birth, end){
+  const total=Math.max(0,Math.floor((end-birth)/MS));
+  const fullWeeks=Math.floor(total/7);
+  let weekdays=fullWeeks*5, weekends=fullWeeks*2;
+  const rem=total%7;
+  const d=new Date(birth.getFullYear(),birth.getMonth(),birth.getDate());
+  for(let i=0;i<rem;i++){
+    const wd=d.getDay();            // 0=周日,6=周六
+    if(wd===0||wd===6) weekends++; else weekdays++;
+    d.setDate(d.getDate()+1);
+  }
+  return {weekdays,weekends,total};
+}
+
+let timer=null, state={birth:null,end:null,name:""};
+function toast(t){ const el=$("toast"); el.textContent=t; el.classList.add("show"); setTimeout(()=>el.classList.remove("show"),1800); }
+
+// ---- 主计算 ----
+function compute(){
+  const bVal=$("birth").value;
+  if(!bVal){ $("mainHint").textContent="请先填写出生日期。"; return; }
+  $("mainHint").textContent="";
+  const [by,bm,bd]=bVal.split("-").map(Number);
+  const bt=$("birthTime").value||"00:00";
+  const [bh,bmin]=bt.split(":").map(Number);
+  const birth=new Date(by,bm-1,bd,bh,bmin,0);
+
+  const useToday=$("useToday").checked;
+  let end;
+  if(useToday){ end=new Date(); }
+  else {
+    const eVal=$("end").value;
+    if(!eVal){ $("mainHint").textContent="未勾选“用现在”时，请填写截止日期。"; return; }
+    end=new Date(eVal+"T23:59:59");
+  }
+  if(end<birth){ $("mainHint").textContent="截止日期早于出生日期，无法计算（尚未出生）。"; resetMain(); return; }
+
+  state={birth,end,name:$("name").value.trim()};
+
+  const diff=ymd(birth,end);
+  const msDiff=end-birth;
+  const totalDays=Math.floor(msDiff/MS);
+  const totalHours=Math.floor(msDiff/3600000);
+  const totalMins=Math.floor(msDiff/60000);
+  const totalSecs=Math.floor(msDiff/1000);
+  const totalMonths=diff.y*12+diff.m;
+  const totalWeeks=Math.floor(totalDays/7);
+
+  $("sYears").textContent=diff.y;
+  $("sMonths").textContent=totalMonths;
+  $("sWeeks").textContent=totalWeeks;
+  $("sDays").textContent=diff.m===0?diff.d:totalDays; // 总天更直观
+  $("sHours").textContent=totalHours;
+  $("sMins").textContent=totalMins;
+  $("sSecs").textContent=totalSecs;
+  $("sTotalDays").textContent=totalDays;
+
+  const nm=state.name?state.name+"，":"";
+  $("heroBig").innerHTML = nm + "<b>"+diff.y+"</b> 岁 <b>"+diff.m+"</b> 个月 <b>"+diff.d+"</b> 天";
+  const ageDesc = useToday ? "截至此刻" : ("截至 "+end.getFullYear()+"-"+(end.getMonth()+1)+"-"+end.getDate());
+  $("heroSub").textContent = ageDesc + " · 共 "+totalDays.toLocaleString()+" 天 · "+totalSecs.toLocaleString()+" 秒";
+
+  // 出生档案
+  $("birthTags").innerHTML = [
+    "出生日期：<b>"+by+"-"+bm+"-"+bd+"</b>",
+    "星期：<b>"+WD[birth.getDay()]+"</b>",
+    "星座：<b>"+zodiac(bm,bd)+"</b>",
+    "生肖：<b>"+shengxiao(by)+"</b>",
+    "季节：<b>"+SEASON(bm)+"</b>",
+    "闰年出生：<b>"+(isLeap(by)?"是":"否")+"</b>",
+    "年内第 <b>"+dayOfYear(birth)+"</b> 天",
+    "第 <b>"+weekOfYear(birth)+"</b> 周"
+  ].map(t=>'<span class="tag">'+t+'</span>').join("");
+
+  // 生日倒计时（基于今年/明年）
+  let nextB=new Date(end.getFullYear(),bm-1,bd,bh,bmin,0);
+  if(nextB<=end) nextB=new Date(end.getFullYear()+1,bm-1,bd,bh,bmin,0);
+  const nb=nextB-end;
+  $("nbDays").textContent=Math.floor(nb/MS);
+  $("nbHours").textContent=Math.floor(nb/3600000)%24;
+  $("nbMins").textContent=Math.floor(nb/60000)%60;
+  $("nbSecs").textContent=Math.floor(nb/1000)%60;
+  const nextAge=nextB.getFullYear()-by;
+  $("nbTags").innerHTML=[
+    "下次生日：<b>"+nextB.getFullYear()+"-"+(bm)+"-"+(bd)+"</b>",
+    "星期：<b>"+WD[nextB.getDay()]+"</b>",
+    "届时年龄：<b>"+nextAge+"</b> 岁",
+    "已庆祝生日：<b>"+diff.y+"</b> 次"
+  ].map(t=>'<span class="tag">'+t+'</span>').join("");
+
+  // 周岁 / 虚岁
+  const zhou=diff.y;                       // 周岁 = 满岁
+  const xu=end.getFullYear()-by+1;          // 虚岁（约）= 当前年 - 出生年 + 1
+  $("ageZhou").textContent=zhou;
+  $("ageXu").textContent=xu;
+  $("zhouTags").innerHTML=[
+    "周岁：按公历满 <b>"+zhou+"</b> 周岁",
+    "虚岁：出生即 1 岁，约 <b>"+xu+"</b> 岁（未计农历春节）"
+  ].map(t=>'<span class="tag">'+t+'</span>').join("");
+
+  // 人生里程碑
+  const MS_LIST=[
+    [1,"满岁"],[6,"上小学"],[12,"上初中"],[15,"上高中"],[18,"成年"],
+    [20,"二十"],[22,"大学毕业"],[30,"而立"],[40,"不惑"],[50,"知天命"],
+    [60,"花甲 / 退休"],[70,"古稀"],[80,"杖朝"],[90,"鲐背"],[100,"期颐"]
+  ];
+  let passed=0, upcoming=[];
+  MS_LIST.forEach(([age,label])=>{
+    const md=new Date(by+age,bm-1,bd,bh,bmin,0);
+    if(md<=end){ passed++; }
+    else{
+      const left=md-end;
+      upcoming.push({age,label,date:md,
+        d:Math.floor(left/MS),
+        h:Math.floor(left/3600000)%24,
+        m:Math.floor(left/60000)%60,
+        s:Math.floor(left/1000)%60});
+    }
+  });
+  $("msTags").innerHTML=[
+    "已达成 <b>"+passed+"</b> / 共 <b>"+MS_LIST.length+"</b> 个里程碑"
+  ].map(t=>'<span class="tag">'+t+'</span>').join("");
+  // 展示接下来最近的若干里程碑
+  const top=upcoming.slice(0,4);
+  $("msGrid").innerHTML = top.map(o=>
+    '<div class="stat"><div class="v">'+o.d+'<span style="font-size:13px;color:var(--muted)">天</span></div>'+
+    '<div class="k">'+o.age+'岁 · '+o.label+'<br>'+o.date.getFullYear()+'-'+(bm)+'-'+(bd)+
+    '（'+WD[o.date.getDay()]+'）</div></div>'
+  ).join("") || '<div class="stat"><div class="v">🎉</div><div class="k">所有里程碑已达成</div></div>';
+
+  // 工作日 / 周末统计
+  const wstat=weekdayStats(birth,end);
+  $("wkDays").textContent=wstat.weekdays.toLocaleString();
+  $("wkEnds").textContent=wstat.weekends.toLocaleString();
+  $("wkRatio").textContent=(wstat.total? (wstat.weekdays/wstat.total*100).toFixed(1):"0")+"%";
+  $("wkTags").innerHTML=[
+    "累计 <b>"+totalDays.toLocaleString()+"</b> 天中",
+    "工作日 <b>"+wstat.weekdays.toLocaleString()+"</b> 天",
+    "周末 <b>"+wstat.weekends.toLocaleString()+"</b> 天"
+  ].map(t=>'<span class="tag">'+t+'</span>').join("");
+
+  saveState();
+  if($("realtime").checked && useToday) startTimer(); else stopTimer();
+}
+
+function resetMain(){
+  ["sYears","sMonths","sWeeks","sDays","sHours","sMins","sSecs","sTotalDays",
+   "nbDays","nbHours","nbMins","nbSecs","ageZhou","ageXu","wkDays","wkEnds","wkRatio"].forEach(i=>$(i).textContent="0");
+  ["birthTags","nbTags","zhouTags","msTags"].forEach(i=>$(i).innerHTML="");
+  $("msGrid").innerHTML=""; $("wkTags").innerHTML="";
+  $("heroBig").textContent="—"; $("heroSub").textContent="请重新填写日期。";
+}
+
+function startTimer(){
+  if(timer) return;
+  timer=setInterval(()=>{ if(state.birth) compute(); },1000);
+}
+function stopTimer(){ if(timer){clearInterval(timer);timer=null;} }
+
+$("useToday").addEventListener("change",e=>{
+  $("end").disabled=e.target.checked;
+  compute();
+});
+$("realtime").addEventListener("change",compute);
+$("calcBtn").addEventListener("click",compute);
+$("resetBtn").addEventListener("click",()=>{
+  stopTimer();
+  ["name","birthTime","end"].forEach(i=>$(i).value=i==="birthTime"?"00:00":"");
+  $("birth").value="2000-01-01";
+  $("useToday").checked=true; $("end").disabled=true; $("realtime").checked=true;
+  compute();
+});
+$("copyBtn").addEventListener("click",()=>{
+  if(!state.birth){ toast("请先进行计算"); return; }
+  const txt=
+`${state.name?state.name+" 的":""}年龄计算结果
+================
+精确年龄：${$("heroBig").textContent.replace(/<[^>]+>/g,"")}
+累计：${$("sTotalDays").textContent} 天 / ${$("sHours").textContent} 小时 / ${$("sSecs").textContent} 秒
+${$("birthTags").textContent.replace(/\s+/g," ")}
+${$("nbTags").textContent.replace(/\s+/g," ")}
+周岁 ${$("ageZhou").textContent} 岁 / 虚岁(约) ${$("ageXu").textContent} 岁
+${$("msTags").textContent.replace(/\s+/g," ")}
+工作日 ${$("wkDays").textContent} 天 / 周末 ${$("wkEnds").textContent} 天`;
+  navigator.clipboard.writeText(txt).then(()=>toast("结果已复制到剪贴板")).catch(()=>toast("复制失败，请手动选择"));
+});
+
+// ---- 年龄推算 ----
+function getBirthFromMain(){
+  const bVal=$("birth").value;
+  if(!bVal) return null;
+  const [by,bm,bd]=bVal.split("-").map(Number);
+  const bt=$("birthTime").value||"00:00";
+  const [bh,bmin]=bt.split(":").map(Number);
+  return {by,bm,bd,bh,bmin,date:new Date(by,bm-1,bd,bh,bmin,0)};
+}
+function computeProj(){
+  const b=getBirthFromMain();
+  if(!b){ toast("请先在「年龄计算」页填写出生日期"); return; }
+  const age=Math.floor(Number($("targetAge").value));
+  if(!age||age<0){ toast("请输入有效的目标年龄"); return; }
+  const target=new Date(b.by+age,b.bm-1,b.bd,b.bh,b.bmin,0);
+  const now=new Date();
+  const left=target-now;
+  const absDays=Math.floor(Math.abs(left)/MS);
+  const reached=left<=0;
+  $("projTags").innerHTML=[
+    "满 <b>"+age+"</b> 岁日期：<b>"+target.getFullYear()+"-"+b.bm+"-"+b.bd+"</b>",
+    "星期：<b>"+WD[target.getDay()]+"</b>",
+    reached ? ("已于 <b>"+absDays+"</b> 天前达到") : ("还有 <b>"+absDays+"</b> 天")
+  ].map(t=>'<span class="tag">'+t+'</span>').join("");
+  if(reached){
+    $("projGrid").innerHTML='<div class="stat"><div class="v">✅</div><div class="k">该年龄已达成<br>'+absDays+' 天前</div></div>';
+  }else{
+    const dh=Math.floor(left/3600000)%24, dm=Math.floor(left/60000)%60, ds=Math.floor(left/1000)%60;
+    $("projGrid").innerHTML=
+      '<div class="stat"><div class="v">'+Math.floor(left/MS)+'</div><div class="k">天</div></div>'+
+      '<div class="stat"><div class="v">'+dh+'</div><div class="k">小时</div></div>'+
+      '<div class="stat"><div class="v">'+dm+'</div><div class="k">分钟</div></div>'+
+      '<div class="stat"><div class="v">'+ds+'</div><div class="k">秒</div></div>';
+  }
+}
+function computeProjDate(){
+  const b=getBirthFromMain();
+  if(!b){ toast("请先在「年龄计算」页填写出生日期"); return; }
+  const dv=$("projDate").value;
+  if(!dv){ toast("请选择指定日期"); return; }
+  const d=new Date(dv+"T00:00:00");
+  if(d<b.date){ $("projDateTags").innerHTML='<span class="tag">该日期在出生之前，当时尚未出生 🌱</span>'; return; }
+  const r=ymd(b.date,d);
+  const total=Math.floor((d-b.date)/MS);
+  $("projDateTags").innerHTML=[
+    "<b>"+dv+"</b> 当天你是",
+    "<b>"+r.y+"</b> 岁 <b>"+r.m+"</b> 个月 <b>"+r.d+"</b> 天",
+    "已出生 <b>"+total.toLocaleString()+"</b> 天",
+    "星期：<b>"+WD[d.getDay()]+"</b>"
+  ].map(t=>'<span class="tag">'+t+'</span>').join("");
+}
+
+// ---- 双人年龄差 ----
+function computeTwo(){
+  const a=$("aDate").value,b=$("bDate").value;
+  if(!a||!b){ toast("请填写两人的出生日期"); return; }
+  const da=new Date(a+"T00:00:00"),db=new Date(b+"T00:00:00");
+  const now=new Date();
+  const ageA=ymd(da,now),ageB=ymd(db,now);
+  $("twoHeadA").textContent=$("aName").value||"A";
+  $("twoHeadB").textContent=$("bName").value||"B";
+  $("twoAgeA").textContent=ageA.y+"岁"+ageA.m+"个月";
+  $("twoAgeB").textContent=ageB.y+"岁"+ageB.m+"个月";
+  $("twoWkA").textContent=WD[da.getDay()];
+  $("twoWkB").textContent=WD[db.getDay()];
+  $("twoZoA").textContent=zodiac(da.getMonth()+1,da.getDate());
+  $("twoZoB").textContent=zodiac(db.getMonth()+1,db.getDate());
+  $("twoShA").textContent=shengxiao(da.getFullYear());
+  $("twoShB").textContent=shengxiao(db.getFullYear());
+  const elder = da<=db ? ($("aName").value||"A") : ($("bName").value||"B");
+  const r=ymd(da<=db?da:db, da<=db?db:da);
+  $("twoTags").innerHTML=[
+    "年长者：<b>"+elder+"</b>",
+    "年龄差：<b>"+r.y+"</b> 岁 <b>"+r.m+"</b> 个月 <b>"+r.d+"</b> 天"
+  ].map(t=>'<span class="tag">'+t+'</span>').join("");
+}
+
+// ---- Tabs ----
+document.querySelectorAll(".tab").forEach(t=>{
+  t.addEventListener("click",()=>{
+    document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+    t.classList.add("active");
+    ["main","proj","two"].forEach(s=>$(s).classList.add("hidden"));
+    $(t.dataset.tab).classList.remove("hidden");
+    if(t.dataset.tab==="proj"){ $("projBirth").textContent=$("birth").value||"—"; }
+    if(t.dataset.tab!=="main") stopTimer();
+  });
+});
+
+// ---- 本地记忆 ----
+function saveState(){
+  try{
+    localStorage.setItem("ageCalc",JSON.stringify({
+      name:$("name").value,birth:$("birth").value,birthTime:$("birthTime").value,
+      end:$("end").value,useToday:$("useToday").checked,realtime:$("realtime").checked
+    }));
+  }catch(e){}
+}
+function loadState(){
+  try{
+    const s=JSON.parse(localStorage.getItem("ageCalc"));
+    if(!s) return;
+    $("name").value=s.name||""; $("birth").value=s.birth||"2000-01-01";
+    $("birthTime").value=s.birthTime||"00:00"; $("end").value=s.end||"";
+    $("useToday").checked=s.useToday!==false;
+    $("realtime").checked=s.realtime!==false; $("end").disabled=$("useToday").checked;
+  }catch(e){}
+}
+
+// 初始化
+$("end").disabled=true;
+loadState();
+// 默认填充今天
+if(!$("end").value) $("end").value=new Date().toISOString().slice(0,10);
+if(!$("aDate").value) $("aDate").value="2000-01-01";
+if(!$("bDate").value) $("bDate").value="1995-06-15";
+if(!$("projDate").value){ const p=new Date(); p.setFullYear(p.getFullYear()+1); $("projDate").value=p.toISOString().slice(0,10); }
+$("projBtn").addEventListener("click",computeProj);
+$("projDateBtn").addEventListener("click",computeProjDate);
+$("twoBtn").addEventListener("click",computeTwo);
+compute();
+</script>
+</body>
+</html>

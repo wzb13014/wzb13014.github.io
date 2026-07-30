@@ -1,0 +1,1172 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>量子单位换算器 | Quantum Unit Converter</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        quantum: {
+                            cyan: '#00f5ff',
+                            purple: '#bf00ff',
+                            pink: '#ff00aa',
+                            blue: '#0066ff',
+                            green: '#00ff88',
+                            orange: '#ff6b00',
+                        },
+                        dark: {
+                            900: '#050810',
+                            800: '#0a0f1e',
+                            700: '#0f1629',
+                            600: '#151d35',
+                            500: '#1c2642',
+                        }
+                    },
+                    fontFamily: {
+                        orbitron: ['Orbitron', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    boxShadow: {
+                        'glow-cyan': '0 0 10px #00f5ff, 0 0 20px #00f5ff40, 0 0 40px #00f5ff20',
+                        'glow-purple': '0 0 10px #bf00ff, 0 0 20px #bf00ff40, 0 0 40px #bf00ff20',
+                        'glow-pink': '0 0 10px #ff00aa, 0 0 20px #ff00aa40, 0 0 40px #ff00aa20',
+                        'glow-green': '0 0 10px #00ff88, 0 0 20px #00ff8840, 0 0 40px #00ff8820',
+                        'inner-glow': 'inset 0 0 20px rgba(0, 245, 255, 0.1)',
+                    },
+                    animation: {
+                        'float-slow': 'float 6s ease-in-out infinite',
+                        'pulse-glow': 'pulseGlow 2s ease-in-out infinite',
+                        'scan-line': 'scanLine 4s linear infinite',
+                        'grid-move': 'gridMove 20s linear infinite',
+                        'spin-slow': 'spin 8s linear infinite',
+                        'bounce-subtle': 'bounceSubtle 2s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-15px)' },
+                        },
+                        pulseGlow: {
+                            '0%, 100%': { opacity: '1', filter: 'brightness(1)' },
+                            '50%': { opacity: '0.8', filter: 'brightness(1.3)' },
+                        },
+                        scanLine: {
+                            '0%': { transform: 'translateY(-100%)' },
+                            '100%': { transform: 'translateY(100vh)' },
+                        },
+                        gridMove: {
+                            '0%': { backgroundPosition: '0 0' },
+                            '100%': { backgroundPosition: '50px 50px' },
+                        },
+                        bounceSubtle: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-3px)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .text-glow-cyan {
+                text-shadow: 0 0 10px #00f5ff, 0 0 20px #00f5ff80, 0 0 40px #00f5ff40;
+            }
+            .text-glow-purple {
+                text-shadow: 0 0 10px #bf00ff, 0 0 20px #bf00ff80, 0 0 40px #bf00ff40;
+            }
+            .text-glow-pink {
+                text-shadow: 0 0 10px #ff00aa, 0 0 20px #ff00aa80, 0 0 40px #ff00aa40;
+            }
+            .text-glow-green {
+                text-shadow: 0 0 10px #00ff88, 0 0 20px #00ff8880, 0 0 40px #00ff8840;
+            }
+            .glass-quantum {
+                background: linear-gradient(135deg, rgba(15, 22, 41, 0.8) 0%, rgba(10, 15, 30, 0.6) 100%);
+                backdrop-filter: blur(20px);
+                border: 1px solid rgba(0, 245, 255, 0.15);
+            }
+            .glass-quantum-hover {
+                background: linear-gradient(135deg, rgba(15, 22, 41, 0.9) 0%, rgba(10, 15, 30, 0.7) 100%);
+                backdrop-filter: blur(20px);
+                border: 1px solid rgba(0, 245, 255, 0.3);
+            }
+            .grid-bg {
+                background-image: 
+                    linear-gradient(rgba(0, 245, 255, 0.06) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(0, 245, 255, 0.06) 1px, transparent 1px);
+                background-size: 40px 40px;
+            }
+            .hexagon-pattern {
+                background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='49' viewBox='0 0 28 49'%3E%3Cg fill-rule='evenodd'%3E%3Cg fill='%2300f5ff' fill-opacity='0.04'%3E%3Cpath d='M13.99 9.25l13 7.5v15l-13 7.5L1 31.75v-15l12.99-7.5zM3 17.9v12.7l10.99 6.34 11-6.35V17.9l-11-6.34L3 17.9zM0 15l12.98-7.5V0h-2v6.35L0 12.69v2.3zm0 18.5L12.98 41v8h-2v-6.85L0 35.81v-2.3zM15 0v7.5L27.99 15H28v-2.31h-.01L17 6.35V0h-2zm0 49v-8l12.99-7.5H28v2.31h-.01L17 42.15V49h-2z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+            }
+            .corner-decoration {
+                position: relative;
+            }
+            .corner-decoration::before,
+            .corner-decoration::after {
+                content: '';
+                position: absolute;
+                width: 20px;
+                height: 20px;
+                border-color: #00f5ff;
+                border-style: solid;
+                border-width: 0;
+            }
+            .corner-decoration::before {
+                top: -1px;
+                left: -1px;
+                border-top-width: 2px;
+                border-left-width: 2px;
+            }
+            .corner-decoration::after {
+                bottom: -1px;
+                right: -1px;
+                border-bottom-width: 2px;
+                border-right-width: 2px;
+            }
+            .input-quantum {
+                background: rgba(5, 8, 16, 0.8);
+                border: 1px solid rgba(0, 245, 255, 0.2);
+                color: #00f5ff;
+                transition: all 0.3s ease;
+            }
+            .input-quantum:focus {
+                border-color: #00f5ff;
+                box-shadow: 0 0 15px rgba(0, 245, 255, 0.3), inset 0 0 10px rgba(0, 245, 255, 0.1);
+                outline: none;
+            }
+            .select-quantum {
+                background: rgba(5, 8, 16, 0.8);
+                border: 1px solid rgba(0, 245, 255, 0.2);
+                color: white;
+                transition: all 0.3s ease;
+                appearance: none;
+                background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2300f5ff' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+                background-repeat: no-repeat;
+                background-position: right 12px center;
+                padding-right: 36px;
+            }
+            .select-quantum:focus {
+                border-color: #00f5ff;
+                box-shadow: 0 0 15px rgba(0, 245, 255, 0.3);
+                outline: none;
+            }
+            .btn-quantum {
+                background: linear-gradient(135deg, rgba(0, 245, 255, 0.2) 0%, rgba(191, 0, 255, 0.2) 100%);
+                border: 1px solid rgba(0, 245, 255, 0.5);
+                color: #00f5ff;
+                transition: all 0.3s ease;
+                position: relative;
+                overflow: hidden;
+            }
+            .btn-quantum::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: -100%;
+                width: 100%;
+                height: 100%;
+                background: linear-gradient(90deg, transparent, rgba(0, 245, 255, 0.3), transparent);
+                transition: left 0.5s ease;
+            }
+            .btn-quantum:hover::before {
+                left: 100%;
+            }
+            .btn-quantum:hover {
+                border-color: #00f5ff;
+                box-shadow: 0 0 20px rgba(0, 245, 255, 0.4);
+                transform: translateY(-1px);
+            }
+            .btn-quantum:active {
+                transform: translateY(0);
+            }
+            .tab-quantum {
+                position: relative;
+                transition: all 0.3s ease;
+                border-bottom: 2px solid transparent;
+            }
+            .tab-quantum.active {
+                color: #00f5ff;
+                border-bottom-color: #00f5ff;
+                text-shadow: 0 0 10px #00f5ff80;
+            }
+            .tab-quantum.active::after {
+                content: '';
+                position: absolute;
+                bottom: -6px;
+                left: 50%;
+                transform: translateX(-50%);
+                width: 8px;
+                height: 8px;
+                background: #00f5ff;
+                border-radius: 50%;
+                box-shadow: 0 0 10px #00f5ff;
+            }
+            .result-panel {
+                background: linear-gradient(180deg, rgba(0, 245, 255, 0.05) 0%, rgba(191, 0, 255, 0.05) 100%);
+                border: 1px solid rgba(0, 245, 255, 0.2);
+                position: relative;
+                overflow: hidden;
+            }
+            .result-panel::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                height: 1px;
+                background: linear-gradient(90deg, transparent, #00f5ff, transparent);
+            }
+            .history-item {
+                background: rgba(5, 8, 16, 0.6);
+                border-left: 3px solid #00f5ff;
+                transition: all 0.2s ease;
+            }
+            .history-item:hover {
+                background: rgba(0, 245, 255, 0.1);
+                border-left-color: #bf00ff;
+            }
+            .scrollbar-quantum::-webkit-scrollbar {
+                width: 6px;
+            }
+            .scrollbar-quantum::-webkit-scrollbar-track {
+                background: rgba(0, 245, 255, 0.05);
+            }
+            .scrollbar-quantum::-webkit-scrollbar-thumb {
+                background: rgba(0, 245, 255, 0.3);
+                border-radius: 3px;
+            }
+            .scrollbar-quantum::-webkit-scrollbar-thumb:hover {
+                background: rgba(0, 245, 255, 0.5);
+            }
+            .status-dot {
+                width: 8px;
+                height: 8px;
+                border-radius: 50%;
+                background: #00ff88;
+                box-shadow: 0 0 10px #00ff88;
+                animation: pulseGlow 1.5s ease-in-out infinite;
+            }
+        }
+    </style>
+</head>
+<body class="bg-dark-900 min-h-screen font-mono text-white overflow-x-hidden">
+    <div class="fixed inset-0 z-0">
+        <div class="absolute inset-0 bg-gradient-to-br from-dark-900 via-dark-800 to-dark-900"></div>
+        <div class="absolute inset-0 grid-bg animate-grid-move opacity-50"></div>
+        <div class="absolute inset-0 hexagon-pattern opacity-30"></div>
+        <div class="absolute top-0 left-1/4 w-96 h-96 bg-quantum-cyan/10 rounded-full blur-[120px]"></div>
+        <div class="absolute bottom-1/4 right-1/4 w-80 h-80 bg-quantum-purple/10 rounded-full blur-[100px]"></div>
+        <div class="absolute top-1/2 left-1/2 w-64 h-64 bg-quantum-pink/5 rounded-full blur-[80px]"></div>
+    </div>
+
+    <div class="fixed top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-quantum-cyan to-transparent opacity-50 z-50 pointer-events-none">
+        <div class="absolute inset-0 animate-scan-line bg-gradient-to-b from-quantum-cyan/20 to-transparent h-20"></div>
+    </div>
+
+    <div class="container mx-auto px-4 py-8 max-w-7xl relative z-10">
+        <header class="mb-10">
+            <div class="flex flex-col md:flex-row items-center justify-between gap-6">
+                <div class="flex items-center gap-4">
+                    <div class="relative">
+                        <div class="w-14 h-14 rounded-xl glass-quantum flex items-center justify-center shadow-glow-cyan">
+                            <i class="fa fa-cube text-3xl text-quantum-cyan animate-spin-slow"></i>
+                        </div>
+                        <div class="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-quantum-green shadow-glow-green"></div>
+                    </div>
+                    <div>
+                        <h1 class="text-3xl md:text-4xl font-orbitron font-bold text-white">
+                            <span class="text-quantum-cyan text-glow-cyan">QUANTUM</span>
+                            <span class="text-white/90">UNIT</span>
+                        </h1>
+                        <p class="text-sm text-gray-400 tracking-widest">量子单位换算系统 v2.0</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div class="glass-quantum rounded-lg px-4 py-2 flex items-center gap-3">
+                        <div class="status-dot"></div>
+                        <span class="text-sm text-gray-300">系统在线</span>
+                    </div>
+                    <button id="theme-toggle" class="glass-quantum rounded-lg p-3 hover:border-quantum-cyan/50 transition-all group">
+                        <i class="fa fa-moon-o text-quantum-cyan group-hover:text-glow-cyan transition-all"></i>
+                    </button>
+                    <button id="history-toggle" class="glass-quantum rounded-lg p-3 hover:border-quantum-purple/50 transition-all group relative">
+                        <i class="fa fa-history text-quantum-purple group-hover:text-glow-purple transition-all"></i>
+                        <span id="history-badge" class="absolute -top-1 -right-1 w-5 h-5 bg-quantum-pink rounded-full text-xs flex items-center justify-center font-bold hidden">0</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <div class="flex flex-col lg:flex-row gap-6">
+            <div class="flex-1">
+                <div class="glass-quantum rounded-2xl corner-decoration overflow-hidden shadow-2xl">
+                    <div class="border-b border-quantum-cyan/20 bg-dark-800/50">
+                        <div class="flex items-center gap-2 px-6 py-3 border-b border-quantum-cyan/10">
+                            <div class="flex gap-2">
+                                <div class="w-3 h-3 rounded-full bg-red-500/80"></div>
+                                <div class="w-3 h-3 rounded-full bg-yellow-500/80"></div>
+                                <div class="w-3 h-3 rounded-full bg-green-500/80"></div>
+                            </div>
+                            <span class="text-xs text-gray-500 ml-4 font-mono">converter.quantum.io</span>
+                        </div>
+                        <div class="flex flex-wrap gap-1 px-4 py-2 overflow-x-auto scrollbar-quantum">
+                            <button class="tab-quantum active px-4 py-2.5 text-sm font-medium whitespace-nowrap flex items-center gap-2" data-category="length">
+                                <i class="fa fa-arrows-h"></i>长度
+                            </button>
+                            <button class="tab-quantum px-4 py-2.5 text-sm font-medium whitespace-nowrap flex items-center gap-2 text-gray-400" data-category="weight">
+                                <i class="fa fa-balance-scale"></i>重量
+                            </button>
+                            <button class="tab-quantum px-4 py-2.5 text-sm font-medium whitespace-nowrap flex items-center gap-2 text-gray-400" data-category="temperature">
+                                <i class="fa fa-thermometer-half"></i>温度
+                            </button>
+                            <button class="tab-quantum px-4 py-2.5 text-sm font-medium whitespace-nowrap flex items-center gap-2 text-gray-400" data-category="time">
+                                <i class="fa fa-clock-o"></i>时间
+                            </button>
+                            <button class="tab-quantum px-4 py-2.5 text-sm font-medium whitespace-nowrap flex items-center gap-2 text-gray-400" data-category="area">
+                                <i class="fa fa-clone"></i>面积
+                            </button>
+                            <button class="tab-quantum px-4 py-2.5 text-sm font-medium whitespace-nowrap flex items-center gap-2 text-gray-400" data-category="volume">
+                                <i class="fa fa-cube"></i>体积
+                            </button>
+                            <button class="tab-quantum px-4 py-2.5 text-sm font-medium whitespace-nowrap flex items-center gap-2 text-gray-400" data-category="speed">
+                                <i class="fa fa-tachometer"></i>速度
+                            </button>
+                            <button class="tab-quantum px-4 py-2.5 text-sm font-medium whitespace-nowrap flex items-center gap-2 text-gray-400" data-category="data">
+                                <i class="fa fa-database"></i>数据
+                            </button>
+                            <button class="tab-quantum px-4 py-2.5 text-sm font-medium whitespace-nowrap flex items-center gap-2 text-gray-400" data-category="pressure">
+                                <i class="fa fa-compress"></i>压力
+                            </button>
+                            <button class="tab-quantum px-4 py-2.5 text-sm font-medium whitespace-nowrap flex items-center gap-2 text-gray-400" data-category="energy">
+                                <i class="fa fa-bolt"></i>能量
+                            </button>
+                            <button class="tab-quantum px-4 py-2.5 text-sm font-medium whitespace-nowrap flex items-center gap-2 text-gray-400" data-category="power">
+                                <i class="fa fa-plug"></i>功率
+                            </button>
+                            <button class="tab-quantum px-4 py-2.5 text-sm font-medium whitespace-nowrap flex items-center gap-2 text-gray-400" data-category="angle">
+                                <i class="fa fa-compass"></i>角度
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="p-6 md:p-8">
+                        <div id="converter-container"></div>
+                    </div>
+
+                    <div class="px-6 md:px-8 pb-6 md:pb-8">
+                        <div class="result-panel rounded-xl p-6" id="result-panel">
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="flex items-center gap-2">
+                                    <i class="fa fa-flask text-quantum-purple"></i>
+                                    <span class="text-sm text-gray-400 uppercase tracking-wider">换算结果</span>
+                                </div>
+                                <button id="copy-result" class="text-sm text-quantum-cyan hover:text-glow-cyan transition-all flex items-center gap-2">
+                                    <i class="fa fa-copy"></i>复制
+                                </button>
+                            </div>
+                            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                <div class="space-y-1">
+                                    <p class="text-gray-400 text-sm" id="result-from-text">1 米</p>
+                                    <p class="text-gray-500 text-xs">=</p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-4xl md:text-5xl font-orbitron font-bold text-quantum-cyan text-glow-cyan" id="result-value">1</p>
+                                    <p class="text-quantum-purple mt-1" id="result-unit-text">米 (m)</p>
+                                </div>
+                            </div>
+                            <div class="mt-6 pt-4 border-t border-quantum-cyan/10">
+                                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
+                                    <div class="p-2 rounded-lg bg-dark-800/50">
+                                        <p class="text-xs text-gray-500 mb-1">千进制</p>
+                                        <p class="text-sm text-quantum-cyan font-mono" id="kilo-value">0.001</p>
+                                    </div>
+                                    <div class="p-2 rounded-lg bg-dark-800/50">
+                                        <p class="text-xs text-gray-500 mb-1">百进制</p>
+                                        <p class="text-sm text-quantum-green font-mono" id="hecto-value">0.01</p>
+                                    </div>
+                                    <div class="p-2 rounded-lg bg-dark-800/50">
+                                        <p class="text-xs text-gray-500 mb-1">分进制</p>
+                                        <p class="text-sm text-quantum-orange font-mono" id="deci-value">10</p>
+                                    </div>
+                                    <div class="p-2 rounded-lg bg-dark-800/50">
+                                        <p class="text-xs text-gray-500 mb-1">毫进制</p>
+                                        <p class="text-sm text-quantum-pink font-mono" id="milli-value">1000</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+                    <div class="glass-quantum rounded-xl p-4 text-center corner-decoration">
+                        <i class="fa fa-balance-scale text-2xl text-quantum-cyan mb-2"></i>
+                        <p class="text-2xl font-orbitron font-bold text-white" id="stat-units">12</p>
+                        <p class="text-xs text-gray-500 mt-1">单位类别</p>
+                    </div>
+                    <div class="glass-quantum rounded-xl p-4 text-center corner-decoration">
+                        <i class="fa fa-calculator text-2xl text-quantum-purple mb-2"></i>
+                        <p class="text-2xl font-orbitron font-bold text-white" id="stat-conversions">80+</p>
+                        <p class="text-xs text-gray-500 mt-1">换算单位</p>
+                    </div>
+                    <div class="glass-quantum rounded-xl p-4 text-center corner-decoration">
+                        <i class="fa fa-bolt text-2xl text-quantum-pink mb-2"></i>
+                        <p class="text-2xl font-orbitron font-bold text-white">实时</p>
+                        <p class="text-xs text-gray-500 mt-1">即时计算</p>
+                    </div>
+                    <div class="glass-quantum rounded-xl p-4 text-center corner-decoration">
+                        <i class="fa fa-history text-2xl text-quantum-green mb-2"></i>
+                        <p class="text-2xl font-orbitron font-bold text-white" id="stat-history">0</p>
+                        <p class="text-xs text-gray-500 mt-1">历史记录</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="history-panel" class="lg:w-80 hidden lg:block">
+                <div class="glass-quantum rounded-2xl corner-decoration h-full sticky top-8 overflow-hidden">
+                    <div class="p-4 border-b border-quantum-purple/20 flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <i class="fa fa-history text-quantum-purple"></i>
+                            <span class="font-medium text-white">换算历史</span>
+                        </div>
+                        <button id="clear-history" class="text-xs text-gray-500 hover:text-quantum-pink transition-all">
+                            清空
+                        </button>
+                    </div>
+                    <div id="history-list" class="p-4 space-y-3 max-h-[calc(100vh-250px)] overflow-y-auto scrollbar-quantum">
+                        <div class="text-center py-12 text-gray-500">
+                            <i class="fa fa-clock-o text-4xl mb-3 opacity-30"></i>
+                            <p class="text-sm">暂无换算记录</p>
+                            <p class="text-xs mt-1 opacity-60">开始换算后记录将显示在这里</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-10 glass-quantum rounded-2xl p-6 corner-decoration">
+            <div class="flex items-center gap-3 mb-4">
+                <i class="fa fa-lightbulb-o text-quantum-orange text-xl"></i>
+                <h3 class="font-orbitron font-semibold text-lg text-white">常用换算参考</h3>
+            </div>
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                <button class="quick-convert p-3 rounded-lg bg-dark-800/50 border border-quantum-cyan/10 hover:border-quantum-cyan/40 transition-all text-left" data-category="length" data-from="kilometer" data-to="mile" data-value="1">
+                    <p class="text-xs text-gray-500 mb-1">长度</p>
+                    <p class="text-sm text-quantum-cyan">1 km → mi</p>
+                </button>
+                <button class="quick-convert p-3 rounded-lg bg-dark-800/50 border border-quantum-cyan/10 hover:border-quantum-cyan/40 transition-all text-left" data-category="weight" data-from="kilogram" data-to="pound" data-value="1">
+                    <p class="text-xs text-gray-500 mb-1">重量</p>
+                    <p class="text-sm text-quantum-purple">1 kg → lb</p>
+                </button>
+                <button class="quick-convert p-3 rounded-lg bg-dark-800/50 border border-quantum-cyan/10 hover:border-quantum-cyan/40 transition-all text-left" data-category="temperature" data-from="celsius" data-to="fahrenheit" data-value="25">
+                    <p class="text-xs text-gray-500 mb-1">温度</p>
+                    <p class="text-sm text-quantum-pink">25°C → °F</p>
+                </button>
+                <button class="quick-convert p-3 rounded-lg bg-dark-800/50 border border-quantum-cyan/10 hover:border-quantum-cyan/40 transition-all text-left" data-category="data" data-from="gigabyte" data-to="megabyte" data-value="1">
+                    <p class="text-xs text-gray-500 mb-1">数据</p>
+                    <p class="text-sm text-quantum-green">1 GB → MB</p>
+                </button>
+                <button class="quick-convert p-3 rounded-lg bg-dark-800/50 border border-quantum-cyan/10 hover:border-quantum-cyan/40 transition-all text-left" data-category="speed" data-from="kilometer-per-hour" data-to="mile-per-hour" data-value="100">
+                    <p class="text-xs text-gray-500 mb-1">速度</p>
+                    <p class="text-sm text-quantum-orange">100 km/h → mph</p>
+                </button>
+                <button class="quick-convert p-3 rounded-lg bg-dark-800/50 border border-quantum-cyan/10 hover:border-quantum-cyan/40 transition-all text-left" data-category="area" data-from="square-meter" data-to="square-foot" data-value="1">
+                    <p class="text-xs text-gray-500 mb-1">面积</p>
+                    <p class="text-sm text-quantum-cyan">1 m² → ft²</p>
+                </button>
+            </div>
+        </div>
+
+        <footer class="mt-10 text-center text-gray-500 text-sm pb-8">
+            <div class="flex items-center justify-center gap-2 mb-2">
+                <i class="fa fa-code text-quantum-cyan"></i>
+                <span>Powered by Quantum Unit Engine</span>
+                <i class="fa fa-cube text-quantum-purple"></i>
+            </div>
+            <p class="text-xs text-gray-600">© 2025 Quantum Converter | 精准 · 快速 · 全面</p>
+        </footer>
+    </div>
+
+    <div id="toast" class="fixed bottom-8 right-8 glass-quantum rounded-lg px-5 py-3 shadow-glow-cyan transform translate-y-20 opacity-0 transition-all duration-300 z-50">
+        <div class="flex items-center gap-3">
+            <i class="fa fa-check-circle text-quantum-green text-lg"></i>
+            <span id="toast-message" class="text-white">操作成功</span>
+        </div>
+    </div>
+
+    <script>
+        const unitCategories = {
+            length: {
+                name: '长度',
+                icon: 'fa-arrows-h',
+                color: 'cyan',
+                baseUnit: 'meter',
+                units: {
+                    'meter': { name: '米', symbol: 'm', factor: 1 },
+                    'kilometer': { name: '千米', symbol: 'km', factor: 1000 },
+                    'hectometer': { name: '百米', symbol: 'hm', factor: 100 },
+                    'decameter': { name: '十米', symbol: 'dam', factor: 10 },
+                    'decimeter': { name: '分米', symbol: 'dm', factor: 0.1 },
+                    'centimeter': { name: '厘米', symbol: 'cm', factor: 0.01 },
+                    'millimeter': { name: '毫米', symbol: 'mm', factor: 0.001 },
+                    'micrometer': { name: '微米', symbol: 'μm', factor: 0.000001 },
+                    'nanometer': { name: '纳米', symbol: 'nm', factor: 0.000000001 },
+                    'mile': { name: '英里', symbol: 'mi', factor: 1609.344 },
+                    'yard': { name: '码', symbol: 'yd', factor: 0.9144 },
+                    'foot': { name: '英尺', symbol: 'ft', factor: 0.3048 },
+                    'inch': { name: '英寸', symbol: 'in', factor: 0.0254 },
+                    'nautical-mile': { name: '海里', symbol: 'nmi', factor: 1852 },
+                    'fathom': { name: '英寻', symbol: 'fm', factor: 1.8288 },
+                    'furlong': { name: '浪', symbol: 'fur', factor: 201.168 },
+                }
+            },
+            weight: {
+                name: '重量',
+                icon: 'fa-balance-scale',
+                color: 'purple',
+                baseUnit: 'kilogram',
+                units: {
+                    'kilogram': { name: '千克', symbol: 'kg', factor: 1 },
+                    'gram': { name: '克', symbol: 'g', factor: 0.001 },
+                    'milligram': { name: '毫克', symbol: 'mg', factor: 0.000001 },
+                    'microgram': { name: '微克', symbol: 'μg', factor: 0.000000001 },
+                    'metric-ton': { name: '吨', symbol: 't', factor: 1000 },
+                    'pound': { name: '磅', symbol: 'lb', factor: 0.45359237 },
+                    'ounce': { name: '盎司', symbol: 'oz', factor: 0.0283495231 },
+                    'stone': { name: '英石', symbol: 'st', factor: 6.35029318 },
+                    'carat': { name: '克拉', symbol: 'ct', factor: 0.0002 },
+                    'ton-us': { name: '美吨', symbol: 'ton (US)', factor: 907.18474 },
+                    'ton-uk': { name: '英吨', symbol: 'ton (UK)', factor: 1016.0469088 },
+                }
+            },
+            temperature: {
+                name: '温度',
+                icon: 'fa-thermometer-half',
+                color: 'pink',
+                baseUnit: 'celsius',
+                isSpecial: true,
+                units: {
+                    'celsius': { name: '摄氏度', symbol: '°C' },
+                    'fahrenheit': { name: '华氏度', symbol: '°F' },
+                    'kelvin': { name: '开尔文', symbol: 'K' },
+                    'rankine': { name: '兰氏度', symbol: '°R' },
+                    'reaumur': { name: '列氏度', symbol: '°Ré' },
+                }
+            },
+            time: {
+                name: '时间',
+                icon: 'fa-clock-o',
+                color: 'green',
+                baseUnit: 'second',
+                units: {
+                    'second': { name: '秒', symbol: 's', factor: 1 },
+                    'millisecond': { name: '毫秒', symbol: 'ms', factor: 0.001 },
+                    'microsecond': { name: '微秒', symbol: 'μs', factor: 0.000001 },
+                    'nanosecond': { name: '纳秒', symbol: 'ns', factor: 0.000000001 },
+                    'minute': { name: '分钟', symbol: 'min', factor: 60 },
+                    'hour': { name: '小时', symbol: 'h', factor: 3600 },
+                    'day': { name: '天', symbol: 'd', factor: 86400 },
+                    'week': { name: '周', symbol: 'wk', factor: 604800 },
+                    'month': { name: '月(30天)', symbol: 'mo', factor: 2592000 },
+                    'year': { name: '年', symbol: 'yr', factor: 31536000 },
+                    'decade': { name: '十年', symbol: 'dec', factor: 315360000 },
+                    'century': { name: '世纪', symbol: 'c', factor: 3153600000 },
+                }
+            },
+            area: {
+                name: '面积',
+                icon: 'fa-clone',
+                color: 'orange',
+                baseUnit: 'square-meter',
+                units: {
+                    'square-meter': { name: '平方米', symbol: 'm²', factor: 1 },
+                    'square-kilometer': { name: '平方千米', symbol: 'km²', factor: 1000000 },
+                    'square-centimeter': { name: '平方厘米', symbol: 'cm²', factor: 0.0001 },
+                    'square-millimeter': { name: '平方毫米', symbol: 'mm²', factor: 0.000001 },
+                    'square-mile': { name: '平方英里', symbol: 'mi²', factor: 2589988.11 },
+                    'square-yard': { name: '平方码', symbol: 'yd²', factor: 0.83612736 },
+                    'square-foot': { name: '平方英尺', symbol: 'ft²', factor: 0.09290304 },
+                    'square-inch': { name: '平方英寸', symbol: 'in²', factor: 0.00064516 },
+                    'hectare': { name: '公顷', symbol: 'ha', factor: 10000 },
+                    'acre': { name: '英亩', symbol: 'acre', factor: 4046.8564224 },
+                    'are': { name: '公亩', symbol: 'a', factor: 100 },
+                }
+            },
+            volume: {
+                name: '体积',
+                icon: 'fa-cube',
+                color: 'cyan',
+                baseUnit: 'cubic-meter',
+                units: {
+                    'cubic-meter': { name: '立方米', symbol: 'm³', factor: 1 },
+                    'cubic-centimeter': { name: '立方厘米', symbol: 'cm³', factor: 0.000001 },
+                    'cubic-millimeter': { name: '立方毫米', symbol: 'mm³', factor: 0.000000001 },
+                    'liter': { name: '升', symbol: 'L', factor: 0.001 },
+                    'milliliter': { name: '毫升', symbol: 'mL', factor: 0.000001 },
+                    'gallon-us': { name: '美制加仑', symbol: 'gal (US)', factor: 0.00378541 },
+                    'gallon-uk': { name: '英制加仑', symbol: 'gal (UK)', factor: 0.00454609 },
+                    'quart-us': { name: '美制夸脱', symbol: 'qt (US)', factor: 0.000946353 },
+                    'pint-us': { name: '美制品脱', symbol: 'pt (US)', factor: 0.000473176 },
+                    'cup': { name: '杯', symbol: 'cup', factor: 0.000236588 },
+                    'fluid-ounce-us': { name: '美制液盎司', symbol: 'fl oz', factor: 0.0000295735 },
+                    'tablespoon': { name: '汤匙', symbol: 'tbsp', factor: 0.0000147868 },
+                    'teaspoon': { name: '茶匙', symbol: 'tsp', factor: 0.00000492892 },
+                    'cubic-foot': { name: '立方英尺', symbol: 'ft³', factor: 0.0283168 },
+                    'cubic-inch': { name: '立方英寸', symbol: 'in³', factor: 0.0000163871 },
+                    'cubic-yard': { name: '立方码', symbol: 'yd³', factor: 0.764555 },
+                }
+            },
+            speed: {
+                name: '速度',
+                icon: 'fa-tachometer',
+                color: 'purple',
+                baseUnit: 'meter-per-second',
+                units: {
+                    'meter-per-second': { name: '米/秒', symbol: 'm/s', factor: 1 },
+                    'kilometer-per-hour': { name: '千米/时', symbol: 'km/h', factor: 0.277778 },
+                    'mile-per-hour': { name: '英里/时', symbol: 'mph', factor: 0.44704 },
+                    'knot': { name: '节', symbol: 'kn', factor: 0.514444 },
+                    'foot-per-second': { name: '英尺/秒', symbol: 'ft/s', factor: 0.3048 },
+                    'mach': { name: '马赫', symbol: 'Ma', factor: 340.29 },
+                    'speed-of-light': { name: '光速', symbol: 'c', factor: 299792458 },
+                    'kilometer-per-second': { name: '千米/秒', symbol: 'km/s', factor: 1000 },
+                    'centimeter-per-second': { name: '厘米/秒', symbol: 'cm/s', factor: 0.01 },
+                }
+            },
+            data: {
+                name: '数据存储',
+                icon: 'fa-database',
+                color: 'green',
+                baseUnit: 'byte',
+                units: {
+                    'bit': { name: '比特', symbol: 'b', factor: 0.125 },
+                    'byte': { name: '字节', symbol: 'B', factor: 1 },
+                    'kilobit': { name: '千比特', symbol: 'Kb', factor: 128 },
+                    'kilobyte': { name: '千字节', symbol: 'KB', factor: 1024 },
+                    'megabit': { name: '兆比特', symbol: 'Mb', factor: 131072 },
+                    'megabyte': { name: '兆字节', symbol: 'MB', factor: 1048576 },
+                    'gigabit': { name: '吉比特', symbol: 'Gb', factor: 134217728 },
+                    'gigabyte': { name: '吉字节', symbol: 'GB', factor: 1073741824 },
+                    'terabit': { name: '太比特', symbol: 'Tb', factor: 137438953472 },
+                    'terabyte': { name: '太字节', symbol: 'TB', factor: 1099511627776 },
+                    'petabyte': { name: '拍字节', symbol: 'PB', factor: 1125899906842624 },
+                    'exabyte': { name: '艾字节', symbol: 'EB', factor: 1152921504606846976 },
+                }
+            },
+            pressure: {
+                name: '压力',
+                icon: 'fa-compress',
+                color: 'pink',
+                baseUnit: 'pascal',
+                units: {
+                    'pascal': { name: '帕斯卡', symbol: 'Pa', factor: 1 },
+                    'kilopascal': { name: '千帕', symbol: 'kPa', factor: 1000 },
+                    'megapascal': { name: '兆帕', symbol: 'MPa', factor: 1000000 },
+                    'bar': { name: '巴', symbol: 'bar', factor: 100000 },
+                    'millibar': { name: '毫巴', symbol: 'mbar', factor: 100 },
+                    'atmosphere': { name: '标准大气压', symbol: 'atm', factor: 101325 },
+                    'pound-per-square-inch': { name: '磅/平方英寸', symbol: 'psi', factor: 6894.76 },
+                    'torr': { name: '托', symbol: 'Torr', factor: 133.322 },
+                    'millimeter-of-mercury': { name: '毫米汞柱', symbol: 'mmHg', factor: 133.322 },
+                    'inch-of-mercury': { name: '英寸汞柱', symbol: 'inHg', factor: 3386.39 },
+                    'centimeter-of-water': { name: '厘米水柱', symbol: 'cmH₂O', factor: 98.0665 },
+                }
+            },
+            energy: {
+                name: '能量',
+                icon: 'fa-bolt',
+                color: 'orange',
+                baseUnit: 'joule',
+                units: {
+                    'joule': { name: '焦耳', symbol: 'J', factor: 1 },
+                    'kilojoule': { name: '千焦', symbol: 'kJ', factor: 1000 },
+                    'megajoule': { name: '兆焦', symbol: 'MJ', factor: 1000000 },
+                    'calorie': { name: '卡路里', symbol: 'cal', factor: 4.184 },
+                    'kilocalorie': { name: '千卡', symbol: 'kcal', factor: 4184 },
+                    'watt-hour': { name: '瓦时', symbol: 'Wh', factor: 3600 },
+                    'kilowatt-hour': { name: '千瓦时', symbol: 'kWh', factor: 3600000 },
+                    'megawatt-hour': { name: '兆瓦时', symbol: 'MWh', factor: 3600000000 },
+                    'electronvolt': { name: '电子伏特', symbol: 'eV', factor: 1.602176634e-19 },
+                    'british-thermal-unit': { name: '英热单位', symbol: 'BTU', factor: 1055.06 },
+                    'foot-pound': { name: '英尺-磅', symbol: 'ft-lb', factor: 1.35582 },
+                }
+            },
+            power: {
+                name: '功率',
+                icon: 'fa-plug',
+                color: 'cyan',
+                baseUnit: 'watt',
+                units: {
+                    'watt': { name: '瓦特', symbol: 'W', factor: 1 },
+                    'kilowatt': { name: '千瓦', symbol: 'kW', factor: 1000 },
+                    'megawatt': { name: '兆瓦', symbol: 'MW', factor: 1000000 },
+                    'gigawatt': { name: '吉瓦', symbol: 'GW', factor: 1000000000 },
+                    'horsepower': { name: '英制马力', symbol: 'hp', factor: 745.7 },
+                    'horsepower-metric': { name: '公制马力', symbol: 'PS', factor: 735.499 },
+                    'ton-of-refrigeration': { name: '冷吨', symbol: 'TR', factor: 3516.85 },
+                    'btu-per-hour': { name: 'BTU/小时', symbol: 'BTU/h', factor: 0.293071 },
+                    'foot-pound-per-second': { name: '英尺-磅/秒', symbol: 'ft-lb/s', factor: 1.35582 },
+                    'volt-ampere': { name: '伏安', symbol: 'VA', factor: 1 },
+                    'kilovolt-ampere': { name: '千伏安', symbol: 'kVA', factor: 1000 },
+                }
+            },
+            angle: {
+                name: '角度',
+                icon: 'fa-compass',
+                color: 'purple',
+                baseUnit: 'degree',
+                units: {
+                    'degree': { name: '度', symbol: '°', factor: 1 },
+                    'radian': { name: '弧度', symbol: 'rad', factor: 57.295779513 },
+                    'gradian': { name: '百分度', symbol: 'grad', factor: 0.9 },
+                    'minute-of-arc': { name: '角分', symbol: "'", factor: 0.0166667 },
+                    'second-of-arc': { name: '角秒', symbol: '"', factor: 0.000277778 },
+                    'turn': { name: '圈', symbol: 'turn', factor: 360 },
+                    'octant': { name: '八分圆', symbol: 'oct', factor: 45 },
+                    'sextant': { name: '六分圆', symbol: 'sext', factor: 60 },
+                    'quadrant': { name: '象限', symbol: 'quad', factor: 90 },
+                    'right-angle': { name: '直角', symbol: '∠', factor: 90 },
+                }
+            }
+        };
+
+        let currentCategory = 'length';
+        let history = [];
+        let historyVisible = true;
+
+        const converterContainer = document.getElementById('converter-container');
+        const resultValueEl = document.getElementById('result-value');
+        const resultFromTextEl = document.getElementById('result-from-text');
+        const resultUnitTextEl = document.getElementById('result-unit-text');
+        const historyListEl = document.getElementById('history-list');
+        const historyBadgeEl = document.getElementById('history-badge');
+        const statHistoryEl = document.getElementById('stat-history');
+        const toastEl = document.getElementById('toast');
+        const toastMessageEl = document.getElementById('toast-message');
+
+        function init() {
+            renderConverter(currentCategory);
+            setupTabListeners();
+            setupQuickConvertListeners();
+            setupHistoryToggle();
+            setupCopyButton();
+            setupClearHistory();
+            loadHistoryFromStorage();
+            updateHistoryUI();
+            convert();
+        }
+
+        function renderConverter(category) {
+            const cat = unitCategories[category];
+            const units = cat.units;
+            const unitKeys = Object.keys(units);
+            const fromUnit = unitKeys[0];
+            const toUnit = unitKeys[1] || unitKeys[0];
+
+            converterContainer.innerHTML = `
+                <div class="mb-6 flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-xl bg-dark-800/80 border border-quantum-${cat.color}/30 flex items-center justify-center">
+                        <i class="fa ${cat.icon} text-xl text-quantum-${cat.color}"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-orbitron font-semibold text-white">${cat.name}单位换算</h2>
+                        <p class="text-xs text-gray-500">${unitKeys.length} 种单位 · 实时计算</p>
+                    </div>
+                </div>
+                <div class="grid md:grid-cols-5 gap-4 items-end">
+                    <div class="md:col-span-2">
+                        <label class="block text-xs text-gray-500 uppercase tracking-wider mb-2">数值</label>
+                        <input type="number" id="input-value" class="input-quantum w-full px-4 py-3.5 rounded-lg font-mono text-lg" 
+                               placeholder="输入数值" value="1">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-xs text-gray-500 uppercase tracking-wider mb-2">从</label>
+                        <select id="select-from" class="select-quantum w-full px-4 py-3.5 rounded-lg">
+                            ${unitKeys.map(key => `
+                                <option value="${key}" ${key === fromUnit ? 'selected' : ''} style="background: #050810;">
+                                    ${units[key].name} (${units[key].symbol})
+                                </option>
+                            `).join('')}
+                        </select>
+                    </div>
+                    <div class="flex justify-center">
+                        <button id="swap-btn" class="btn-quantum w-12 h-12 rounded-full flex items-center justify-center">
+                            <i class="fa fa-exchange text-lg"></i>
+                        </button>
+                    </div>
+                    <div class="md:col-span-2 md:col-start-3">
+                        <label class="block text-xs text-gray-500 uppercase tracking-wider mb-2">到</label>
+                        <select id="select-to" class="select-quantum w-full px-4 py-3.5 rounded-lg">
+                            ${unitKeys.map(key => `
+                                <option value="${key}" ${key === toUnit ? 'selected' : ''} style="background: #050810;">
+                                    ${units[key].name} (${units[key].symbol})
+                                </option>
+                            `).join('')}
+                        </select>
+                    </div>
+                    <div class="md:col-span-3">
+                        <div class="flex gap-3">
+                            <button id="convert-btn" class="btn-quantum flex-1 py-3.5 rounded-lg font-medium flex items-center justify-center gap-2">
+                                <i class="fa fa-calculator"></i>立即换算
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('input-value').addEventListener('input', convert);
+            document.getElementById('select-from').addEventListener('change', convert);
+            document.getElementById('select-to').addEventListener('change', convert);
+            document.getElementById('swap-btn').addEventListener('click', swapUnits);
+            document.getElementById('convert-btn').addEventListener('click', function() {
+                convert();
+                addToHistory();
+                showToast('换算完成');
+            });
+        }
+
+        function convert() {
+            const value = parseFloat(document.getElementById('input-value').value);
+            const fromUnit = document.getElementById('select-from').value;
+            const toUnit = document.getElementById('select-to').value;
+            const cat = unitCategories[currentCategory];
+
+            if (isNaN(value)) {
+                resultValueEl.textContent = '---';
+                resultFromTextEl.textContent = '请输入有效数值';
+                return;
+            }
+
+            let result;
+            if (cat.isSpecial && currentCategory === 'temperature') {
+                result = convertTemperature(value, fromUnit, toUnit);
+            } else {
+                const fromFactor = cat.units[fromUnit].factor;
+                const toFactor = cat.units[toUnit].factor;
+                result = (value * fromFactor) / toFactor;
+            }
+
+            const fromSymbol = cat.units[fromUnit].symbol;
+            const toSymbol = cat.units[toUnit].symbol;
+            const toName = cat.units[toUnit].name;
+
+            resultValueEl.textContent = formatNumber(result);
+            resultFromTextEl.textContent = `${formatNumber(value)} ${cat.units[fromUnit].name} (${fromSymbol})`;
+            resultUnitTextEl.textContent = `${toName} (${toSymbol})`;
+
+            updateMetricPrefixes(result, toUnit, cat);
+        }
+
+        function convertTemperature(value, from, to) {
+            let celsius;
+            switch(from) {
+                case 'celsius':
+                    celsius = value;
+                    break;
+                case 'fahrenheit':
+                    celsius = (value - 32) * 5 / 9;
+                    break;
+                case 'kelvin':
+                    celsius = value - 273.15;
+                    break;
+                case 'rankine':
+                    celsius = (value - 491.67) * 5 / 9;
+                    break;
+                case 'reaumur':
+                    celsius = value * 1.25;
+                    break;
+                default:
+                    celsius = value;
+            }
+
+            switch(to) {
+                case 'celsius':
+                    return celsius;
+                case 'fahrenheit':
+                    return celsius * 9 / 5 + 32;
+                case 'kelvin':
+                    return celsius + 273.15;
+                case 'rankine':
+                    return (celsius + 273.15) * 9 / 5;
+                case 'reaumur':
+                    return celsius * 0.8;
+                default:
+                    return celsius;
+            }
+        }
+
+        function updateMetricPrefixes(value, unit, cat) {
+            const prefixes = {
+                'kilo-value': 1000,
+                'hecto-value': 100,
+                'deci-value': 0.1,
+                'milli-value': 0.001
+            };
+
+            for (const [id, factor] of Object.entries(prefixes)) {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.textContent = formatNumber(value * factor);
+                }
+            }
+        }
+
+        function swapUnits() {
+            const selectFrom = document.getElementById('select-from');
+            const selectTo = document.getElementById('select-to');
+            const temp = selectFrom.value;
+            selectFrom.value = selectTo.value;
+            selectTo.value = temp;
+            convert();
+        }
+
+        function formatNumber(num) {
+            if (num === 0) return '0';
+            if (Math.abs(num) >= 1e12 || (Math.abs(num) < 1e-6 && num !== 0)) {
+                return num.toExponential(6);
+            }
+            let precision = 6;
+            if (Math.abs(num) >= 1000) precision = 2;
+            else if (Math.abs(num) >= 100) precision = 3;
+            else if (Math.abs(num) >= 10) precision = 4;
+
+            let formatted = parseFloat(num.toFixed(precision)).toString();
+            if (formatted.includes('e')) return formatted;
+
+            const parts = formatted.split('.');
+            parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+            return parts.join('.');
+        }
+
+        function setupTabListeners() {
+            document.querySelectorAll('.tab-quantum').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const category = this.getAttribute('data-category');
+                    if (category === currentCategory) return;
+
+                    document.querySelectorAll('.tab-quantum').forEach(t => {
+                        t.classList.remove('active');
+                        t.classList.add('text-gray-400');
+                    });
+                    this.classList.add('active');
+                    this.classList.remove('text-gray-400');
+
+                    currentCategory = category;
+                    renderConverter(category);
+                    convert();
+                });
+            });
+        }
+
+        function setupQuickConvertListeners() {
+            document.querySelectorAll('.quick-convert').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const category = this.getAttribute('data-category');
+                    const from = this.getAttribute('data-from');
+                    const to = this.getAttribute('data-to');
+                    const value = this.getAttribute('data-value');
+
+                    document.querySelectorAll('.tab-quantum').forEach(t => {
+                        t.classList.remove('active');
+                        t.classList.add('text-gray-400');
+                        if (t.getAttribute('data-category') === category) {
+                            t.classList.add('active');
+                            t.classList.remove('text-gray-400');
+                        }
+                    });
+
+                    currentCategory = category;
+                    renderConverter(category);
+
+                    setTimeout(() => {
+                        document.getElementById('input-value').value = value;
+                        document.getElementById('select-from').value = from;
+                        document.getElementById('select-to').value = to;
+                        convert();
+                        addToHistory();
+                    }, 50);
+                });
+            });
+        }
+
+        function setupHistoryToggle() {
+            const toggleBtn = document.getElementById('history-toggle');
+            const historyPanel = document.getElementById('history-panel');
+
+            function checkScreenSize() {
+                if (window.innerWidth >= 1024) {
+                    historyPanel.classList.remove('hidden');
+                    historyVisible = true;
+                }
+            }
+
+            window.addEventListener('resize', checkScreenSize);
+            checkScreenSize();
+
+            toggleBtn.addEventListener('click', function() {
+                historyVisible = !historyVisible;
+                if (historyVisible) {
+                    historyPanel.classList.remove('hidden');
+                } else {
+                    historyPanel.classList.add('hidden');
+                }
+            });
+        }
+
+        function setupCopyButton() {
+            document.getElementById('copy-result').addEventListener('click', function() {
+                const resultText = resultValueEl.textContent + ' ' + resultUnitTextEl.textContent;
+                navigator.clipboard.writeText(resultText).then(() => {
+                    showToast('已复制到剪贴板');
+                });
+            });
+        }
+
+        function setupClearHistory() {
+            document.getElementById('clear-history').addEventListener('click', function() {
+                if (history.length === 0) return;
+                if (confirm('确定要清空所有历史记录吗？')) {
+                    history = [];
+                    saveHistoryToStorage();
+                    updateHistoryUI();
+                    showToast('历史记录已清空');
+                }
+            });
+        }
+
+        function addToHistory() {
+            const value = parseFloat(document.getElementById('input-value').value);
+            const fromUnit = document.getElementById('select-from').value;
+            const toUnit = document.getElementById('select-to').value;
+            const cat = unitCategories[currentCategory];
+
+            if (isNaN(value)) return;
+
+            let result;
+            if (cat.isSpecial && currentCategory === 'temperature') {
+                result = convertTemperature(value, fromUnit, toUnit);
+            } else {
+                const fromFactor = cat.units[fromUnit].factor;
+                const toFactor = cat.units[toUnit].factor;
+                result = (value * fromFactor) / toFactor;
+            }
+
+            const record = {
+                id: Date.now(),
+                category: currentCategory,
+                categoryName: cat.name,
+                value: value,
+                fromUnit: fromUnit,
+                fromName: cat.units[fromUnit].name,
+                fromSymbol: cat.units[fromUnit].symbol,
+                toUnit: toUnit,
+                toName: cat.units[toUnit].name,
+                toSymbol: cat.units[toUnit].symbol,
+                result: result,
+                timestamp: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+            };
+
+            history.unshift(record);
+            if (history.length > 50) history.pop();
+
+            saveHistoryToStorage();
+            updateHistoryUI();
+        }
+
+        function updateHistoryUI() {
+            const count = history.length;
+            historyBadgeEl.textContent = count;
+            statHistoryEl.textContent = count;
+
+            if (count > 0) {
+                historyBadgeEl.classList.remove('hidden');
+            } else {
+                historyBadgeEl.classList.add('hidden');
+            }
+
+            if (count === 0) {
+                historyListEl.innerHTML = `
+                    <div class="text-center py-12 text-gray-500">
+                        <i class="fa fa-clock-o text-4xl mb-3 opacity-30"></i>
+                        <p class="text-sm">暂无换算记录</p>
+                        <p class="text-xs mt-1 opacity-60">开始换算后记录将显示在这里</p>
+                    </div>
+                `;
+                return;
+            }
+
+            historyListEl.innerHTML = history.map(item => `
+                <div class="history-item rounded-lg p-3 cursor-pointer" onclick="useHistory(${item.id})">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs text-quantum-purple">${item.categoryName}</span>
+                        <span class="text-xs text-gray-500">${item.timestamp}</span>
+                    </div>
+                    <p class="text-sm text-gray-400">${formatNumber(item.value)} ${item.fromSymbol}</p>
+                    <p class="text-xs text-gray-600 my-1">↓</p>
+                    <p class="text-sm text-quantum-cyan font-mono">${formatNumber(item.result)} ${item.toSymbol}</p>
+                </div>
+            `).join('');
+        }
+
+        function useHistory(id) {
+            const record = history.find(h => h.id === id);
+            if (!record) return;
+
+            document.querySelectorAll('.tab-quantum').forEach(t => {
+                t.classList.remove('active');
+                t.classList.add('text-gray-400');
+                if (t.getAttribute('data-category') === record.category) {
+                    t.classList.add('active');
+                    t.classList.remove('text-gray-400');
+                }
+            });
+
+            currentCategory = record.category;
+            renderConverter(record.category);
+
+            setTimeout(() => {
+                document.getElementById('input-value').value = record.value;
+                document.getElementById('select-from').value = record.fromUnit;
+                document.getElementById('select-to').value = record.toUnit;
+                convert();
+            }, 50);
+        }
+
+        function saveHistoryToStorage() {
+            try {
+                localStorage.setItem('quantum-converter-history', JSON.stringify(history));
+            } catch(e) {}
+        }
+
+        function loadHistoryFromStorage() {
+            try {
+                const saved = localStorage.getItem('quantum-converter-history');
+                if (saved) {
+                    history = JSON.parse(saved);
+                }
+            } catch(e) {}
+        }
+
+        function showToast(message) {
+            toastMessageEl.textContent = message;
+            toastEl.classList.remove('translate-y-20', 'opacity-0');
+            toastEl.classList.add('translate-y-0', 'opacity-100');
+
+            setTimeout(() => {
+                toastEl.classList.add('translate-y-20', 'opacity-0');
+                toastEl.classList.remove('translate-y-0', 'opacity-100');
+            }, 2000);
+        }
+
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
