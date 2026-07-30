@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>人民币大写转换器 · 专业增强版</title>
+    <style>
+        :root {
+            --bg: #f5f0eb;
+            --card-bg: #ffffff;
+            --primary: #b8860b;
+            --primary-dark: #8b6508;
+            --primary-light: #fdf6e8;
+            --gold-gradient: linear-gradient(135deg, #c9971a 0%, #b8860b 30%, #a07608 60%, #8b6914 100%);
+            --gold-gradient-soft: linear-gradient(135deg, #fdf3d0 0%, #f9e8b8 50%, #f5d98e 100%);
+            --text: #2c2416;
+            --text-secondary: #6b5e48;
+            --text-muted: #9b8b72;
+            --border: #e5d9c4;
+            --border-focus: #c9971a;
+            --shadow-sm: 0 2px 8px rgba(139, 101, 8, 0.06);
+            --shadow: 0 4px 20px rgba(139, 101, 8, 0.10);
+            --shadow-lg: 0 8px 40px rgba(139, 101, 8, 0.14);
+            --radius-sm: 10px;
+            --radius: 14px;
+            --radius-lg: 18px;
+            --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            --font-mono: 'SF Mono', 'Cascadia Code', 'Consolas', 'Monaco', 'Courier New', monospace;
+            --font-sans: 'PingFang SC', 'Microsoft YaHei', 'Hiragino Sans GB', system-ui, -apple-system, sans-serif;
+            --danger: #c0392b;
+            --danger-bg: #fef5f5;
+            --success: #2d7d46;
+            --success-bg: #f2faf5;
+            --info: #2c6faa;
+            --info-bg: #f4f8fc;
+            --bg-dark: #1a1a1a;
+            --card-dark: #2a2a2a;
+            --text-dark: #e0d6c2;
+            --text-secondary-dark: #b8a88a;
+            --text-muted-dark: #7a6e5a;
+            --border-dark: #4a4030;
+            --gold-gradient-dark: linear-gradient(135deg, #a67c1e 0%, #8b6914 40%, #6b4e0c 80%);
+            --gold-gradient-soft-dark: linear-gradient(135deg, #3b2e18 0%, #4a3a1e 50%, #5c4825 100%);
+        }
+
+        * { margin:0; padding:0; box-sizing:border-box; }
+
+        body {
+            font-family: var(--font-sans);
+            background: var(--bg);
+            background-image:
+                radial-gradient(ellipse at 15% 20%, rgba(200,160,50,0.06) 0%, transparent 55%),
+                radial-gradient(ellipse at 85% 75%, rgba(180,130,30,0.05) 0%, transparent 55%),
+                radial-gradient(ellipse at 50% 50%, rgba(210,180,100,0.03) 0%, transparent 70%);
+            min-height: 100vh; display:flex; align-items:center; justify-content:center; padding:20px;
+            color:var(--text); line-height:1.6; -webkit-font-smoothing:antialiased; transition: background 0.3s, color 0.3s;
+        }
+        body.dark {
+            background:#121212;
+            background-image: radial-gradient(ellipse at 15% 20%, rgba(180,130,50,0.08) 0%, transparent 55%),
+            radial-gradient(ellipse at 85% 75%, rgba(140,100,30,0.06) 0%, transparent 55%);
+            color:var(--text-dark);
+        }
+
+        .container { width:100%; max-width:680px; display:flex; flex-direction:column; gap:18px; }
+
+        .header { text-align:center; padding:6px 0 2px; position:relative; }
+        .header .icon-wrapper { display:inline-block; width:52px; height:52px; border-radius:16px; background:var(--gold-gradient); box-shadow:0 6px 20px rgba(180,120,20,0.3); margin-bottom:8px; display:flex; align-items:center; justify-content:center; font-size:28px; color:#fff; position:relative; }
+        body.dark .header .icon-wrapper { background:var(--gold-gradient-dark); box-shadow:0 6px 20px rgba(0,0,0,0.4); }
+        .header .icon-wrapper::after { content:''; position:absolute; inset:-4px; border-radius:20px; background:transparent; border:2px solid rgba(200,150,30,0.2); pointer-events:none; }
+        .header h1 { font-size:1.65rem; font-weight:700; letter-spacing:0.03em; color:#3d2e12; margin:0; transition:color 0.3s; }
+        body.dark .header h1 { color:#e0d3b0; }
+        .header .subtitle { font-size:0.85rem; color:var(--text-muted); letter-spacing:0.04em; margin-top:2px; transition:color 0.3s; }
+        body.dark .header .subtitle { color:var(--text-muted-dark); }
+        .theme-toggle { position:absolute; top:0; right:0; background:var(--card-bg); border:1px solid var(--border); border-radius:24px; padding:4px 12px; font-size:0.8rem; cursor:pointer; color:var(--text-secondary); transition:all 0.3s; display:flex; align-items:center; gap:4px; box-shadow:var(--shadow-sm); }
+        body.dark .theme-toggle { background:var(--card-dark); border-color:var(--border-dark); color:var(--text-secondary-dark); }
+        .theme-toggle:hover { border-color:var(--border-focus); color:var(--primary); }
+
+        .card { background:var(--card-bg); border-radius:var(--radius-lg); padding:26px 28px 22px; box-shadow:var(--shadow); border:1px solid var(--border); transition: background 0.3s, border-color 0.3s, box-shadow 0.3s; position:relative; }
+        body.dark .card { background:var(--card-dark); border-color:var(--border-dark); box-shadow:0 4px 20px rgba(0,0,0,0.3); }
+        .card:focus-within { box-shadow:var(--shadow-lg); border-color:var(--border-focus); }
+
+        .input-section { margin-bottom:20px; }
+        .input-label-row { display:flex; align-items:center; justify-content:space-between; margin-bottom:7px; }
+        .input-label { font-weight:600; font-size:0.9rem; color:var(--text-secondary); letter-spacing:0.02em; transition:color 0.3s; }
+        body.dark .input-label { color:var(--text-secondary-dark); }
+        .input-hint { font-size:0.75rem; color:var(--text-muted); letter-spacing:0.03em; transition:color 0.3s; }
+        .input-wrapper { display:flex; align-items:center; background:#fdfcf9; border:2px solid var(--border); border-radius:var(--radius); transition:all var(--transition); overflow:hidden; }
+        body.dark .input-wrapper { background:#2c2418; border-color:var(--border-dark); }
+        .input-wrapper:focus-within { border-color:var(--border-focus); background:#fffefb; box-shadow:0 0 0 5px rgba(200,150,30,0.06); }
+        body.dark .input-wrapper:focus-within { background:#332a1c; border-color:#c9971a; }
+        .input-wrapper .currency-symbol { flex-shrink:0; padding:0 4px 0 15px; font-size:1.2rem; font-weight:700; color:#8b6914; user-select:none; transition:color 0.3s; }
+        body.dark .input-wrapper .currency-symbol { color:#d4b060; }
+        .input-wrapper input { flex:1; border:none; background:transparent; padding:14px 8px; font-size:1.25rem; font-family:var(--font-mono); color:var(--text); outline:none; letter-spacing:0.04em; min-width:0; caret-color:#b8860b; transition:color 0.3s; }
+        body.dark .input-wrapper input { color:#e0d3b0; }
+        .input-actions { flex-shrink:0; display:flex; align-items:center; gap:2px; padding-right:6px; }
+        .btn-icon { width:36px; height:36px; border-radius:50%; border:none; background:transparent; cursor:pointer; color:#b0a080; font-size:1.1rem; transition:all var(--transition); display:flex; align-items:center; justify-content:center; }
+        .btn-icon:hover { background:#f5efe0; color:#8b6914; }
+        body.dark .btn-icon:hover { background:#3b2e1a; color:#d4b060; }
+        .btn-icon.clear-btn { font-size:1rem; color:#c5b8a0; }
+        .btn-icon.clear-btn:hover { color:#c0392b; background:#fef5f5; }
+
+        .formatted-preview { margin-top:7px; font-size:0.82rem; color:var(--text-muted); font-family:var(--font-mono); letter-spacing:0.03em; min-height:20px; padding-left:2px; transition:all var(--transition); }
+        .formatted-preview.visible { color:var(--text-secondary); }
+
+        .warning-msg { display:flex; align-items:center; gap:7px; margin-top:8px; padding:8px 12px; border-radius:8px; font-size:0.78rem; animation:fadeInDown 0.3s ease; background:#fffdf5; color:#8b6914; border:1px solid #f0e4c0; }
+        body.dark .warning-msg { background:#2b2414; color:#d4b060; border-color:#4a3a1e; }
+        .warning-msg.error { background:var(--danger-bg); color:var(--danger); border:1px solid #f5d5d5; }
+        @keyframes fadeInDown { from{opacity:0; transform:translateY(-6px);} to{opacity:1; transform:translateY(0);} }
+
+        .result-section { background:var(--gold-gradient-soft); border-radius:var(--radius); padding:18px 20px; border:2px solid rgba(180,130,30,0.2); transition:all var(--transition); min-height:70px; display:flex; flex-direction:column; }
+        body.dark .result-section { background:var(--gold-gradient-soft-dark); border-color:rgba(180,130,30,0.3); }
+        .result-section.has-result { border-color:rgba(160,110,20,0.35); }
+        .result-label-row { display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
+        .result-label { font-size:0.78rem; font-weight:600; color:#8b6914; letter-spacing:0.05em; text-transform:uppercase; }
+        body.dark .result-label { color:#d4b060; }
+        .result-actions { display:flex; gap:4px; align-items:center; }
+        .btn-sm { font-size:0.75rem; padding:5px 11px; border-radius:20px; border:1.5px solid rgba(160,120,30,0.35); background:#fffef9; cursor:pointer; color:#6b4e14; font-weight:500; letter-spacing:0.03em; transition:all var(--transition); white-space:nowrap; font-family:var(--font-sans); }
+        body.dark .btn-sm { background:#2b2414; border-color:#5c4825; color:#d4b060; }
+        .btn-sm:hover { background:#fff; border-color:#b8860b; color:#4a3408; box-shadow:0 2px 8px rgba(160,110,20,0.15); }
+        body.dark .btn-sm:hover { background:#3b2e18; border-color:#c9971a; color:#f0daa0; }
+        .btn-sm.copied { background:#eaf7ea; border-color:#4caf50; color:#2d7d46; animation:pulseGreen 0.5s ease; }
+        @keyframes pulseGreen { 0%,100%{ box-shadow:0 0 0 0 rgba(76,175,80,0.4); } 50%{ box-shadow:0 0 0 10px rgba(76,175,80,0); } }
+        .result-text { font-size:1.35rem; font-weight:700; letter-spacing:0.06em; color:#3d2e12; word-break:break-all; line-height:1.7; transition:all var(--transition); }
+        body.dark .result-text { color:#f0daa0; }
+        .result-placeholder { font-size:0.9rem; color:#b8a878; letter-spacing:0.04em; font-style:italic; }
+
+        .presets-section { display:flex; flex-wrap:wrap; gap:8px; margin-top:2px; }
+        .preset-btn { font-size:0.78rem; padding:7px 13px; border-radius:20px; border:1.5px solid var(--border); background:#fefdfa; cursor:pointer; color:var(--text-secondary); transition:all var(--transition); font-family:var(--font-mono); white-space:nowrap; }
+        body.dark .preset-btn { background:#2b2414; border-color:#5c4825; color:#d4b060; }
+        .preset-btn:hover { background:#fdf6e8; border-color:#c9971a; color:#5a3e0a; box-shadow:0 2px 6px rgba(160,110,20,0.1); transform:translateY(-1px); }
+        .preset-label { font-size:0.75rem; color:var(--text-muted); letter-spacing:0.04em; margin-bottom:2px; display:block; }
+
+        .collapse-header { cursor:pointer; user-select:none; font-weight:600; font-size:0.9rem; color:var(--text-secondary); display:flex; align-items:center; gap:5px; margin:12px 0 8px; }
+        .collapse-content { display:none; }
+        .collapse-content.open { display:block; }
+
+        .decompose-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(80px,1fr)); gap:6px; font-size:0.8rem; margin-top:8px; }
+        .decompose-item { background:rgba(255,255,240,0.8); padding:6px 8px; border-radius:6px; text-align:center; border:1px solid #e5d9c4; }
+        body.dark .decompose-item { background:#2b2414; border-color:#5c4825; }
+
+        .batch-textarea { width:100%; min-height:80px; border:2px solid var(--border); border-radius:var(--radius); padding:10px; font-family:var(--font-mono); background:#fdfcf9; resize:vertical; color:var(--text); }
+        body.dark .batch-textarea { background:#2c2418; border-color:var(--border-dark); color:#e0d3b0; }
+
+        .history-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
+        .history-title { font-size:0.82rem; font-weight:600; color:var(--text-secondary); }
+        .history-actions { display:flex; gap:8px; }
+        .history-list { list-style:none; display:flex; flex-direction:column; gap:6px; max-height:180px; overflow-y:auto; scrollbar-width:thin; scrollbar-color:#d5cbb8 transparent; }
+        .history-item { display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:10px; cursor:pointer; transition:all var(--transition); border:1px solid transparent; background:#fdfcf8; font-size:0.8rem; }
+        body.dark .history-item { background:#2b2414; }
+        .history-item:hover { background:#fdf6e8; border-color:#e5d4a8; box-shadow:var(--shadow-sm); }
+        body.dark .history-item:hover { background:#3b2e18; border-color:#5c4825; }
+
+        .toast { position:fixed; top:24px; left:50%; transform:translateX(-50%) translateY(-120px); background:#3d2e12; color:#fdf3d0; padding:10px 22px; border-radius:24px; font-size:0.85rem; z-index:999; pointer-events:none; transition:transform 0.35s cubic-bezier(0.175,0.885,0.32,1.275); box-shadow:0 8px 30px rgba(0,0,0,0.25); }
+        .toast.show { transform:translateX(-50%) translateY(0); }
+
+        .help-panel { background:#fefdf8; border:1px solid #e5d9c4; border-radius:12px; padding:14px; font-size:0.8rem; line-height:1.8; }
+        body.dark .help-panel { background:#2b2414; border-color:#5c4825; }
+
+        @media print {
+            body { background:white !important; color:#000 !important; }
+            .container { max-width:100%; }
+            .card { box-shadow:none; border:1px solid #ccc; background:white; }
+            .btn-icon, .btn-sm, .preset-btn, .theme-toggle, .history-section, .batch-section, .collapse-header, .footer, .toast, .help-panel { display:none !important; }
+            .result-section { border:2px solid #000 !important; background:#fffef9 !important; }
+            .result-text { font-size:1.5rem; color:#000; }
+            .header h1 { color:#000; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <button class="theme-toggle" id="themeToggle">🌓 模式</button>
+        <div class="icon-wrapper">¥</div>
+        <h1>人民币大写转换器</h1>
+        <p class="subtitle">语音播报 · 自定义前缀 · 批量导出 · 金额分解 · 深色模式</p>
+    </div>
+
+    <div class="card">
+        <div class="input-section">
+            <div class="input-label-row">
+                <span class="input-label">💰 输入金额</span>
+                <span class="input-hint" id="supportHint">最大支持万亿亿亿级</span>
+            </div>
+            <div class="input-wrapper">
+                <span class="currency-symbol" id="currencySymbol">CN¥</span>
+                <input type="text" id="amountInput" inputmode="decimal" placeholder="输入阿拉伯数字金额..." autocomplete="off" maxlength="30">
+                <div class="input-actions">
+                    <button class="btn-icon clear-btn" id="clearBtn" title="清除">✕</button>
+                    <button class="btn-icon" id="pasteBtn" title="粘贴">📋</button>
+                </div>
+            </div>
+            <div class="formatted-preview" id="formattedPreview"></div>
+            <div id="warningArea"></div>
+        </div>
+
+        <div class="result-section" id="resultSection">
+            <div class="result-label-row">
+                <span class="result-label">📝 大写金额</span>
+                <div class="result-actions">
+                    <button class="btn-sm" id="speakBtn" title="语音播报">🔊 朗读</button>
+                    <button class="btn-sm" id="copyBtn">📋 复制完整</button>
+                    <button class="btn-sm" id="copyPlainBtn">📄 复制纯金额</button>
+                    <button class="btn-sm" id="printBtn" title="打印当前结果">🖨️ 打印</button>
+                </div>
+            </div>
+            <div class="result-text" id="resultText"><span class="result-placeholder">请在上方输入金额...</span></div>
+            <div id="chineseReadable" style="font-size:0.9rem; color:#6b5e48; margin-top:6px;"></div>
+        </div>
+
+        <div class="presets-section" style="margin-top:12px;">
+            <span class="preset-label">快捷示例：</span>
+            <button class="preset-btn" data-amount="1234.56">1,234.56</button>
+            <button class="preset-btn" data-amount="10000">10,000</button>
+            <button class="preset-btn" data-amount="0.5">0.50</button>
+            <button class="preset-btn" data-amount="1000000">1,000,000</button>
+            <button class="preset-btn" data-amount="99999999.99">99,999,999.99</button>
+            <button class="preset-btn" data-amount="100200300.45">亿级测试</button>
+        </div>
+
+        <div class="collapse-header" id="advancedToggle">⚙️ 高级设置 <span style="font-size:0.7rem;">▼</span></div>
+        <div class="collapse-content" id="advancedContent">
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
+                <label style="font-size:0.8rem;">大写前缀：</label>
+                <input type="text" id="prefixInput" value="人民币" style="width:120px; padding:4px 8px; border:1px solid var(--border); border-radius:6px; font-size:0.8rem;">
+                <small style="color:var(--text-muted);">(可自定义，如“美元”)</small>
+            </div>
+            <div class="help-panel" id="helpPanel">
+                <strong>⌨️ 快捷键：</strong><br>
+                Enter → 复制完整结果 & 保存历史<br>
+                Esc → 清除输入<br>
+                Ctrl+Shift+C → 复制完整结果<br>
+                Ctrl+Shift+X → 复制纯金额<br><br>
+                <strong>📏 支持范围：</strong>个级 ~ 万亿亿级（整数部分最多20位）<br>
+                <strong>🔊 语音播报：</strong>需浏览器支持 Web Speech API
+            </div>
+        </div>
+
+        <div class="collapse-header" id="decomposeToggle">🔍 金额分解 <span style="font-size:0.7rem;">▼</span></div>
+        <div class="collapse-content" id="decomposeContent">
+            <div class="decompose-grid" id="decomposeGrid"></div>
+        </div>
+    </div>
+
+    <div class="card batch-section">
+        <div class="collapse-header" id="batchToggle">📊 批量转换 <span style="font-size:0.7rem;">▼</span></div>
+        <div class="collapse-content" id="batchContent">
+            <textarea class="batch-textarea" id="batchInput" placeholder="每行一个金额，例如：&#10;1234.56&#10;50000&#10;0.01"></textarea>
+            <div style="display:flex; gap:8px; margin:10px 0;">
+                <button class="btn-sm" id="batchConvertBtn">🔄 转换</button>
+                <button class="btn-sm" id="batchExportBtn">📥 导出结果</button>
+                <button class="btn-sm" id="batchCopyAllBtn">📋 复制全部</button>
+            </div>
+            <div id="batchResultArea" style="font-size:0.82rem; max-height:200px; overflow:auto;"></div>
+        </div>
+    </div>
+
+    <div class="card" style="padding:16px 20px;">
+        <div class="history-section">
+            <div class="history-header">
+                <span class="history-title">🕐 转换历史</span>
+                <div class="history-actions">
+                    <button class="btn-sm" id="exportCsvBtn">📤 导出CSV</button>
+                    <button class="history-clear" id="clearHistoryBtn">清空</button>
+                </div>
+            </div>
+            <ul class="history-list" id="historyList"><li class="history-empty">暂无转换记录</li></ul>
+        </div>
+    </div>
+
+    <div class="footer" style="text-align:center; font-size:0.7rem; color:var(--text-muted);">遵循《中华人民共和国票据法》 · 支持语音播报 · 自定义前缀 · 打印票据</div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+    (function() {
+        const DIGITS = ['零', '壹', '贰', '叁', '肆', '伍', '陆', '柒', '捌', '玖'];
+        const CHINESE_NUMBER = ['零', '一', '二', '三', '四', '五', '六', '七', '八', '九'];
+        const GROUP_UNITS = ['', '万', '亿', '万亿', '亿亿', '万亿亿'];
+        const HISTORY_KEY = 'rmb_converter_history_v3';
+        const THEME_KEY = 'rmb_theme';
+        const PREFIX_KEY = 'rmb_prefix';
+
+        const amountInput = document.getElementById('amountInput');
+        const formattedPreview = document.getElementById('formattedPreview');
+        const warningArea = document.getElementById('warningArea');
+        const resultText = document.getElementById('resultText');
+        const chineseReadable = document.getElementById('chineseReadable');
+        const copyBtn = document.getElementById('copyBtn');
+        const copyPlainBtn = document.getElementById('copyPlainBtn');
+        const speakBtn = document.getElementById('speakBtn');
+        const printBtn = document.getElementById('printBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const pasteBtn = document.getElementById('pasteBtn');
+        const prefixInput = document.getElementById('prefixInput');
+        const historyList = document.getElementById('historyList');
+        const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+        const exportCsvBtn = document.getElementById('exportCsvBtn');
+        const toast = document.getElementById('toast');
+        const decomposeGrid = document.getElementById('decomposeGrid');
+        const batchInput = document.getElementById('batchInput');
+        const batchResultArea = document.getElementById('batchResultArea');
+        const themeToggle = document.getElementById('themeToggle');
+
+        let currentResultPlain = '';
+        let currentResultFull = '';
+        let currentCleanedAmount = '';
+        let toastTimer = null;
+
+        function showToast(msg, duration=1800) {
+            if(toastTimer) clearTimeout(toastTimer);
+            toast.textContent = msg;
+            toast.classList.add('show');
+            toastTimer = setTimeout(()=>{ toast.classList.remove('show'); }, duration);
+        }
+
+        function cleanInput(raw) {
+            let cleaned = raw.replace(/[\s,，\u3000]/g,'');
+            cleaned = cleaned.replace(/^(?:CNY|CN¥|RMB|￥|¥)\s*/i,'');
+            cleaned = cleaned.replace(/\s*(?:CNY|CN¥|RMB|￥|¥)$/i,'');
+            cleaned = cleaned.replace(/[^\d.\-]/g,'');
+            let hasNegative = false;
+            if(cleaned.startsWith('-')) { hasNegative = true; cleaned = cleaned.substring(1); }
+            const dotIndex = cleaned.indexOf('.');
+            if(dotIndex !== -1) cleaned = cleaned.substring(0, dotIndex+1) + cleaned.substring(dotIndex+1).replace(/\./g,'');
+            if(cleaned.startsWith('.')) cleaned = '0'+cleaned;
+            if(cleaned === '' || cleaned === '.') return { cleaned:'', hasNegative:false, isValid:false };
+            if(cleaned.length>1 && cleaned.startsWith('0') && cleaned[1]!=='.') cleaned = cleaned.replace(/^0+/,'');
+            if(cleaned===''||cleaned.startsWith('.')) cleaned = '0'+(cleaned.startsWith('.')?'':'')+cleaned;
+            const isValid = /^\d+(\.\d{0,})?$/.test(cleaned) && cleaned.length <= 22;
+            return { cleaned, hasNegative, isValid: isValid && !hasNegative };
+        }
+
+        function formatWithCommas(numStr) {
+            if(!numStr||numStr==='0') return '0.00';
+            let [intPart, decPart] = numStr.split('.');
+            intPart = intPart.replace(/\B(?=(\d{3})+(?!\d))/g,',');
+            if(decPart!==undefined) { decPart = decPart.length===1?decPart+'0':decPart; return intPart+'.'+decPart; }
+            return intPart+'.00';
+        }
+
+        function roundTo2Decimals(numStr) {
+            if(!numStr.includes('.')) return { rounded: numStr, wasRounded: false };
+            const [intPart, decPart] = numStr.split('.');
+            if(decPart.length<=2) return { rounded: numStr, wasRounded: false };
+            const third = parseInt(decPart[2]||'0');
+            let newDec = decPart.substring(0,2);
+            if(third>=5) {
+                let decNum = parseInt(newDec)+1;
+                if(decNum>=100) { let intNum = BigInt(intPart)+1n; return { rounded: intNum.toString(), wasRounded:true }; }
+                newDec = decNum.toString().padStart(2,'0');
+            }
+            return { rounded: intPart+'.'+newDec, wasRounded:true };
+        }
+
+        function convert4Digits(str4) {
+            if(str4==='0'||str4==='') return '';
+            const padded = str4.padStart(4,'0');
+            const [a,b,c,d] = padded.split('').map(Number);
+            let res='', hasContent=false, pendingZero=false;
+            if(a>0){ res+=DIGITS[a]+'仟'; hasContent=true; }
+            if(b>0){ if(hasContent&&a===0) res+='零'; res+=DIGITS[b]+'佰'; hasContent=true; pendingZero=false; }
+            else if(hasContent&&b===0) pendingZero=true;
+            if(c>0){ if(hasContent&&pendingZero){ res+='零'; pendingZero=false; } res+=DIGITS[c]+'拾'; hasContent=true; }
+            else if(hasContent&&c===0) pendingZero=true;
+            if(d>0){ if(hasContent&&pendingZero) res+='零'; res+=DIGITS[d]; hasContent=true; }
+            return res;
+        }
+
+        function convertInteger(intStr) {
+            if(intStr==='0'||intStr==='') return '零';
+            let groups=[], s=intStr;
+            while(s.length>0){ const start=Math.max(0,s.length-4); groups.unshift(s.substring(start)); s=s.substring(0,start); }
+            groups.reverse();
+            if(groups.length>GROUP_UNITS.length) return null;
+            let result='', needZero=false;
+            for(let i=groups.length-1;i>=0;i--){
+                const gs=groups[i], gn=parseInt(gs,10);
+                if(gn===0){ if(result.length>0) needZero=true; continue; }
+                const grpRes = convert4Digits(gs.replace(/^0+/,'')||'0');
+                const padded = gs.padStart(4,'0');
+                const qianZero = padded[0]==='0';
+                if(needZero && result.length>0 && (qianZero||gs.length<4)) result+='零';
+                needZero=false;
+                result+=grpRes;
+                if(i>0) result+=GROUP_UNITS[i];
+            }
+            return result||'零';
+        }
+
+        function convertDecimal(jiao, fen) {
+            if(jiao===0 && fen===0) return '整';
+            let r='';
+            if(jiao>0) r+=DIGITS[jiao]+'角';
+            if(fen>0){ if(jiao===0) r+='零'; r+=DIGITS[fen]+'分'; }
+            return r;
+        }
+
+        function convertAmount(cleanedNumStr) {
+            if(!cleanedNumStr) return { success:false, error:'请输入金额' };
+            let [intPart, decPart] = cleanedNumStr.split('.');
+            if(!decPart) decPart='00';
+            else if(decPart.length===1) decPart+='0';
+            else decPart=decPart.padEnd(2,'0').substring(0,2);
+            const jiao=parseInt(decPart[0]), fen=parseInt(decPart[1]);
+            const intResult = convertInteger(intPart);
+            if(intResult===null) return { success:false, error:'金额过大' };
+            const decResult = convertDecimal(jiao, fen);
+            const unit = '元';
+            let plain = intResult + unit + decResult;
+            return { success:true, plainResult:plain, intPart, decPart, jiao, fen };
+        }
+
+        function chineseReadableNumber(intPart, decPart) {
+            const numArr = intPart.split('').map(Number);
+            if(intPart === '0') return '零元';
+            const units = ['', '十', '百', '千'];
+            const bigUnits = ['', '万', '亿', '万亿'];
+            let result = '';
+            let groupIdx = 0;
+            for (let i = numArr.length; i > 0; i -= 4) {
+                let chunk = numArr.slice(Math.max(0, i - 4), i);
+                let chunkStr = '';
+                for (let j = 0; j < chunk.length; j++) {
+                    const digit = chunk[j];
+                    const pos = chunk.length - 1 - j;
+                    if (digit === 0) {
+                        if (chunkStr && chunkStr[chunkStr.length-1] !== '零') chunkStr += '零';
+                    } else {
+                        chunkStr += CHINESE_NUMBER[digit] + (pos > 0 ? units[pos] : '');
+                    }
+                }
+                if (chunkStr) {
+                    chunkStr = chunkStr.replace(/零+$/, '');
+                    result = chunkStr + (groupIdx > 0 ? bigUnits[groupIdx] : '') + result;
+                }
+                groupIdx++;
+            }
+            result = result.replace(/零+/g, '零').replace(/零$/, '');
+            if (result === '') result = '零';
+            let final = result + '元';
+            if (decPart) {
+                const jiao = parseInt(decPart[0]), fen = parseInt(decPart[1]);
+                if (jiao === 0 && fen === 0) final += '整';
+                else {
+                    if (jiao > 0) final += CHINESE_NUMBER[jiao] + '角';
+                    if (fen > 0) final += CHINESE_NUMBER[fen] + '分';
+                }
+            }
+            return final;
+        }
+
+        function updateUI() {
+            const raw = amountInput.value;
+            const { cleaned, hasNegative, isValid } = cleanInput(raw);
+            currentCleanedAmount = cleaned;
+            if(cleaned && isValid && !hasNegative) {
+                formattedPreview.textContent = '📎 '+formatWithCommas(cleaned);
+                formattedPreview.classList.add('visible');
+            } else {
+                formattedPreview.textContent = '';
+                formattedPreview.classList.remove('visible');
+            }
+            let warnings=[];
+            if(hasNegative) warnings.push({msg:'金额不能为负数',type:'error'});
+            if(raw && !isValid && cleaned && !hasNegative) warnings.push({msg:'格式有误',type:'error'});
+            if(cleaned && isValid && !hasNegative && cleaned.includes('.')){
+                const decLen = cleaned.split('.')[1]?.length||0;
+                if(decLen>2){
+                    const {rounded, wasRounded} = roundTo2Decimals(cleaned);
+                    if(wasRounded){ warnings.push({msg:`已四舍五入到分：${formatWithCommas(rounded)}`,type:'warning'}); currentCleanedAmount=rounded; }
+                }
+            }
+            if(cleaned && isValid && !hasNegative){
+                const intPart = cleaned.split('.')[0];
+                if(intPart.length>16) warnings.push({msg:'金额较大，注意精度',type:'warning'});
+                if(intPart.length>20) { warnings.push({msg:'金额过大，超出万亿亿亿级',type:'error'}); currentCleanedAmount=''; }
+            }
+            warningArea.innerHTML = warnings.map(w=>`<div class="warning-msg ${w.type}"><span>${w.type==='error'?'⚠️':'ℹ️'}</span>${w.msg}</div>`).join('');
+
+            if(currentCleanedAmount && !hasNegative && isValid && warnings.filter(w=>w.type==='error').length===0){
+                const res = convertAmount(currentCleanedAmount);
+                if(res.success){
+                    currentResultPlain = res.plainResult;
+                    const prefix = prefixInput.value.trim() || '人民币';
+                    currentResultFull = prefix + res.plainResult;
+                    resultText.innerHTML = currentResultFull;
+                    document.getElementById('resultSection').classList.add('has-result');
+                    chineseReadable.textContent = '中文读法：' + chineseReadableNumber(res.intPart, res.decPart);
+                    updateDecompose(res.intPart, res.decPart);
+                } else {
+                    currentResultPlain=''; currentResultFull='';
+                    resultText.innerHTML='<span class="result-placeholder">'+(res.error||'转换失败')+'</span>';
+                    document.getElementById('resultSection').classList.remove('has-result');
+                    chineseReadable.textContent = '';
+                    decomposeGrid.innerHTML='';
+                }
+            } else {
+                currentResultPlain=''; currentResultFull='';
+                resultText.innerHTML='<span class="result-placeholder">请在上方输入金额...</span>';
+                document.getElementById('resultSection').classList.remove('has-result');
+                chineseReadable.textContent = '';
+                decomposeGrid.innerHTML='';
+            }
+        }
+
+        function updateDecompose(intPart, decPart) {
+            const intStr = intPart;
+            const len = intStr.length;
+            const units = ['元','拾','佰','仟','万','拾万','佰万','仟万','亿','拾亿','佰亿','仟亿','万亿','拾万亿','佰万亿','仟万亿','亿亿'];
+            let html = '';
+            for(let i=0;i<len;i++){
+                const digit = intStr[len-1-i];
+                const unit = i<units.length?units[i]:'';
+                html += `<div class="decompose-item"><strong>${digit}</strong><br><small>${unit}</small></div>`;
+            }
+            if(decPart){
+                const jiao = decPart[0], fen=decPart[1];
+                html += `<div class="decompose-item"><strong>${jiao}</strong><br><small>角</small></div>`;
+                html += `<div class="decompose-item"><strong>${fen}</strong><br><small>分</small></div>`;
+            }
+            decomposeGrid.innerHTML = html;
+        }
+
+        function saveToHistory(amountStr, resultStr) {
+            if(!amountStr||!resultStr) return;
+            try{
+                let history = JSON.parse(localStorage.getItem(HISTORY_KEY)||'[]');
+                history = history.filter(h=>h.amount!==amountStr);
+                history.unshift({amount:amountStr, result:resultStr, time:new Date().toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})});
+                if(history.length>15) history=history.slice(0,15);
+                localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+                renderHistory();
+            }catch(e){}
+        }
+
+        function renderHistory() {
+            try{
+                const history = JSON.parse(localStorage.getItem(HISTORY_KEY)||'[]');
+                if(history.length===0){ historyList.innerHTML='<li class="history-empty">暂无转换记录</li>'; return; }
+                historyList.innerHTML = history.map(h=>`<li class="history-item" data-amount="${h.amount}"><span>${formatWithCommas(h.amount)}</span><span style="flex:1;margin:0 8px;">${h.result}</span><small>${h.time}</small></li>`).join('');
+                historyList.querySelectorAll('.history-item').forEach(item=>{
+                    item.addEventListener('click',function(){
+                        amountInput.value = this.dataset.amount;
+                        updateUI();
+                        if(currentResultFull) saveToHistory(currentCleanedAmount, currentResultFull);
+                        amountInput.focus(); amountInput.select();
+                    });
+                });
+            }catch(e){}
+        }
+
+        function exportHistoryCsv() {
+            try{
+                const history = JSON.parse(localStorage.getItem(HISTORY_KEY)||'[]');
+                if(history.length===0){ showToast('无历史记录可导出'); return; }
+                let csv = '金额,大写结果,时间\n';
+                history.forEach(h => {
+                    csv += `"${h.amount}","${h.result}","${h.time}"\n`;
+                });
+                const blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8'});
+                const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='人民币大写历史记录.csv'; a.click();
+                showToast('历史记录已导出为CSV');
+            }catch(e){}
+        }
+
+        async function copyToClipboard(text, label) {
+            try{
+                await navigator.clipboard.writeText(text);
+                showToast(`✅ 已复制${label}`);
+            }catch(e){
+                const ta=document.createElement('textarea'); ta.value=text; document.body.appendChild(ta); ta.select();
+                document.execCommand('copy'); document.body.removeChild(ta); showToast(`✅ 已复制${label}`);
+            }
+        }
+
+        function speak(text) {
+            if (!window.speechSynthesis) { showToast('浏览器不支持语音播报'); return; }
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'zh-CN';
+            utterance.rate = 0.9;
+            window.speechSynthesis.speak(utterance);
+            showToast('🔊 正在朗读...');
+        }
+
+        function handleBatchConvert() {
+            const lines = batchInput.value.split(/\n/).map(l=>l.trim()).filter(l=>l);
+            if(lines.length===0){ batchResultArea.innerHTML='<p>请输入金额</p>'; return; }
+            let html = '<table style="width:100%;border-collapse:collapse;"><tr><th>金额</th><th>大写</th></tr>';
+            const prefix = prefixInput.value.trim() || '人民币';
+            lines.forEach(line=>{
+                const { cleaned, hasNegative, isValid } = cleanInput(line);
+                if(!isValid||hasNegative){ html+=`<tr><td>${line}</td><td style="color:red;">无效</td></tr>`; return; }
+                let amt = cleaned;
+                if(amt.includes('.')&&amt.split('.')[1].length>2) amt = roundTo2Decimals(amt).rounded;
+                const res = convertAmount(amt);
+                html+=`<tr><td>${formatWithCommas(amt)}</td><td>${res.success?prefix+res.plainResult:'错误'}</td></tr>`;
+            });
+            html+='</table>';
+            batchResultArea.innerHTML = html;
+        }
+
+        function exportBatch() {
+            const lines = batchInput.value.split(/\n/).map(l=>l.trim()).filter(l=>l);
+            let out = '';
+            const prefix = prefixInput.value.trim() || '人民币';
+            lines.forEach(line=>{
+                const { cleaned, hasNegative, isValid } = cleanInput(line);
+                if(!isValid||hasNegative) { out+=`${line}\t无效\n`; return; }
+                let amt = cleaned;
+                if(amt.includes('.')&&amt.split('.')[1].length>2) amt = roundTo2Decimals(amt).rounded;
+                const res = convertAmount(amt);
+                out+=`${amt}\t${res.success?prefix+res.plainResult:'错误'}\n`;
+            });
+            const blob = new Blob(['\uFEFF'+out], {type:'text/plain;charset=utf-8'});
+            const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='人民币大写批量结果.txt'; a.click();
+        }
+
+        function applyTheme(dark) {
+            if(dark) document.body.classList.add('dark');
+            else document.body.classList.remove('dark');
+            localStorage.setItem(THEME_KEY, dark?'dark':'light');
+        }
+
+        // 初始化前缀
+        prefixInput.value = localStorage.getItem(PREFIX_KEY) || '人民币';
+        prefixInput.addEventListener('input', ()=>{
+            localStorage.setItem(PREFIX_KEY, prefixInput.value);
+            updateUI();
+        });
+
+        // 事件绑定
+        amountInput.addEventListener('input', updateUI);
+        amountInput.addEventListener('keydown', e=>{
+            if(e.key==='Enter'){ e.preventDefault(); if(currentResultFull) { copyToClipboard(currentResultFull,'完整结果'); saveToHistory(currentCleanedAmount, currentResultFull); } }
+            if(e.key==='Escape'){ amountInput.value=''; updateUI(); amountInput.focus(); }
+        });
+        amountInput.addEventListener('blur', ()=>{ if(currentCleanedAmount&&currentResultFull) saveToHistory(currentCleanedAmount, currentResultFull); });
+        clearBtn.addEventListener('click', ()=>{ amountInput.value=''; updateUI(); amountInput.focus(); showToast('已清除'); });
+        pasteBtn.addEventListener('click', async ()=>{
+            try{ const text=await navigator.clipboard.readText(); if(text){ amountInput.value=text.trim(); updateUI(); amountInput.focus(); showToast('已粘贴'); } }catch(e){ amountInput.focus(); showToast('请手动粘贴'); }
+        });
+        copyBtn.addEventListener('click', ()=>{ if(currentResultFull){ copyToClipboard(currentResultFull,'完整结果'); saveToHistory(currentCleanedAmount, currentResultFull); } else showToast('暂无结果'); });
+        copyPlainBtn.addEventListener('click', ()=>{ if(currentResultPlain){ copyToClipboard(currentResultPlain,'纯金额'); saveToHistory(currentCleanedAmount, currentResultFull); } else showToast('暂无结果'); });
+        speakBtn.addEventListener('click', ()=>{ if(currentResultFull) speak(currentResultFull); else showToast('无内容可朗读'); });
+        printBtn.addEventListener('click', ()=>{ window.print(); });
+        clearHistoryBtn.addEventListener('click', ()=>{ localStorage.removeItem(HISTORY_KEY); renderHistory(); showToast('历史已清空'); });
+        exportCsvBtn.addEventListener('click', exportHistoryCsv);
+        document.getElementById('batchConvertBtn').addEventListener('click', handleBatchConvert);
+        document.getElementById('batchExportBtn').addEventListener('click', exportBatch);
+        document.getElementById('batchCopyAllBtn').addEventListener('click', ()=>{
+            const lines = batchInput.value.split(/\n/).map(l=>l.trim()).filter(l=>l);
+            let out='';
+            const prefix = prefixInput.value.trim() || '人民币';
+            lines.forEach(line=>{
+                const { cleaned, hasNegative, isValid } = cleanInput(line);
+                if(!isValid||hasNegative) return;
+                let amt = cleaned;
+                if(amt.includes('.')&&amt.split('.')[1].length>2) amt = roundTo2Decimals(amt).rounded;
+                const res = convertAmount(amt);
+                if(res.success) out+=prefix+res.plainResult+'\n';
+            });
+            if(out) copyToClipboard(out.trim(),'批量大写结果');
+            else showToast('无有效结果');
+        });
+        document.querySelectorAll('.preset-btn').forEach(b=>b.addEventListener('click', function(){
+            amountInput.value=this.dataset.amount; updateUI(); amountInput.focus(); amountInput.select();
+            setTimeout(()=>{ if(currentCleanedAmount&&currentResultFull) saveToHistory(currentCleanedAmount, currentResultFull); },100);
+        }));
+
+        document.getElementById('advancedToggle').addEventListener('click', ()=> document.getElementById('advancedContent').classList.toggle('open'));
+        document.getElementById('decomposeToggle').addEventListener('click', ()=> document.getElementById('decomposeContent').classList.toggle('open'));
+        document.getElementById('batchToggle').addEventListener('click', ()=> document.getElementById('batchContent').classList.toggle('open'));
+
+        themeToggle.addEventListener('click', ()=>{ applyTheme(!document.body.classList.contains('dark')); });
+
+        document.addEventListener('keydown', function(e){
+            if(e.ctrlKey&&e.shiftKey&&e.key==='C'){ e.preventDefault(); if(currentResultFull) copyToClipboard(currentResultFull,'完整结果'); }
+            if(e.ctrlKey&&e.shiftKey&&e.key==='X'){ e.preventDefault(); if(currentResultPlain) copyToClipboard(currentResultPlain,'纯金额'); }
+        });
+
+        function init() {
+            const savedTheme = localStorage.getItem(THEME_KEY);
+            if(savedTheme==='dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme:dark)').matches)) applyTheme(true);
+            else applyTheme(false);
+            renderHistory();
+            updateUI();
+            amountInput.focus();
+        }
+        init();
+    })();
+</script>
+</body>
+</html>

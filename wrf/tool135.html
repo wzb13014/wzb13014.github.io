@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>屏幕量角器 / 标尺 Pro</title>
+<style>
+  :root{
+    --bg:#0b0e14; --panel:rgba(20,26,36,.82); --panel-2:rgba(34,42,56,.9);
+    --line:rgba(255,255,255,.09); --txt:#e8eef6; --muted:#93a1b5;
+    --acc:#56b6ff; --acc2:#ffc266; --good:#4fd18b; --danger:#ff6b81; --pur:#b58cff;
+    --radius:14px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;overflow:hidden;background:transparent;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;
+    color:var(--txt);-webkit-user-select:none;user-select:none;}
+  #main{position:fixed;inset:0;display:block;cursor:crosshair;z-index:1}
+  #mag{position:fixed;z-index:6;pointer-events:none;border-radius:50%;display:none;
+    box-shadow:0 8px 30px rgba(0,0,0,.6),0 0 0 3px rgba(255,255,255,.15);
+    image-rendering:pixelated;background:#000}
+  #magLabel{position:fixed;z-index:7;pointer-events:none;display:none;font-size:11px;line-height:1.5;
+    padding:4px 8px;background:rgba(8,11,16,.82);border:1px solid var(--line);border-radius:8px;
+    white-space:pre;color:var(--txt);font-variant-numeric:tabular-nums}
+
+  /* 工具栏 */
+  .glass{background:var(--panel);border:1px solid var(--line);backdrop-filter:blur(14px) saturate(140%);
+    -webkit-backdrop-filter:blur(14px) saturate(140%);box-shadow:0 10px 34px rgba(0,0,0,.45)}
+  #toolbar{position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:20;display:flex;gap:6px;
+    padding:7px 9px;border-radius:var(--radius);align-items:center;max-width:96vw;flex-wrap:wrap;justify-content:center}
+  .tbtn{appearance:none;border:1px solid transparent;background:rgba(255,255,255,.04);color:var(--txt);
+    padding:7px 11px;border-radius:10px;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:6px;
+    transition:.14s;line-height:1;white-space:nowrap}
+  .tbtn:hover{background:rgba(255,255,255,.1);transform:translateY(-1px)}
+  .tbtn.on{background:linear-gradient(135deg,var(--acc),#3a8fd6);color:#04121f;font-weight:600;
+    box-shadow:0 4px 14px rgba(86,182,255,.35)}
+  .tbtn.tool.on{background:linear-gradient(135deg,var(--pur),#8a5cff);color:#0c0420;
+    box-shadow:0 4px 14px rgba(181,140,255,.35)}
+  .tbtn.act{background:linear-gradient(135deg,var(--good),#2fae6e);color:#042014}
+  .tbtn .dot{width:7px;height:7px;border-radius:50%;background:currentColor;opacity:.55}
+  .tbtn .k{font-size:10px;opacity:.6;border:1px solid currentColor;border-radius:4px;padding:0 4px}
+  .sep{width:1px;height:22px;background:var(--line);margin:0 3px}
+  .grp{display:flex;gap:4px;align-items:center;padding:2px;border-radius:12px;background:rgba(0,0,0,.18)}
+
+  .gear{position:fixed;top:10px;right:10px;z-index:21}
+
+  /* 面板 */
+  #panel{position:fixed;top:60px;right:10px;z-index:20;width:312px;max-height:calc(100vh - 76px);
+    overflow:auto;border-radius:var(--radius);padding:14px;display:none}
+  #panel.show{display:block;animation:pop .18s ease}
+  @keyframes pop{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+  #panel h3{margin:2px 0 9px;font-size:13px;color:var(--acc);display:flex;align-items:center;gap:7px;letter-spacing:.3px}
+  #panel .sec{border-top:1px solid var(--line);margin-top:11px;padding-top:11px}
+  #panel label{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12.5px;
+    color:var(--muted);margin:7px 0}
+  #panel label .v{color:var(--txt);font-variant-numeric:tabular-nums;min-width:42px;text-align:right}
+  #panel input[type=range]{width:138px;accent-color:var(--acc)}
+  #panel select,#panel input[type=number]{background:var(--panel-2);color:var(--txt);
+    border:1px solid var(--line);border-radius:7px;padding:5px 7px;font-size:12.5px}
+  #panel input[type=color]{padding:2px;width:40px;height:26px;border:1px solid var(--line);border-radius:7px;cursor:pointer;background:var(--panel-2)}
+  #panel .chk{display:flex;align-items:center;gap:9px;font-size:13px;margin:7px 0;cursor:pointer;color:var(--txt)}
+  #panel .chk input{width:16px;height:16px;accent-color:var(--acc)}
+  #panel .hint{font-size:11.5px;color:var(--muted);line-height:1.65}
+  #panel .row{display:flex;gap:6px;flex-wrap:wrap;margin:7px 0}
+  #panel .mini{appearance:none;border:1px solid var(--line);background:var(--panel-2);color:var(--txt);
+    padding:6px 10px;border-radius:9px;font-size:12px;cursor:pointer;transition:.12s}
+  #panel .mini:hover{border-color:var(--acc);color:#fff}
+  #panel .mini.on{border-color:var(--good);color:var(--good)}
+
+  /* 测量列表 */
+  #measureList .item{display:flex;align-items:center;justify-content:space-between;gap:6px;
+    padding:6px 8px;border:1px solid var(--line);border-radius:9px;margin:6px 0;font-size:12px;background:rgba(255,255,255,.03)}
+  #measureList .item .info{font-variant-numeric:tabular-nums;color:var(--txt)}
+  #measureList .item .info small{color:var(--muted)}
+  #measureList .item .del{cursor:pointer;color:var(--danger);border:1px solid var(--line);border-radius:6px;
+    padding:2px 7px;background:transparent;font-size:12px}
+  #measureList .item .del:hover{background:var(--danger);color:#fff}
+
+  /* 状态栏 */
+  #status{position:fixed;left:10px;bottom:10px;z-index:20;display:flex;gap:16px;align-items:center;
+    padding:8px 14px;border-radius:var(--radius);font-size:12.5px;font-variant-numeric:tabular-nums}
+  #status b{color:var(--acc);font-weight:600}
+  #status .m{color:var(--muted)}
+
+  /* 折叠还原按钮 */
+  #restore{position:fixed;right:14px;bottom:14px;z-index:30;display:none;align-items:center;gap:8px;
+    padding:11px 16px;border-radius:40px;cursor:pointer;font-size:13.5px;font-weight:600;color:#04121f;
+    background:linear-gradient(135deg,var(--acc),#3a8fd6);box-shadow:0 8px 24px rgba(86,182,255,.4);
+    border:none;animation:pop .2s ease}
+  #restore:hover{transform:translateY(-2px)}
+
+  /* 标注编辑器 */
+  #editor{position:fixed;z-index:25;display:none;padding:5px 8px;border-radius:8px;font-size:13px;
+    border:1px solid var(--acc);background:rgba(8,11,16,.95);color:var(--txt);outline:none;min-width:90px}
+
+  /* 帮助 / toast */
+  #help{position:fixed;inset:0;z-index:40;background:rgba(4,6,10,.82);display:none;align-items:center;
+    justify-content:center;backdrop-filter:blur(4px)}
+  #help.show{display:flex}
+  #help .box{position:relative;width:min(660px,93vw);max-height:88vh;overflow:auto;border-radius:16px;padding:24px 28px}
+  #help h2{margin:0 0 8px;color:var(--acc)}
+  #help table{width:100%;border-collapse:collapse;font-size:13px;margin-top:10px}
+  #help td{padding:7px 9px;border-bottom:1px solid var(--line);vertical-align:top}
+  #help td:first-child{width:128px;color:var(--acc2);font-family:ui-monospace,monospace}
+  #help .close{position:absolute;top:14px;right:16px;width:34px;height:34px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--txt);
+    background:rgba(255,255,255,.08);border:1px solid var(--line);font-size:20px;line-height:1;transition:.14s}
+  #help .close:hover{background:var(--danger);border-color:var(--danger);color:#fff;transform:rotate(90deg)}
+  #help kbd{background:var(--panel-2);border:1px solid var(--line);border-bottom-width:2px;border-radius:6px;
+    padding:1px 7px;font-family:ui-monospace,monospace;font-size:12px}
+  #toast{position:fixed;bottom:60px;left:50%;transform:translateX(-50%);z-index:50;background:rgba(8,11,16,.92);
+    border:1px solid var(--line);color:var(--txt);padding:9px 16px;border-radius:10px;
+    font-size:13px;opacity:0;transition:.25s;pointer-events:none;max-width:80vw;text-align:center}
+  #toast.show{opacity:1}
+  ::-webkit-scrollbar{width:9px;height:9px}
+  ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.14);border-radius:6px}
+  ::-webkit-scrollbar-track{background:transparent}
+</style>
+</head>
+<body>
+<canvas id="main"></canvas>
+<canvas id="mag"></canvas>
+<div id="magLabel"></div>
+
+<!-- 工具栏 -->
+<div id="toolbar" class="glass">
+  <div class="grp">
+    <button class="tbtn" data-mode="rulers"><span class="dot"></span>标尺<span class="k">R</span></button>
+    <button class="tbtn" data-mode="protractor"><span class="dot"></span>量角器<span class="k">P</span></button>
+    <button class="tbtn" data-mode="crosshair"><span class="dot"></span>十字<span class="k">X</span></button>
+    <button class="tbtn" data-mode="grid"><span class="dot"></span>网格<span class="k">G</span></button>
+    <button class="tbtn" data-mode="guides"><span class="dot"></span>辅助线<span class="k">L</span></button>
+    <button class="tbtn" data-mode="magnifier"><span class="dot"></span>放大镜<span class="k">Z</span></button>
+  </div>
+  <span class="sep"></span>
+  <div class="grp">
+    <button class="tbtn tool" data-tool="measure">测距<span class="k">M</span></button>
+    <button class="tbtn tool" data-tool="rect">矩形<span class="k">B</span></button>
+    <button class="tbtn tool" data-tool="text">标注<span class="k">T</span></button>
+    <button class="tbtn tool" data-tool="move">移动<span class="k">V</span></button>
+    <button class="tbtn act" id="btnEye">取色器</button>
+  </div>
+  <span class="sep"></span>
+  <div class="grp">
+    <button class="tbtn" id="btnClear">清空<span class="k">C</span></button>
+    <button class="tbtn" id="btnExport">导出<span class="k">E</span></button>
+    <button class="tbtn" id="btnCollapse">折叠<span class="k">Space</span></button>
+    <button class="tbtn" id="btnHelp">帮助<span class="k">H</span></button>
+  </div>
+</div>
+
+<button class="tbtn gear glass" id="btnGear">设置</button>
+
+<!-- 设置面板 -->
+<div id="panel" class="glass">
+  <h3>设置面板</h3>
+  <div class="sec">
+    <label>单位长度 <select id="setUnit">
+      <option value="px">像素 px</option><option value="cm">厘米 cm</option>
+      <option value="mm">毫米 mm</option><option value="in">英寸 in</option></select></label>
+    <label>屏幕密度 PPI <input type="number" id="setPPI" value="96" min="10" max="1000" style="width:78px"></label>
+    <label>标尺尺寸 <input type="range" id="setRuler" min="16" max="48" value="28"><span class="v" id="vRuler">28</span></label>
+  </div>
+  <div class="sec">
+    <div class="chk"><input type="checkbox" id="setProt" checked><label for="setProt" style="margin:0">显示量角器</label></div>
+    <label>量角器半径 <input type="range" id="setProtR" min="60" max="600" value="220"><span class="v" id="vProtR">220</span></label>
+    <div class="row">
+      <label style="margin:0">量角器 <input type="color" id="setProtColor" value="#56b6ff"></label>
+      <label style="margin:0">基准臂 <input type="color" id="setArm1Color" value="#ffc266"></label>
+      <label style="margin:0">测量臂 <input type="color" id="setArm2Color" value="#4fd18b"></label>
+    </div>
+  </div>
+  <div class="sec">
+    <div class="row">
+      <label style="margin:0">刻度 <input type="color" id="setRulerColor" value="#e8eef6"></label>
+      <label style="margin:0">测距 <input type="color" id="setMeasureColor" value="#ff6b81"></label>
+      <label style="margin:0">十字 <input type="color" id="setCrossColor" value="#b58cff"></label>
+      <label style="margin:0">网格 <input type="color" id="setGridColor" value="#2a3342"></label>
+      <label style="margin:0">辅助 <input type="color" id="setGuideColor" value="#ff6b81"></label>
+    </div>
+  </div>
+  <div class="sec">
+    <label>全局不透明度 <input type="range" id="setAlpha" min="10" max="100" value="100"><span class="v" id="vAlpha">100%</span></label>
+    <label>放大镜倍数 <input type="range" id="setMagZoom" min="2" max="20" value="8"><span class="v" id="vMagZoom">8×</span></label>
+    <label>放大镜尺寸 <input type="range" id="setMagSize" min="120" max="360" value="210"><span class="v" id="vMagSize">210</span></label>
+    <button class="mini" id="btnScreenCap">屏幕采集(放大镜真实源)</button>
+    <div class="hint">开启后放大镜将显示真实桌面画面（需授权屏幕共享）。未开启时放大镜作用于已粘贴的参考截图。</div>
+  </div>
+  <div class="sec">
+    <h3>参考图层</h3>
+    <div class="hint">把截图直接 Ctrl+V 粘贴，或把图片拖入窗口，即可在图上测量并用放大镜读像素。</div>
+    <div class="row">
+      <button class="mini" id="btnLoadImg">选择图片</button>
+      <button class="mini" id="btnImgFit">适应屏幕</button>
+      <button class="mini" id="btnImgClear">清除图片</button>
+    </div>
+    <label>图片不透明度 <input type="range" id="setImgAlpha" min="5" max="100" value="60"><span class="v" id="vImgAlpha">60%</span></label>
+  </div>
+  <div class="sec">
+    <h3>测量记录</h3>
+    <div id="measureList"></div>
+    <div class="hint" id="listEmpty">暂无记录。使用测距 / 矩形工具开始测量。</div>
+  </div>
+  <div class="sec">
+    <div class="row">
+      <button class="mini" id="btnReset">恢复默认</button>
+      <button class="mini" id="btnFull">全屏</button>
+    </div>
+  </div>
+  <input type="file" id="fileImg" accept="image/*" style="display:none">
+</div>
+
+<!-- 状态栏 -->
+<div id="status" class="glass">
+  <span>坐标 <b id="stXY">0, 0</b></span><span class="m">|</span>
+  <span>上次测距 <b id="stDist">—</b></span><span class="m">|</span>
+  <span>ΔX <b id="stDX">—</b> ΔY <b id="stDY">—</b></span><span class="m">|</span>
+  <span>单位 <b id="stUnit">px</b></span>
+</div>
+
+<!-- 折叠还原 -->
+<button id="restore">展开 量角器/标尺</button>
+
+<!-- 标注编辑 -->
+<input id="editor" maxlength="40">
+
+<!-- 帮助 -->
+<div id="help"><div class="box glass">
+  <span class="close" id="helpClose">×</span>
+  <h2>键盘快捷键 & 使用说明</h2>
+  <div class="hint">
+    • <b>量角器</b>：拖中心圆点移动；拖橙色基准臂定 0°；拖绿色测量臂量夹角；双击圆盘复位。<br>
+    • <b>测距</b>：拖出线段，可叠加多条，标签显示距离 / ΔX / ΔY / 夹角。<br>
+    • <b>矩形</b>：拖出方框，显示宽 / 高 / 面积 / 对角线。<br>
+    • <b>标注</b>：单击放置文本钉，双击重命名，可拖动。<br>
+    • <b>移动图片</b>：导入截图后，选「移动」工具（V），在图上拖拽即可自由调整图片位置；滚轮以光标为锚点缩放图片；「适应屏幕」一键复位。<br>
+    • <b>取色器</b>：点击后从屏幕任意位置吸取颜色并复制到剪贴板。<br>
+    • <b>辅助线</b>：点击顶部/左侧标尺放置竖/横线，拖动移动，右键删除。<br>
+    • <b>放大镜</b>：圆形放大，镜心（粉色准星）始终对准光标正下方画面，读数精确。未开启屏幕采集时放大「参考图层/叠加」；开启「屏幕采集」(需 F 全屏)后可放大真实桌面。<br>
+    • <b>折叠</b>：Space 折叠成右下角按钮，彻底不挡操作；再次展开恢复。
+  </div>
+  <table>
+    <tr><td>R / P / X / G / L / Z</td><td>标尺 / 量角器 / 十字 / 网格 / 辅助线 / 放大镜</td></tr>
+    <tr><td>M / B / T / V</td><td>测距 / 矩形 / 标注 / 移动图片 工具</td></tr>
+    <tr><td>C</td><td>清空测距、矩形与辅助线</td></tr>
+    <tr><td>Space</td><td>折叠 / 展开（穿透桌面）</td></tr>
+    <tr><td>E</td><td>导出当前视图 PNG</td></tr>
+    <tr><td>F</td><td>全屏</td></tr>
+    <tr><td>H / ? / Esc</td><td>帮助 / 关闭面板</td></tr>
+  </table>
+</div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+"use strict";
+(function(){
+  const $ = s => document.querySelector(s);
+  const canvas=$("#main"), ctx=canvas.getContext("2d");
+  const mag=$("#mag"), magCtx=mag.getContext("2d",{willReadFrequently:true});
+  const magLabel=$("#magLabel");
+  const DPR=Math.max(1,window.devicePixelRatio||1);
+
+  const LS_KEY="screen-protractor-pro-v1";
+  const DEFAULTS={
+    modes:{rulers:true,protractor:true,crosshair:true,grid:false,guides:false,magnifier:false},
+    tool:"none",
+    unit:"px", ppi:96, rulerSize:28,
+    protR:220, protColor:"#56b6ff", arm1Color:"#ffc266", arm2Color:"#4fd18b",
+    rulerColor:"#e8eef6", measureColor:"#ff6b81", crossColor:"#b58cff",
+    gridColor:"#2a3342", guideColor:"#ff6b81",
+    alpha:100, magZoom:8, magSize:210, imgAlpha:60,
+    prot:{cx:null,cy:null,base:0,arm:-1.0472},
+    screenCap:false
+  };
+
+  let S=load();
+  const R={
+    W:innerWidth,H:innerHeight, mouse:{x:0,y:0},
+    collapsed:false, segments:[], rects:[], annotations:[], guidesH:[], guidesV:[],
+    drag:null, live:null, img:null, imgX:0, imgY:0, imgScale:1, imgFit:false,
+    cap:null   // 屏幕采集 {stream,video,canvas,ctx,active}
+  };
+
+  function load(){ try{const o=JSON.parse(localStorage.getItem(LS_KEY));if(!o)return clone();
+    const m=clone();Object.assign(m,o);m.modes=Object.assign({},DEFAULTS.modes,o.modes||{});
+    m.prot=Object.assign({},DEFAULTS.prot,o.prot||{});return m;}catch(e){return clone();} }
+  function clone(){return JSON.parse(JSON.stringify(DEFAULTS));}
+  function save(){ try{localStorage.setItem(LS_KEY,JSON.stringify(S));}catch(e){} }
+
+  /* ---------- 渲染调度（rAF 节流，消除卡顿） ---------- */
+  let raf=false;
+  function schedule(){ if(raf)return; raf=true; requestAnimationFrame(()=>{raf=false; render();}); }
+  function renderNow(){ render(); }
+
+  /* ---------- 尺寸 ---------- */
+  function resize(){
+    R.W=innerWidth;R.H=innerHeight;
+    canvas.width=Math.floor(R.W*DPR);canvas.height=Math.floor(R.H*DPR);
+    canvas.style.width=R.W+"px";canvas.style.height=R.H+"px";
+    ctx.setTransform(DPR,0,0,DPR,0,0);
+    if(S.prot.cx===null){S.prot.cx=R.W/2;S.prot.cy=R.H/2;}
+  }
+  addEventListener("resize",()=>{resize();schedule();});
+
+  /* ---------- 工具函数 ---------- */
+  function uFactor(){return {px:1,cm:S.ppi/2.54,mm:S.ppi/25.4,in:S.ppi}[S.unit];}
+  function uLabel(){return {px:"px",cm:"cm",mm:"mm",in:"in"}[S.unit];}
+  function niceStep(pu){const t=70/pu;const s=[0.1,0.2,0.5,1,2,5,10,20,50,100,200,500,1000,2000,5000];for(const v of s)if(v>=t)return v;return 5000;}
+  function dist(ax,ay,bx,by){return Math.hypot(bx-ax,by-ay);}
+  function angNorm(a){let d=Math.abs(a)%(Math.PI*2);if(d>Math.PI)d=Math.PI*2-d;return d;}
+  function fmt(v){const r=Math.round(v*100)/100;return r%1===0?String(r):r.toFixed(2);}
+
+  /* ---------- 绘制 ---------- */
+  function render(){
+    ctx.clearRect(0,0,R.W,R.H);
+    ctx.globalAlpha=S.alpha/100;
+    drawImage();
+    if(S.modes.grid)drawGrid();
+    if(S.modes.rulers)drawRulers();
+    if(S.modes.guides)drawGuides();
+    if(S.modes.protractor)drawProtractor();
+    drawRects(); drawSegments(); drawAnnotations();
+    if(S.modes.crosshair)drawCrosshair();
+    ctx.globalAlpha=1;
+    updateMag(); updateStatus();
+  }
+  function drawImage(){
+    if(!R.img)return;
+    let w=R.img.naturalWidth*R.imgScale,h=R.img.naturalHeight*R.imgScale,x=R.imgX,y=R.imgY;
+    if(R.imgFit){const s=Math.min(R.W/R.img.naturalWidth,R.H/R.img.naturalHeight);w=R.img.naturalWidth*s;h=R.img.naturalHeight*s;x=(R.W-w)/2;y=(R.H-h)/2;}
+    ctx.save();ctx.globalAlpha=(S.alpha/100)*(S.imgAlpha/100);ctx.drawImage(R.img,x,y,w,h);ctx.restore();
+    ctx.globalAlpha=S.alpha/100;
+  }
+  function drawGrid(){
+    const step=niceStep(uFactor())*uFactor(); if(step<6)return;
+    ctx.save();ctx.strokeStyle=S.gridColor;ctx.lineWidth=1;ctx.globalAlpha=(S.alpha/100)*0.55;
+    ctx.beginPath();
+    for(let x=0;x<=R.W;x+=step){ctx.moveTo(x+.5,0);ctx.lineTo(x+.5,R.H);}
+    for(let y=0;y<=R.H;y+=step){ctx.moveTo(0,y+.5);ctx.lineTo(R.W,y+.5);}
+    ctx.stroke();ctx.restore();
+  }
+  function drawRulers(){
+    const rs=S.rulerSize;
+    ctx.save();ctx.globalAlpha=S.alpha/100;
+    ctx.fillStyle="rgba(11,14,20,.5)";ctx.fillRect(0,0,R.W,rs);ctx.fillRect(0,0,rs,R.H);
+    ctx.fillStyle="rgba(11,14,20,.82)";ctx.fillRect(0,0,rs,rs);
+    const f=uFactor(),step=niceStep(f),stepPx=step*f,minor=step/5,minorPx=minor*f;
+    ctx.fillStyle=S.rulerColor;ctx.strokeStyle=S.rulerColor;ctx.lineWidth=1;
+    ctx.font="10px ui-monospace,monospace";
+    ctx.textBaseline="middle";ctx.textAlign="left";
+    for(let x=0;x<=R.W;x+=minorPx){const major=Math.abs((x/minorPx)%5)<0.01;const len=major?rs*0.55:rs*0.28;
+      ctx.beginPath();ctx.moveTo(x+.5,rs);ctx.lineTo(x+.5,rs-len);ctx.stroke();
+      if(major)ctx.fillText(fmt(x/f),x+3,rs*0.32);}
+    ctx.textAlign="right";ctx.textBaseline="top";
+    for(let y=0;y<=R.H;y+=minorPx){const major=Math.abs((y/minorPx)%5)<0.01;const len=major?rs*0.55:rs*0.28;
+      ctx.beginPath();ctx.moveTo(rs,y+.5);ctx.lineTo(rs-len,y+.5);ctx.stroke();
+      if(major){ctx.save();ctx.translate(rs*0.32,y+3);ctx.rotate(-Math.PI/2);ctx.textAlign="left";ctx.fillText(fmt(y/f),0,0);ctx.restore();}}
+    ctx.globalAlpha=(S.alpha/100)*0.8;ctx.strokeStyle=S.rulerColor;
+    ctx.beginPath();ctx.moveTo(0,rs+.5);ctx.lineTo(R.W,rs+.5);ctx.moveTo(rs+.5,0);ctx.lineTo(rs+.5,R.H);ctx.stroke();
+    ctx.restore();
+  }
+  function drawGuides(){
+    ctx.save();ctx.strokeStyle=S.guideColor;ctx.lineWidth=1;ctx.globalAlpha=(S.alpha/100)*0.9;const rs=S.rulerSize;
+    R.guidesV.forEach(x=>{ctx.beginPath();ctx.moveTo(x+.5,rs);ctx.lineTo(x+.5,R.H);ctx.stroke();handle(x,rs);});
+    R.guidesH.forEach(y=>{ctx.beginPath();ctx.moveTo(rs,y+.5);ctx.lineTo(R.W,y+.5);ctx.stroke();handle(rs,y);});
+    ctx.restore();
+  }
+  function handle(x,y){ctx.save();ctx.fillStyle=ctx.strokeStyle;ctx.strokeStyle="#000";ctx.lineWidth=1;
+    ctx.beginPath();ctx.arc(x,y,4,0,7);ctx.fill();ctx.stroke();ctx.restore();}
+  function drawProtractor(){
+    const p=S.prot,R0=S.protR,cx=p.cx,cy=p.cy;
+    ctx.save();ctx.globalAlpha=S.alpha/100;
+    ctx.beginPath();ctx.arc(cx,cy,R0,0,7);ctx.fillStyle="rgba(11,14,20,.32)";ctx.fill();
+    ctx.lineWidth=1.5;ctx.strokeStyle=S.protColor;ctx.stroke();
+    ctx.strokeStyle=S.protColor;
+    ctx.fillStyle=S.protColor;ctx.font="11px ui-monospace,monospace";ctx.textAlign="center";ctx.textBaseline="middle";
+    for(let d=0;d<360;d+=5){const a=d*Math.PI/180,isM=d%30===0,isC=d%90===0;
+      const r1=R0,r2=R0-(isC?16:(isM?11:6)),dx=Math.cos(a),dy=Math.sin(a);
+      ctx.lineWidth=isC?2:(isM?1.4:0.8);ctx.beginPath();ctx.moveTo(cx+dx*r1,cy+dy*r1);ctx.lineTo(cx+dx*r2,cy+dy*r2);ctx.stroke();
+      if(isM){const rl=r2-12;ctx.fillText(String(d),cx+dx*rl,cy+dy*rl);}}
+    const b1=p.base,b2=p.arm,ang=angNorm(b2-b1);
+    ctx.strokeStyle=S.arm2Color;ctx.lineWidth=2;
+    let a0=Math.min(b1,b2),a1=Math.max(b1,b2);
+    if(a1-a0>Math.PI){const t=a0;a0=a1-2*Math.PI;a1=t;} // 取小弧
+    ctx.beginPath();ctx.arc(cx,cy,34,a0,a1,false);ctx.stroke();
+    function arm(an,c){ctx.strokeStyle=c;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx+Math.cos(an)*R0,cy+Math.sin(an)*R0);ctx.stroke();}
+    arm(b1,S.arm1Color);arm(b2,S.arm2Color);
+    handle(cx,cy,S.protColor);
+    handle(cx+Math.cos(b1)*R0,cy+Math.sin(b1)*R0,S.arm1Color);
+    handle(cx+Math.cos(b2)*R0,cy+Math.sin(b2)*R0,S.arm2Color);
+    const deg=ang*180/Math.PI;
+    ctx.font="bold 14px ui-monospace,monospace";ctx.textAlign="left";ctx.textBaseline="middle";
+    const tx=cx+R0/1+14,ty=cy;
+    ctx.fillStyle="rgba(0,0,0,.6)";ctx.fillRect(tx-4,ty-12,92,24);
+    ctx.fillStyle=S.arm2Color;ctx.fillText(deg.toFixed(1)+"°",tx,ty);
+    ctx.restore();
+  }
+  function drawSegments(){
+    ctx.save();ctx.globalAlpha=S.alpha/100;
+    const all=R.segments.concat(R.live&&R.live.kind==="seg"?[R.live]:[]);
+    all.forEach(s=>{
+      ctx.strokeStyle=S.measureColor;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(s.ax,s.ay);ctx.lineTo(s.bx,s.by);ctx.stroke();
+      handle(s.ax,s.ay,S.measureColor);handle(s.bx,s.by,S.measureColor);
+      const mx=(s.ax+s.bx)/2,my=(s.ay+s.by)/2,d=dist(s.ax,s.ay,s.bx,s.by)/uFactor();
+      const ang=Math.atan2(s.by-s.ay,s.bx-s.ax)*180/Math.PI;
+      const t=fmt(d)+uLabel()+"  ∠"+ang.toFixed(1)+"°";
+      ctx.font="11px ui-monospace,monospace";const tw=ctx.measureText(t).width+8;
+      ctx.fillStyle="rgba(0,0,0,.62)";ctx.fillRect(mx-tw/2,my-18,tw,16);
+      ctx.fillStyle=S.measureColor;ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(t,mx,my-10);});
+    ctx.restore();
+  }
+  function drawRects(){
+    ctx.save();ctx.globalAlpha=S.alpha/100;
+    const all=R.rects.concat(R.live&&R.live.kind==="rect"?[R.live]:[]);
+    all.forEach(r=>{
+      const x=Math.min(r.ax,r.bx),y=Math.min(r.ay,r.by),w=Math.abs(r.bx-r.ax),h=Math.abs(r.by-r.ay);
+      ctx.strokeStyle=S.measureColor;ctx.lineWidth=2;ctx.setLineDash([6,4]);ctx.strokeRect(x,y,w,h);ctx.setLineDash([]);
+      const area=(w/uFactor())*(h/uFactor()),diag=Math.hypot(w,h)/uFactor();
+      const t=fmt(w/uFactor())+"×"+fmt(h/uFactor())+uLabel()+"  面积"+fmt(area)+"  对角"+fmt(diag);
+      ctx.font="11px ui-monospace,monospace";const tw=ctx.measureText(t).width+8;
+      ctx.fillStyle="rgba(0,0,0,.62)";ctx.fillRect(x,y-18,tw,16);
+      ctx.fillStyle=S.measureColor;ctx.textAlign="left";ctx.textBaseline="middle";ctx.fillText(t,x+2,y-10);});
+    ctx.restore();
+  }
+  function drawAnnotations(){
+    ctx.save();ctx.globalAlpha=S.alpha/100;ctx.font="12px sans-serif";ctx.textBaseline="middle";
+    R.annotations.forEach(a=>{
+      ctx.fillStyle=S.crossColor;ctx.beginPath();ctx.arc(a.x,a.y,5,0,7);ctx.fill();
+      ctx.strokeStyle="#000";ctx.lineWidth=1;ctx.stroke();
+      const tw=ctx.measureText(a.text).width+12;
+      ctx.fillStyle="rgba(8,11,16,.85)";ctx.fillRect(a.x+9,a.y-11,tw,22);
+      ctx.fillStyle=S.crossColor;ctx.textAlign="left";ctx.fillText(a.text,a.x+15,a.y);});
+    ctx.restore();
+  }
+  function drawCrosshair(){
+    const rs=S.rulerSize,m=R.mouse;if(m.x<rs&&m.y<rs)return;
+    ctx.save();ctx.globalAlpha=(S.alpha/100)*0.9;ctx.strokeStyle=S.crossColor;ctx.lineWidth=1;ctx.setLineDash([4,4]);
+    if(m.y>=rs){ctx.beginPath();ctx.moveTo(0,m.y+.5);ctx.lineTo(R.W,m.y+.5);ctx.stroke();}
+    if(m.x>=rs){ctx.beginPath();ctx.moveTo(m.x+.5,0);ctx.lineTo(m.x+.5,R.H);ctx.stroke();}
+    ctx.setLineDash([]);handle(m.x,m.y,S.crossColor);ctx.restore();
+  }
+
+  /* ---------- 放大镜（圆形 + 像素网格 + 可选真实屏幕源） ---------- */
+  function getCapFrame(){
+    const c=R.cap;if(!c||!c.active||!c.video.videoWidth)return null;
+    if(c.canvas.width!==c.video.videoWidth||c.canvas.height!==c.video.videoHeight){
+      c.canvas.width=c.video.videoWidth;c.canvas.height=c.video.videoHeight;}
+    c.ctx.drawImage(c.video,0,0,c.canvas.width,c.canvas.height);
+    return c.canvas;
+  }
+  function updateMag(){
+    if(!S.modes.magnifier||R.collapsed){mag.style.display="none";magLabel.style.display="none";return;}
+    const m=R.mouse,size=S.magSize,zoom=S.magZoom;
+    mag.width=size*DPR;mag.height=size*DPR;mag.style.width=size+"px";mag.style.height=size+"px";
+    // 镜心尽量对准鼠标；靠近边缘时整体内收，并据此调整采样中心，保证“看到的 = 镜心处画面”
+    let mx=m.x-size/2,my=m.y-size/2;
+    if(mx<4)mx=4; if(my<4)my=4;
+    if(mx+size>R.W-4)mx=R.W-size-4; if(my+size>R.H-4)my=R.H-size-4;
+    mag.style.left=mx+"px";mag.style.top=my+"px";mag.style.display="block";
+    magCtx.setTransform(DPR,0,0,DPR,0,0);
+    magCtx.clearRect(0,0,size,size);magCtx.fillStyle="#000";magCtx.fillRect(0,0,size,size);
+    const region=size/zoom;
+    const cxCss=mx+size/2, cyCss=my+size/2;   // 镜心（显示坐标）= 采样中心
+    const cap=getCapFrame();
+    if(cap){
+      const sxr=cap.width/window.innerWidth, syr=cap.height/window.innerHeight;
+      const cx=cxCss*sxr, cy=cyCss*syr, sw=region*sxr, sh=region*syr;
+      magCtx.drawImage(cap, cx-sw/2, cy-sh/2, sw, sh, 0,0, size,size);
+    }else{
+      const sx=(cxCss-region/2)*DPR, sy=(cyCss-region/2)*DPR, sw=region*DPR, sh=region*DPR;
+      try{magCtx.drawImage(canvas,sx,sy,sw,sh,0,0,size,size);}catch(e){}
+    }
+    // 像素网格
+    magCtx.strokeStyle="rgba(255,255,255,.16)";magCtx.lineWidth=1;
+    const n=Math.min(zoom,24);
+    for(let i=1;i<n;i++){const p=i*size/n;magCtx.beginPath();magCtx.moveTo(p,0);magCtx.lineTo(p,size);magCtx.moveTo(0,p);magCtx.lineTo(size,p);magCtx.stroke();}
+    // 中心准星（精确瞄准点）
+    const c=size/2;
+    magCtx.strokeStyle="rgba(255,90,130,.95)";magCtx.lineWidth=1.4;
+    magCtx.beginPath();magCtx.moveTo(c,size*0.34);magCtx.lineTo(c,size*0.66);magCtx.moveTo(size*0.34,c);magCtx.lineTo(size*0.66,c);magCtx.stroke();
+    magCtx.strokeStyle="rgba(255,255,255,.95)";magCtx.lineWidth=1.5;magCtx.strokeRect(c-1,c-1,2,2);
+    // 读取镜心像素
+    let hex="#000000",a=0;
+    try{const d=magCtx.getImageData(Math.floor(c*DPR),Math.floor(c*DPR),1,1).data;
+      hex="#"+[d[0],d[1],d[2]].map(v=>v.toString(16).padStart(2,"0")).join("");a=d[3];}catch(e){}
+    magLabel.style.display="block";
+    const ly = (my-34<4)? (my+size+8) : (my-34);
+    magLabel.style.left=Math.max(4, cxCss-70)+"px";magLabel.style.top=ly+"px";
+    magLabel.textContent=(cap?"真实桌面 ":"画布/参考图 ")+zoom+"×\n目标 x:"+Math.round(cxCss)+" y:"+Math.round(cyCss)+"\nrgb"+hex+" a:"+a;
+  }
+
+  /* ---------- 状态栏 / 列表 ---------- */
+  function updateStatus(){
+    const m=R.mouse;$("#stXY").textContent=Math.round(m.x)+", "+Math.round(m.y);$("#stUnit").textContent=uLabel();
+    const last=R.segments[R.segments.length-1];
+    if(last){const d=dist(last.ax,last.ay,last.bx,last.by)/uFactor();
+      $("#stDist").textContent=fmt(d)+uLabel();$("#stDX").textContent=fmt((last.bx-last.ax)/uFactor());$("#stDY").textContent=fmt((last.by-last.ay)/uFactor());}
+  }
+  function updateList(){
+    const box=$("#measureList"),empty=$("#listEmpty");box.innerHTML="";
+    const rows=[];
+    R.segments.forEach((s,i)=>rows.push({t:"线段 "+(i+1),d:fmt(dist(s.ax,s.ay,s.bx,s.by)/uFactor())+uLabel()+"  Δ("+fmt((s.bx-s.ax)/uFactor())+","+fmt((s.by-s.ay)/uFactor())+")",k:"seg",i}));
+    R.rects.forEach((r,i)=>{const w=Math.abs(r.bx-r.ax)/uFactor(),h=Math.abs(r.by-r.ay)/uFactor();
+      rows.push({t:"矩形 "+(i+1),d:fmt(w)+"×"+fmt(h)+uLabel()+"  面积"+fmt(w*h),k:"rect",i});});
+    empty.style.display=rows.length?"none":"block";
+    rows.forEach(o=>{const el=document.createElement("div");el.className="item";
+      el.innerHTML='<span class="info">'+o.t+' <small>'+o.d+'</small></span>';
+      const b=document.createElement("button");b.className="del";b.textContent="删";
+      b.onclick=()=>{if(o.k==="seg")R.segments.splice(o.i,1);else R.rects.splice(o.i,1);save();updateList();schedule();};
+      el.appendChild(b);box.appendChild(el);});
+  }
+
+  /* ---------- 交互 ---------- */
+  function pos(e){const r=canvas.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top};}
+  function hitProt(p){const P=S.prot,R0=S.protR,c={x:P.cx,y:P.cy};
+    const a1={x:c.x+Math.cos(P.base)*R0,y:c.y+Math.sin(P.base)*R0},a2={x:c.x+Math.cos(P.arm)*R0,y:c.y+Math.sin(P.arm)*R0};
+    if(dist(p.x,p.y,c.x,c.y)<12)return"center";if(dist(p.x,p.y,a1.x,a1.y)<12)return"arm1";if(dist(p.x,p.y,a2.x,a2.y)<12)return"arm2";return null;}
+  function hitGuide(p){for(let i=0;i<R.guidesV.length;i++)if(Math.abs(p.x-R.guidesV[i])<5)return{ty:"v",i};
+    for(let i=0;i<R.guidesH.length;i++)if(Math.abs(p.y-R.guidesH[i])<5)return{ty:"h",i};return null;}
+  function hitAnno(p){for(let i=R.annotations.length-1;i>=0;i--){const a=R.annotations[i];if(dist(p.x,p.y,a.x,a.y)<10||(p.x>a.x+5&&p.x<a.x+120&&Math.abs(p.y-a.y)<12))return i;}return -1;}
+
+  canvas.addEventListener("mousedown",e=>{
+    if(R.collapsed)return;const p=pos(e);R.mouse=p;
+    if(S.modes.protractor){const h=hitProt(p);if(h){R.drag={t:"prot-"+h};return;}}
+    if(S.modes.guides){const g=hitGuide(p);
+      if(g){R.drag={t:"guide",g};return;}
+      const rs=S.rulerSize;
+      if(p.y<rs&&p.x>=rs){R.guidesV.push(p.x);save();R.drag={t:"guide",g:{ty:"v",i:R.guidesV.length-1}};return;}
+      if(p.x<rs&&p.y>=rs){R.guidesH.push(p.y);save();R.drag={t:"guide",g:{ty:"h",i:R.guidesH.length-1}};return;}}
+    if(S.tool==="measure"){R.live={kind:"seg",ax:p.x,ay:p.y,bx:p.x,by:p.y};R.drag={t:"live"};return;}
+    if(S.tool==="rect"){R.live={kind:"rect",ax:p.x,ay:p.y,bx:p.x,by:p.y};R.drag={t:"live"};return;}
+    if(S.tool==="text"){
+      const ai=hitAnno(p);if(ai>=0){R.drag={t:"anno",i:ai};return;}
+      const a={x:p.x,y:p.y,text:"标注"+(R.annotations.length+1)};R.annotations.push(a);save();
+      R.drag={t:"anno",i:R.annotations.length-1};openEditor(a);schedule();return;}
+    if(S.tool==="move" && R.img && !R.imgFit){ R.drag={t:"img"}; R.imgDX=p.x-R.imgX; R.imgDY=p.y-R.imgY; return; }
+  });
+  addEventListener("mousemove",e=>{
+    const p=pos(e);R.mouse=p;
+    if(R.drag){
+      if(R.drag.t==="prot-center"){S.prot.cx=p.x;S.prot.cy=p.y;}
+      else if(R.drag.t==="prot-arm1")S.prot.base=Math.atan2(p.y-S.prot.cy,p.x-S.prot.cx);
+      else if(R.drag.t==="prot-arm2")S.prot.arm=Math.atan2(p.y-S.prot.cy,p.x-S.prot.cx);
+      else if(R.drag.t==="guide"){const g=R.drag.g;if(g.ty==="v")R.guidesV[g.i]=p.x;else R.guidesH[g.i]=p.y;}
+      else if(R.drag.t==="live"&&R.live){R.live.bx=p.x;R.live=Object.assign({},R.live,{bx:p.x,by:p.y});}
+      else if(R.drag.t==="anno"&&R.annotations[R.drag.i]){R.annotations[R.drag.i].x=p.x;R.annotations[R.drag.i].y=p.y;}
+      else if(R.drag.t==="img"){R.imgX=p.x-R.imgDX;R.imgY=p.y-R.imgDY;}
+      save();
+    }
+    schedule();
+  });
+  addEventListener("mouseup",()=>{
+    if(R.drag&&R.drag.t==="live"&&R.live){
+      if(R.live.kind==="seg"&&dist(R.live.ax,R.live.ay,R.live.bx,R.live.by)>2){R.segments.push(R.live);}
+      else if(R.live.kind==="rect"&&(Math.abs(R.live.bx-R.live.ax)>2&&Math.abs(R.live.by-R.live.ay)>2)){R.rects.push(R.live);}
+      R.live=null;updateList();save();
+    }
+    R.drag=null;schedule();
+  });
+  canvas.addEventListener("contextmenu",e=>{e.preventDefault();
+    if(S.modes.guides){const p=pos(e),g=hitGuide(p);if(g){if(g.ty==="v")R.guidesV.splice(g.i,1);else R.guidesH.splice(g.i,1);save();schedule();}}});
+  canvas.addEventListener("dblclick",e=>{
+    const p=pos(e);
+    if(S.modes.protractor&&dist(p.x,p.y,S.prot.cx,S.prot.cy)<S.protR){S.prot.base=0;S.prot.arm=-1.0472;save();schedule();}
+    const ai=hitAnno(p);if(ai>=0)openEditor(R.annotations[ai]);
+  });
+  canvas.addEventListener("wheel",e=>{
+    if(!R.img||R.imgFit||R.collapsed)return;
+    e.preventDefault();
+    const p=pos(e),oldScale=R.imgScale,factor=e.deltaY<0?1.1:1/1.1;
+    let ns=Math.max(0.05,Math.min(oldScale*factor,20));
+    // 以光标为锚点缩放，保持光标下的图像点不动
+    R.imgX=p.x-(p.x-R.imgX)*(ns/oldScale);
+    R.imgY=p.y-(p.y-R.imgY)*(ns/oldScale);
+    R.imgScale=ns;schedule();
+  },{passive:false});
+
+  /* 标注编辑器 */
+  const editor=$("#editor");
+  function openEditor(a){editor.style.display="block";editor.value=a.text;
+    editor.style.left=Math.min(a.x+9,R.W-160)+"px";editor.style.top=(a.y-12)+"px";editor.focus();editor.select();
+    editor.onblur=closeEditor;editor.onkeydown=ev=>{if(ev.key==="Enter")editor.blur();if(ev.key==="Escape")editor.blur();};
+    editor._a=a;}
+  function closeEditor(){if(editor._a){editor._a.text=editor.value.trim()||"标注";save();}editor.style.display="none";schedule();}
+
+  /* ---------- 图片 ---------- */
+  function loadImg(file){const r=new FileReader();r.onload=ev=>{const img=new Image();
+    img.onload=()=>{R.img=img;R.imgFit=false;R.imgScale=1;
+      R.imgX=(R.W-img.naturalWidth)/2;R.imgY=(R.H-img.naturalHeight)/2;
+      toast("已载入图片：选「移动」工具(V)可拖拽调整位置，滚轮缩放");schedule();};img.src=ev.target.result;};
+    r.readAsDataURL(file);}
+  $("#fileImg").addEventListener("change",e=>{if(e.target.files[0])loadImg(e.target.files[0]);});
+  addEventListener("paste",e=>{const it=e.clipboardData&&e.clipboardData.items;if(!it)return;
+    for(const x of it){if(x.type.startsWith("image/")){loadImg(x.getAsFile());break;}}});
+  addEventListener("dragover",e=>e.preventDefault());
+  addEventListener("drop",e=>{e.preventDefault();const f=e.dataTransfer.files&&e.dataTransfer.files[0];
+    if(f&&f.type.startsWith("image/"))loadImg(f);});
+
+  /* ---------- 工具栏 ---------- */
+  function syncBar(){document.querySelectorAll('#toolbar .tbtn[data-mode]').forEach(b=>b.classList.toggle("on",!!S.modes[b.dataset.mode]));
+    document.querySelectorAll('#toolbar .tbtn[data-tool]').forEach(b=>b.classList.toggle("on",S.tool===b.dataset.tool));
+    canvas.style.cursor=S.tool==="move"?"move":"crosshair";}
+  document.querySelectorAll('#toolbar .tbtn[data-mode]').forEach(b=>b.addEventListener("click",()=>{tg(b.dataset.mode);}));
+  document.querySelectorAll('#toolbar .tbtn[data-tool]').forEach(b=>b.addEventListener("click",()=>{S.tool=S.tool===b.dataset.tool?"none":b.dataset.tool;save();syncBar();schedule();}));
+  $("#btnEye").addEventListener("click",eyedrop);
+  $("#btnClear").addEventListener("click",()=>{R.segments=[];R.rects=[];R.guidesV=[];R.guidesH=[];save();updateList();schedule();toast("已清空测距 / 矩形 / 辅助线");});
+  $("#btnExport").addEventListener("click",exportPNG);
+  $("#btnCollapse").addEventListener("click",()=>setCollapsed(!R.collapsed));
+  $("#restore").addEventListener("click",()=>setCollapsed(false));
+  $("#btnHelp").addEventListener("click",()=>$("#help").classList.add("show"));
+  $("#helpClose").addEventListener("click",()=>$("#help").classList.remove("show"));
+  $("#btnGear").addEventListener("click",()=>$("#panel").classList.toggle("show"));
+
+  function setCollapsed(b){
+    document.getElementById("toolbar").style.display=b?"none":"flex";
+    document.getElementById("status").style.display=b?"none":"flex";
+    document.getElementById("btnGear").style.display=b?"none":"block";
+    canvas.style.pointerEvents=b?"none":"auto";
+    $("#restore").style.display=b?"flex":"none";
+    R.collapsed=b;mag.style.display="none";magLabel.style.display="none";
+    if(b){
+      // 折叠时隐藏设置面板，并清除其展开状态
+      $("#panel").style.display="none";
+      $("#panel").classList.remove("show");
+    }else{
+      // 展开时清除内联 display 覆盖，让 .show 类（点击“设置”切换）重新生效
+      $("#panel").style.display="";
+    }
+    if(!b)renderNow();
+  }
+
+  /* ---------- 取色器 ---------- */
+  async function eyedrop(){
+    if(!window.EyeDropper){toast("当前浏览器不支持原生取色器，可改用放大镜");return;}
+    try{const r=await new EyeDropper().open();copy(r.sRGBHex);toast("取到颜色 "+r.sRGBHex+"（已复制）");}catch(e){}
+  }
+  function copy(t){try{navigator.clipboard.writeText(t);}catch(e){}}
+
+  /* ---------- 屏幕采集（放大镜真实源） ---------- */
+  $("#btnScreenCap").addEventListener("click",async function(){
+    if(R.cap&&R.cap.active){stopCap();this.classList.remove("on");S.screenCap=false;save();toast("已停止屏幕采集");return;}
+    try{
+      const s=await navigator.mediaDevices.getDisplayMedia({video:true});
+      const v=document.createElement("video");v.srcObject=s;v.muted=true;await v.play();
+      R.cap={stream:s,video:v,canvas:document.createElement("canvas"),ctx:null,active:true};
+      R.cap.ctx=R.cap.canvas.getContext("2d");S.screenCap=true;save();this.classList.add("on");
+      toast("屏幕采集已开启，放大镜显示真实桌面");
+      s.getVideoTracks()[0].addEventListener("ended",()=>{stopCap();this.classList.remove("on");});
+    }catch(e){toast("屏幕采集失败或被取消");}
+  });
+  function stopCap(){if(R.cap){R.cap.active=false;R.cap.stream.getTracks().forEach(t=>t.stop());R.cap=null;S.screenCap=false;save();}}
+
+  /* ---------- 设置面板 ---------- */
+  function bindRange(id,key,f){const el=$(id),lab=document.querySelector('[id="v'+id.slice(4)+'"]');
+    el.addEventListener("input",()=>{const v=parseFloat(el.value);S[key]=v;if(lab)lab.textContent=f?f(v):v;save();schedule();});}
+  $("#setUnit").addEventListener("change",e=>{S.unit=e.target.value;save();schedule();});
+  $("#setPPI").addEventListener("input",e=>{S.ppi=parseFloat(e.target.value)||96;save();schedule();});
+  bindRange("#setRuler","rulerSize",v=>v);bindRange("#setProtR","protR",v=>v);
+  bindRange("#setAlpha","alpha",v=>v+"%");bindRange("#setMagZoom","magZoom",v=>v+"×");
+  bindRange("#setMagSize","magSize",v=>v);bindRange("#setImgAlpha","imgAlpha",v=>v+"%");
+  [["#setProtColor","protColor"],["#setArm1Color","arm1Color"],["#setArm2Color","arm2Color"],
+   ["#setRulerColor","rulerColor"],["#setMeasureColor","measureColor"],["#setCrossColor","crossColor"],
+   ["#setGridColor","gridColor"],["#setGuideColor","guideColor"]].forEach(([s,k])=>$(s).addEventListener("input",e=>{S[k]=e.target.value;save();schedule();}));
+  $("#setProt").addEventListener("change",e=>{S.modes.protractor=e.target.checked;save();syncBar();schedule();});
+  $("#btnLoadImg").addEventListener("click",()=>$("#fileImg").click());
+  $("#btnImgFit").addEventListener("click",()=>{R.imgFit=!R.imgFit;schedule();});
+  $("#btnImgClear").addEventListener("click",()=>{R.img=null;schedule();});
+  $("#btnReset").addEventListener("click",()=>{S=clone();R.segments=[];R.rects=[];R.annotations=[];R.guidesV=[];R.guidesH=[];R.img=null;stopCap?.();
+    S.prot.cx=R.W/2;S.prot.cy=R.H/2;save();syncPanel();syncBar();updateList();schedule();toast("已恢复默认设置");});
+  $("#btnFull").addEventListener("click",()=>{if(!document.fullscreenElement)document.documentElement.requestFullscreen?.();else document.exitFullscreen?.();});
+
+  function syncPanel(){
+    $("#setUnit").value=S.unit;$("#setPPI").value=S.ppi;$("#setRuler").value=S.rulerSize;$("#vRuler").textContent=S.rulerSize;
+    $("#setProtR").value=S.protR;$("#vProtR").textContent=S.protR;$("#setProt").checked=S.modes.protractor;
+    $("#setProtColor").value=S.protColor;$("#setArm1Color").value=S.arm1Color;$("#setArm2Color").value=S.arm2Color;
+    $("#setRulerColor").value=S.rulerColor;$("#setMeasureColor").value=S.measureColor;$("#setCrossColor").value=S.crossColor;
+    $("#setGridColor").value=S.gridColor;$("#setGuideColor").value=S.guideColor;
+    $("#setAlpha").value=S.alpha;$("#vAlpha").textContent=S.alpha+"%";$("#setMagZoom").value=S.magZoom;$("#vMagZoom").textContent=S.magZoom+"×";
+    $("#setMagSize").value=S.magSize;$("#vMagSize").textContent=S.magSize;$("#setImgAlpha").value=S.imgAlpha;$("#vImgAlpha").textContent=S.imgAlpha+"%";
+    if(R.cap&&R.cap.active)$("#btnScreenCap").classList.add("on");
+  }
+
+  /* ---------- 导出 ---------- */
+  function exportPNG(){const u=canvas.toDataURL("image/png");const a=document.createElement("a");
+    a.href=u;a.download="screen-measure-"+Date.now()+".png";document.body.appendChild(a);a.click();a.remove();toast("已导出 PNG");}
+
+  /* ---------- 键盘 ---------- */
+  addEventListener("keydown",e=>{if(/INPUT|SELECT|TEXTAREA/.test(e.target.tagName))return;
+    const k=e.key.toLowerCase();
+    if(k===" "){e.preventDefault();setCollapsed(!R.collapsed);return;}
+    if(k==="r")tg("rulers");else if(k==="p")tg("protractor");else if(k==="x")tg("crosshair");
+    else if(k==="g")tg("grid");else if(k==="l")tg("guides");else if(k==="z")tg("magnifier");
+    else if(k==="m")setTool("measure");else if(k==="b")setTool("rect");else if(k==="t")setTool("text");else if(k==="v")setTool("move");
+    else if(k==="c")$("#btnClear").click();else if(k==="e")exportPNG();else if(k==="f")document.fullscreenElement?document.exitFullscreen?.():(document.documentElement.requestFullscreen?.());
+    else if(k==="h")$("#help").classList.toggle("show");else if(k==="escape"){$("#help").classList.remove("show");$("#panel").classList.remove("show");editor.style.display="none";}});
+  function tg(m){S.modes[m]=!S.modes[m];
+    if(m==="guides"&&S.modes.guides&&!R.guidesV.length&&!R.guidesH.length){
+      R.guidesV.push(Math.max(40,Math.min(R.W-40,R.mouse.x||R.W/2)));
+      R.guidesH.push(Math.max(40,Math.min(R.H-40,R.mouse.y||R.H/2)));}
+    save();syncBar();schedule();}
+  function setTool(t){S.tool=S.tool===t?"none":t;save();syncBar();schedule();}
+
+  /* ---------- toast ---------- */
+  let tt=null;function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("show");clearTimeout(tt);tt=setTimeout(()=>t.classList.remove("show"),1700);}
+
+  /* ---------- 启动 ---------- */
+  resize();syncPanel();syncBar();updateList();schedule();
+})();
+</script>
+</body>
+</html>

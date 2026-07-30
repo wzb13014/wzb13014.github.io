@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>批量邀请函生成器</title>
+<style>
+:root{
+  --bg:#0f1115; --panel:#171a21; --panel2:#1e222b; --text:#e8eaf0; --dim:#9aa3b2;
+  --line:rgba(255,255,255,.09); --accent:#c8a24a; --accent2:#9b6bff; --ok:#56c596; --err:#ff7a7a;
+  --radius:14px; --font:"PingFang SC","Microsoft YaHei","Helvetica Neue",Arial,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+/* 隐藏滚动条（保留可滚动） */
+html,body,*{scrollbar-width:none;-ms-overflow-style:none}
+*::-webkit-scrollbar{width:0;height:0;background:transparent}
+body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:1.6;font-size:14px}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+input,select,textarea{font-family:inherit;font-size:14px}
+a{color:var(--accent2)}
+
+/* 顶栏 */
+header.top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 22px;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:50;background:rgba(15,17,21,.85);backdrop-filter:blur(10px)}
+header.top h1{font-size:17px;font-weight:800;letter-spacing:.04em}
+header.top h1 b{color:var(--accent)}
+header.top .sub{font-size:12px;color:var(--dim);margin-top:2px}
+.top-actions{display:flex;gap:8px}
+
+/* 布局 */
+.layout{display:grid;grid-template-columns:380px 1fr;gap:20px;padding:20px;align-items:start}
+@media(max-width:920px){.layout{grid-template-columns:1fr}}
+
+/* 侧栏 */
+.side{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px;position:sticky;top:78px;max-height:calc(100vh - 98px);overflow:auto}
+@media(max-width:920px){.side{position:static;max-height:none}}
+.sec{margin-bottom:18px}
+.sec:last-child{margin-bottom:0}
+.sec h3{font-size:13px;letter-spacing:.08em;color:var(--accent);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.sec h3::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--accent)}
+.field{margin-bottom:10px}
+.field label{display:block;font-size:12px;color:var(--dim);margin-bottom:4px}
+.field input,.field textarea,.field select{
+  width:100%;padding:9px 11px;border-radius:10px;border:1px solid var(--line);
+  background:var(--panel2);color:var(--text);transition:.15s;
+}
+.field input:focus,.field textarea:focus,.field select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(200,162,74,.15)}
+.field textarea{resize:vertical;min-height:70px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+
+/* 模板卡片 */
+.tpl-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tpl{display:flex;align-items:center;gap:10px;padding:10px;border-radius:12px;border:1px solid var(--line);background:var(--panel2);transition:.15s;text-align:left}
+.tpl:hover{border-color:var(--accent)}
+.tpl.active{border-color:var(--accent);background:rgba(200,162,74,.12);box-shadow:0 0 0 1px var(--accent) inset}
+.tpl .sw{width:34px;height:34px;border-radius:9px;flex:none;border:1px solid var(--line)}
+.tpl span.lbl{font-size:13px}
+
+/* 按钮 */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 14px;border-radius:10px;font-size:13.5px;font-weight:700;background:linear-gradient(135deg,var(--accent),#e7c277);color:#1a1320;transition:.2s;white-space:nowrap}
+.btn:hover{transform:translateY(-1px);filter:brightness(1.05)}
+.btn.ghost{background:transparent;border:1px solid var(--line);color:var(--text)}
+.btn.ghost:hover{border-color:var(--accent);color:var(--accent)}
+.btn.sm{padding:7px 11px;font-size:12.5px}
+.btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+
+/* 导入 */
+.import-tools{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+#importInfo{font-size:12px;color:var(--dim);margin-top:8px}
+#mapping{display:none;margin-top:10px;padding-top:10px;border-top:1px dashed var(--line)}
+.map-field{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:12px;color:var(--dim)}
+.map-field span{width:54px;flex:none}
+.map-field select{flex:1}
+
+/* 预览区 */
+.main{display:flex;flex-direction:column;gap:16px}
+.preview-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px}
+.preview-bar .grow{flex:1;min-width:140px}
+.preview-bar label{font-size:12px;color:var(--dim)}
+.preview-bar select{padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--text)}
+.export-group{display:flex;gap:8px;flex-wrap:wrap}
+.single-wrap{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px;display:flex;flex-direction:column;align-items:center;gap:12px}
+#singlePreview{width:min(360px,80vw);height:auto;border-radius:10px;box-shadow:0 12px 40px rgba(0,0,0,.4);background:#000}
+.single-meta{font-size:13px;color:var(--dim)}
+.single-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+
+/* 网格 */
+.grid-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.grid-head h3{font-size:14px}
+#grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;margin-top:6px}
+#grid figure{position:relative;border-radius:12px;overflow:hidden;border:1px solid var(--line);background:var(--panel2);cursor:pointer;transition:.15s}
+#grid figure:hover{transform:translateY(-3px);border-color:var(--accent)}
+#grid img{width:100%;display:block}
+#grid figcaption{position:absolute;left:0;right:0;bottom:0;padding:5px;font-size:11.5px;background:linear-gradient(transparent,rgba(0,0,0,.78));color:#fff;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#grid .dl{position:absolute;top:6px;right:6px;width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(--accent),#e7c277);color:#1a1320;font-size:15px;font-weight:700;display:grid;place-items:center}
+#grid .dl:hover{filter:brightness(1.1)}
+.muted{color:var(--dim)}
+
+/* 进度 */
+#progWrap{display:none;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px}
+#progBar{height:8px;border-radius:999px;background:linear-gradient(90deg,var(--accent),var(--accent2));width:0%;transition:width .2s}
+#progText{font-size:12px;color:var(--dim);margin-bottom:8px}
+
+/* toast */
+#toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(20px);z-index:300;background:var(--panel2);border:1px solid var(--line);padding:11px 20px;border-radius:999px;font-size:13.5px;opacity:0;transition:.3s;box-shadow:0 10px 30px rgba(0,0,0,.4)}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div>
+    <h1>批量<b>邀请函</b>生成器</h1>
+    <div class="sub">导入名单 · 一键为每位宾客生成专属邀请函并导出</div>
+  </div>
+  <div class="top-actions">
+    <button class="btn ghost sm" id="copyImg">复制图片</button>
+    <button class="btn ghost sm" id="resetAll">重置</button>
+  </div>
+</header>
+
+<div class="layout">
+  <!-- 侧栏配置 -->
+  <aside class="side">
+    <div class="sec">
+      <h3>模板风格</h3>
+      <div class="tpl-grid" id="tplGrid">
+        <button class="tpl active" data-t="gold"><span class="sw" style="background:linear-gradient(135deg,#0e0b16,#c8a24a)"></span><span class="lbl">典雅金</span></button>
+        <button class="tpl" data-t="rose"><span class="sw" style="background:linear-gradient(135deg,#1a0c14,#ff6f91)"></span><span class="lbl">玫瑰粉</span></button>
+        <button class="tpl" data-t="guochao"><span class="sw" style="background:linear-gradient(135deg,#4a0d10,#d4af37)"></span><span class="lbl">国潮红</span></button>
+        <button class="tpl" data-t="minimal"><span class="sw" style="background:linear-gradient(135deg,#fbf8f2,#222)"></span><span class="lbl">简约</span></button>
+        <button class="tpl" data-t="aurora"><span class="sw" style="background:linear-gradient(135deg,#06121f,#37e0d8)"></span><span class="lbl">极光蓝</span></button>
+        <button class="tpl" data-t="purple"><span class="sw" style="background:linear-gradient(135deg,#160d22,#c69bff)"></span><span class="lbl">暮山紫</span></button>
+        <button class="tpl" data-t="forest"><span class="sw" style="background:linear-gradient(135deg,#0c1710,#a7e8b0)"></span><span class="lbl">森野绿</span></button>
+        <button class="tpl" data-t="sunset"><span class="sw" style="background:linear-gradient(135deg,#241208,#ff9a3c)"></span><span class="lbl">暖橙</span></button>
+      </div>
+    </div>
+
+    <div class="sec">
+      <h3>活动信息</h3>
+      <div class="row2">
+        <div class="field"><label>标题</label><input data-field="title" placeholder="共赴一场盛典"></div>
+        <div class="field"><label>副标题(英文)</label><input data-field="subtitle" placeholder="INVITATION"></div>
+      </div>
+      <div class="field"><label>主办方</label><input data-field="host" placeholder="主办方名称"></div>
+      <div class="row2">
+        <div class="field"><label>日期</label><input data-field="date" type="date"></div>
+        <div class="field"><label>时间</label><input data-field="time" type="time"></div>
+      </div>
+      <div class="field"><label>地点</label><input data-field="venue" placeholder="星河宴会厅 · 3 楼水晶厅"></div>
+      <div class="field"><label>地址</label><input data-field="address" placeholder="示范路 88 号"></div>
+      <div class="row2">
+        <div class="field"><label>着装要求</label><input data-field="dress" placeholder="正装 / 晚礼服"></div>
+        <div class="field"><label>默认称谓</label><input data-field="salutation" placeholder="先生/女士"></div>
+      </div>
+      <div class="field"><label>底部寄语</label><input data-field="note" placeholder="期待与您相见"></div>
+    </div>
+
+    <div class="sec">
+      <h3>导入名单</h3>
+      <div class="field"><label>粘贴名单（每行一人；CSV 首行可为表头）</label>
+        <textarea id="nameList" placeholder="张三&#10;李四,女士,8&#10;王五,先生,3,某某公司"></textarea>
+      </div>
+      <div class="import-tools">
+        <label class="btn ghost sm" style="cursor:pointer;margin:0">📂 上传 .txt/.csv<input type="file" id="nameFile" accept=".txt,.csv" hidden></label>
+        <button class="btn ghost sm" id="parseSample" style="margin:0">填入示例</button>
+        <button class="btn ghost sm" id="clearNames" style="margin:0">清空</button>
+      </div>
+      <div id="importInfo" class="muted"></div>
+      <div id="mapping"></div>
+    </div>
+  </aside>
+
+  <!-- 主预览区 -->
+  <main class="main">
+    <div class="preview-bar">
+      <div class="grow">
+        <label>预览对象：</label>
+        <select id="previewSel"><option value="-1">示例预览</option></select>
+      </div>
+      <div class="grow">
+        <label>文件名规则：</label>
+        <select id="naming">
+          <option value="{name}">姓名.png</option>
+          <option value="{name}_{table}">姓名_桌号.png</option>
+          <option value="{table}_{name}">桌号_姓名.png</option>
+          <option value="{company}_{name}">单位_姓名.png</option>
+          <option value="{index}_{name}">序号_姓名.png</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="single-wrap">
+      <img id="singlePreview" alt="邀请函预览">
+      <div class="single-meta" id="singleName"></div>
+      <div class="single-actions">
+        <button class="btn sm" id="expSingle">下载此张</button>
+        <button class="btn ghost sm" id="copyImg2">复制</button>
+      </div>
+    </div>
+
+    <div id="progWrap">
+      <div id="progText"></div>
+      <div id="progBar"></div>
+    </div>
+
+    <div>
+      <div class="grid-head">
+        <h3>全部邀请函（点击切换预览 · 点 ⬇ 下载单张）</h3>
+        <div class="export-group">
+          <button class="btn sm" id="expBatch">批量导出 PNG</button>
+          <button class="btn ghost sm" id="expZip">打包 ZIP</button>
+          <button class="btn ghost sm" id="expPdf">导出 PDF</button>
+        </div>
+      </div>
+      <div id="grid"><p class="muted">导入名单后，这里会显示每个人的邀请函缩略图。</p></div>
+    </div>
+  </main>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* ============================ 工具 ============================ */
+const $=s=>document.querySelector(s);
+const $$=s=>[...document.querySelectorAll(s)];
+const store={
+  get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}},
+  set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+};
+function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("show");clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove("show"),2200);}
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+function escapeXml(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+function downloadBlob(name,blob){const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1500);}
+function safeFile(n){return String(n).replace(/[\\/:*?"<>|\x00-\x1f]/g,"_").slice(0,80);}
+
+/* ============================ 状态 ============================ */
+const FONT="'PingFang SC','Microsoft YaHei','Helvetica Neue',Arial,sans-serif";
+const THEMES={
+  gold:   {bg1:"#0e0b16",bg2:"#1a1320",accent:"#9b6bff",primary:"#c8a24a",primary2:"#e7c277",text:"#f4eefb",dim:"#b9aecb",motif:"orb"},
+  rose:   {bg1:"#1a0c14",bg2:"#2a0f1c",accent:"#ff4d6d",primary:"#ff6f91",primary2:"#ffa6c1",text:"#fdeef3",dim:"#e0a9bd",motif:"heart"},
+  guochao:{bg1:"#4a0d10",bg2:"#6e1418",accent:"#e8c66a",primary:"#d4af37",primary2:"#f0d27a",text:"#fbeede",dim:"#e3c9a0",motif:"seal"},
+  minimal:{bg1:"#fbf8f2",bg2:"#f3ece0",accent:"#c8a24a",primary:"#2a2233",primary2:"#6a6075",text:"#2a2233",dim:"#8a8290",motif:"line"},
+  aurora:{bg1:"#06121f",bg2:"#0a2336",accent:"#37e0d8",primary:"#39c5ff",primary2:"#7ef0ff",text:"#eafcff",dim:"#a7c7d6",motif:"orb"},
+  purple:{bg1:"#160d22",bg2:"#241236",accent:"#b06bff",primary:"#c69bff",primary2:"#e3c4ff",text:"#f6effe",dim:"#c3a9dd",motif:"orb"},
+  forest:{bg1:"#0c1710",bg2:"#14241a",accent:"#7bd88f",primary:"#a7e8b0",primary2:"#d6f5dc",text:"#eef8f0",dim:"#a9c7b2",motif:"orb"},
+  sunset:{bg1:"#241208",bg2:"#3a1d10",accent:"#ffb347",primary:"#ff9a3c",primary2:"#ffd089",text:"#fdf1e6",dim:"#e0b48f",motif:"orb"}
+};
+const _nw=new Date(),_pd=n=>String(n).padStart(2,"0");
+const DEF_DATE=`${_nw.getFullYear()}-${_pd(_nw.getMonth()+1)}-${_pd(_nw.getDate())}`;
+const DEF_TIME=`${_pd(_nw.getHours())}:${_pd(_nw.getMinutes())}`;
+const state={
+  event:{title:"共赴一场盛典",subtitle:"INVITATION",host:"",date:DEF_DATE,time:DEF_TIME,venue:"星河宴会厅 · 3 楼水晶厅",address:"示范路 88 号",dress:"正装 / 晚礼服",salutation:"先生/女士",note:"期待与您相见"},
+  template:"gold",
+  naming:"{name}",
+  rawRows:[], header:[], hasHeader:false,
+  map:{name:0,title:-1,table:-1,company:-1},
+  previewIndex:-1
+};
+// 载入持久化
+const se=store.get("bi_event",null); if(se) Object.assign(state.event,se);
+if(se&&(se.date==="2026-10-01"||!se.date)) state.event.date=DEF_DATE;
+if(se&&(se.time==="18:30"||!se.time)) state.event.time=DEF_TIME;
+state.template=store.get("bi_template","gold");
+state.naming=store.get("bi_naming","{name}");
+const raw=store.get("bi_raw",null); if(raw){state.rawRows=raw.rows||[];state.header=raw.header||[];state.hasHeader=raw.hasHeader;state.map=raw.map||{name:0,title:-1,table:-1,company:-1};}
+
+/* ============================ SVG 生成 ============================ */
+function motifSVG(t,W,H){
+  if(t.motif==="orb") return `<circle cx="150" cy="190" r="130" fill="${t.accent}" opacity=".16"/><circle cx="950" cy="1360" r="170" fill="${t.primary2}" opacity=".12"/>`;
+  if(t.motif==="heart"){const cx=W/2,cy=120;return `<path d="M ${cx} ${cy+40} C ${cx-70} ${cy-30}, ${cx-70} ${cy-90}, ${cx} ${cy-50} C ${cx+70} ${cy-90}, ${cx+70} ${cy-30}, ${cx} ${cy+40} Z" fill="${t.accent}" opacity=".5"/>`;}
+  if(t.motif==="seal") return `<rect x="${W/2-55}" y="70" width="110" height="110" rx="14" fill="none" stroke="${t.primary}" stroke-width="3" opacity=".85"/><text x="${W/2}" y="142" text-anchor="middle" fill="${t.primary}" font-size="54" font-family="${FONT}">邀</text>`;
+  return `<rect x="44" y="44" width="${W-88}" height="${H-88}" fill="none" stroke="${t.primary}" stroke-width="2" opacity=".5"/><rect x="58" y="58" width="${W-116}" height="${H-116}" fill="none" stroke="${t.primary}" stroke-width="1" opacity=".3"/>`;
+}
+function fmtEventDate(ev){
+  let d; try{d=new Date((ev.date||"").replace(/-/g,"/"));}catch(e){d=new Date();}
+  if(isNaN(d)) return (ev.date||"")+" "+(ev.time||"");
+  const wk=["周日","周一","周二","周三","周四","周五","周六"][d.getDay()];
+  return `${d.getFullYear()} 年 ${d.getMonth()+1} 月 ${d.getDate()} 日 ${wk} ${ev.time||""}`.trim();
+}
+function buildSVG(ev,p){
+  const t=THEMES[state.template],W=1080,H=1528;
+  const name=p.name||"尊贵的嘉宾";
+  const sal=p.title||ev.salutation||"";
+  const title=ev.title||"盛典邀请";
+  const ts=title.length>9?56:title.length>6?74:98;
+  const dt=fmtEventDate(ev);
+  const lines=[];
+  lines.push(["日期",dt]); lines.push(["时间",ev.time||"—"]); lines.push(["地点",ev.venue||"—"]);
+  if(ev.address) lines.push(["地址",ev.address]);
+  if(ev.dress) lines.push(["着装",ev.dress]);
+  if(p.table) lines.push(["席位","第 "+p.table+" 桌"]);
+  if(p.company) lines.push(["单位",p.company]);
+  let y=860; const step=82;
+  const info=lines.map(([k,v])=>{const s=`<text x="${W/2}" y="${y}" text-anchor="middle" fill="${t.text}" font-size="40" font-family="${FONT}">${escapeXml(k)}：${escapeXml(v)}</text>`;y+=step;return s;}).join("");
+  const after=y;
+  const subEl=ev.subtitle?`<text x="${W/2}" y="442" text-anchor="middle" fill="${t.dim}" font-size="28" letter-spacing="8" font-family="${FONT}">${escapeXml(ev.subtitle.toUpperCase())}</text>`:`<line x1="${W/2-120}" y1="430" x2="${W/2+120}" y2="430" stroke="${t.primary}" stroke-width="2"/>`;
+  const hostLine=ev.host?`由 ${ev.host} 诚挚邀请您出席`:"我们诚挚地邀请您出席本次活动";
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
+    <defs>
+      <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${t.bg1}"/><stop offset="1" stop-color="${t.bg2}"/></linearGradient>
+      <radialGradient id="o1" cx="22%" cy="16%" r="55%"><stop offset="0" stop-color="${t.accent}" stop-opacity=".5"/><stop offset="1" stop-color="${t.accent}" stop-opacity="0"/></radialGradient>
+      <radialGradient id="o2" cx="84%" cy="26%" r="50%"><stop offset="0" stop-color="${t.primary2}" stop-opacity=".38"/><stop offset="1" stop-color="${t.primary2}" stop-opacity="0"/></radialGradient>
+      <linearGradient id="gold" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="${t.primary}"/><stop offset="1" stop-color="${t.primary2}"/></linearGradient>
+    </defs>
+    <rect width="${W}" height="${H}" fill="url(#bg)"/>
+    <rect width="${W}" height="${H}" fill="url(#o1)"/>
+    <rect width="${W}" height="${H}" fill="url(#o2)"/>
+    ${motifSVG(t,W,H)}
+    <text x="${W/2}" y="210" text-anchor="middle" fill="${t.primary2}" font-size="34" letter-spacing="14" font-family="${FONT}">诚 挚 邀 请</text>
+    <text x="${W/2}" y="372" text-anchor="middle" fill="url(#gold)" font-size="${ts}" font-weight="800" font-family="${FONT}">${escapeXml(title)}</text>
+    ${subEl}
+    <text x="${W/2}" y="602" text-anchor="middle" fill="${t.text}" font-size="62" font-family="${FONT}">尊敬的 ${escapeXml(name)}${escapeXml(sal)}</text>
+    <text x="${W/2}" y="680" text-anchor="middle" fill="${t.dim}" font-size="34" font-family="${FONT}">${escapeXml(hostLine)}</text>
+    ${info}
+    <line x1="${W/2-120}" y1="${after+10}" x2="${W/2+120}" y2="${after+10}" stroke="${t.primary}" stroke-width="1" opacity=".5"/>
+    <text x="${W/2}" y="${after+90}" text-anchor="middle" fill="url(#gold)" font-size="50" font-weight="700" font-family="${FONT}">${escapeXml(ev.note||"期待与您相见")}</text>
+    <text x="${W/2}" y="${H-70}" text-anchor="middle" fill="${t.dim}" font-size="26" font-family="${FONT}">— 一份专属定制的电子邀请函 —</text>
+  </svg>`;
+}
+function svgToCanvas(svg,scale){
+  return new Promise((res,rej)=>{
+    const img=new Image();const blob=new Blob([svg],{type:"image/svg+xml;charset=utf-8"});const url=URL.createObjectURL(blob);
+    img.onload=()=>{const c=document.createElement("canvas");c.width=1080*scale;c.height=1528*scale;const ctx=c.getContext("2d");ctx.scale(scale,scale);ctx.drawImage(img,0,0);URL.revokeObjectURL(url);res(c);};
+    img.onerror=e=>{URL.revokeObjectURL(url);rej(e);};img.src=url;
+  });
+}
+function svgToPng(svg,scale=2){return svgToCanvas(svg,scale).then(c=>new Promise((res,rej)=>c.toBlob(b=>b?res(b):rej(new Error("png")),"image/png")));}
+function svgToJpeg(svg,scale=2,q=0.92){return svgToCanvas(svg,scale).then(c=>new Promise((res,rej)=>c.toBlob(b=>b?res(b):rej(new Error("jpg")),"image/jpeg",q)));}
+
+/* ============================ 名单解析 ============================ */
+function parseToRaw(text){
+  const lines=text.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
+  if(!lines.length) return {rows:[],header:[],hasHeader:false};
+  const s=lines[0];
+  const delim=s.includes("\t")?"\t":(s.includes("，")?"，":(s.includes(",")?",":"\t"));
+  const rows=lines.map(l=>l.split(delim).map(x=>x.replace(/^"|"$/g,"").trim()));
+  const low=rows[0].map(h=>h.toLowerCase());
+  const hasHeader=/姓名|名字|name|称谓|称呼|桌|席位|table|单位|公司|company/.test(low.join("|"));
+  if(hasHeader){const header=rows[0];return {rows:rows.slice(1),header:header.length?header:rows[0].map((_,i)=>`第${i+1}列`),hasHeader:true};}
+  return {rows,header:rows[0].map((_,i)=>`第${i+1}列`),hasHeader:false};
+}
+function autoMap(header){
+  const find=keys=>{for(const k of keys){const i=header.findIndex(h=>h.toLowerCase().includes(k));if(i>=0)return i;}return -1;};
+  state.map={name:0,title:find(["称谓","称呼","title","性别"]),table:find(["桌","席位","table","seat"]),company:find(["单位","公司","company","org"])};
+}
+function buildInvitees(){
+  const m=state.map,rows=state.rawRows;
+  return rows.map(r=>({name:r[m.name]!==undefined?r[m.name]:r[0]||"",title:m.title>=0?(r[m.title]||""):"",table:m.table>=0?(r[m.table]||""):"",company:m.company>=0?(r[m.company]||""):""})).filter(p=>p.name);
+}
+function renderMapping(){
+  const box=$("#mapping");box.innerHTML="";
+  if(!state.rawRows.length||state.header.length<2){box.style.display="none";return;}
+  box.style.display="block";
+  const cols=state.header;
+  const mk=(label,key)=>{
+    const sel=document.createElement("select");
+    sel.innerHTML='<option value="-1">（无）</option>'+cols.map((c,i)=>`<option value="${i}" ${i===state.map[key]?"selected":""}>${escapeHtml(c)}</option>`).join("");
+    sel.onchange=()=>{state.map[key]=+sel.value;persistRaw();renderGrid();};
+    const w=document.createElement("div");w.className="map-field";w.innerHTML=`<span>${label}</span>`;w.appendChild(sel);return w;
+  };
+  box.appendChild(mk("姓名列","name"));box.appendChild(mk("称谓列","title"));box.appendChild(mk("桌号列","table"));box.appendChild(mk("单位列","company"));
+}
+function fileBase(p,idx){
+  return safeFile(state.naming.replace("{name}",p.name).replace("{table}",p.table||"").replace("{company}",p.company||"").replace("{index}",String(idx+1).padStart(3,"0")));
+}
+
+/* ============================ 渲染 ============================ */
+function currentPerson(){
+  const list=buildInvitees();
+  if(list.length&&list[state.previewIndex]) return list[state.previewIndex];
+  return {name:"示例嘉宾",title:state.event.salutation||"",table:"",company:""};
+}
+let gridTimer=null;
+function scheduleGrid(){clearTimeout(gridTimer);gridTimer=setTimeout(renderGrid,250);}
+function renderSingle(){
+  const p=currentPerson();
+  $("#singlePreview").src="data:image/svg+xml;charset=utf-8,"+encodeURIComponent(buildSVG(state.event,p));
+  $("#singleName").textContent=(p.name||"示例嘉宾")+(p.title?(" "+p.title):"")+(p.table?(" · 第"+p.table+"桌"):"");
+}
+function renderGrid(){
+  const list=buildInvitees(),grid=$("#grid");grid.innerHTML="";
+  const sel=$("#previewSel");
+  if(!list.length){grid.innerHTML='<p class="muted">导入名单后，这里会显示每个人的邀请函缩略图。</p>';sel.innerHTML='<option value="-1">示例预览</option>';return;}
+  sel.innerHTML='<option value="-1">示例预览</option>'+list.map((p,i)=>`<option value="${i}">${escapeHtml(p.name)}</option>`).join("");
+  sel.value=(state.previewIndex>=0&&state.previewIndex<list.length)?state.previewIndex:"-1";
+  const cap=Math.min(list.length,200);
+  for(let i=0;i<cap;i++){
+    const p=list[i],svg=buildSVG(state.event,p),fig=document.createElement("figure");
+    fig.dataset.i=i;
+    fig.innerHTML=`<img src="data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}" alt="${escapeHtml(p.name)}"><button class="dl" data-i="${i}" title="下载">↓</button><figcaption>${escapeXml(p.name)}${p.title?(" "+escapeXml(p.title)):""}</figcaption>`;
+    grid.appendChild(fig);
+  }
+  if(list.length>cap) grid.insertAdjacentHTML("beforeend",`<p class="muted" style="grid-column:1/-1">仅显示前 ${cap} 张（共 ${list.length} 人）</p>`);
+}
+function updateImportInfo(){
+  const n=buildInvitees().length;
+  $("#importInfo").textContent=n?`已识别 ${n} 位宾客${state.hasHeader?"（含表头）":""}`:"尚未识别到名单";
+}
+
+/* ============================ 持久化 ============================ */
+function persistEvent(){store.set("bi_event",state.event);}
+function persistMeta(){store.set("bi_template",state.template);store.set("bi_naming",state.naming);}
+function persistRaw(){store.set("bi_raw",{rows:state.rawRows,header:state.header,hasHeader:state.hasHeader,map:state.map});}
+
+/* ============================ ZIP（store 模式，离线） ============================ */
+function crc32(buf){let t=crc32.t;if(!t){t=crc32.t=[];for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?(0xEDB88320^(c>>>1)):(c>>>1);t[n]=c>>>0;}}let crc=0xFFFFFFFF;for(let i=0;i<buf.length;i++)crc=t[(crc^buf[i])&0xFF]^(crc>>>8);return (crc^0xFFFFFFFF)>>>0;}
+function buildZip(files){
+  const enc=new TextEncoder(),chunks=[],central=[];let offset=0;
+  const u16=n=>[n&0xff,(n>>8)&0xff],u32=n=>[n&0xff,(n>>8)&0xff,(n>>16)&0xff,(n>>24)&0xff];
+  for(const f of files){
+    const nameBytes=enc.encode(f.name),crc=crc32(f.data),size=f.data.length;
+    const local=[].concat(u32(0x04034b50),u16(20),u16(0x0800),u16(0),u16(0),u16(0),u32(crc),u32(size),u32(size),u16(nameBytes.length),u16(0));
+    chunks.push(new Uint8Array(local),nameBytes,f.data);
+    const cen=[].concat(u32(0x02014b50),u16(20),u16(20),u16(0x0800),u16(0),u16(0),u16(0),u32(crc),u32(size),u32(size),u16(nameBytes.length),u16(0),u16(0),u16(0),u16(0),u32(0),u32(offset));
+    central.push(new Uint8Array(cen),nameBytes);offset+=local.length+nameBytes.length+size;
+  }
+  const centralSize=central.reduce((s,c)=>s+c.length,0);
+  const end=[].concat(u32(0x06054b50),u16(0),u16(0),u16(files.length),u16(files.length),u32(centralSize),u32(offset),u16(0));
+  return new Blob([...chunks,...central,new Uint8Array(end)],{type:"application/zip"});
+}
+
+/* ============================ PDF（多页，每页一人，A4） ============================ */
+function assemblePDF(pages){
+  const enc=new TextEncoder(),b=str=>enc.encode(str);
+  const catId=1,pagesId=2;let nextId=3;const objs=[],kids=[];
+  for(const pg of pages){
+    const pageId=nextId++,contentId=nextId++,imgId=nextId++;kids.push(pageId);
+    objs.push({id:pageId,head:b(`<< /Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 595 842] /Resources << /XObject << /Im0 ${imgId} 0 R >> >> /Contents ${contentId} 0 R >>`)});
+    const content=`q 595 0 0 842 0 0 cm /Im0 Do Q`;
+    objs.push({id:contentId,head:b(`<< /Length ${content.length} >>\r\nstream\r\n`),data:b(content),tail:b("\r\nendstream")});
+    objs.push({id:imgId,head:b(`<< /Type /XObject /Subtype /Image /Width ${pg.w} /Height ${pg.h} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${pg.data.length} >>\r\nstream\r\n`),data:pg.data,tail:b("\r\nendstream")});
+  }
+  objs.push({id:catId,head:b(`<< /Type /Catalog /Pages ${pagesId} 0 R >>`)});
+  objs.push({id:pagesId,head:b(`<< /Type /Pages /Kids [ ${kids.map(k=>k+" 0 R").join(" ")} ] /Count ${kids.length} >>`)});
+  const chunks=[];let len=0;const offs={};const push=u=>{chunks.push(u);len+=u.length;};
+  push(b("%PDF-1.3\n"));
+  for(const o of objs){offs[o.id]=len;push(b(`${o.id} 0 obj\n`));push(o.head);if(o.data)push(o.data);if(o.tail)push(o.tail);push(b("\nendobj\n"));}
+  const xrefStart=len,total=objs.length+1;
+  let xref=`xref\n0 ${total}\n0000000000 65535 f \r\n`;
+  for(let i=1;i<total;i++) xref+=String(offs[i]).padStart(10,"0")+" 00000 n \r\n";
+  push(b(xref));push(b(`trailer\n<< /Size ${total} /Root ${catId} 0 R >>\nstartxref\n${xrefStart}\n%%EOF`));
+  return new Blob(chunks,{type:"application/pdf"});
+}
+async function buildPDF(people){
+  const pages=[];
+  for(const p of people){const blob=await svgToJpeg(buildSVG(state.event,p),2);pages.push({w:2160,h:3056,data:new Uint8Array(await blob.arrayBuffer())});}
+  return assemblePDF(pages);
+}
+
+/* ============================ 进度 ============================ */
+function showProg(on,txt){$("#progWrap").style.display=on?"block":"none";if(on){$("#progText").textContent=txt||"";setProg(0);}}
+function setProg(r){$("#progBar").style.width=Math.round(r*100)+"%";}
+
+/* ============================ 事件绑定 ============================ */
+// 活动信息
+$$("[data-field]").forEach(inp=>inp.addEventListener("input",()=>{
+  state.event[inp.dataset.field]=inp.value;persistEvent();renderSingle();scheduleGrid();updateImportInfo();
+}));
+// 模板
+$$(".tpl").forEach(btn=>btn.addEventListener("click",()=>{
+  $$(".tpl").forEach(x=>x.classList.remove("active"));btn.classList.add("active");
+  state.template=btn.dataset.t;persistMeta();renderSingle();renderGrid();
+}));
+// 文件名规则
+$("#naming").addEventListener("change",e=>{state.naming=e.target.value;persistMeta();});
+// 导入
+$("#nameList").addEventListener("input",()=>{if($("#nameList").value.trim())doImport($("#nameList").value);else{clearNames();}});
+$("#parseSample").addEventListener("click",()=>{
+  $("#nameList").value="张三\n李四,女士,8\n王五,先生,3,星辰科技\n赵六,女士,,\n孙七,先生,12,云海传媒";
+  doImport($("#nameList").value);
+});
+$("#nameFile").addEventListener("change",e=>{
+  const f=e.target.files[0];if(!f)return;const r=new FileReader();
+  r.onload=()=>{$("#nameList").value=r.result;$("#nameList").dispatchEvent(new Event("input"));};
+  r.readAsText(f);
+});
+$("#clearNames").addEventListener("click",clearNames);
+function clearNames(){$("#nameList").value="";state.rawRows=[];state.header=[];state.hasHeader=false;state.map={name:0,title:-1,table:-1,company:-1};state.previewIndex=-1;persistRaw();renderMapping();renderGrid();renderSingle();updateImportInfo();}
+function doImport(text){
+  const r=parseToRaw(text);state.rawRows=r.rows;state.header=r.header;state.hasHeader=r.hasHeader;
+  if(r.rows.length) autoMap(r.header);
+  state.previewIndex=-1;persistRaw();renderMapping();renderGrid();renderSingle();updateImportInfo();
+}
+// 预览切换
+$("#previewSel").addEventListener("change",e=>{state.previewIndex=e.target.value==="-1"?-1:+e.target.value;renderSingle();});
+$("#grid").addEventListener("click",async e=>{
+  const dl=e.target.closest(".dl");const list=buildInvitees();
+  if(dl){const p=list[+dl.dataset.i];try{const b=await svgToPng(buildSVG(state.event,p));downloadBlob(fileBase(p,+dl.dataset.i)+".png",b);}catch(err){toast("生成失败");}return;}
+  const fig=e.target.closest("figure");if(fig){state.previewIndex=+fig.dataset.i;renderSingle();$("#previewSel").value=state.previewIndex;}
+});
+
+// 导出
+$("#expSingle").addEventListener("click",async()=>{const p=currentPerson();try{const b=await svgToPng(buildSVG(state.event,p));downloadBlob((p.name||"邀请函")+".png",b);}catch(e){toast("生成失败");}});
+$("#copyImg").addEventListener("click",copyImage);$("#copyImg2").addEventListener("click",copyImage);
+async function copyImage(){const p=currentPerson();try{const b=await svgToPng(buildSVG(state.event,p));await navigator.clipboard.write([new ClipboardItem({"image/png":b})]);toast("图片已复制到剪贴板");}catch(e){toast("复制失败，请改用下载");}}
+
+$("#expBatch").addEventListener("click",async()=>{
+  const list=buildInvitees();if(!list.length){toast("请先导入名单");return;}
+  showProg(true,"正在导出 PNG…");
+  for(let i=0;i<list.length;i++){try{const b=await svgToPng(buildSVG(state.event,list[i]));downloadBlob(fileBase(list[i],i)+".png",b);}catch(e){}setProg((i+1)/list.length);await sleep(350);}
+  showProg(false);toast(`已导出 ${list.length} 张 PNG`);
+});
+$("#expZip").addEventListener("click",async()=>{
+  const list=buildInvitees();if(!list.length){toast("请先导入名单");return;}
+  showProg(true,"正在打包 ZIP…");const files=[];
+  for(let i=0;i<list.length;i++){const b=await svgToPng(buildSVG(state.event,list[i]));files.push({name:fileBase(list[i],i)+".png",data:new Uint8Array(await b.arrayBuffer())});setProg((i+1)/list.length);}
+  downloadBlob("邀请函批量导出.zip",buildZip(files));showProg(false);toast(`已打包 ${list.length} 张`);
+});
+$("#expPdf").addEventListener("click",async()=>{
+  const list=buildInvitees();if(!list.length){toast("请先导入名单");return;}
+  showProg(true,"正在生成 PDF…");
+  try{const blob=await buildPDF(list);downloadBlob("邀请函批量导出.pdf",blob);toast("PDF 已生成（每页一人，A4）");}
+  catch(e){console.error(e);toast("PDF 生成失败");}
+  showProg(false);
+});
+
+// 重置
+$("#resetAll").addEventListener("click",()=>{
+  if(!confirm("确定要重置所有配置与名单吗？"))return;
+  ["bi_event","bi_template","bi_naming","bi_raw"].forEach(k=>localStorage.removeItem(k));
+  location.reload();
+});
+
+/* ============================ 初始化 ============================ */
+(function init(){
+  $$("[data-field]").forEach(inp=>{if(state.event[inp.dataset.field]!==undefined)inp.value=state.event[inp.dataset.field];});
+  $$(".tpl").forEach(x=>x.classList.toggle("active",x.dataset.t===state.template));
+  $("#naming").value=state.naming;
+  renderMapping();renderGrid();renderSingle();updateImportInfo();
+})();
+</script>
+</body>
+</html>

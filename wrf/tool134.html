@@ -1,0 +1,1211 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PDF 水印移除工具</title>
+<style>
+  :root{
+    --bg:#1e1e2e; --panel:#27293d; --panel2:#2f3147; --border:#3a3d57;
+    --text:#e4e4ef; --muted:#9a9ab0; --accent:#6c8cff; --accent2:#3ad29f;
+    --danger:#ff6b6b; --warn:#ffb454; --ok:#3ad29f;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;font-size:13px;}
+  header{display:flex;align-items:center;gap:12px;padding:10px 16px;background:var(--panel);
+    border-bottom:1px solid var(--border);position:sticky;top:0;z-index:50;}
+  header h1{font-size:15px;margin:0;font-weight:600;letter-spacing:.5px;}
+  header .spacer{flex:1;}
+  .btn{background:var(--panel2);color:var(--text);border:1px solid var(--border);
+    padding:7px 13px;border-radius:7px;cursor:pointer;font-size:13px;transition:.15s;white-space:nowrap;}
+  .btn:hover{border-color:var(--accent);}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600;}
+  .btn.primary:hover{filter:brightness(1.1);}
+  .btn.warn{background:var(--warn);border-color:var(--warn);color:#222;font-weight:600;}
+  .btn.ghost{background:transparent;}
+  .btn:disabled{opacity:.45;cursor:not-allowed;}
+  main{display:flex;height:calc(100vh - 53px);overflow:hidden;}
+  .col{display:flex;flex-direction:column;min-height:0;}
+  .left{width:230px;background:var(--panel);border-right:1px solid var(--border);}
+  .center{flex:1;min-width:0;display:flex;flex-direction:column;background:#16162a;align-items:center;}
+  .right{width:330px;background:var(--panel);border-left:1px solid var(--border);overflow-y:auto;}
+  .section{padding:12px 14px;border-bottom:1px solid var(--border);}
+  .section h3{margin:0 0 10px;font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);}
+  .file-list{overflow-y:auto;flex:1;}
+  .file-item{padding:9px 12px;border-bottom:1px solid var(--border);cursor:pointer;display:flex;flex-direction:column;gap:2px;}
+  .file-item:hover{background:var(--panel2);}
+  .file-item.active{background:var(--panel2);border-left:3px solid var(--accent);}
+  .file-item .fn{font-weight:600;word-break:break-all;}
+  .file-item .meta{font-size:11px;color:var(--muted);display:flex;gap:8px;align-items:center;}
+  .file-item .del{margin-left:auto;color:var(--danger);cursor:pointer;font-size:11px;}
+  .canvas-wrap{flex:1;overflow:auto;width:100%;display:flex;align-items:flex-start;justify-content:center;padding:18px;}
+  .stage{position:relative;box-shadow:0 4px 30px rgba(0,0,0,.5);background:#fff;}
+  #pdfCanvas{display:block;}
+  #overlay{position:absolute;left:0;top:0;cursor:crosshair;}
+  .toolbar{display:flex;align-items:center;gap:8px;padding:8px 14px;background:var(--panel);border-bottom:1px solid var(--border);width:100%;flex-wrap:wrap;}
+  .toolbar .pageinfo{margin-left:auto;color:var(--muted);}
+  .opt-row{display:flex;align-items:center;gap:8px;margin-bottom:9px;flex-wrap:wrap;}
+  .opt-row label{font-size:12px;}
+  .opt-block{margin-bottom:14px;padding-bottom:12px;border-bottom:1px dashed var(--border);}
+  input[type=text],input[type=number],select{background:var(--panel2);border:1px solid var(--border);
+    color:var(--text);border-radius:6px;padding:6px 8px;font-size:12px;outline:none;width:100%;}
+  input[type=range]{width:100%;}
+  input[type=color]{width:38px;height:30px;border:1px solid var(--border);background:var(--panel2);border-radius:6px;cursor:pointer;padding:2px;}
+  .chk{display:flex;align-items:center;gap:7px;padding:5px 0;cursor:pointer;}
+  .chk input{width:15px;height:15px;accent-color:var(--accent);}
+  .hint{font-size:11px;color:var(--muted);line-height:1.5;margin-top:4px;}
+  .pill{display:inline-block;background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:2px 8px;font-size:11px;color:var(--muted);}
+  .log{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11px;color:var(--muted);
+    background:#14142a;padding:10px;border-radius:6px;height:120px;overflow-y:auto;white-space:pre-wrap;line-height:1.5;}
+  .dropzone{border:2px dashed var(--border);border-radius:10px;padding:22px;text-align:center;color:var(--muted);margin:10px;cursor:pointer;transition:.15s;}
+  .dropzone:hover,.dropzone.drag{border-color:var(--accent);color:var(--text);}
+  .scan-list{max-height:160px;overflow-y:auto;background:var(--panel2);border:1px solid var(--border);border-radius:6px;padding:6px;margin-top:6px;}
+  .scan-item{display:flex;align-items:center;gap:8px;padding:4px 6px;border-radius:5px;font-size:12px;}
+  .scan-item:hover{background:var(--panel);}
+  .scan-item .badge{font-size:10px;color:var(--accent2);margin-left:auto;}
+  .mode-tab{display:flex;gap:6px;}
+  .mode-tab .btn{flex:1;text-align:center;padding:6px;}
+  .mode-tab .btn.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+  .seg{display:flex;gap:4px;flex-wrap:wrap;}
+  .seg .btn{padding:5px 9px;font-size:12px;}
+  .seg .btn.active{background:var(--accent2);border-color:var(--accent2);color:#06281d;font-weight:600;}
+  progress{width:100%;height:6px;appearance:none;}
+  progress::-webkit-progress-bar{background:var(--panel2);border-radius:4px;}
+  progress::-webkit-progress-value{background:var(--accent);border-radius:4px;}
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--panel);
+    border:1px solid var(--accent);padding:10px 18px;border-radius:8px;z-index:200;box-shadow:0 6px 24px rgba(0,0,0,.5);opacity:0;transition:.25s;pointer-events:none;}
+  .toast.show{opacity:1;}
+</style>
+</head>
+<body>
+<header>
+  <h1>🧹 PDF 水印移除工具</h1>
+  <span class="pill" id="libState">加载库中…</span>
+  <div class="spacer"></div>
+  <button class="btn" id="btnAdd">＋ 添加文件</button>
+  <button class="btn warn" id="btnProcess">⚙ 处理水印</button>
+  <button class="btn primary" id="btnExport">⬇ 导出结果</button>
+  <button class="btn ghost" id="btnReset">↺ 重置</button>
+  <input type="file" id="fileInput" accept="application/pdf" multiple hidden>
+</header>
+
+<main>
+  <!-- LEFT: files -->
+  <div class="col left">
+    <div class="section" style="border-bottom:1px solid var(--border);">
+      <div class="dropzone" id="dropzone">拖拽 PDF 到此处<br>或点击选择（支持多文件）</div>
+    </div>
+    <div class="file-list" id="fileList"></div>
+  </div>
+
+  <!-- CENTER: preview -->
+  <div class="col center">
+    <div class="toolbar">
+      <button class="btn" id="btnPrev">◀ 上一页</button>
+      <button class="btn" id="btnNext">下一页 ▶</button>
+      <span class="pageinfo" id="pageInfo">未加载</span>
+      <div style="flex:1"></div>
+      <label class="pill">缩放</label>
+      <input type="range" id="zoom" min="0.4" max="2.5" step="0.1" value="1.2" style="width:120px;">
+      <span class="pageinfo" id="zoomVal">1.2×</span>
+    </div>
+    <div class="toolbar" style="gap:6px;">
+      <div class="mode-tab">
+        <button class="btn" id="modePreview">👁 预览</button>
+        <button class="btn" id="modeRegion">✏ 圈选区域</button>
+      </div>
+      <div style="flex:1"></div>
+      <button class="btn" id="btnClearRegions">清除本页区域</button>
+      <button class="btn" id="btnScanImages">🔍 扫描图片</button>
+      <button class="btn" id="btnScanLayers">🔍 扫描图层</button>
+      <button class="btn" id="btnDiagnose">🩺 诊断</button>
+    </div>
+    <div class="canvas-wrap" id="canvasWrap">
+      <div class="stage" id="stage" style="display:none;">
+        <canvas id="pdfCanvas"></canvas>
+        <canvas id="overlay"></canvas>
+      </div>
+      <div id="emptyHint" style="color:var(--muted);margin-top:80px;text-align:center;line-height:1.8;">
+        请先添加 PDF 文件<br><span style="font-size:12px;">支持本地处理，文件不会上传服务器</span>
+      </div>
+    </div>
+    <div style="width:100%;padding:6px 14px;background:var(--panel);border-top:1px solid var(--border);">
+      <progress id="prog" value="0" max="100" style="display:none;"></progress>
+    </div>
+  </div>
+
+  <!-- RIGHT: options -->
+  <div class="col right">
+    <div class="section">
+      <h3>处理范围</h3>
+      <div class="seg" id="scopeSeg">
+        <button class="btn active" data-scope="all">全部页面</button>
+        <button class="btn" data-scope="current">当前页</button>
+        <button class="btn" data-scope="odd">奇数页</button>
+        <button class="btn" data-scope="even">偶数页</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>自动移除模式</h3>
+
+      <div class="opt-block">
+        <label class="chk"><input type="checkbox" id="optKeyword"> 按关键字移除文字水印</label>
+        <div class="opt-row" style="margin-top:6px;">
+          <input type="text" id="kwInput" placeholder="如: CONFIDENTIAL, DRAFT, 机密 (逗号分隔)">
+        </div>
+        <div class="hint">移除包含上述关键字的整段文字对象，常用于文字平铺水印。</div>
+      </div>
+
+      <div class="opt-block">
+        <label class="chk"><input type="checkbox" id="optRotated" checked> 移除倾斜/旋转的文字</label>
+        <div class="hint">水印常旋转 45°。会移除所有带旋转矩阵的文本对象（可能误伤有意旋转的文字）。</div>
+      </div>
+
+      <div class="opt-block">
+        <label class="chk"><input type="checkbox" id="optColor" checked> 按颜色移除文字</label>
+        <div class="opt-row" style="margin-top:6px;align-items:center;">
+          <span>目标颜色</span>
+          <input type="color" id="colorPick" value="#cccccc">
+          <span>容差</span>
+          <input type="range" id="tolRange" min="0.02" max="0.6" step="0.01" value="0.15" style="width:90px;">
+          <span id="tolVal" class="pill">0.15</span>
+        </div>
+        <div class="hint">移除填充色接近目标色的文字（如浅灰水印）。容差越大匹配越宽。</div>
+      </div>
+
+      <div class="opt-block">
+        <label class="chk"><input type="checkbox" id="optOpacity" checked> 按透明度移除（低不透明度图层）</label>
+        <div class="opt-row" style="margin-top:6px;align-items:center;">
+          <span>不透明度阈值 &lt;</span>
+          <input type="range" id="opRange" min="0.1" max="0.95" step="0.05" value="0.5" style="width:110px;">
+          <span id="opVal" class="pill">0.50</span>
+        </div>
+        <div class="hint">识别 ExtGState 中低不透明度的对象并移除对应文本。</div>
+      </div>
+
+      <div class="opt-block">
+        <label class="chk" style="font-weight:600;color:var(--accent);"><input type="checkbox" id="optSharedImg"> ★ 自动移除"每页都出现"的图片（共享水印图片，推荐先试）</label>
+        <div class="hint">专治"水印是同一张铺满整页/角标的图片、被几乎每页引用"的情况（本工具此前最常见的未生效场景）。自动找出被 ≥80% 页引用的图片，从全文档所有页面（含继承资源）删除其定义并剥离每页的引用令牌。注意：会连同移除同样"每页都出现"的其它图片（如角标 logo），若只想保留某图请用下方"扫描图片"精确勾选。</div>
+        <label class="chk"><input type="checkbox" id="optTransImg"> 移除带透明通道的图片水印</label>
+        <label class="chk"><input type="checkbox" id="optAllImg"> 移除全部图片（谨慎！会删掉所有图片内容）</label>
+        <label class="chk"><input type="checkbox" id="optInlineImg"> 移除内联图片（流内 BI/EI 图片水印）</label>
+        <div class="hint">亦可先用上方"扫描图片"手动勾选特定图片（勾选后将作用于全文所有页）。</div>
+      </div>
+
+      <div class="opt-block">
+        <label class="chk"><input type="checkbox" id="optLayer"> 移除指定图层（OCG）水印</label>
+        <div class="hint">先用"扫描图层"列出文档图层，勾选要删除的水印图层。下方将显示已选图层。</div>
+        <div class="scan-list" id="layerList" style="display:none;"></div>
+      </div>
+
+      <div class="opt-block">
+        <label class="chk"><input type="checkbox" id="optAnnot"> 移除水印标注（Watermark / Stamp 注释）</label>
+        <div class="hint">很多软件（如 Adobe Acrobat、WPS）会把水印做成"注释"，普通内容流里找不到。开启后会删除类型为 Watermark / Stamp 的注释。若文档含你需要的印章，请取消勾选。</div>
+      </div>
+
+      <div class="opt-block">
+        <label class="chk"><input type="checkbox" id="optAllAnnot"> 移除全部注释（谨慎！会删掉所有注释，含链接/批注，仅保留表单与超链接）</label>
+        <div class="hint">若水印是其他类型的注释而"水印标注"选项无效，可勾选此项做兜底。注意：这也会删除文档中你需要的批注与链接。</div>
+      </div>
+
+      <div class="opt-block" style="border-left:3px solid var(--accent);padding-left:12px;">
+        <div class="sub-h">兜底核爆级（预览里看不到、但别的软件能去掉时优先试这些）</div>
+        <label class="chk"><input type="checkbox" id="optOCG"> 关闭所有可选内容图层（OCG）</label>
+        <div class="hint">pdf.js 预览对图层支持弱、常不显示图层内容，而 Adobe/Foxit 会显示 —— 这正对应"预览看不到、但别的软件能去"。开启后把文档所有图层默认关闭，其他软件也不再渲染其中的水印。会同时隐藏正文里你需要的图层（若有）。</div>
+        <label class="chk"><input type="checkbox" id="optNuke"> 全文档关键字扫描（核爆）</label>
+        <div class="hint">在"按关键字"里填水印文字的前提下勾选。会扫描文档里所有 Form/Pattern 流与全部注释外观流，凡含该关键字的文字一律删除 —— 覆盖逐页扫描够不到的嵌套/孤儿对象。仅在填了关键字时生效。</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>手动圈选区域</h3>
+      <div class="opt-row" style="align-items:center;">
+        <span>填充色</span>
+        <input type="color" id="fillPick" value="#ffffff">
+        <span class="hint" style="margin:0;">在"圈选区域"模式下，于页面上拖拽框选水印，导出时用该颜色覆盖。</span>
+      </div>
+      <div class="hint">⚠️ 区域覆盖会遮挡其下方所有内容（含正文）。结构法优先；结构法无效时再用此方式。</div>
+      <div id="regionInfo" class="hint">当前页已框选：<b id="regionCount">0</b> 个区域</div>
+    </div>
+
+    <div class="section">
+      <h3>扫描结果</h3>
+      <div class="hint" id="scanHint">点击工具栏"扫描图片"/"扫描图层"查看当前页可移除对象。</div>
+      <div class="scan-list" id="imgList" style="display:none;"></div>
+    </div>
+
+    <div class="section">
+      <h3>日志</h3>
+      <div class="log" id="logBox"></div>
+    </div>
+  </div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+/* ============ 全局状态 ============ */
+const state = {
+  files: [],            // {name, originalBytes, pdfDoc, pdfjsDoc, numPages, regions[], imagesToRemove:Set, layersToRemove:Set, processed}
+  activeFile: 0,
+  activePage: 0,
+  scale: 1.2,
+  mode: 'preview',
+  scope: 'all'
+};
+let drawing = false, curRect = null;
+
+const canvas = document.getElementById('pdfCanvas');
+const ctx = canvas.getContext('2d');
+const overlay = document.getElementById('overlay');
+const octx = overlay.getContext('2d');
+const stage = document.getElementById('stage');
+
+/* ============ 工具函数 ============ */
+function log(msg){ const b=document.getElementById('logBox'); b.textContent += (b.textContent?'\n':'')+msg; b.scrollTop=b.scrollHeight; }
+function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),1800); }
+function escapeRegExp(s){ return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
+function hexToRgb01(hex){ hex=hex.replace('#',''); const n=parseInt(hex,16); return [((n>>16)&255)/255,((n>>8)&255)/255,(n&255)/255]; }
+function nameStr(n){ try{ const s=(n&&n.asString)? n.asString() : String(n); return s.replace(/^\//,''); }catch(e){ return String(n); } }
+
+/* ============ PDF 内容读取/写入 ============ */
+async function getCombinedContent(pdfDoc, page){
+  const contents = page.node.Contents();
+  const parts = [];
+  if(contents){
+    const refs = (contents instanceof PDFLib.PDFArray) ? contents.asArray() : [contents];
+    for(const r of refs){
+      const stream = pdfDoc.context.lookup(r);
+      if(!stream || typeof stream.getContents!=='function') continue;
+      parts.push(await decodeStreamObj(pdfDoc, stream));
+    }
+  }
+  return parts.join('\n');
+}
+function looksCompressed(text){
+  if(text.length<50) return false;
+  let bad=0; for(let i=0;i<Math.min(text.length,2000);i++){ const c=text.charCodeAt(i); if(c<9 || (c>13&&c<32)) bad++; }
+  return (bad/(Math.min(text.length,2000))) > 0.08;
+}
+async function inflate(bytes){
+  const u = (bytes instanceof Uint8Array) ? bytes : new Uint8Array(bytes);
+  // 优先用 pako：自动识别 zlib / raw deflate / gzip，最稳妥（PDF 的 FlateDecode 实为 zlib 封装）
+  if(typeof pako!=='undefined' && pako.inflate){ try{ return new Uint8Array(pako.inflate(u)); }catch(e){} }
+  // 兜底：浏览器原生 DecompressionStream（注意 PDF 为 zlib 封装，需先剥离 2 字节头与 4 字节尾）
+  let data = u;
+  const isZlib = data.length>=6 && data[0]===0x78 && (data[1]===0x01||data[1]===0x9c||data[1]===0xda);
+  if(isZlib) data = data.subarray(2, data.length-4);
+  const ds = new DecompressionStream('deflate');
+  const w = ds.writable.getWriter();
+  await w.ready; await w.write(data); await w.close();
+  return new Uint8Array(await new Response(ds.readable).arrayBuffer());
+}
+function writePageContent(pdfDoc, page, contentStr){
+  const encoded = new TextEncoder().encode(contentStr);
+  const newStream = pdfDoc.context.stream(encoded);
+  const newRef = pdfDoc.context.register(newStream);
+  page.node.set(PDFLib.PDFName.of('Contents'), newRef);
+}
+
+/* ============ 文本块（BT..ET）定位 ============ */
+function findTextBlocks(s){
+  const blocks=[]; let i=0, depth=0;
+  while(i<s.length){
+    const c=s[i];
+    if(c==='(') depth++; else if(c===')') depth=Math.max(0,depth-1);
+    else if(depth===0 && s.substr(i,2)==='BT' && (i===0||/\s/.test(s[i-1]))){
+      let j=i+2, found=-1, d2=0;
+      while(j<s.length){
+        const c2=s[j];
+        if(c2==='(') d2++; else if(c2===')') d2=Math.max(0,d2-1);
+        else if(d2===0 && s.substr(j,2)==='ET' && (j+2>=s.length||/\s/.test(s[j+2]))){ found=j; break; }
+        j++;
+      }
+      if(found>=0){ blocks.push({start:i,end:found+2}); i=found+2; continue; }
+    }
+    i++;
+  }
+  return blocks;
+}
+function removeTextBlocks(content, predicate){
+  const blocks = findTextBlocks(content);
+  let out='', cursor=0;
+  for(const b of blocks){
+    const block = content.slice(b.start,b.end);
+    out += content.slice(cursor,b.start);
+    if(!predicate(block)) out += block;
+    cursor = b.end;
+  }
+  out += content.slice(cursor);
+  return out;
+}
+
+/* ============ BDC..EMC 标记内容块（图层） ============ */
+function findBDCBlocks(s){
+  const blocks=[]; let i=0, depth=0;
+  while(i<s.length){
+    const c=s[i];
+    if(c==='(') depth++; else if(c===')') depth=Math.max(0,depth-1);
+    else if(depth===0 && s.substr(i,3)==='BDC' && (i===0||/\s/.test(s[i-1]))){
+      let j=i+3, found=-1, d2=0, stack=1;
+      while(j<s.length){
+        const c2=s[j];
+        if(c2==='(') d2++; else if(c2===')') d2=Math.max(0,d2-1);
+        else if(d2===0){
+          if(s.substr(j,3)==='BDC'&&(j===0||/\s/.test(s[j-1]))) stack++;
+          else if(s.substr(j,3)==='EMC'&&(j+3>=s.length||/\s/.test(s[j+3]))){ stack--; if(stack===0){ found=j; break; } }
+        }
+        j++;
+      }
+      if(found>=0){ blocks.push({start:i,end:found+3}); i=found+3; continue; }
+    }
+    i++;
+  }
+  return blocks;
+}
+function removeOCGBlocks(content, layerSet){
+  const blocks=findBDCBlocks(content);
+  let out='', cursor=0;
+  for(const b of blocks){
+    const block=content.slice(b.start,b.end);
+    out += content.slice(cursor,b.start);
+    const m = block.match(/\/OC\s*\/?\s*([A-Za-z0-9_]+)/);
+    const name = m? m[1] : null;
+    if(!(name && layerSet.has(name))) out += block;
+    cursor=b.end;
+  }
+  out += content.slice(cursor);
+  return out;
+}
+
+/* ============ 各类匹配判定 ============ */
+function extractText(block){
+  let txt=''; let m;
+  const reAll=/(?:\(((?:[^()\\]|\\.)*)\)|<([0-9A-Fa-f\s]+)>)/g;
+  while((m=reAll.exec(block))!==null){
+    if(m[1]!==undefined){ txt += m[1].replace(/\\(.)/g,'$1'); }
+    else if(m[2]!==undefined){ const hex=m[2].replace(/\s/g,''); for(let i=0;i+1<hex.length;i+=2){ txt += String.fromCharCode(parseInt(hex.substr(i,2),16)); } }
+  }
+  return txt;
+}
+function keywordsMatch(block, kws){ const up=extractText(block).toUpperCase(); return kws.some(k=> up.includes(k.toUpperCase())); }
+function isRotated(block){
+  const re=/(?:^|[\s])([\d.\-]+)\s+([\d.\-]+)\s+([\d.\-]+)\s+([\d.\-]+)\s+[\d.\-]+\s+[\d.\-]+\s+(?:Tm|cm)\b/g;
+  let m; while(m=re.exec(block)){ const b=+m[2], c=+m[3]; if(Math.abs(b)>1e-3||Math.abs(c)>1e-3) return true; }
+  return false;
+}
+function extractColors(block){
+  const cols=[]; let m;
+  const reRGB=/(?:^|[\s])([\d.]+)\s+([\d.]+)\s+([\d.]+)\s+rg\b/g;
+  while(m=reRGB.exec(block)) cols.push([+m[1],+m[2],+m[3]]);
+  const reRG=/(?:^|[\s])([\d.]+)\s+([\d.]+)\s+([\d.]+)\s+RG\b/g;
+  while(m=reRG.exec(block)) cols.push([+m[1],+m[2],+m[3]]);
+  const reGray=/(?:^|[\s])([\d.]+)\s+g\b/g;
+  while(m=reGray.exec(block)){ const v=+m[1]; cols.push([v,v,v]); }
+  const reGrayS=/(?:^|[\s])([\d.]+)\s+G\b/g;
+  while(m=reGrayS.exec(block)){ const v=+m[1]; cols.push([v,v,v]); }
+  const reCMYK=/(?:^|[\s])([\d.]+)\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)\s+k\b/g;
+  while(m=reCMYK.exec(block)){ const c=+m[1],y=+m[2],m2=+m[3],k=+m[4]; cols.push([(1-c)*(1-k),(1-y)*(1-k),(1-m2)*(1-k)]); }
+  return cols;
+}
+function colorMatch(block, target, tol){
+  const cols=extractColors(block);
+  for(const c of cols){ if(Math.hypot(c[0]-target[0],c[1]-target[1],c[2]-target[2])<=tol) return true; }
+  return false;
+}
+function getLowOpacityGs(pdfDoc, page, threshold){
+  const set=new Set();
+  const res=page.node.Resources(); if(!res) return set;
+  const gs=res.lookup(PDFLib.PDFName.of('ExtGState')); if(!gs) return set;
+  for(const [k,v] of gs.entries()){
+    const d=pdfDoc.context.lookup(v); if(!d) continue;
+    const vals=[];
+    const ca=d.lookup(PDFLib.PDFName.of('ca')); if(ca&&ca.asNumber) vals.push(ca.asNumber());
+    const CA=d.lookup(PDFLib.PDFName.of('CA')); if(CA&&CA.asNumber) vals.push(CA.asNumber());
+    const min = vals.length? Math.min(...vals):1;
+    if(min<threshold) set.add(nameStr(k));
+  }
+  return set;
+}
+function opacityMatch(block, set){
+  const re=/\/([A-Za-z0-9_]+)\s+gs\b/g; let m;
+  while(m=re.exec(block)){ if(set.has(m[1])) return true; }
+  return false;
+}
+
+/* ============ 图片 / 图层 列举 ============ */
+function streamLookup(obj, name){ const d = (obj && obj.dict) ? obj.dict : obj; return d ? d.lookup(name) : undefined; }
+/* 沿继承链收集资源字典（页面自身 → 父 Pages → … → 根），水印 XObject/Pattern 常定义在父节点 */
+function inheritedResourceDicts(page){
+  const chain=[]; let node=page.node;
+  while(node && typeof node.lookup==='function'){
+    const r = node.lookup(PDFLib.PDFName.of('Resources'));
+    if(r) chain.unshift(r);
+    const par = (typeof node.Parent==='function')? node.Parent() : null;
+    node = par;
+  }
+  return chain;
+}
+/* 合并各层级指定 key（XObject/Pattern）的条目，按对象引用去重 */
+function collectResourceEntries(page, key){
+  const out=[]; const seen=new Set();
+  for(const rdict of inheritedResourceDicts(page)){
+    const sub = rdict.lookup(PDFLib.PDFName.of(key));
+    if(!sub) continue;
+    for(const [k,v] of sub.entries()){
+      const id = (v && v.objectNumber!==undefined)? ('ref'+v.objectNumber+'_'+v.generationNumber) : ('d'+out.length);
+      if(seen.has(id)) continue; seen.add(id);
+      out.push({dict:sub, name:k});
+    }
+  }
+  return out;
+}
+function listPageImages(pdfDoc, page){
+  const out=[]; const seen=new Set();
+  for(const rdict of inheritedResourceDicts(page)){
+    const xobj=rdict.lookup(PDFLib.PDFName.of('XObject')); if(!xobj) continue;
+    for(const [k,v] of xobj.entries()){
+      const dict=pdfDoc.context.lookup(v); if(!dict) continue;
+      const sub=streamLookup(dict, PDFLib.PDFName.of('Subtype'));
+      if(sub && nameStr(sub)==='Image'){
+        const nm=nameStr(k); if(seen.has(nm)) continue; seen.add(nm);
+        const w=streamLookup(dict, PDFLib.PDFName.of('Width')), h=streamLookup(dict, PDFLib.PDFName.of('Height'));
+        out.push({ name:nm, w:(w&&w.asNumber)?w.asNumber():'?', h:(h&&h.asNumber)?h.asNumber():'?', transparent: !!streamLookup(dict, PDFLib.PDFName.of('SMask')) });
+      }
+    }
+  }
+  return out;
+}
+function listLayers(pdfDoc){
+  const out=[];
+  const oc=pdfDoc.catalog.lookup(PDFLib.PDFName.of('OCProperties')); if(!oc) return out;
+  const ocgs=oc.lookup(PDFLib.PDFName.of('OCGs')); if(!ocgs) return out;
+  const arr = (ocgs instanceof PDFLib.PDFArray)? ocgs.asArray():[ocgs];
+  for(const ref of arr){ const d=pdfDoc.context.lookup(ref); if(!d) continue; const nm=d.lookup(PDFLib.PDFName.of('Name')); if(nm) out.push(nameStr(nm)); }
+  return out;
+}
+function removeXObject(page, name){
+  const res=page.node.Resources(); if(!res) return;
+  const xobj=res.lookup(PDFLib.PDFName.of('XObject')); if(!xobj) return;
+  try{ xobj.delete(PDFLib.PDFName.of(name)); }catch(e){}
+}
+
+/* ============ 流解码 / 写入 ============ */
+function streamHasFlate(stream, pdfDoc){
+  const f = stream.dict ? stream.dict.lookup(PDFLib.PDFName.of('Filter')) : null;
+  if(!f) return false;
+  if(f instanceof PDFLib.PDFName) return nameStr(f)==='FlateDecode';
+  if(f instanceof PDFLib.PDFArray){ for(const x of f.asArray()){ const n=pdfDoc.context.lookup(x); if(nameStr(n)==='FlateDecode') return true; } }
+  return false;
+}
+async function decodeStreamObj(pdfDoc, stream){
+  let bytes = stream.getContents();
+  let text = new TextDecoder('latin1').decode(bytes);
+  if(streamHasFlate(stream, pdfDoc) || looksCompressed(text)){
+    try{ const inf = await inflate(bytes); text = new TextDecoder('latin1').decode(inf); }catch(e){}
+  }
+  return text;
+}
+function writeStreamObj(pdfDoc, oldStream, newContent){
+  const encoded = new TextEncoder().encode(newContent);
+  const dict = oldStream.dict;
+  if(dict){ try{ dict.delete(PDFLib.PDFName.of('Filter')); dict.delete(PDFLib.PDFName.of('DecodeParms')); }catch(e){} }
+  const newStream = pdfDoc.context.stream(encoded, dict);
+  return pdfDoc.context.register(newStream);
+}
+
+/* 带计数的文本块移除 */
+function removeTextBlocksWithStats(content, predicate, statsKey, stats){
+  const blocks = findTextBlocks(content);
+  let out='', cursor=0, removed=0;
+  for(const b of blocks){
+    const block = content.slice(b.start,b.end);
+    out += content.slice(cursor,b.start);
+    if(!predicate(block)) out += block; else removed++;
+    cursor = b.end;
+  }
+  out += content.slice(cursor);
+  if(stats && statsKey) stats[statsKey]+=removed;
+  return out;
+}
+
+/* 从任意 Resources 字典读取低不透明度 gs */
+function getLowOpacityGsFromDict(dict, pdfDoc, threshold){
+  const set=new Set();
+  const gs=dict.lookup(PDFLib.PDFName.of('ExtGState')); if(!gs) return set;
+  for(const [k,v] of gs.entries()){
+    const d=pdfDoc.context.lookup(v); if(!d) continue;
+    const vals=[];
+    const ca=d.lookup(PDFLib.PDFName.of('ca')); if(ca&&ca.asNumber) vals.push(ca.asNumber());
+    const CA=d.lookup(PDFLib.PDFName.of('CA')); if(CA&&CA.asNumber) vals.push(CA.asNumber());
+    const min = vals.length? Math.min(...vals):1;
+    if(min<threshold) set.add(nameStr(k));
+  }
+  return set;
+}
+/* 从任意 Resources 字典收集要移除的图片名（仅自动模式） */
+function collectImageNamesFromDict(pdfDoc, dict, opts){
+  const set=new Set();
+  const xobj=dict.lookup(PDFLib.PDFName.of('XObject')); if(!xobj) return set;
+  for(const [k,v] of xobj.entries()){
+    const d=pdfDoc.context.lookup(v); if(!d||!d.dict) continue;
+    const sub=d.dict.lookup(PDFLib.PDFName.of('Subtype'));
+    if(sub && nameStr(sub)==='Image'){
+      const nm=nameStr(k);
+      if(opts.removeAllImages) set.add(nm);
+      else if(opts.removeTransparentImages && d.dict.lookup(PDFLib.PDFName.of('SMask'))) set.add(nm);
+    }
+  }
+  return set;
+}
+function removeXObjectFromDict(dict, name){
+  const xobj=dict.lookup(PDFLib.PDFName.of('XObject')); if(!xobj) return;
+  try{ xobj.delete(PDFLib.PDFName.of(name)); }catch(e){}
+}
+
+/* ============ 递归处理 Form XObject（水印常藏于其中） ============ */
+async function processForm(pdfDoc, xobjDict, name, opts, stats, depth){
+  if(depth>3) return;
+  const formStream = xobjDict.lookup(name);
+  if(!formStream || typeof formStream.getContents!=='function' || !formStream.dict) return;
+  const sub = formStream.dict.lookup(PDFLib.PDFName.of('Subtype'));
+  if(!sub || nameStr(sub)!=='Form') return;
+  const formRes = formStream.dict.lookup(PDFLib.PDFName.of('Resources'));
+  let content = await decodeStreamObj(pdfDoc, formStream);
+  const original = content;
+  let imgRemoved=0;
+  if(opts.keywords.length) content = removeTextBlocksWithStats(content, b=>keywordsMatch(b,opts.keywords), 'text', stats);
+  if(opts.removeRotated) content = removeTextBlocksWithStats(content, b=>isRotated(b), 'text', stats);
+  if(opts.removeColor) content = removeTextBlocksWithStats(content, b=>colorMatch(b,opts.color,opts.tolerance), 'text', stats);
+  if(opts.removeOpacity && formRes){ const set=getLowOpacityGsFromDict(formRes,pdfDoc,opts.opacityThreshold); if(set.size) content = removeTextBlocksWithStats(content, b=>opacityMatch(b,set), 'text', stats); }
+  if(formRes && (opts.removeAllImages||opts.removeTransparentImages)){
+    const names = collectImageNamesFromDict(pdfDoc, formRes, opts);
+    for(const n of names){ const before=content; content = content.replace(new RegExp('(\\/'+escapeRegExp(n)+')\\s+Do','g'),''); if(content!==before) imgRemoved++; removeXObjectFromDict(formRes,n); }
+  }
+  if(opts.removeInlineImages || opts.removeAllImages) content = removeInlineImages(content);
+  // 递归嵌套 Form
+  if(formRes && depth<3){
+    const nested = formRes.lookup(PDFLib.PDFName.of('XObject'));
+    if(nested){ for(const [k,v] of nested.entries()){ await processForm(pdfDoc, nested, k, opts, stats, depth+1); } }
+  }
+  if(content!==original || imgRemoved>0){
+    const newRef = writeStreamObj(pdfDoc, formStream, content);
+    xobjDict.set(name, newRef);
+    stats.forms++;
+  }
+}
+
+/* ============ 递归处理 Tiling Pattern（平铺水印常藏其中） ============ */
+async function processPattern(pdfDoc, patDict, name, opts, stats, depth){
+  if(depth>3) return;
+  const pat = patDict.lookup(name);
+  if(!pat || typeof pat.getContents!=='function' || !pat.dict) return;
+  const ptype = pat.dict.lookup(PDFLib.PDFName.of('PatternType'));
+  if(!ptype || (ptype.asNumber && ptype.asNumber()!==1)) return; // 仅处理平铺图案
+  const patRes = pat.dict.lookup(PDFLib.PDFName.of('Resources'));
+  let content = await decodeStreamObj(pdfDoc, pat);
+  const original = content;
+  if(opts.keywords.length) content = removeTextBlocksWithStats(content, b=>keywordsMatch(b,opts.keywords), 'text', stats);
+  if(opts.removeRotated) content = removeTextBlocksWithStats(content, b=>isRotated(b), 'text', stats);
+  if(opts.removeColor) content = removeTextBlocksWithStats(content, b=>colorMatch(b,opts.color,opts.tolerance), 'text', stats);
+  if(opts.removeOpacity && patRes){ const set=getLowOpacityGsFromDict(patRes,pdfDoc,opts.opacityThreshold); if(set.size) content = removeTextBlocksWithStats(content, b=>opacityMatch(b,set), 'text', stats); }
+  if(opts.removeInlineImages || opts.removeAllImages) content = removeInlineImages(content);
+  if(patRes && depth<3){
+    const nx = patRes.lookup(PDFLib.PDFName.of('XObject'));
+    if(nx){ for(const [k,v] of nx.entries()){ await processForm(pdfDoc, nx, k, opts, stats, depth+1); } }
+    const np = patRes.lookup(PDFLib.PDFName.of('Pattern'));
+    if(np){ for(const [k,v] of np.entries()){ await processPattern(pdfDoc, np, k, opts, stats, depth+1); } }
+  }
+  if(content!==original){
+    const newRef = writeStreamObj(pdfDoc, pat, content);
+    patDict.set(name, newRef);
+    stats.patterns=(stats.patterns||0)+1;
+  }
+}
+
+/* ============ 移除水印/印章 注释 ============ */
+function removeWatermarkAnnotations(page, pdfDoc, stats, removeAll){
+  const annots = page.node.lookup(PDFLib.PDFName.of('Annots'));
+  if(!annots) return;
+  const arr = (annots instanceof PDFLib.PDFArray)? annots.asArray() : [annots];
+  const kept=[]; let removed=0;
+  const keepSafe = new Set(['Widget','Link']);
+  for(const a of arr){
+    const obj = pdfDoc.context.lookup(a);
+    if(!obj){ kept.push(a); continue; }
+    const sub = obj.lookup ? obj.lookup(PDFLib.PDFName.of('Subtype')) : (obj.dict? obj.dict.lookup(PDFLib.PDFName.of('Subtype')):null);
+    const subName = sub? nameStr(sub):'';
+    if(removeAll){ if(keepSafe.has(subName)) kept.push(a); else removed++; }
+    else { if(subName==='Watermark' || subName==='Stamp'){ removed++; } else kept.push(a); }
+  }
+  if(removed){
+    const newArr = pdfDoc.context.obj(kept);
+    page.node.set(PDFLib.PDFName.of('Annots'), newArr);
+    stats.annotations+=removed;
+  }
+}
+
+/* ============ 内联图片（BI..ID..EI）移除 ============ */
+function removeInlineImages(content){
+  // 内联图片结构：BI <字典> ID <二进制数据> EI ；整段删除
+  return content.replace(/\bBI\b[\s\S]*?\bID\b[\s\S]*?\bEI\b/g, '');
+}
+
+/* ============ 关闭所有可选内容图层（OCG） ============
+   pdf.js 对 OCG 支持薄弱，常不渲染图层内容；而 Adobe/Foxit 会渲染。
+   把配置里默认"开启(ON)"的图层置空，使所有可选内容默认关闭 → 其他软件也不再显示水印。 */
+function turnOffAllOCG(pdfDoc){
+  const oc = pdfDoc.catalog.lookup(PDFLib.PDFName.of('OCProperties'));
+  if(!oc) return false;
+  const ocgs = oc.lookup(PDFLib.PDFName.of('OCGs'));
+  const config = oc.lookup(PDFLib.PDFName.of('D'));
+  if(config){
+    try{ config.set(PDFLib.PDFName.of('ON'), pdfDoc.context.obj([])); }catch(e){}
+    if(ocgs){ const arr=(ocgs instanceof PDFLib.PDFArray)?ocgs.asArray():[ocgs]; try{ config.set(PDFLib.PDFName.of('OFF'), pdfDoc.context.obj(arr.map(r=>r))); }catch(e){} }
+  }
+  return true;
+}
+
+/* ============ 自动移除"每页都出现"的图片（共享水印图片） ============
+   典型场景：水印是同一张图片（整页背景/角标），被 265/268 页引用。
+   难点：图片定义散落在各页 Resources，且 Do 令牌在每页内容流里，必须全文档处理。
+   做法：统计每个被 Do 引用的图片名出现在多少页 → 取 ≥80% 页的（=水印特征）
+        → 从所有页面（含继承资源）删除该 XObject 名字映射 + 剥离所有页的 /name Do 令牌。 */
+async function removeSharedWatermarkImages(pdfDoc, opts, stats){
+  const pages = pdfDoc.getPages(); const np=pages.length;
+  if(!np) return;
+  const THR = Math.max(2, Math.floor(np*0.8));
+  const doCount={};
+  for(let pi=0; pi<np; pi++){
+    const c=pages[pi].node.Contents();
+    const refs=(c instanceof PDFLib.PDFArray)?c.asArray():[c];
+    const seen=new Set();
+    for(const r of refs){
+      const s=pdfDoc.context.lookup(r); if(!s||typeof s.getContents!=='function')continue;
+      let txt; try{ txt=await decodeStreamObj(pdfDoc,s); }catch(e){ continue; }
+      const re=/\/([A-Za-z0-9_]+)\s+Do\b/g; let m;
+      while((m=re.exec(txt))!==null) seen.add(m[1]);
+    }
+    seen.forEach(n=>doCount[n]=(doCount[n]||0)+1);
+  }
+  const wm=Object.keys(doCount).filter(n=>doCount[n]>=THR);
+  if(!wm.length){ stats.sharedImg=0; return; }
+  log('  · 检测到共享水印图片候选: '+wm.map(n=>n+'('+doCount[n]+'页)').join(', '));
+  const reCache={};
+  for(const name of wm){
+    const re = reCache[name] || (reCache[name]=new RegExp('(\\/'+escapeRegExp(name)+')\\s+Do\\b','g'));
+    // a) 从所有页面（含继承资源）删除该 XObject 名字映射
+    for(let pi=0; pi<np; pi++){
+      for(const rdict of inheritedResourceDicts(pages[pi])){
+        const xo=rdict.lookup(PDFLib.PDFName.of('XObject')); if(!xo||!xo.entries)continue;
+        for(const [k] of xo.entries()){ if(nameStr(k)===name){ try{ xo.delete(k); }catch(e){} break; } }
+      }
+    }
+    // b) 从所有页面内容流（含 Form XObject）剥离 /name Do 令牌
+    for(let pi=0; pi<np; pi++){
+      const c=pages[pi].node.Contents();
+      const refs=(c instanceof PDFLib.PDFArray)?c.asArray():[c];
+      for(const r of refs){
+        const s=pdfDoc.context.lookup(r); if(!s||typeof s.getContents!=='function')continue;
+        let txt; try{ txt=await decodeStreamObj(pdfDoc,s); }catch(e){ continue; }
+        if(re.test(txt)){ re.lastIndex=0; const newTxt=txt.replace(re,''); if(newTxt!==txt){ replaceStreamInPlace(pdfDoc,s,newTxt); stats.images++; } }
+      }
+      for(const e of collectResourceEntries(pages[pi],'XObject')){
+        const sub=e.dict.lookup(e.name);
+        if(sub && typeof sub.getContents==='function' && sub.dict){
+          const fsub=sub.dict.lookup(PDFLib.PDFName.of('Subtype'));
+          if(fsub && nameStr(fsub)==='Form'){
+            let ftxt; try{ ftxt=await decodeStreamObj(pdfDoc,sub); }catch(e){ continue; }
+            if(re.test(ftxt)){ re.lastIndex=0; const nft=ftxt.replace(re,''); if(nft!==ftxt) replaceStreamInPlace(pdfDoc,sub,nft); }
+          }
+        }
+      }
+    }
+  }
+  stats.sharedImg = wm.length;
+}
+
+/* 原地替换某个流对象的内容（直接改写 contents/dict，不重新注册，避免 xref 冲突） */
+function replaceStreamInPlace(pdfDoc, streamObj, newContent){
+  const encoded = new TextEncoder().encode(newContent);
+  if(streamObj.dict){ try{ streamObj.dict.delete(PDFLib.PDFName.of('Filter')); streamObj.dict.delete(PDFLib.PDFName.of('DecodeParms')); streamObj.dict.set(PDFLib.PDFName.of('Length'), pdfDoc.context.obj(encoded.length)); }catch(e){} }
+  streamObj.contents = encoded;
+}
+
+/* ============ 核爆：全文档扫描内容流，移除含关键字的文字 ============
+   覆盖逐页扫描够不到的地方：
+   - 任意 Form / Pattern 流（含不在页面继承链上的孤儿对象）
+   - 所有注释的外观流（/AP 的 /N、/R、/D） */
+async function nukeKeywordObjects(pdfDoc, opts, stats){
+  if(!opts.keywords.length && !opts.removeRotated && !opts.removeColor && !opts.removeOpacity) return;
+  // 1) 所有 Form / Pattern 流
+  let objs=[];
+  try{ objs = pdfDoc.context.enumerateIndirectObjects(); }catch(e){ objs=[]; }
+  for(const [ref, obj] of objs){
+    if(!obj || typeof obj.getContents!=='function' || !obj.dict) continue;
+    const sub = obj.dict.lookup(PDFLib.PDFName.of('Subtype'));
+    const subName = sub? nameStr(sub):'';
+    if(subName!=='Form' && subName!=='Pattern') continue;
+    let content = await decodeStreamObj(pdfDoc, obj);
+    const original = content;
+    if(opts.keywords.length) content = removeTextBlocksWithStats(content, b=>keywordsMatch(b,opts.keywords), 'text', stats);
+    if(opts.removeRotated) content = removeTextBlocksWithStats(content, b=>isRotated(b), 'text', stats);
+    if(opts.removeColor) content = removeTextBlocksWithStats(content, b=>colorMatch(b,opts.color,opts.tolerance), 'text', stats);
+    if(content!==original){
+      try{ replaceStreamInPlace(pdfDoc, obj, content); }catch(e){ log('  · 替换对象出错: '+e.message); continue; }
+      stats.nuked=(stats.nuked||0)+1;
+    }
+  }
+  // 2) 所有注释外观流（/AP）
+  const pages = pdfDoc.getPages();
+  for(const page of pages){
+    const annots = page.node.lookup(PDFLib.PDFName.of('Annots'));
+    if(!annots) continue;
+    const arr = (annots instanceof PDFLib.PDFArray)? annots.asArray():[annots];
+    for(const a of arr){
+      const anno = pdfDoc.context.lookup(a); if(!anno) continue;
+      const ap = anno.lookup ? anno.lookup(PDFLib.PDFName.of('AP')) : (anno.dict?anno.dict.lookup(PDFLib.PDFName.of('AP')):null);
+      if(!ap) continue;
+      const apDict = pdfDoc.context.lookup(ap); if(!apDict) continue;
+      for(const key of ['N','R','D']){
+        const part = apDict.lookup(PDFLib.PDFName.of(key));
+        if(!part) continue;
+        const stream = pdfDoc.context.lookup(part);
+        if(!stream || typeof stream.getContents!=='function' || !stream.dict) continue;
+        let content = await decodeStreamObj(pdfDoc, stream);
+        const original = content;
+        if(opts.keywords.length) content = removeTextBlocksWithStats(content, b=>keywordsMatch(b,opts.keywords), 'text', stats);
+        if(opts.removeRotated) content = removeTextBlocksWithStats(content, b=>isRotated(b), 'text', stats);
+        if(opts.removeColor) content = removeTextBlocksWithStats(content, b=>colorMatch(b,opts.color,opts.tolerance), 'text', stats);
+        if(content!==original){
+          try{ replaceStreamInPlace(pdfDoc, stream, content); }catch(e){ log('  · 替换外观流出错: '+e.message); continue; }
+          stats.nuked=(stats.nuked||0)+1;
+        }
+      }
+    }
+  }
+}
+
+function collectImageNames(pdfDoc, page, file, pageIdx, opts){
+  const set=new Set();
+  const imgs=listPageImages(pdfDoc,page);
+  for(const im of imgs){
+    if(opts.removeAllImages) set.add(im.name);
+    else if(opts.removeTransparentImages && im.transparent) set.add(im.name);
+    if(file.imagesToRemove.has(im.name)) set.add(im.name);
+  }
+  return set;
+}
+function buildFillRects(regs, page, hex){
+  const {width:W,height:H}=page.getSize();
+  const [r,g,b]=hexToRgb01(hex);
+  let s='\n%__WMFILL_START__\nq\n'+r.toFixed(4)+' '+g.toFixed(4)+' '+b.toFixed(4)+' rg\n';
+  for(const rg of regs){
+    const x=rg.x*W, y=(1-rg.y-rg.h)*H, w=rg.w*W, h=rg.h*H;
+    s+=x.toFixed(2)+' '+y.toFixed(2)+' '+w.toFixed(2)+' '+h.toFixed(2)+' re f\n';
+  }
+  return s+'Q\n%__WMFILL_END__\n';
+}
+
+/* ============ 单页处理 ============ */
+async function processPage(pdfDoc, page, file, pageIdx, opts, stats){
+  let content = await getCombinedContent(pdfDoc, page);
+  if(opts.keywords.length) content = removeTextBlocksWithStats(content, b=>keywordsMatch(b,opts.keywords), 'text', stats);
+  if(opts.removeRotated) content = removeTextBlocksWithStats(content, b=>isRotated(b), 'text', stats);
+  if(opts.removeColor) content = removeTextBlocksWithStats(content, b=>colorMatch(b,opts.color,opts.tolerance), 'text', stats);
+  if(opts.removeOpacity){ const set=getLowOpacityGs(pdfDoc,page,opts.opacityThreshold); if(set.size) content = removeTextBlocksWithStats(content, b=>opacityMatch(b,set), 'text', stats); }
+  const imgNames = collectImageNames(pdfDoc,page,file,pageIdx,opts);
+  for(const name of imgNames){
+    const before=content; content = content.replace(new RegExp('(\\/'+escapeRegExp(name)+')\\s+Do','g'),'');
+    if(content!==before) stats.images++;
+    removeXObject(page,name);
+  }
+  if(opts.removeInlineImages || opts.removeAllImages) content = removeInlineImages(content);
+  if(file.layersToRemove && file.layersToRemove.size) content = removeOCGBlocks(content, file.layersToRemove);
+  // 区域填充（追加在末尾，绘制于最上层，可覆盖 Form 水印）。
+  // 先剥离上一次处理写入的填充块（哨兵 %__WMFILL_START__ … %__WMFILL_END__），
+  // 避免同一页被多次处理时填充矩形叠加重复。
+  content = content.replace(/\n%__WMFILL_START__[\s\S]*?%__WMFILL_END__\n/g, '');
+  const regs = file.regions[pageIdx];
+  if(regs && regs.length) content += buildFillRects(regs, page, opts.fillColor);
+  writePageContent(pdfDoc,page,content);
+  // 递归处理 Form XObject 与 Tiling Pattern（水印常藏在其中；含继承资源）
+  const doContent = opts.keywords.length || opts.removeRotated || opts.removeColor || opts.removeOpacity || opts.removeAllImages || opts.removeTransparentImages;
+  if(doContent){
+    for(const e of collectResourceEntries(page,'XObject')){ await processForm(pdfDoc, e.dict, e.name, opts, stats, 1); }
+    for(const e of collectResourceEntries(page,'Pattern')){ await processPattern(pdfDoc, e.dict, e.name, opts, stats, 1); }
+  }
+  // 水印 / 印章 注释
+  if(opts.removeAnnotations) removeWatermarkAnnotations(page, pdfDoc, stats, opts.removeAllAnnotations);
+}
+
+/* ============ 选项收集 ============ */
+function collectOpts(){
+  const kwRaw = document.getElementById('kwInput').value.trim();
+  return {
+    keywords: document.getElementById('optKeyword').checked ? kwRaw.split(',').map(s=>s.trim()).filter(Boolean) : [],
+    removeRotated: document.getElementById('optRotated').checked,
+    removeColor: document.getElementById('optColor').checked,
+    color: hexToRgb01(document.getElementById('colorPick').value),
+    tolerance: parseFloat(document.getElementById('tolRange').value),
+    removeOpacity: document.getElementById('optOpacity').checked,
+    opacityThreshold: parseFloat(document.getElementById('opRange').value),
+    removeAllImages: document.getElementById('optAllImg').checked,
+    removeTransparentImages: document.getElementById('optTransImg').checked,
+    removeSharedImages: document.getElementById('optSharedImg').checked,
+    removeAnnotations: document.getElementById('optAnnot').checked,
+    removeAllAnnotations: document.getElementById('optAllAnnot').checked,
+    removeInlineImages: document.getElementById('optInlineImg').checked,
+    turnOffOCG: document.getElementById('optOCG').checked,
+    nuke: document.getElementById('optNuke').checked,
+    fillColor: document.getElementById('fillPick').value,
+    scope: state.scope
+  };
+}
+function inScope(i, total, scope){
+  if(scope==='all') return true;
+  if(scope==='current') return i===state.activePage;
+  if(scope==='odd') return ((i+1)%2===1);
+  if(scope==='even') return ((i+1)%2===0);
+  return true;
+}
+
+/* ============ 诊断：枚举文件结构，定位水印可能所在 ============ */
+async function diagnose(){
+  if(!state.files.length) return toast('请先添加 PDF 文件');
+  const file=state.files[state.activeFile];
+  log('=== 诊断：'+file.name+' ===');
+  let doc;
+  try{ doc=await PDFLib.PDFDocument.load(file.originalBytes); }catch(e){ log('  加载失败: '+e.message); return; }
+  const pages=doc.getPages();
+  let totForm=0,totImg=0,totPat=0,totAnnot=0,totOCG=0;
+  for(let i=0;i<pages.length;i++){
+    const p=pages[i];
+    let forms=0,imgs=0,pats=0,annotSubs=new Set();
+    for(const rdict of inheritedResourceDicts(p)){
+      const xo=rdict.lookup(PDFLib.PDFName.of('XObject'));
+      if(xo) for(const [k,v] of xo.entries()){ const d=doc.context.lookup(v); const sub=streamLookup(d,PDFLib.PDFName.of('Subtype')); if(sub&&nameStr(sub)==='Form') forms++; else if(sub&&nameStr(sub)==='Image') imgs++; }
+      const pa=rdict.lookup(PDFLib.PDFName.of('Pattern'));
+      if(pa) pats+=pa.entries().length;
+    }
+    const an=p.node.lookup(PDFLib.PDFName.of('Annots'));
+    let annotCount=0;
+    if(an){ const arr=(an instanceof PDFLib.PDFArray)?an.asArray():[an]; annotCount=arr.length; for(const a of arr){ const obj=doc.context.lookup(a); if(!obj) continue; const sub=obj.lookup?obj.lookup(PDFLib.PDFName.of('Subtype')):(obj.dict?obj.dict.lookup(PDFLib.PDFName.of('Subtype')):null); if(sub) annotSubs.add(nameStr(sub)); } }
+    const ocgCount=listLayers(doc).length;
+    const nContents = p.node.Contents()? (p.node.Contents() instanceof PDFLib.PDFArray? p.node.Contents().size():1):0;
+    log('  第'+(i+1)+'页: 内容流='+nContents+' Form='+forms+' 图片='+imgs+' 图案Pattern='+pats+' 注释='+annotCount+'('+[...annotSubs].join(',')+') 图层='+ocgCount);
+    totForm+=forms;totImg+=imgs;totPat+=pats;totAnnot+=annotCount;totOCG=Math.max(totOCG,ocgCount);
+  }
+  log('  合计: Form='+totForm+' 图片='+totImg+' 图案Pattern='+totPat+' 注释='+totAnnot+' 图层='+totOCG);
+  // 按关键字定位：扫描全文档内容流对象，列出含关键字的对象编号
+  const kwRaw = document.getElementById('kwInput').value.trim();
+  const kws = document.getElementById('optKeyword').checked ? kwRaw.split(',').map(s=>s.trim()).filter(Boolean) : [];
+  if(kws.length){
+    let hits=0; const hitsArr=[];
+    try{
+      for(const [ref,obj] of doc.context.enumerateIndirectObjects()){
+        if(!obj || typeof obj.getContents!=='function' || !obj.dict) continue;
+        const sub = obj.dict.lookup(PDFLib.PDFName.of('Subtype'));
+        const subName = sub? nameStr(sub):'';
+        if(subName==='Image') continue;
+        const txt = await decodeStreamObj(doc, obj);
+        const up = txt.toUpperCase();
+        if(kws.some(k=> up.includes(k.toUpperCase()))){ hits++; hitsArr.push('obj'+ref.objectNumber); }
+      }
+    }catch(e){}
+    if(hits) log('  🔎 含关键字['+kws.join(',')+']的对象：'+hitsArr.join(', ')+' → 建议勾选"全文档关键字扫描(核爆)"后处理。');
+    else log('  🔎 未在任何内容流对象中找到关键字['+kws.join(',')+']。水印可能不含这些文字，或为矢量路径(非文字)。');
+  }
+  if(totForm>0||totPat>0) log('  → 发现 Form/Pattern 对象：本工具已自动递归处理其中的文字水印（请确保开启了关键字/颜色/倾斜/透明度中至少一项）。');
+  if(totAnnot===0 && totForm===0 && totImg===0 && totPat===0 && totOCG===0) log('  → 未发现可疑对象。水印可能是页面内容流里的矢量路径(非文字)，可尝试"圈选区域"覆盖，或把本诊断结果反馈给我进一步分析。');
+}
+
+/* ============ 应用处理 ============ */
+async function applyProcess(){
+  if(!state.files.length) return toast('请先添加 PDF 文件');
+  const opts = collectOpts();
+  const anyMode = opts.keywords.length || opts.removeRotated || opts.removeColor || opts.removeOpacity ||
+                  opts.removeAllImages || opts.removeTransparentImages || opts.removeSharedImages || opts.removeAnnotations ||
+                  opts.removeInlineImages || opts.turnOffOCG || opts.nuke ||
+                  (state.files[0].layersToRemove&&state.files[0].layersToRemove.size) ||
+                  state.files.some(f=>f.imagesToRemove.size) || state.files.some(f=>f.regions.flat().length);
+  if(!anyMode){ toast('未选择任何移除方式'); return; }
+  const prog=document.getElementById('prog'); prog.style.display='block'; prog.value=0;
+  const total = state.files.length;
+  const totalStats = {text:0,images:0,annotations:0,forms:0,patterns:0,sharedImg:0};
+  for(let fi=0; fi<total; fi++){
+    const file=state.files[fi];
+    prog.value = Math.round(fi/total*100);
+    try{
+      // 关键修复：复用已修改的工作文档，不再每次都从 originalBytes 重新加载。
+      // 否则在「当前页」模式下分次处理（先第1页、再第2页）时，
+      // 第2次处理会从原始字节重载，导致第1页的水印"被恢复"。
+      if(!file.pdfDoc){ file.pdfDoc = await PDFLib.PDFDocument.load(file.originalBytes); }
+      file.layersToRemove = file.layersToRemove||new Set();
+      file.imagesToRemove = file.imagesToRemove||new Set();
+      file.regions = file.regions||[];
+      const pages = file.pdfDoc.getPages();
+      const stats = {text:0,images:0,annotations:0,forms:0,patterns:0,nuked:0};
+      for(let i=0;i<pages.length;i++){
+        if(!inScope(i,pages.length,opts.scope)) continue;
+        try{ await processPage(file.pdfDoc, pages[i], file, i, opts, stats); }
+        catch(e){ log('  · 第'+(i+1)+'页处理出错: '+e.message); }
+      }
+      // 核爆：全文档扫描 Form/Pattern 与注释外观流，移除含关键字的文字
+      if(opts.nuke){ try{ await nukeKeywordObjects(file.pdfDoc, opts, stats); }catch(e){ log('  · 全文档扫描出错: '+e.message); } }
+      // 关闭所有可选内容图层（OCG）
+      if(opts.turnOffOCG){ try{ if(turnOffAllOCG(file.pdfDoc)) stats.ocgOff=true; }catch(e){ log('  · 关闭图层出错: '+e.message); } }
+      // 自动移除"每页都出现"的共享水印图片（全文档处理）
+      if(opts.removeSharedImages){ try{ await removeSharedWatermarkImages(file.pdfDoc, opts, stats); }catch(e){ log('  · 共享图片移除出错: '+e.message); } }
+      totalStats.text+=stats.text; totalStats.images+=stats.images; totalStats.annotations+=stats.annotations; totalStats.forms+=stats.forms; totalStats.patterns+=stats.patterns; totalStats.nuked+=(stats.nuked||0); totalStats.sharedImg+=(stats.sharedImg||0);
+      file.processed=true;
+      file.previewBytes = await file.pdfDoc.save();
+    }catch(e){ log('文件 '+file.name+' 处理失败: '+e.message); }
+    prog.value = Math.round((fi+1)/total*100);
+  }
+  await reloadPreviewDoc(state.files[state.activeFile]);
+  renderPage();
+  prog.style.display='none';
+  log(`✅ 处理完成：移除文字块 ${totalStats.text} 个、图片 ${totalStats.images} 个（其中共享水印图片 ${totalStats.sharedImg} 类）、注释 ${totalStats.annotations} 个，处理 Form ${totalStats.forms} 个、Pattern ${totalStats.patterns} 个、核爆对象 ${totalStats.nuked} 个${totalStats.ocgOff?'，已关闭全部图层(OCG)':''}。请预览确认后点击"导出结果"。`);
+  if(totalStats.text+totalStats.images+totalStats.annotations+totalStats.forms+totalStats.patterns+totalStats.nuked+totalStats.sharedImg===0 && !totalStats.ocgOff) log('⚠ 未匹配到任何水印对象。请点击工具栏"🔍 诊断"查看文件结构；并尝试：①勾选"★ 自动移除每页都出现的图片（共享水印图片）"；②用"扫描图片"勾选水印图片（勾选后作用于全文）；③开启"移除水印标注"或"移除全部注释(谨慎)"；④若是独立图层(OCG)，勾选"关闭所有图层(OCG)"。');
+  toast('处理完成');
+}
+async function reloadPreviewDoc(file){
+  if(file.pdfjsDoc){ try{ file.pdfjsDoc.destroy(); }catch(e){} }
+  file.pdfjsDoc = await pdfjsLib.getDocument({data:new Uint8Array(file.previewBytes||file.originalBytes)}).promise;
+  file.numPages = file.pdfjsDoc.numPages;
+}
+
+/* ============ 渲染 ============ */
+async function renderPage(){
+  const file=state.files[state.activeFile]; if(!file||!file.pdfjsDoc) return;
+  if(state.activePage>=file.numPages) state.activePage=0;
+  const pg = await file.pdfjsDoc.getPage(state.activePage+1);
+  const viewport = pg.getViewport({scale:state.scale});
+  canvas.width=viewport.width; canvas.height=viewport.height;
+  canvas.style.width=viewport.width+'px'; canvas.style.height=viewport.height+'px';
+  overlay.width=viewport.width; overlay.height=viewport.height;
+  overlay.style.width=viewport.width+'px'; overlay.style.height=viewport.height+'px';
+  stage.style.display='block';
+  document.getElementById('emptyHint').style.display='none';
+  await pg.render({canvasContext:ctx, viewport}).promise;
+  drawOverlay();
+  document.getElementById('pageInfo').textContent = `第 ${state.activePage+1} / ${file.numPages} 页`;
+  updateRegionInfo();
+}
+
+function drawOverlay(){
+  octx.clearRect(0,0,overlay.width,overlay.height);
+  const file=state.files[state.activeFile]; if(!file) return;
+  const regs=file.regions[state.activePage]||[];
+  octx.strokeStyle='rgba(255,90,90,0.95)'; octx.fillStyle='rgba(255,90,90,0.18)'; octx.lineWidth=1.5;
+  for(const r of regs){
+    const x=r.x*overlay.width, y=r.y*overlay.height, w=r.w*overlay.width, h=r.h*overlay.height;
+    octx.fillRect(x,y,w,h); octx.strokeRect(x,y,w,h);
+  }
+  if(drawing && curRect){
+    const x=Math.min(curRect.x1,curRect.x2), y=Math.min(curRect.y1,curRect.y2), w=Math.abs(curRect.x2-curRect.x1), h=Math.abs(curRect.y2-curRect.y1);
+    octx.fillRect(x*overlay.width,y*overlay.height,w*overlay.width,h*overlay.height);
+    octx.strokeRect(x*overlay.width,y*overlay.height,w*overlay.width,h*overlay.height);
+  }
+}
+function updateRegionInfo(){
+  const file=state.files[state.activeFile];
+  const n = file && file.regions[state.activePage] ? file.regions[state.activePage].length : 0;
+  document.getElementById('regionCount').textContent=n;
+}
+
+/* ============ 文件加载 ============ */
+async function loadFiles(fileList){
+  for(const f of fileList){
+    if(f.type!=='application/pdf' && !f.name.toLowerCase().endsWith('.pdf')){ log('跳过非 PDF 文件: '+f.name); continue; }
+    try{
+      const buf = await f.arrayBuffer();
+      const bytes = new Uint8Array(buf);
+      const pdfDoc = await PDFLib.PDFDocument.load(bytes);
+      const pdfjsDoc = await pdfjsLib.getDocument({data:new Uint8Array(bytes)}).promise;
+      const file = {
+        name: f.name, originalBytes: bytes, pdfDoc, pdfjsDoc,
+        numPages: pdfjsDoc.numPages, regions: [], imagesToRemove: new Set(), layersToRemove: new Set(), processed:false
+      };
+      state.files.push(file);
+      log('已加载: '+f.name+'（'+pdfjsDoc.numPages+' 页）');
+    }catch(e){ log('加载失败 '+f.name+': '+e.message); }
+  }
+  renderFileList();
+  if(state.files.length && state.activeFile>=state.files.length) state.activeFile=state.files.length-1;
+  if(state.files.length){ await reloadPreviewDoc(state.files[state.activeFile]); renderPage(); }
+}
+function renderFileList(){
+  const box=document.getElementById('fileList'); box.innerHTML='';
+  state.files.forEach((f,i)=>{
+    const div=document.createElement('div');
+    div.className='file-item'+(i===state.activeFile?' active':'');
+    const regCount = f.regions.flat().length;
+    div.innerHTML=`<div class="fn">${f.name}</div>
+      <div class="meta"><span>${f.numPages} 页</span>${f.processed?'<span style="color:var(--ok)">已处理</span>':''}${regCount?'<span>圈选'+regCount+'</span>':''}</div>
+      <span class="del" data-i="${i}">删除</span>`;
+    div.addEventListener('click',e=>{ if(e.target.classList.contains('del'))return; state.activeFile=i; state.activePage=0; reloadPreviewDoc(f).then(renderPage); renderFileList(); });
+    div.querySelector('.del').addEventListener('click',e=>{ e.stopPropagation(); state.files.splice(i,1); if(state.activeFile>=state.files.length) state.activeFile=Math.max(0,state.files.length-1); renderFileList(); if(!state.files.length){ stage.style.display='none'; document.getElementById('emptyHint').style.display='block'; } });
+    box.appendChild(div);
+  });
+}
+
+/* ============ 导出 ============ */
+async function exportFiles(){
+  if(!state.files.length) return toast('没有可导出的文件');
+  if(!state.files.every(f=>f.processed)){ log('检测到未处理文件，先执行处理…'); await applyProcess(); }
+  const prog=document.getElementById('prog'); prog.style.display='block';
+  try{
+    if(state.files.length===1){
+      const f=state.files[0];
+      const bytes = await f.pdfDoc.save();
+      downloadBytes(bytes, f.name.replace(/\.pdf$/i,'')+'_nowatermark.pdf');
+      log('已导出: '+f.name);
+    }else{
+      if(!window.JSZip){ toast('JSZip 未加载，改为逐个下载'); for(const f of state.files){ downloadBytes(await f.pdfDoc.save(), f.name.replace(/\.pdf$/i,'')+'_nowatermark.pdf'); } }
+      else{
+        const zip=new JSZip();
+        for(let i=0;i<state.files.length;i++){ const f=state.files[i]; prog.value=Math.round(i/state.files.length*100); zip.file(f.name.replace(/\.pdf$/i,'')+'_nowatermark.pdf', await f.pdfDoc.save()); }
+        const blob=await zip.generateAsync({type:'blob'});
+        const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='pdf_nowatermark_'+Date.now()+'.zip'; a.click(); setTimeout(()=>URL.revokeObjectURL(url),1500);
+        log('已导出 ZIP（'+state.files.length+' 个文件）');
+      }
+    }
+    toast('导出成功');
+  }catch(e){ log('导出失败: '+e.message); toast('导出失败'); }
+  prog.style.display='none';
+}
+function downloadBytes(bytes, filename){
+  const blob=new Blob([bytes],{type:'application/pdf'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download=filename; a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),1500);
+}
+
+/* ============ 重置 ============ */
+async function resetAll(){
+  for(const f of state.files){ f.pdfDoc=await PDFLib.PDFDocument.load(f.originalBytes); f.regions=[]; f.imagesToRemove=new Set(); f.layersToRemove=new Set(); f.processed=false; }
+  if(state.files.length){ await reloadPreviewDoc(state.files[state.activeFile]); renderPage(); }
+  renderFileList();
+  log('↺ 已重置所有文件到原始状态');
+  toast('已重置');
+}
+
+/* ============ 扫描 UI ============ */
+function scanImages(){
+  const file=state.files[state.activeFile]; if(!file) return;
+  const pages=file.pdfDoc.getPages(); if(state.activePage>=pages.length) return;
+  const imgs=listPageImages(file.pdfDoc, pages[state.activePage]);
+  const box=document.getElementById('imgList');
+  const hint=document.getElementById('scanHint');
+  if(!imgs.length){ box.style.display='none'; hint.textContent='当前页未检测到图片 XObject。'; return; }
+  hint.textContent='勾选要移除的图片（作用于全文所有页）：';
+  box.style.display='block'; box.innerHTML='';
+  imgs.forEach(im=>{
+    const id='img_'+state.activePage+'_'+im.name;
+    const div=document.createElement('div'); div.className='scan-item';
+    div.innerHTML=`<input type="checkbox" id="${id}" ${file.imagesToRemove.has(im.name)?'checked':''}>
+      <label for="${id}" style="flex:1;cursor:pointer;">${im.name} <span style="color:var(--muted)">(${im.w}×${im.h})</span></label>
+      ${im.transparent?'<span class="badge">透明</span>':''}`;
+    div.querySelector('input').addEventListener('change',e=>{
+      if(e.target.checked) file.imagesToRemove.add(im.name); else file.imagesToRemove.delete(im.name);
+    });
+    box.appendChild(div);
+  });
+}
+function scanLayers(){
+  const file=state.files[state.activeFile]; if(!file) return;
+  const layers=listLayers(file.pdfDoc);
+  const box=document.getElementById('layerList');
+  const hint=document.getElementById('scanHint');
+  file.layersToRemove = file.layersToRemove||new Set();
+  if(!layers.length){ box.style.display='none'; hint.textContent='文档中未检测到可选的图层（OCG）。'; return; }
+  hint.textContent='勾选要移除的水印图层（应用到全文）：';
+  box.style.display='block'; box.innerHTML='';
+  layers.forEach(l=>{
+    const id='lyr_'+l;
+    const div=document.createElement('div'); div.className='scan-item';
+    div.innerHTML=`<input type="checkbox" id="${id}" ${file.layersToRemove.has(l)?'checked':''}>
+      <label for="${id}" style="flex:1;cursor:pointer;">${l}</label>`;
+    div.querySelector('input').addEventListener('change',e=>{ if(e.target.checked) file.layersToRemove.add(l); else file.layersToRemove.delete(l); });
+    box.appendChild(div);
+  });
+}
+
+/* ============ 事件绑定 ============ */
+document.getElementById('fileInput').addEventListener('change',e=>loadFiles([...e.target.files]));
+document.getElementById('btnAdd').addEventListener('click',()=>document.getElementById('fileInput').click());
+const dz=document.getElementById('dropzone');
+dz.addEventListener('click',()=>document.getElementById('fileInput').click());
+['dragover','dragenter'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.add('drag');}));
+['dragleave','drop'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.remove('drag');}));
+dz.addEventListener('drop',e=>{ if(e.dataTransfer.files.length) loadFiles([...e.dataTransfer.files]); });
+
+document.getElementById('btnProcess').addEventListener('click',applyProcess);
+document.getElementById('btnExport').addEventListener('click',exportFiles);
+document.getElementById('btnReset').addEventListener('click',resetAll);
+
+document.getElementById('btnPrev').addEventListener('click',()=>{ const f=state.files[state.activeFile]; if(f&&state.activePage>0){state.activePage--; renderPage();} });
+document.getElementById('btnNext').addEventListener('click',()=>{ const f=state.files[state.activeFile]; if(f&&state.activePage<f.numPages-1){state.activePage++; renderPage();} });
+document.getElementById('zoom').addEventListener('input',e=>{ state.scale=parseFloat(e.target.value); document.getElementById('zoomVal').textContent=state.scale.toFixed(1)+'×'; renderPage(); });
+
+function setMode(m){ state.mode=m; document.getElementById('modePreview').classList.toggle('active',m==='preview'); document.getElementById('modeRegion').classList.toggle('active',m==='region'); overlay.style.cursor=(m==='region')?'crosshair':'default'; }
+document.getElementById('modePreview').addEventListener('click',()=>setMode('preview'));
+document.getElementById('modeRegion').addEventListener('click',()=>setMode('region'));
+setMode('preview');
+
+document.getElementById('btnClearRegions').addEventListener('click',()=>{ const f=state.files[state.activeFile]; if(f){ f.regions[state.activePage]=[]; drawOverlay(); updateRegionInfo(); } });
+document.getElementById('btnScanImages').addEventListener('click',scanImages);
+document.getElementById('btnScanLayers').addEventListener('click',scanLayers);
+document.getElementById('btnDiagnose').addEventListener('click',diagnose);
+
+document.getElementById('scopeSeg').addEventListener('click',e=>{ if(e.target.dataset.scope){ state.scope=e.target.dataset.scope; [...e.currentTarget.children].forEach(b=>b.classList.toggle('active',b.dataset.scope===state.scope)); } });
+
+document.getElementById('tolRange').addEventListener('input',e=>document.getElementById('tolVal').textContent=parseFloat(e.target.value).toFixed(2));
+document.getElementById('opRange').addEventListener('input',e=>document.getElementById('opVal').textContent=parseFloat(e.target.value).toFixed(2));
+
+/* 圈选区域交互 */
+overlay.addEventListener('pointerdown',e=>{
+  if(state.mode!=='region') return;
+  const rect=overlay.getBoundingClientRect();
+  curRect={ x1:(e.clientX-rect.left)/rect.width, y1:(e.clientY-rect.top)/rect.height, x2:0, y2:0 };
+  drawing=true; overlay.setPointerCapture(e.pointerId);
+});
+overlay.addEventListener('pointermove',e=>{
+  if(!drawing) return;
+  const rect=overlay.getBoundingClientRect();
+  curRect.x2=(e.clientX-rect.left)/rect.width; curRect.y2=(e.clientY-rect.top)/rect.height;
+  drawOverlay();
+});
+overlay.addEventListener('pointerup',e=>{
+  if(!drawing) return; drawing=false;
+  const rect=overlay.getBoundingClientRect();
+  curRect.x2=(e.clientX-rect.left)/rect.width; curRect.y2=(e.clientY-rect.top)/rect.height;
+  let x=Math.min(curRect.x1,curRect.x2), y=Math.min(curRect.y1,curRect.y2), w=Math.abs(curRect.x2-curRect.x1), h=Math.abs(curRect.y2-curRect.y1);
+  if(w>0.003 && h>0.003){
+    const f=state.files[state.activeFile]; f.regions[state.activePage]=f.regions[state.activePage]||[]; f.regions[state.activePage].push({x,y,w,h});
+    log('本页新增圈选区域（'+(f.regions[state.activePage].length)+'）');
+  }
+  curRect=null; drawOverlay(); updateRegionInfo();
+});
+
+/* ============ 初始化 ============ */
+function init(){
+  if(!window.PDFLib || !window.pdfjsLib){ document.getElementById('libState').textContent='⚠ 库加载失败（需联网加载 CDN）'; document.getElementById('libState').style.color='var(--danger)'; return; }
+  document.getElementById('libState').textContent='✓ 库已就绪';
+  document.getElementById('libState').style.color='var(--ok)';
+  pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  log('就绪。请添加 PDF 文件开始。');
+}
+window.addEventListener('load',init);
+</script>
+</body>
+</html>

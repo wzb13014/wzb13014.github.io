@@ -1,0 +1,1267 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>会议计时器</title>
+<style>
+  :root{
+    --bg:#0b0f17;
+    --panel:#141a24;
+    --panel-2:#1b2330;
+    --border:#283142;
+    --text:#e8edf4;
+    --text-dim:#8b97a7;
+    --accent:#34d399;
+    --accent-2:#60a5fa;
+    --warn:#fbbf24;
+    --danger:#f87171;
+    --ring-bg:#273041;
+    --shadow:0 14px 48px rgba(0,0,0,.45);
+    --radius:18px;
+  }
+  html[data-theme="light"]{
+    --bg:#eef1f6;
+    --panel:#ffffff;
+    --panel-2:#f3f6fa;
+    --border:#dde3ec;
+    --text:#1b2330;
+    --text-dim:#5c6878;
+    --accent:#059669;
+    --accent-2:#2563eb;
+    --warn:#d97706;
+    --danger:#dc2626;
+    --ring-bg:#e4e9f0;
+    --shadow:0 14px 40px rgba(31,45,61,.12);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:"Segoe UI",-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+    background:
+      radial-gradient(1100px 520px at 50% -12%, rgba(96,165,250,.10), transparent 60%),
+      radial-gradient(900px 480px at 100% 0%, rgba(52,211,153,.07), transparent 55%),
+      var(--bg);
+    color:var(--text);
+    -webkit-font-smoothing:antialiased;
+    transition:background .3s,color .3s;
+    min-height:100vh;
+  }
+
+  /* 屏幕边缘呼吸灯 */
+  #edgeLight{
+    position:fixed;inset:0;pointer-events:none;z-index:60;opacity:0;
+    box-shadow:inset 0 0 64px 16px var(--edge-color,#34d399);
+    transition:opacity .45s ease;
+  }
+  #edgeLight.on{animation:edgeBreath 1.5s ease-in-out infinite}
+  @keyframes edgeBreath{0%,100%{opacity:.28}50%{opacity:.92}}
+
+  .app{max-width:1200px;margin:0 auto;padding:22px 24px 48px}
+
+  /* ===== Header ===== */
+  header{
+    display:flex;align-items:center;gap:14px;
+    padding:6px 4px 20px;margin-bottom:22px;
+    border-bottom:1px solid var(--border);
+  }
+  header .logo{
+    width:42px;height:42px;border-radius:13px;flex:none;
+    background:linear-gradient(135deg,var(--accent-2),var(--accent));
+    display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;
+    box-shadow:0 6px 18px rgba(52,211,153,.30);
+  }
+  .title-edit{
+    font-size:21px;font-weight:700;color:var(--text);letter-spacing:.3px;
+    background:transparent;border:none;border-bottom:2px dashed transparent;
+    padding:5px 8px;min-width:200px;max-width:520px;border-radius:8px;transition:.18s;
+  }
+  .title-edit:hover{border-bottom-color:var(--border)}
+  .title-edit:focus{outline:none;border-bottom-color:var(--accent-2);background:var(--panel)}
+  header .spacer{flex:1}
+  .icon-btn{
+    background:var(--panel);color:var(--text);border:1px solid var(--border);
+    width:42px;height:42px;border-radius:12px;cursor:pointer;font-size:17px;
+    display:flex;align-items:center;justify-content:center;transition:.18s;
+  }
+  .icon-btn:hover{border-color:var(--accent-2);color:var(--accent-2);transform:translateY(-1px)}
+
+  .main{display:grid;grid-template-columns:1fr 390px;gap:24px;align-items:start}
+  @media(max-width:920px){.main{grid-template-columns:1fr}}
+
+  /* ===== Timer panel ===== */
+  .timer-panel{
+    background:linear-gradient(180deg,var(--panel),var(--panel-2));
+    border:1px solid var(--border);border-radius:var(--radius);
+    padding:30px 26px 26px;box-shadow:var(--shadow);
+    position:relative;overflow:hidden;
+  }
+  .timer-panel:before{
+    content:"";position:absolute;inset:0 0 auto 0;height:3px;
+    background:linear-gradient(90deg,var(--accent-2),var(--accent));
+    opacity:.9;
+  }
+  .mode-switch{display:flex;gap:8px;justify-content:center;margin-bottom:20px}
+  .mode-switch button{
+    background:var(--panel-2);border:1px solid var(--border);color:var(--text-dim);
+    padding:8px 22px;border-radius:22px;cursor:pointer;font-size:14px;font-weight:600;transition:.18s;
+  }
+  .mode-switch button:hover{color:var(--text)}
+  .mode-switch button.active{
+    background:linear-gradient(135deg,var(--accent-2),#3b82f6);
+    color:#fff;border-color:transparent;box-shadow:0 6px 16px rgba(96,165,250,.30);
+  }
+
+  .ring-wrap{position:relative;width:320px;height:320px;margin:8px auto 10px}
+  .ring{transform:rotate(-90deg)}
+  .ring-bg{fill:none;stroke:var(--ring-bg);stroke-width:16}
+  .ring-fg{
+    fill:none;stroke:var(--ring-color,var(--accent));stroke-width:16;stroke-linecap:round;
+    filter:drop-shadow(0 0 12px var(--ring-color,var(--accent)));
+    transition:stroke-dashoffset .25s linear;
+  }
+  .ring-center{
+    position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
+  }
+  .clock{font-size:72px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:1px;line-height:1;text-shadow:0 2px 18px rgba(0,0,0,.25)}
+  .clock.overtime{color:var(--danger)}
+  .status-label{margin-top:12px;font-size:14px;color:var(--text-dim);font-weight:600;letter-spacing:.5px}
+  .status-label.warn{color:var(--warn)}
+  .status-label.danger{color:var(--danger)}
+  .agenda-now{margin-top:6px;font-size:13px;color:var(--accent-2);font-weight:600;max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+  .total-info{display:flex;justify-content:center;gap:26px;margin:16px 0 6px;font-size:13px;color:var(--text-dim)}
+  .total-info b{color:var(--text);font-weight:600}
+
+  .controls{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:20px}
+  .btn{
+    border:1px solid var(--border);background:var(--panel-2);color:var(--text);
+    padding:12px 24px;border-radius:12px;cursor:pointer;font-size:15px;font-weight:600;transition:.18s;
+    display:inline-flex;align-items:center;gap:6px;
+  }
+  .btn:hover{border-color:var(--accent-2);transform:translateY(-1px)}
+  .btn:active{transform:translateY(0)}
+  .btn.primary{background:linear-gradient(135deg,var(--accent),#10b981);color:#04210c;border-color:transparent;box-shadow:0 8px 20px rgba(52,211,153,.28)}
+  .btn.primary:hover{filter:brightness(1.06)}
+  .btn.warn{background:linear-gradient(135deg,var(--warn),#f59e0b);color:#3a2a00;border-color:transparent}
+  .btn.danger{background:linear-gradient(135deg,var(--danger),#ef4444);color:#fff;border-color:transparent;box-shadow:0 8px 20px rgba(248,113,113,.25)}
+  .btn.ghost{background:transparent}
+  .btn.ghost:hover{border-color:var(--accent-2);color:var(--accent-2)}
+
+  .presets{display:flex;gap:9px;justify-content:center;flex-wrap:wrap;margin-top:20px}
+  .chip{
+    background:var(--panel-2);border:1px solid var(--border);color:var(--text-dim);
+    padding:7px 16px;border-radius:20px;cursor:pointer;font-size:13px;font-weight:600;transition:.18s;
+  }
+  .chip:hover{border-color:var(--accent);color:var(--accent);transform:translateY(-1px)}
+  .custom-time{display:flex;gap:7px;align-items:center;justify-content:center;margin-top:14px}
+  .custom-time input{
+    width:66px;background:var(--panel-2);border:1px solid var(--border);color:var(--text);
+    border-radius:9px;padding:8px 8px;font-size:14px;text-align:center;transition:.15s;
+  }
+  .custom-time input:focus{outline:none;border-color:var(--accent-2)}
+  .custom-time span{font-size:13px;color:var(--text-dim)}
+
+  /* alert flash */
+  @keyframes flashbg{0%,100%{background:linear-gradient(180deg,var(--panel),var(--panel-2))}50%{background:rgba(248,113,113,.20)}}
+  .timer-panel.alarm{animation:flashbg 1s ease-in-out infinite;border-color:var(--danger)}
+  @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+  .ring-wrap.alarm .ring-fg{animation:pulse .8s ease-in-out infinite}
+
+  /* ===== Sidebar ===== */
+  .sidebar{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+  .tabs{display:flex;background:var(--panel-2)}
+  .tabs button{
+    flex:1;background:transparent;border:none;color:var(--text-dim);
+    padding:15px 4px;cursor:pointer;font-size:14px;font-weight:600;border-bottom:2px solid transparent;transition:.18s;
+  }
+  .tabs button:hover{color:var(--text)}
+  .tabs button.active{color:var(--text);border-bottom-color:var(--accent-2);background:var(--panel)}
+  .tab-panel{display:none;padding:18px 18px 20px}
+  .tab-panel.active{display:block;animation:fadein .25s ease}
+  @keyframes fadein{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+  /* agenda */
+  .agenda-summary{display:flex;justify-content:space-between;font-size:12px;color:var(--text-dim);margin-bottom:12px}
+  .agenda-summary b{color:var(--text)}
+  .agenda-list{list-style:none;display:flex;flex-direction:column;gap:9px;max-height:300px;overflow:auto;padding-right:2px}
+  .agenda-item{
+    display:flex;align-items:center;gap:11px;background:var(--panel-2);
+    border:1px solid var(--border);border-left:4px solid var(--border);
+    border-radius:11px;padding:11px 13px;transition:.18s;
+  }
+  .agenda-item:hover{border-color:var(--accent-2)}
+  .agenda-item.active{border-left-color:var(--accent);background:rgba(52,211,153,.10);box-shadow:0 4px 14px rgba(52,211,153,.10)}
+  .agenda-item.done{border-left-color:var(--accent-2);opacity:.7}
+  .agenda-item.overtime{border-left-color:var(--danger)}
+  .agenda-item .idx{width:24px;height:24px;flex:none;border-radius:50%;background:var(--border);color:var(--text);font-size:12px;display:flex;align-items:center;justify-content:center;font-weight:700}
+  .agenda-item.active .idx{background:var(--accent);color:#04210c}
+  .agenda-item .meta{flex:1;min-width:0}
+  .agenda-item .nm{font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .agenda-item .sub{font-size:12px;color:var(--text-dim);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .agenda-item .acts{display:flex;gap:5px;flex:none}
+  .mini{
+    background:transparent;border:1px solid var(--border);color:var(--text-dim);
+    width:28px;height:28px;border-radius:8px;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;transition:.15s;
+  }
+  .mini:hover{color:var(--accent-2);border-color:var(--accent-2)}
+  .mini.del:hover{color:var(--danger);border-color:var(--danger)}
+  .agenda-empty{color:var(--text-dim);font-size:13px;text-align:center;padding:20px 0}
+
+  .add-agenda{display:flex;gap:7px;margin-top:14px}
+  .add-agenda input{
+    flex:1;min-width:0;background:var(--panel-2);border:1px solid var(--border);color:var(--text);
+    border-radius:10px;padding:10px 11px;font-size:14px;transition:.15s;
+  }
+  .add-agenda input:focus{outline:none;border-color:var(--accent-2)}
+  .add-agenda input.dur{width:66px;flex:none;text-align:center}
+
+  /* settings */
+  .set-group{margin-bottom:20px;padding-bottom:18px;border-bottom:1px dashed var(--border)}
+  .set-group:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
+  .set-group h4{font-size:12px;color:var(--accent-2);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;font-weight:700}
+  .row{display:flex;align-items:center;justify-content:space-between;padding:9px 0;gap:10px}
+  .row label{font-size:14px}
+  .row .hint{font-size:12px;color:var(--text-dim);margin-top:3px;display:block}
+  .switch{position:relative;width:46px;height:26px;flex:none}
+  .switch input{opacity:0;width:0;height:0}
+  .slider{position:absolute;inset:0;background:var(--ring-bg);border-radius:26px;cursor:pointer;transition:.22s}
+  .slider:before{content:"";position:absolute;height:20px;width:20px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.22s;box-shadow:0 2px 5px rgba(0,0,0,.3)}
+  .switch input:checked + .slider{background:var(--accent)}
+  .switch input:checked + .slider:before{transform:translateX(20px)}
+  input[type=range]{width:130px;accent-color:var(--accent-2);cursor:pointer}
+  .warn-points{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px}
+  .wp{
+    background:var(--panel-2);border:1px solid var(--border);color:var(--text-dim);
+    padding:6px 11px;border-radius:16px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:7px;
+  }
+  .wp button{background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:13px;line-height:1}
+  .wp button:hover{color:var(--danger)}
+  .seg{display:flex;gap:6px}
+  .seg button{background:var(--panel-2);border:1px solid var(--border);color:var(--text-dim);padding:7px 13px;border-radius:9px;cursor:pointer;font-size:13px;transition:.15s}
+  .seg button:hover{color:var(--text)}
+  .seg button.active{background:var(--accent-2);color:#fff;border-color:transparent}
+
+  /* color picker */
+  .color-row{display:flex;gap:9px;align-items:center;flex-wrap:wrap}
+  .swatch{width:26px;height:26px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:.15s;box-shadow:0 0 0 1px var(--border)}
+  .swatch:hover{transform:scale(1.12)}
+  .swatch.active{border-color:var(--text);transform:scale(1.14)}
+  .color-row input[type=color]{width:36px;height:30px;border:1px solid var(--border);border-radius:9px;background:var(--panel-2);cursor:pointer;padding:2px}
+
+  /* records */
+  .rec-list{list-style:none;display:flex;flex-direction:column;gap:7px;max-height:240px;overflow:auto;margin-bottom:14px;padding-right:2px}
+  .rec-item{display:flex;justify-content:space-between;font-size:13px;padding:9px 12px;background:var(--panel-2);border-radius:10px;border:1px solid var(--border)}
+  .rec-item .nm{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .rec-item .tm{color:var(--text-dim);font-variant-numeric:tabular-nums;flex:none;margin-left:10px}
+  .rec-actions{display:flex;gap:8px;flex-wrap:wrap}
+  .rec-actions .btn{padding:9px 12px;font-size:13px;flex:1;min-width:62px;justify-content:center}
+  .rec-empty{color:var(--text-dim);font-size:13px;text-align:center;padding:16px 0}
+
+  .footer-note{margin-top:28px;text-align:center;color:var(--text-dim);font-size:12px;line-height:1.8}
+  kbd{background:var(--panel-2);border:1px solid var(--border);border-bottom-width:2px;border-radius:6px;padding:1px 7px;font-size:11px;font-family:inherit}
+
+  /* fullscreen */
+  body:fullscreen .app{max-width:none;height:100vh;display:flex;flex-direction:column;justify-content:center}
+  body:fullscreen .main{grid-template-columns:1fr;justify-items:center}
+  body:fullscreen .sidebar{display:none}
+  body:-webkit-full-screen .app{max-width:none}
+</style>
+</head>
+<body>
+<div id="edgeLight"></div>
+<div class="app">
+  <header>
+    <div class="logo">⏱</div>
+    <input id="meetingTitle" class="title-edit" value="团队周会" maxlength="40" />
+    <div class="spacer"></div>
+    <button class="icon-btn" id="themeBtn" title="切换主题">◐</button>
+    <button class="icon-btn" id="fsBtn" title="全屏 (F)">⛶</button>
+  </header>
+
+  <div class="main">
+    <!-- 计时面板 -->
+    <section class="timer-panel" id="timerPanel">
+      <div class="mode-switch">
+        <button id="modeCountdown" class="active">倒计时</button>
+        <button id="modeCountup">正计时</button>
+      </div>
+
+      <div class="ring-wrap" id="ringWrap">
+        <svg class="ring" width="320" height="320" viewBox="0 0 320 320">
+          <circle class="ring-bg" cx="160" cy="160" r="138"></circle>
+          <circle class="ring-fg" id="ringFg" cx="160" cy="160" r="138"></circle>
+        </svg>
+        <div class="ring-center">
+          <div class="clock" id="clock">05:00</div>
+          <div class="status-label" id="statusLabel">准备就绪</div>
+          <div class="agenda-now" id="agendaNow"></div>
+        </div>
+      </div>
+
+      <div class="total-info">
+        <span>已用 <b id="elapsedTotal">00:00</b></span>
+        <span>预计结束 <b id="etaText">--:--</b></span>
+      </div>
+
+      <div class="controls">
+        <button class="btn primary" id="startBtn">开始</button>
+        <button class="btn warn" id="skipBtn">跳过</button>
+        <button class="btn danger" id="resetBtn">重置</button>
+      </div>
+
+      <div class="presets" id="presets">
+        <span class="chip" data-min="1">1 分</span>
+        <span class="chip" data-min="3">3 分</span>
+        <span class="chip" data-min="5">5 分</span>
+        <span class="chip" data-min="10">10 分</span>
+        <span class="chip" data-min="15">15 分</span>
+        <span class="chip" data-min="30">30 分</span>
+      </div>
+      <div class="custom-time">
+        <span>自定义</span>
+        <input id="customMin" type="number" min="0" max="600" placeholder="分" />
+        <span>分</span>
+        <input id="customSec" type="number" min="0" max="59" placeholder="秒" />
+        <span>秒</span>
+        <button class="btn ghost" id="applyCustom" style="padding:9px 16px;font-size:13px">设定</button>
+      </div>
+    </section>
+
+    <!-- 侧栏 -->
+    <aside class="sidebar">
+      <div class="tabs">
+        <button class="active" data-tab="agenda">议程</button>
+        <button data-tab="settings">设置</button>
+        <button data-tab="records">记录</button>
+      </div>
+
+      <!-- 议程 -->
+      <div class="tab-panel active" id="tab-agenda">
+        <div class="agenda-summary">
+          <span>共 <b id="agCount">0</b> 项</span>
+          <span>计划 <b id="agPlan">00:00</b></span>
+        </div>
+        <ul class="agenda-list" id="agendaList"></ul>
+        <div class="add-agenda">
+          <input id="agName" placeholder="发言人 / 环节名称" />
+          <input id="agDur" class="dur" type="number" min="1" max="600" placeholder="分" />
+          <button class="btn primary" id="addAg" style="padding:10px 18px">添加</button>
+        </div>
+        <div class="row" style="margin-top:12px">
+          <label>批量导入 / 导出议程 <span class="hint">导入支持 CSV / TXT / JSON；导出为 JSON</span></label>
+          <div style="display:flex;gap:8px">
+            <button class="btn ghost" id="importAg" style="padding:8px 16px;font-size:13px">导入</button>
+            <button class="btn ghost" id="exportAg" style="padding:8px 16px;font-size:13px">导出 JSON</button>
+          </div>
+          <input type="file" id="agFile" accept=".csv,.txt,.json" style="display:none">
+        </div>
+        <div class="row" style="margin-top:12px">
+          <label>依次自动进行 <span class="hint">上一项结束自动开始下一项</span></label>
+          <label class="switch"><input type="checkbox" id="autoAdvance"><span class="slider"></span></label>
+        </div>
+      </div>
+
+      <!-- 设置 -->
+      <div class="tab-panel" id="tab-settings">
+        <div class="set-group">
+          <h4>提醒与声音</h4>
+          <div class="row">
+            <label>结束响铃</label>
+            <label class="switch"><input type="checkbox" id="optEndBell" checked><span class="slider"></span></label>
+          </div>
+          <div class="row">
+            <label>倒计时最后 10 秒滴答</label>
+            <label class="switch"><input type="checkbox" id="optTick" checked><span class="slider"></span></label>
+          </div>
+          <div class="row">
+            <label>正计时超时提醒</label>
+            <label class="switch"><input type="checkbox" id="optOver" checked><span class="slider"></span></label>
+          </div>
+          <div class="row">
+            <label>提示音类型</label>
+            <span class="seg" id="soundType">
+              <button data-v="bell" class="active">铃声</button>
+              <button data-v="chord">和弦</button>
+              <button data-v="beep">蜂鸣</button>
+            </span>
+          </div>
+          <div class="row">
+            <label>音量</label>
+            <input type="range" id="volume" min="0" max="100" value="70">
+          </div>
+          <div class="row">
+            <label>静音 <span class="hint">总开关</span></label>
+            <label class="switch"><input type="checkbox" id="optMute"><span class="slider"></span></label>
+          </div>
+        </div>
+
+        <div class="set-group">
+          <h4>屏幕边缘彩灯</h4>
+          <div class="row">
+            <label>启用边缘呼吸灯 <span class="hint">倒计时临近结束时屏幕四周亮起彩灯</span></label>
+            <label class="switch"><input type="checkbox" id="edgeLightOn"><span class="slider"></span></label>
+          </div>
+          <div class="row">
+            <label>提前亮起（结束前）</label>
+            <span style="display:flex;align-items:center;gap:6px">
+              <input id="edgeSec" type="number" min="1" max="120" value="10" style="width:66px;background:var(--panel-2);border:1px solid var(--border);color:var(--text);border-radius:9px;padding:8px;font-size:14px;text-align:center">
+              <span style="font-size:13px;color:var(--text-dim)">秒</span>
+            </span>
+          </div>
+          <div class="row" style="align-items:flex-start">
+            <label style="padding-top:4px">灯光颜色</label>
+            <div class="color-row">
+              <span class="swatch" data-c="#34d399" style="background:#34d399" title="翠绿"></span>
+              <span class="swatch" data-c="#60a5fa" style="background:#60a5fa" title="蓝"></span>
+              <span class="swatch" data-c="#fbbf24" style="background:#fbbf24" title="琥珀"></span>
+              <span class="swatch" data-c="#f87171" style="background:#f87171" title="红"></span>
+              <span class="swatch" data-c="#a78bfa" style="background:#a78bfa" title="紫"></span>
+              <span class="swatch" data-c="#22d3ee" style="background:#22d3ee" title="青"></span>
+              <input type="color" id="edgeColor" value="#34d399" title="自定义颜色">
+            </div>
+          </div>
+        </div>
+
+        <div class="set-group">
+          <h4>预警时间点（剩余比例）</h4>
+          <div class="warn-points" id="warnPoints"></div>
+          <div style="display:flex;gap:6px;margin-top:10px">
+            <input id="wpInput" type="number" min="1" max="99" placeholder="如 25" style="width:74px;background:var(--panel-2);border:1px solid var(--border);color:var(--text);border-radius:9px;padding:8px;font-size:13px">
+            <button class="btn ghost" id="wpAdd" style="padding:8px 16px;font-size:13px">添加</button>
+          </div>
+          <div class="hint" style="margin-top:8px">到达这些剩余比例时会提示一次（如 25% 表示还剩 1/4 时间）。</div>
+        </div>
+      </div>
+
+      <!-- 记录 -->
+      <div class="tab-panel" id="tab-records">
+        <ul class="rec-list" id="recList"></ul>
+        <div class="rec-empty" id="recEmpty">暂无记录。开始计时并结束议程后将自动记录用时。</div>
+        <div class="rec-actions">
+          <button class="btn ghost" id="copyRec">复制</button>
+          <button class="btn ghost" id="csvRec">CSV</button>
+          <button class="btn ghost" id="txtRec">TXT</button>
+          <button class="btn ghost" id="jsonRec">JSON</button>
+          <button class="btn ghost danger" id="clearRec">清空</button>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <div class="footer-note">
+    快捷键：<kbd>空格</kbd> 开始/暂停 · <kbd>R</kbd> 重置 · <kbd>N</kbd> 跳过/下一项 · <kbd>F</kbd> 全屏 · <kbd>M</kbd> 静音
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------- 状态 ----------
+  var state = {
+    mode:"countdown",        // countdown | countup
+    running:false,
+    startTime:0,             // 本次计时的起始时间戳(ms)
+    accumulated:0,           // 暂停时累计的已用毫秒
+    target:5*60*1000,        // 目标毫秒（倒计时/正计时上限）
+    curIdx:-1,               // 当前议程索引，-1 表示独立计时
+    triggeredWarns:{},       // 已触发的预警点 key
+    lastTickSec:-1,          // 最后滴答秒
+    ended:false,
+    alarm:false,
+    _overPlayed:false
+  };
+
+  var settings = {
+    autoAdvance:false,
+    endBell:true,
+    tick:true,
+    over:true,
+    soundType:"bell",
+    volume:0.7,
+    mute:false,
+    warnPoints:[75,50,25],    // 剩余比例(%)
+    edgeLight:false,
+    edgeColor:"#34d399",
+    edgeSec:10
+  };
+
+  var agenda = [];   // {id,name,minutes,actualMs,status}
+  var records = [];  // {name,ms,over}
+  var aid = 1;
+
+  // ---------- DOM ----------
+  var $ = function(id){return document.getElementById(id);};
+  var clockEl=$("clock"), statusEl=$("statusLabel"), agendaNowEl=$("agendaNow");
+  var ringFg=$("ringFg"), ringWrap=$("ringWrap"), timerPanel=$("timerPanel");
+  var startBtn=$("startBtn"), skipBtn=$("skipBtn"), resetBtn=$("resetBtn");
+  var elapsedTotalEl=$("elapsedTotal"), etaTextEl=$("etaText");
+  var C = 2*Math.PI*138;
+
+  ringFg.style.strokeDasharray = C;
+
+  // ---------- 工具 ----------
+  function fmt(ms){
+    if(ms<0) ms=0;
+    var s=Math.floor(ms/1000);
+    var h=Math.floor(s/3600); s-=h*3600;
+    var m=Math.floor(s/60); s-=m*60;
+    var p=function(n){return (n<10?"0":"")+n;};
+    return h>0 ? (h+":"+p(m)+":"+p(s)) : (p(m)+":"+p(s));
+  }
+  function now(){return Date.now();}
+
+  function elapsed(){
+    return state.running ? state.accumulated + (now()-state.startTime) : state.accumulated;
+  }
+
+  function hexToRgba(hex,a){
+    hex=(hex||"#34d399").replace("#","");
+    if(hex.length===3) hex=hex.split("").map(function(x){return x+x;}).join("");
+    var n=parseInt(hex,16);
+    var r=(n>>16)&255,g=(n>>8)&255,b=n&255;
+    return "rgba("+r+","+g+","+b+","+a+")";
+  }
+
+  // ---------- 声音 ----------
+  var actx=null;
+  function ac(){ if(!actx){ try{ actx=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ actx=null; } } return actx; }
+  function tone(freq,dur,type,when,gainScale){
+    if(settings.mute) return;
+    var c=ac(); if(!c) return;
+    var o=c.createOscillator(), g=c.createGain();
+    o.type=type||"sine"; o.frequency.value=freq;
+    o.connect(g); g.connect(c.destination);
+    var t=c.currentTime+(when||0);
+    var peak=(gainScale||1)*settings.volume*0.5;
+    g.gain.setValueAtTime(0.0001,t);
+    g.gain.exponentialRampToValueAtTime(Math.max(peak,0.0002),t+0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+    o.start(t); o.stop(t+dur+0.02);
+  }
+  function playEnd(){
+    if(settings.mute || !settings.endBell) return;
+    if(settings.soundType==="chord"){
+      tone(523,0.5,"triangle",0,1); tone(659,0.5,"triangle",0.12,1); tone(784,0.7,"triangle",0.24,1);
+    } else if(settings.soundType==="beep"){
+      for(var i=0;i<3;i++) tone(1000,0.12,"square",i*0.18,1);
+    } else {
+      tone(880,0.3,"sine",0,1); tone(880,0.3,"sine",0.35,1); tone(880,0.4,"sine",0.7,1);
+    }
+  }
+  function playWarn(){
+    if(settings.mute) return;
+    if(settings.soundType==="beep") tone(700,0.14,"square",0,1);
+    else tone(660,0.2,"sine",0,1);
+  }
+  function playTick(){
+    if(settings.mute) return;
+    tone(1200,0.06,"square",0,0.7);
+  }
+  function playOver(){
+    if(settings.mute) return;
+    tone(440,0.18,"sawtooth",0,0.8); tone(330,0.25,"sawtooth",0.2,0.8);
+  }
+
+  // ---------- 渲染时钟/环 ----------
+  function setRing(color){
+    ringFg.style.setProperty("--ring-color", color);
+  }
+  function render(){
+    var el = elapsed();
+    var remain = state.target - el;
+    var display, progress, label, labelCls="", overtime=false;
+
+    if(state.mode==="countdown"){
+      display = remain>0 ? remain : 0;
+      overtime = remain < 0;
+      if(overtime){
+        clockEl.classList.add("overtime");
+        display = -remain; // 显示超时时长
+      } else {
+        clockEl.classList.remove("overtime");
+      }
+      progress = state.target>0 ? Math.max(0,Math.min(1, remain/state.target)) : 0;
+      ringFg.style.strokeDashoffset = C*(1-progress);
+      setRing(overtime ? "var(--danger)" : (remain<=state.target*0.1 && remain>0 ? "var(--warn)" : "var(--accent)"));
+      if(overtime){ label="已超时"; labelCls="danger"; }
+      else if(remain<=state.target*0.1 && remain>0){ label="即将结束"; labelCls="warn"; }
+      else label="倒计时中";
+    } else {
+      // countup
+      display = el;
+      var cap = state.target>0 ? state.target : 60000;
+      progress = cap>0 ? Math.min(1, el/cap) : 0;
+      ringFg.style.strokeDashoffset = C*(1-progress);
+      if(state.target>0 && el>state.target){
+        overtime=true; clockEl.classList.add("overtime");
+        setRing("var(--danger)"); label="已超时"; labelCls="danger";
+      } else {
+        clockEl.classList.remove("overtime");
+        setRing(progress>0.8 ? "var(--warn)" : "var(--accent-2)");
+        label="正计时";
+      }
+    }
+
+    clockEl.textContent = fmt(display);
+    statusEl.textContent = label;
+    statusEl.className = "status-label" + (labelCls?(" "+labelCls):"");
+
+    // 当前议程名
+    if(state.curIdx>=0 && agenda[state.curIdx]){
+      agendaNowEl.textContent = "▸ " + agenda[state.curIdx].name;
+    } else {
+      agendaNowEl.textContent = "";
+    }
+
+    elapsedTotalEl.textContent = fmt(el);
+    // ETA
+    if(state.mode==="countdown" && !overtime){
+      var end = new Date(now()+remain);
+      etaTextEl.textContent = ("0"+end.getHours()).slice(-2)+":"+("0"+end.getMinutes()).slice(-2);
+    } else {
+      etaTextEl.textContent = "--:--";
+    }
+
+    // 边缘彩灯
+    updateEdgeLight(remain, overtime);
+
+    // 预警/滴答触发
+    if(state.running && state.mode==="countdown" && !overtime){
+      checkWarns(remain);
+      if(settings.tick){
+        var rs = Math.ceil(remain/1000);
+        if(rs<=10 && rs>0 && rs!==state.lastTickSec){
+          state.lastTickSec=rs; playTick();
+        }
+      }
+    }
+    if(state.running && overtime && !state._overPlayed){
+      state._overPlayed=true;
+      if(settings.over) playOver();
+    }
+    if(!overtime) state._overPlayed=false;
+  }
+
+  function updateEdgeLight(remain, overtime){
+    var el=$("edgeLight");
+    if(!el) return;
+    var on = settings.edgeLight && state.mode==="countdown" && (state.running || state.alarm) && (remain <= settings.edgeSec*1000);
+    if(on) el.classList.add("on"); else el.classList.remove("on");
+  }
+
+  function checkWarns(remain){
+    if(state.target<=0) return;
+    var pct = remain/state.target*100;
+    for(var i=0;i<settings.warnPoints.length;i++){
+      var wp = settings.warnPoints[i];
+      var key = "w"+wp;
+      if(pct<=wp && !state.triggeredWarns[key]){
+        state.triggeredWarns[key]=true;
+        playWarn();
+        flashStatus("剩余 "+wp+"%");
+      }
+    }
+  }
+  var flashTimer=null;
+  function flashStatus(msg){
+    var old=statusEl.textContent;
+    statusEl.textContent = msg;
+    statusEl.classList.add("warn");
+    clearTimeout(flashTimer);
+    flashTimer=setTimeout(function(){ render(); }, 1200);
+  }
+
+  // 主循环
+  var loop=null;
+  function startLoop(){
+    if(loop) return;
+    loop=setInterval(render, 100);
+  }
+  function stopLoop(){
+    clearInterval(loop); loop=null;
+  }
+
+  // ---------- 控制 ----------
+  function setTarget(ms){
+    state.target = Math.max(0, ms);
+  }
+  function start(){
+    if(state.running) return;
+    if(state.ended){ // 结束后再次开始=重置后开始
+      reset(false);
+    }
+    ac(); // 解锁音频
+    state.running=true;
+    state.startTime=now();
+    state.ended=false;
+    state.alarm=false;
+    timerPanel.classList.remove("alarm");
+    ringWrap.classList.remove("alarm");
+    startBtn.textContent="暂停";
+    startLoop();
+    render();
+  }
+  function pause(){
+    if(!state.running) return;
+    state.accumulated = elapsed();
+    state.running=false;
+    startBtn.textContent="继续";
+    render();
+  }
+  function toggle(){
+    if(state.running) pause(); else start();
+  }
+  function reset(restart){
+    var el = elapsed();
+    state.running=false;
+    state.accumulated=0;
+    state.startTime=0;
+    state.ended=false;
+    state.alarm=false;
+    state.triggeredWarns={};
+    state.lastTickSec=-1;
+    state._overPlayed=false;
+    startBtn.textContent="开始";
+    timerPanel.classList.remove("alarm");
+    ringWrap.classList.remove("alarm");
+    $("edgeLight") && $("edgeLight").classList.remove("on");
+    stopLoop();
+    render();
+  }
+
+  function onCountdownEnd(){
+    // 倒计时归零
+    state.ended=true;
+    state.running=false;
+    startBtn.textContent="开始";
+    stopLoop();
+    // 记录议程
+    if(state.curIdx>=0 && agenda[state.curIdx]){
+      var a=agenda[state.curIdx];
+      a.actualMs = state.target;
+      a.status="done";
+      records.unshift({name:a.name, ms:a.actualMs, over:false});
+    } else {
+      // 未绑定议程的自由计时，也保留一段记录
+      records.unshift({name:($("meetingTitle").value||"计时段落"), ms:state.target, over:false});
+    }
+    playEnd();
+    alarmOn();
+    renderAgenda(); renderRecords(); saveAll();
+    // 自动推进
+    if(settings.autoAdvance && state.curIdx>=0 && state.curIdx+1<agenda.length){
+      state.curIdx++;
+      setCurrentAgenda(state.curIdx, true);
+    } else {
+      render();
+    }
+  }
+
+  function alarmOn(){
+    state.alarm=true;
+    timerPanel.classList.add("alarm");
+    ringWrap.classList.add("alarm");
+  }
+
+  // 检测倒计时是否归零（在 render 之外用计时器精确判断）
+  function endWatcher(){
+    if(!state.running) return;
+    if(state.mode==="countdown"){
+      if(elapsed() >= state.target){
+        onCountdownEnd();
+      }
+    }
+  }
+  setInterval(endWatcher, 150);
+
+  // ---------- 议程 ----------
+  function setCurrentAgenda(idx, autoStart){
+    if(idx<0 || idx>=agenda.length) return;
+    // 结束旧的
+    if(state.curIdx>=0 && agenda[state.curIdx] && agenda[state.curIdx].status==="active"){
+      var old=agenda[state.curIdx];
+      old.actualMs = state.running ? elapsed() : old.actualMs;
+      old.status="done";
+      records.unshift({name:old.name, ms:old.actualMs, over: state.target>0 && old.actualMs>state.target});
+    }
+    state.curIdx=idx;
+    var a=agenda[idx];
+    a.status="active";
+    // 设定目标为该议程时长
+    reset(false);
+    setTarget(a.minutes*60*1000);
+    renderAgenda();
+    renderRecords();
+    saveAll();
+    if(autoStart) start(); else render();
+  }
+
+  function addAgenda(name, minutes){
+    name=(name||"").trim();
+    if(!name) return;
+    minutes=Math.max(1, parseInt(minutes,10)||5);
+    agenda.push({id:aid++, name:name, minutes:minutes, actualMs:0, status:"pending"});
+    renderAgenda(); saveAll();
+  }
+  function delAgenda(i){
+    if(i<0||i>=agenda.length) return;
+    if(state.curIdx===i){
+      // 正在计时此项则停止
+      reset(false);
+      state.curIdx=-1;
+    } else if(state.curIdx>i){
+      state.curIdx--;
+    }
+    agenda.splice(i,1);
+    renderAgenda(); saveAll();
+  }
+  function moveAgenda(i, dir){
+    var j=i+dir;
+    if(j<0||j>=agenda.length) return;
+    var t=agenda[i]; agenda[i]=agenda[j]; agenda[j]=t;
+    if(state.curIdx===i) state.curIdx=j;
+    else if(state.curIdx===j) state.curIdx=i;
+    renderAgenda(); saveAll();
+  }
+
+  function renderAgenda(){
+    var ul=$("agendaList");
+    ul.innerHTML="";
+    var planMs=0;
+    agenda.forEach(function(a, i){
+      planMs += a.minutes*60*1000;
+      var li=document.createElement("li");
+      li.className="agenda-item"+(a.status==="active"?" active":a.status==="done"?(a.actualMs>a.minutes*60*1000?" overtime":" done"):a.status==="overtime"?" overtime":"");
+      var statusTxt = a.status==="active"?"进行中":a.status==="done"?(a.actualMs>a.minutes*60*1000?"超时完成":"已完成"):"待开始";
+      li.innerHTML =
+        '<div class="idx">'+(i+1)+'</div>'+
+        '<div class="meta"><div class="nm">'+escapeHtml(a.name)+'</div>'+
+        '<div class="sub">计划 '+fmt(a.minutes*60*1000)+(a.actualMs?' · 实耗 '+fmt(a.actualMs):'')+' · '+statusTxt+'</div></div>'+
+        '<div class="acts">'+
+          '<button class="mini" data-act="play" title="开始此项">▶</button>'+
+          '<button class="mini" data-act="up" title="上移">↑</button>'+
+          '<button class="mini" data-act="down" title="下移">↓</button>'+
+          '<button class="mini del" data-act="del" title="删除">✕</button>'+
+        '</div>';
+      li.querySelector('[data-act="play"]').onclick=function(){ setCurrentAgenda(i, true); };
+      li.querySelector('[data-act="up"]').onclick=function(){ moveAgenda(i,-1); };
+      li.querySelector('[data-act="down"]').onclick=function(){ moveAgenda(i,1); };
+      li.querySelector('[data-act="del"]').onclick=function(){ delAgenda(i); };
+      ul.appendChild(li);
+    });
+    if(agenda.length===0){
+      ul.innerHTML='<div class="agenda-empty">还没有议程，添加发言人 / 环节后点 ▶ 开始轮流计时。</div>';
+    }
+    $("agCount").textContent=agenda.length;
+    $("agPlan").textContent=fmt(planMs);
+  }
+
+  function escapeHtml(s){ return s.replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c];}); }
+
+  // ---------- 记录 ----------
+  function renderRecords(){
+    var ul=$("recList");
+    ul.innerHTML="";
+    records.forEach(function(r){
+      var li=document.createElement("li");
+      li.className="rec-item";
+      li.innerHTML='<span class="nm">'+escapeHtml(r.name)+(r.over?' <span style="color:var(--danger)">超时</span>':'')+'</span><span class="tm">'+fmt(r.ms)+'</span>';
+      ul.appendChild(li);
+    });
+    $("recEmpty").style.display = records.length? "none":"block";
+  }
+  function exportRecords(){
+    if(records.length===0) return "";
+    return records.slice().reverse().map(function(r){
+      return r.name+"\t"+fmt(r.ms)+(r.over?"\t超时":"");
+    }).join("\n");
+  }
+  function buildCsv(){
+    if(records.length===0) return "";
+    return "环节,用时,状态\n"+records.slice().reverse().map(function(r){
+      return '"'+r.name.replace(/"/g,'""')+'","'+fmt(r.ms)+'","'+(r.over?"超时":"正常")+'"';
+    }).join("\n");
+  }
+  function buildTxt(){
+    if(records.length===0) return "";
+    var lines=["会议纪要："+($("meetingTitle").value||"未命名"), "导出时间："+new Date().toLocaleString(), ""];
+    lines.push("环节\t用时\t状态");
+    records.slice().reverse().forEach(function(r){
+      lines.push(r.name+"\t"+fmt(r.ms)+"\t"+(r.over?"超时":"正常"));
+    });
+    return lines.join("\n");
+  }
+  function buildJson(){
+    if(records.length===0) return "";
+    var arr=records.slice().reverse().map(function(r){
+      return {name:r.name, ms:r.ms, duration:fmt(r.ms), over:!!r.over};
+    });
+    return JSON.stringify({title:$("meetingTitle").value, exportedAt:new Date().toISOString(), records:arr}, null, 2);
+  }
+
+  // 议程解析（CSV / TXT / JSON）
+  function splitCsvLine(line){
+    var out=[], cur="", q=false;
+    for(var i=0;i<line.length;i++){
+      var ch=line[i];
+      if(ch==='"'){ q=!q; }
+      else if(ch===',' && !q){ out.push(cur); cur=""; }
+      else cur+=ch;
+    }
+    out.push(cur);
+    return out.map(function(s){return s.trim();});
+  }
+  function parseDuration(tok){
+    tok=(tok||"").trim();
+    if(/^\d+:\d\d$/.test(tok)){ var p=tok.split(":"); return parseInt(p[0],10)+parseInt(p[1],10)/60; }
+    if(/^\d+(\.\d+)?$/.test(tok)) return parseFloat(tok);
+    return null;
+  }
+  function parseAgendaText(text){
+    var out=[], lines=String(text).split(/\r?\n/);
+    lines.forEach(function(raw){
+      var line=raw.trim();
+      if(!line) return;
+      var parts=splitCsvLine(line);
+      if(parts.length===1) parts=line.split(/\s+/);
+      var mins=parseDuration(parts[parts.length-1]);
+      if(mins===null) return;            // 表头 / 无时长，跳过
+      var name=parts.slice(0,parts.length-1).join(" ").trim();
+      if(!name) name="环节"+(agenda.length+out.length+1);
+      if(!(mins>0)) return;          // 名称存在但时长非法，跳过
+      out.push({name:name, minutes:mins});
+    });
+    return out;
+  }
+  function parseAgendaJson(text){
+    var data=JSON.parse(text);
+    var arr = Array.isArray(data) ? data
+            : (data && Array.isArray(data.agenda)) ? data.agenda
+            : (data && Array.isArray(data.items)) ? data.items
+            : (data && Array.isArray(data.list)) ? data.list
+            : (data && Array.isArray(data.records)) ? data.records : null;  // 兼容“记录”导出的 JSON
+    if(!arr) return [];
+    var out=[];
+    arr.forEach(function(x){
+      if(!x || typeof x!=="object") return;
+      var nm = x.name!=null ? x.name : (x.title!=null ? x.title : (x.topic!=null ? x.topic : ""));
+      var mins = x.minutes!=null ? x.minutes
+               : (x.duration!=null ? x.duration
+               : (x.min!=null ? x.min
+               : (x.ms!=null ? x.ms/60000 : null)));   // 记录导出里 ms(毫秒) → 分钟
+      if(typeof mins==="string") mins=parseDuration(mins);
+      if(nm!=="" && mins!=null && !isNaN(mins) && mins>0){
+        out.push({name:String(nm), minutes:mins});
+      }
+    });
+    return out;
+  }
+  function finishImport(items){
+    if(!items || items.length===0){ toast("未解析到有效议程（每行：名称, 分钟）"); return; }
+    items.forEach(function(it){ agenda.push({id:aid++, name:it.name, minutes:it.minutes, actualMs:0, status:"pending"}); });
+    renderAgenda(); saveAll();
+    toast("已导入 "+items.length+" 项议程");
+  }
+
+  // ---------- 持久化 ----------
+  function saveAll(){
+    try{
+      localStorage.setItem("mt.title", $("meetingTitle").value);
+      localStorage.setItem("mt.agenda", JSON.stringify(agenda.map(function(a){return {name:a.name,minutes:a.minutes,actualMs:a.actualMs,status:a.status};})));
+      localStorage.setItem("mt.settings", JSON.stringify(settings));
+      localStorage.setItem("mt.records", JSON.stringify(records));
+    }catch(e){}
+  }
+  function loadAll(){
+    try{
+      var t=localStorage.getItem("mt.title"); if(t) $("meetingTitle").value=t;
+      var a=localStorage.getItem("mt.agenda");
+      if(a){ var arr=JSON.parse(a); arr.forEach(function(x){ agenda.push({id:aid++,name:x.name,minutes:x.minutes,actualMs:x.actualMs||0,status:x.status||"pending"}); }); }
+      var s=localStorage.getItem("mt.settings");
+      if(s){ var so=JSON.parse(s); for(var k in so) settings[k]=so[k]; }
+      var r=localStorage.getItem("mt.records");
+      if(r){ records=JSON.parse(r); }
+    }catch(e){}
+  }
+
+  // ---------- 设置 UI 同步 ----------
+  function applyEdgeColor(){
+    var hex=settings.edgeColor||"#34d399";
+    document.documentElement.style.setProperty("--edge-color", hexToRgba(hex,0.85));
+    document.querySelectorAll(".swatch").forEach(function(s){
+      s.classList.toggle("active", (s.getAttribute("data-c")||"").toLowerCase()===hex.toLowerCase());
+    });
+  }
+  function syncSettingsUI(){
+    $("autoAdvance").checked=settings.autoAdvance;
+    $("optEndBell").checked=settings.endBell;
+    $("optTick").checked=settings.tick;
+    $("optOver").checked=settings.over;
+    $("optMute").checked=settings.mute;
+    $("volume").value=Math.round(settings.volume*100);
+    document.querySelectorAll("#soundType button").forEach(function(b){
+      b.classList.toggle("active", b.getAttribute("data-v")===settings.soundType);
+    });
+    $("edgeLightOn").checked=settings.edgeLight;
+    $("edgeSec").value=settings.edgeSec;
+    $("edgeColor").value=settings.edgeColor;
+    applyEdgeColor();
+    renderWarnPoints();
+  }
+  function renderWarnPoints(){
+    var box=$("warnPoints");
+    box.innerHTML="";
+    settings.warnPoints.slice().sort(function(a,b){return b-a;}).forEach(function(wp){
+      var span=document.createElement("span");
+      span.className="wp";
+      span.innerHTML=wp+'% <button data-w="'+wp+'">✕</button>';
+      span.querySelector("button").onclick=function(){
+        settings.warnPoints = settings.warnPoints.filter(function(x){return x!==wp;});
+        renderWarnPoints(); saveAll();
+      };
+      box.appendChild(span);
+    });
+  }
+
+  // ---------- 事件绑定 ----------
+  startBtn.onclick=toggle;
+  skipBtn.onclick=function(){
+    // 跳过当前议程：记录已用并进入下一项
+    if(state.curIdx>=0 && state.curIdx+1<agenda.length){
+      setCurrentAgenda(state.curIdx+1, state.running || settings.autoAdvance);
+    } else if(state.curIdx>=0){
+      // 最后一项：标记完成
+      var a=agenda[state.curIdx];
+      a.actualMs = elapsed();
+      a.status="done";
+      records.unshift({name:a.name, ms:a.actualMs, over:state.target>0&&a.actualMs>state.target});
+      state.curIdx=-1;
+      reset(false);
+      renderAgenda(); renderRecords(); saveAll();
+    } else {
+      reset(true);
+    }
+  };
+  resetBtn.onclick=function(){ reset(false); };
+
+  $("modeCountdown").onclick=function(){
+    state.mode="countdown";
+    $("modeCountdown").classList.add("active"); $("modeCountup").classList.remove("active");
+    reset(false); render();
+  };
+  $("modeCountup").onclick=function(){
+    state.mode="countup";
+    $("modeCountup").classList.add("active"); $("modeCountdown").classList.remove("active");
+    reset(false); render();
+  };
+
+  // 预设
+  document.querySelectorAll("#presets .chip").forEach(function(c){
+    c.onclick=function(){
+      var m=parseInt(c.getAttribute("data-min"),10);
+      state.mode="countdown";
+      $("modeCountdown").classList.add("active"); $("modeCountup").classList.remove("active");
+      reset(false); setTarget(m*60*1000); render();
+    };
+  });
+  $("applyCustom").onclick=function(){
+    var m=parseInt($("customMin").value,10)||0;
+    var s=parseInt($("customSec").value,10)||0;
+    var total=m*60+s;
+    if(total<=0) return;
+    state.mode="countdown";
+    $("modeCountdown").classList.add("active"); $("modeCountup").classList.remove("active");
+    reset(false); setTarget(total*1000); render();
+  };
+
+  // 议程添加
+  $("addAg").onclick=function(){
+    addAgenda($("agName").value, $("agDur").value);
+    $("agName").value=""; $("agDur").value="";
+    $("agName").focus();
+  };
+  $("agName").addEventListener("keydown",function(e){ if(e.key==="Enter") $("addAg").click(); });
+  $("agDur").addEventListener("keydown",function(e){ if(e.key==="Enter") $("addAg").click(); });
+
+  // 自动推进
+  $("autoAdvance").onchange=function(){ settings.autoAdvance=this.checked; saveAll(); };
+
+  // 议程导入（CSV / TXT / JSON）
+  $("importAg").onclick=function(){ $("agFile").click(); };
+  $("agFile").onchange=function(e){
+    var f=e.target.files && e.target.files[0];
+    if(!f) return;
+    var reader=new FileReader();
+    reader.onload=function(){
+      var items=null;
+      var name=(f.name||"").toLowerCase();
+      try{
+        if(name.endsWith(".json")){
+          items=parseAgendaJson(String(reader.result||""));
+        } else {
+          items=parseAgendaText(String(reader.result||""));
+        }
+      }catch(err){
+        toast("解析失败：文件格式不正确");
+        e.target.value="";
+        return;
+      }
+      finishImport(items);
+      e.target.value="";
+    };
+    reader.readAsText(f, "UTF-8");
+  };
+
+  // 议程导出 JSON（可被上述导入器识别的 {agenda:[...]} 格式）
+  $("exportAg").onclick=function(){
+    if(agenda.length===0){ toast("暂无可导出的议程"); return; }
+    var out={ title:($("meetingTitle").value||"未命名会议"), exportedAt:new Date().toISOString(),
+              agenda:agenda.map(function(a){ return {name:a.name, minutes:a.minutes}; }) };
+    download("会议议程_"+stamp()+".json", JSON.stringify(out, null, 2), "application/json");
+    toast("已导出 "+agenda.length+" 项议程为 JSON");
+  };
+
+  // 设置 - 声音
+  $("optEndBell").onchange=function(){ settings.endBell=this.checked; saveAll(); };
+  $("optTick").onchange=function(){ settings.tick=this.checked; saveAll(); };
+  $("optOver").onchange=function(){ settings.over=this.checked; saveAll(); };
+  $("optMute").onchange=function(){ settings.mute=this.checked; saveAll(); if(!settings.mute) ac(); };
+  $("volume").oninput=function(){ settings.volume=parseInt(this.value,10)/100; saveAll(); };
+  document.querySelectorAll("#soundType button").forEach(function(b){
+    b.onclick=function(){
+      settings.soundType=b.getAttribute("data-v");
+      document.querySelectorAll("#soundType button").forEach(function(x){x.classList.remove("active");});
+      b.classList.add("active"); saveAll();
+      if(!settings.mute){ ac(); tone(660,0.15,"sine",0,1); }
+    };
+  });
+  // 设置 - 边缘彩灯
+  $("edgeLightOn").onchange=function(){ settings.edgeLight=this.checked; saveAll(); };
+  $("edgeSec").oninput=function(){ settings.edgeSec=Math.max(1,parseInt(this.value,10)||10); saveAll(); };
+  $("edgeColor").oninput=function(){ settings.edgeColor=this.value; applyEdgeColor(); saveAll(); };
+  document.querySelectorAll(".swatch").forEach(function(s){
+    s.onclick=function(){
+      settings.edgeColor=s.getAttribute("data-c");
+      $("edgeColor").value=settings.edgeColor;
+      applyEdgeColor(); saveAll();
+    };
+  });
+  // 预警点
+  $("wpAdd").onclick=function(){
+    var v=parseInt($("wpInput").value,10);
+    if(v>0 && v<100 && settings.warnPoints.indexOf(v)<0){
+      settings.warnPoints.push(v); renderWarnPoints(); saveAll();
+    }
+    $("wpInput").value="";
+  };
+
+  // 记录导出
+  $("copyRec").onclick=function(){
+    var txt=exportRecords();
+    if(!txt){ toast("暂无记录"); return; }
+    if(navigator.clipboard){ navigator.clipboard.writeText(txt).then(function(){ toast("已复制记录"); }); }
+    else { toast(txt); }
+  };
+  $("csvRec").onclick=function(){
+    var csv=buildCsv();
+    if(!csv){ toast("暂无记录"); return; }
+    download("会议纪要_"+stamp()+".csv", csv, "text/csv");
+  };
+  $("txtRec").onclick=function(){
+    var txt=buildTxt();
+    if(!txt){ toast("暂无记录"); return; }
+    download("会议纪要_"+stamp()+".txt", txt, "text/plain");
+  };
+  $("jsonRec").onclick=function(){
+    var js=buildJson();
+    if(!js){ toast("暂无记录"); return; }
+    download("会议纪要_"+stamp()+".json", js, "application/json");
+  };
+  $("clearRec").onclick=function(){
+    if(records.length===0){ toast("暂无记录"); return; }
+    records=[]; renderRecords(); saveAll(); toast("已清空记录");
+  };
+
+  // 标签页
+  document.querySelectorAll(".tabs button").forEach(function(b){
+    b.onclick=function(){
+      document.querySelectorAll(".tabs button").forEach(function(x){x.classList.remove("active");});
+      document.querySelectorAll(".tab-panel").forEach(function(x){x.classList.remove("active");});
+      b.classList.add("active");
+      $("tab-"+b.getAttribute("data-tab")).classList.add("active");
+    };
+  });
+
+  // 主题
+  $("themeBtn").onclick=function(){
+    var cur=document.documentElement.getAttribute("data-theme");
+    document.documentElement.setAttribute("data-theme", cur==="light"?"dark":"light");
+    try{ localStorage.setItem("mt.theme", document.documentElement.getAttribute("data-theme")); }catch(e){}
+  };
+
+  // 全屏
+  $("fsBtn").onclick=toggleFs;
+  function toggleFs(){
+    if(!document.fullscreenElement && !document.webkitFullscreenElement){
+      var el=document.documentElement;
+      if(el.requestFullscreen) el.requestFullscreen();
+      else if(el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+    } else {
+      if(document.exitFullscreen) document.exitFullscreen();
+      else if(document.webkitExitFullscreen) document.webkitExitFullscreen();
+    }
+  }
+
+  // 标题
+  $("meetingTitle").addEventListener("input", saveAll);
+
+  // 快捷键
+  document.addEventListener("keydown", function(e){
+    if(e.target.tagName==="INPUT") return;
+    if(e.code==="Space"){ e.preventDefault(); toggle(); }
+    else if(e.key==="r"||e.key==="R"){ reset(false); }
+    else if(e.key==="n"||e.key==="N"){ skipBtn.click(); }
+    else if(e.key==="f"||e.key==="F"){ toggleFs(); }
+    else if(e.key==="m"||e.key==="M"){ settings.mute=!settings.mute; $("optMute").checked=settings.mute; saveAll(); }
+  });
+
+  // 辅助
+  function download(name, content, type){
+    var blob=new Blob([content],{type:type||"text/plain"});
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement("a");
+    a.href=url; a.download=name; document.body.appendChild(a); a.click();
+    document.body.removeChild(a); URL.revokeObjectURL(url);
+  }
+  function stamp(){
+    var d=new Date(), p=function(n){return("0"+n).slice(-2);};
+    return d.getFullYear()+p(d.getMonth()+1)+p(d.getDate())+"_"+p(d.getHours())+p(d.getMinutes());
+  }
+  function toast(msg){
+    var t=document.createElement("div");
+    t.textContent=msg;
+    t.style.cssText="position:fixed;left:50%;bottom:30px;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:9px 18px;border-radius:22px;font-size:13px;font-weight:600;z-index:99;box-shadow:var(--shadow)";
+    document.body.appendChild(t);
+    setTimeout(function(){ document.body.removeChild(t); },1600);
+  }
+
+  // ---------- 初始化 ----------
+  function init(){
+    var th=document.documentElement.getAttribute("data-theme");
+    if(!th){ try{ th=localStorage.getItem("mt.theme")||"dark"; }catch(e){ th="dark"; } document.documentElement.setAttribute("data-theme",th); }
+    loadAll();
+    syncSettingsUI();
+    renderAgenda();
+    renderRecords();
+    // 初始显示目标时间
+    clockEl.textContent = fmt(state.mode==="countdown"?state.target:0);
+    applyEdgeColor();
+    render();
+  }
+  init();
+})();
+</script>
+</body>
+</html>
