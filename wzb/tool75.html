@@ -1,0 +1,3363 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>课文背诵助手 - 智能记忆工具</title>
+<style>
+:root {
+  --primary: #6366f1;
+  --primary-light: #818cf8;
+  --primary-dark: #4f46e5;
+  --bg: #f8fafc;
+  --bg-card: #ffffff;
+  --text: #1e293b;
+  --text-secondary: #64748b;
+  --text-muted: #94a3b8;
+  --border: #e2e8f0;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+  --radius: 12px;
+  --font-size: 16px;
+}
+
+[data-theme="dark"] {
+  --bg: #0f172a;
+  --bg-card: #1e293b;
+  --text: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --border: #334155;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.3);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: var(--font-size);
+  line-height: 1.6;
+  transition: background 0.3s, color 0.3s;
+}
+
+.app-container {
+  display: flex;
+  min-height: 100vh;
+}
+
+.sidebar {
+  width: 260px;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  padding: 20px 0;
+  position: fixed;
+  height: 100vh;
+  overflow-y: auto;
+  z-index: 100;
+  transition: transform 0.3s;
+}
+
+.sidebar-header {
+  padding: 0 20px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.logo {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logo-icon {
+  width: 36px;
+  height: 36px;
+  background: linear-gradient(135deg, var(--primary), var(--primary-light));
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 18px;
+}
+
+.nav-menu {
+  padding: 15px 10px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 15px;
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: all 0.2s;
+  margin-bottom: 4px;
+}
+
+.nav-item:hover {
+  background: var(--bg);
+  color: var(--text);
+}
+
+.nav-item.active {
+  background: linear-gradient(135deg, var(--primary), var(--primary-light));
+  color: white;
+}
+
+.nav-icon {
+  font-size: 18px;
+  width: 24px;
+  text-align: center;
+}
+
+.main-content {
+  flex: 1;
+  margin-left: 260px;
+  padding: 30px 40px;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.page-title {
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.page-subtitle {
+  color: var(--text-secondary);
+  font-size: 14px;
+  margin-top: 4px;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--primary), var(--primary-light));
+  color: white;
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-lg);
+}
+
+.btn-secondary {
+  background: var(--bg-card);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.btn-secondary:hover {
+  background: var(--bg);
+}
+
+.btn-success {
+  background: var(--success);
+  color: white;
+}
+
+.btn-danger {
+  background: var(--danger);
+  color: white;
+}
+
+.btn-warning {
+  background: var(--warning);
+  color: white;
+}
+
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+.btn-lg {
+  padding: 14px 28px;
+  font-size: 16px;
+}
+
+.card {
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 24px;
+  margin-bottom: 20px;
+}
+
+.card-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.input, .textarea, .select {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  background: var(--bg-card);
+  color: var(--text);
+  transition: border-color 0.2s;
+}
+
+.input:focus, .textarea:focus, .select:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.textarea {
+  resize: vertical;
+  min-height: 120px;
+  line-height: 1.8;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 6px;
+  color: var(--text-secondary);
+}
+
+.page { display: none; }
+.page.active { display: block; }
+
+.article-list {
+  display: grid;
+  gap: 16px;
+}
+
+.article-item {
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  padding: 20px;
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 1px solid transparent;
+}
+
+.article-item:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--primary-light);
+}
+
+.article-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+
+.article-title {
+  font-size: 18px;
+  font-weight: 600;
+  flex: 1;
+}
+
+.article-actions {
+  display: flex;
+  gap: 6px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.article-item:hover .article-actions { opacity: 1; }
+
+.article-meta {
+  display: flex;
+  gap: 16px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.article-preview {
+  color: var(--text-secondary);
+  font-size: 14px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.8;
+}
+
+.mastery-bar {
+  height: 6px;
+  background: var(--border);
+  border-radius: 3px;
+  margin-top: 12px;
+  overflow: hidden;
+}
+
+.mastery-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary), var(--success));
+  border-radius: 3px;
+  transition: width 0.5s;
+}
+
+.badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.badge-primary { background: rgba(99,102,241,0.1); color: var(--primary); }
+.badge-success { background: rgba(16,185,129,0.1); color: var(--success); }
+.badge-warning { background: rgba(245,158,11,0.1); color: var(--warning); }
+.badge-danger { background: rgba(239,68,68,0.1); color: var(--danger); }
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s;
+}
+
+.modal-overlay.show {
+  opacity: 1;
+  visibility: visible;
+}
+
+.modal {
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  width: 90%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+  transform: scale(0.9);
+  transition: transform 0.3s;
+}
+
+.modal-overlay.show .modal {
+  transform: scale(1);
+}
+
+.modal-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-title {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.modal-close {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: var(--bg);
+  cursor: pointer;
+  font-size: 18px;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-body {
+  padding: 24px;
+}
+
+.modal-footer {
+  padding: 16px 24px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.search-bar {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.search-bar .input {
+  flex: 1;
+  min-width: 200px;
+}
+
+.category-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.category-tab {
+  padding: 6px 16px;
+  border-radius: 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s;
+}
+
+.category-tab.active {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-secondary);
+}
+
+.empty-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.stat-card {
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  padding: 20px;
+  box-shadow: var(--shadow);
+}
+
+.stat-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.stat-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+.practice-modes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.mode-card {
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  padding: 24px;
+  text-align: center;
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  transition: all 0.2s;
+  border: 2px solid transparent;
+}
+
+.mode-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--primary-light);
+}
+
+.mode-icon {
+  font-size: 40px;
+  margin-bottom: 12px;
+}
+
+.mode-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.mode-desc {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.practice-container {
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 32px;
+  min-height: 400px;
+}
+
+.practice-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.practice-title {
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.practice-progress {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.text-display {
+  font-size: 18px;
+  line-height: 2.2;
+  letter-spacing: 0.5px;
+}
+
+.text-line {
+  margin-bottom: 8px;
+  padding: 4px 0;
+}
+
+.word-hidden {
+  background: var(--border);
+  color: transparent;
+  border-radius: 4px;
+  padding: 0 4px;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.2s;
+}
+
+.word-hidden:hover {
+  background: var(--primary-light);
+}
+
+.word-revealed {
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.blank-input {
+  display: inline-block;
+  width: 80px;
+  border: none;
+  border-bottom: 2px solid var(--primary);
+  background: transparent;
+  font-size: inherit;
+  font-family: inherit;
+  color: var(--text);
+  text-align: center;
+  margin: 0 2px;
+  outline: none;
+}
+
+.blank-input.correct {
+  border-color: var(--success);
+  color: var(--success);
+}
+
+.blank-input.wrong {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.practice-controls {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+
+.timer {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.review-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.review-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.review-priority {
+  width: 8px;
+  height: 40px;
+  border-radius: 4px;
+}
+
+.priority-high { background: var(--danger); }
+.priority-medium { background: var(--warning); }
+.priority-low { background: var(--success); }
+
+.review-info {
+  flex: 1;
+}
+
+.review-title {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.review-desc {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.settings-section {
+  margin-bottom: 32px;
+}
+
+.settings-section h3 {
+  font-size: 16px;
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.setting-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+}
+
+.setting-label {
+  font-size: 14px;
+}
+
+.setting-desc {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.toggle-switch {
+  position: relative;
+  width: 48px;
+  height: 26px;
+  background: var(--border);
+  border-radius: 13px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.toggle-switch.active {
+  background: var(--primary);
+}
+
+.toggle-switch::after {
+  content: '';
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  background: white;
+  border-radius: 50%;
+  top: 3px;
+  left: 3px;
+  transition: transform 0.3s;
+}
+
+.toggle-switch.active::after {
+  transform: translateX(22px);
+}
+
+.font-size-control {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.font-size-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--text);
+}
+
+.font-size-value {
+  min-width: 50px;
+  text-align: center;
+  font-size: 14px;
+}
+
+.mobile-menu-btn {
+  display: none;
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  z-index: 200;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  font-size: 20px;
+  box-shadow: var(--shadow);
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    transform: translateX(-100%);
+  }
+  .sidebar.open {
+    transform: translateX(0);
+  }
+  .main-content {
+    margin-left: 0;
+    padding: 20px;
+  }
+  .mobile-menu-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    padding-left: 50px;
+  }
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .practice-modes {
+    grid-template-columns: 1fr;
+  }
+}
+
+.toast {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  background: var(--text);
+  color: var(--bg-card);
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  z-index: 2000;
+  opacity: 0;
+  transition: all 0.3s;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.progress-ring {
+  transform: rotate(-90deg);
+}
+
+.progress-ring-bg {
+  fill: none;
+  stroke: var(--border);
+}
+
+.progress-ring-fill {
+  fill: none;
+  stroke: var(--primary);
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.5s;
+}
+
+.fullscreen-mode {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: var(--bg);
+  padding: 40px;
+  overflow-y: auto;
+}
+
+.fullscreen-mode .practice-container {
+  max-width: 900px;
+  margin: 0 auto;
+  min-height: auto;
+}
+
+.favorite-star {
+  cursor: pointer;
+  font-size: 20px;
+  margin-right: 8px;
+  user-select: none;
+  transition: transform 0.2s;
+}
+
+.favorite-star:hover {
+  transform: scale(1.2);
+}
+
+.favorite-star.active {
+  color: #f59e0b;
+}
+
+.loop-btn.active {
+  background: var(--primary);
+  color: white;
+}
+
+.speed-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.speed-control select {
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text);
+  font-size: 12px;
+}
+
+.reading-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.kbd-shortcut {
+  display: inline-block;
+  padding: 2px 6px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 11px;
+  font-family: monospace;
+  color: var(--text-secondary);
+}
+
+.shortcuts-help {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.shortcuts-help .key {
+  text-align: right;
+  color: var(--text-secondary);
+}
+
+.dropdown-menu {
+  position: absolute;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: var(--shadow-lg);
+  z-index: 200;
+  padding: 8px 0;
+  min-width: 180px;
+}
+
+.dropdown-item {
+  padding: 10px 16px;
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: background 0.2s;
+}
+
+.dropdown-item:hover {
+  background: var(--bg);
+}
+
+.practice-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.toolbar-left, .toolbar-right {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+</style>
+</head>
+<body>
+<div class="app-container">
+  <button class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
+  
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="logo">
+        <div class="logo-icon">📖</div>
+        <span>背诵助手</span>
+      </div>
+    </div>
+    <nav class="nav-menu">
+      <div class="nav-item active" data-page="articles" onclick="switchPage('articles')">
+        <span class="nav-icon">📚</span>
+        <span>文章管理</span>
+      </div>
+      <div class="nav-item" data-page="practice" onclick="switchPage('practice')">
+        <span class="nav-icon">✍️</span>
+        <span>背诵练习</span>
+      </div>
+      <div class="nav-item" data-page="review" onclick="switchPage('review')">
+        <span class="nav-icon">🔄</span>
+        <span>复习计划</span>
+      </div>
+      <div class="nav-item" data-page="stats" onclick="switchPage('stats')">
+        <span class="nav-icon">📊</span>
+        <span>学习统计</span>
+      </div>
+      <div class="nav-item" data-page="settings" onclick="switchPage('settings')">
+        <span class="nav-icon">⚙️</span>
+        <span>设置</span>
+      </div>
+    </nav>
+  </aside>
+
+  <main class="main-content">
+    <div class="page active" id="page-articles">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">文章管理</h1>
+          <p class="page-subtitle">管理你需要背诵的课文和文章</p>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;position:relative;">
+          <button class="btn btn-secondary" onclick="showImportModal()">📥 导入</button>
+          <button class="btn btn-secondary" id="exportBtn" onclick="showExportMenu(event)">📤 导出 ▾</button>
+          <button class="btn btn-secondary" onclick="toggleFavoritesView()" id="favViewBtn">⭐ 收藏</button>
+          <button class="btn btn-secondary" onclick="randomPractice()">🎲 随机练习</button>
+          <button class="btn btn-primary" onclick="showArticleModal()">+ 新建文章</button>
+          <div id="exportMenu" style="display:none;position:absolute;z-index:100;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow-lg);padding:8px 0;min-width:160px;">
+            <div style="padding:8px 20px;cursor:pointer;font-size:14px;" onclick="exportData();hideExportMenu()">📄 导出为JSON</div>
+            <div style="padding:8px 20px;cursor:pointer;font-size:14px;" onclick="exportCSV();hideExportMenu()">📊 导出为CSV</div>
+            <div style="padding:8px 20px;cursor:pointer;font-size:14px;" onclick="exportAllAsText();hideExportMenu()">📝 导出为TXT</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="search-bar">
+        <input type="text" class="input" placeholder="🔍 搜索文章标题或内容..." id="searchInput" oninput="filterArticles()">
+        <select class="select" style="width:160px;" id="categoryFilter" onchange="filterArticles()">
+          <option value="">全部分类</option>
+        </select>
+        <select class="select" style="width:160px;" id="sortBy" onchange="filterArticles()">
+          <option value="newest">最新添加</option>
+          <option value="oldest">最早添加</option>
+          <option value="mastery-desc">掌握度从高到低</option>
+          <option value="mastery-asc">掌握度从低到高</option>
+          <option value="study-desc">学习次数从多到少</option>
+        </select>
+      </div>
+      
+      <div class="category-tabs" id="categoryTabs"></div>
+      
+      <div class="article-list" id="articleList"></div>
+    </div>
+
+    <div class="page" id="page-practice">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">背诵练习</h1>
+          <p class="page-subtitle" id="practiceSubtitle">选择一篇文章开始练习</p>
+        </div>
+        <button class="btn btn-secondary" onclick="selectArticleForPractice()">📖 选择文章</button>
+      </div>
+      
+      <div id="practiceSelectSection">
+        <div id="articlePreview" style="display:none;" class="card">
+          <div class="card-title">
+            <span>📄 当前文章</span>
+            <div style="margin-left:auto;display:flex;gap:8px;">
+              <button class="btn btn-secondary btn-sm" onclick="copyCurrentArticle()">📋 复制</button>
+              <button class="btn btn-secondary btn-sm" onclick="printArticle()">🖨️ 打印</button>
+              <button class="btn btn-secondary btn-sm" onclick="selectArticleForPractice()">🔄 换一篇</button>
+            </div>
+          </div>
+          <div id="articlePreviewContent" style="line-height:2.2;font-size:16px;white-space:pre-wrap;max-height:300px;overflow-y:auto;padding:16px;background:var(--bg);border-radius:8px;"></div>
+          <div style="margin-top:12px;display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--text-secondary);">
+            <span id="previewCategory"></span>
+            <span id="previewWordCount"></span>
+            <span id="previewLineCount"></span>
+            <span id="previewMastery"></span>
+            <span id="previewStudyCount"></span>
+          </div>
+        </div>
+        <div style="text-align:center;margin:20px 0 10px;color:var(--text-secondary);font-size:14px;">
+          选择练习模式开始背诵
+        </div>
+        <div class="practice-modes" id="modeSelection">
+          <div class="mode-card" onclick="startPractice('reveal')">
+            <div class="mode-icon">🔓</div>
+            <div class="mode-title">逐行揭示</div>
+            <div class="mode-desc">点击逐行显示内容，考验记忆</div>
+          </div>
+          <div class="mode-card" onclick="startPractice('blank')">
+            <div class="mode-icon">✏️</div>
+            <div class="mode-title">填空练习</div>
+            <div class="mode-desc">随机挖空，填写缺失内容</div>
+          </div>
+          <div class="mode-card" onclick="startPractice('firstLetter')">
+            <div class="mode-icon">🔤</div>
+            <div class="mode-title">首字提示</div>
+            <div class="mode-desc">只显示每句首字，回忆全文</div>
+          </div>
+          <div class="mode-card" onclick="startPractice('dictation')">
+            <div class="mode-icon">📝</div>
+            <div class="mode-title">全文默写</div>
+            <div class="mode-desc">默写全文，自动对比检查</div>
+          </div>
+          <div class="mode-card" onclick="startPractice('readAloud')">
+            <div class="mode-icon">🔊</div>
+            <div class="mode-title">跟读模式</div>
+            <div class="mode-desc">语音朗读，边听边记</div>
+          </div>
+          <div class="mode-card" onclick="startPractice('scramble')">
+            <div class="mode-icon">🧩</div>
+            <div class="mode-title">乱序重组</div>
+            <div class="mode-desc">句子乱序，重新排列正确顺序</div>
+          </div>
+        </div>
+      </div>
+      
+      <div id="practiceArea" style="display:none;">
+        <div class="practice-container">
+          <div class="practice-header">
+            <div class="practice-title" id="currentArticleTitle"></div>
+            <div style="display:flex;align-items:center;gap:20px;">
+              <div class="timer" id="practiceTimer">00:00</div>
+              <div class="practice-progress" id="practiceProgress"></div>
+            </div>
+          </div>
+          <div class="text-display" id="textDisplay"></div>
+          <div class="practice-controls" id="practiceControls"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="page" id="page-review">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">复习计划</h1>
+          <p class="page-subtitle">基于艾宾浩斯遗忘曲线的智能复习</p>
+        </div>
+      </div>
+      
+      <div class="stats-grid" id="reviewStats"></div>
+      
+      <div class="card">
+        <div class="card-title">📅 今日待复习</div>
+        <div class="review-list" id="todayReviewList"></div>
+      </div>
+      
+      <div class="card">
+        <div class="card-title">📆 即将到期</div>
+        <div class="review-list" id="upcomingReviewList"></div>
+      </div>
+    </div>
+
+    <div class="page" id="page-stats">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">学习统计</h1>
+          <p class="page-subtitle">追踪你的学习进度和成就</p>
+        </div>
+      </div>
+      
+      <div class="stats-grid" id="statsOverview"></div>
+      
+      <div class="card">
+        <div class="card-title">📈 学习趋势</div>
+        <div id="chartContainer" style="height:300px;display:flex;align-items:flex-end;gap:4px;padding:20px 0;">
+        </div>
+      </div>
+      
+      <div class="card">
+        <div class="card-title">🏆 成就徽章</div>
+        <div id="achievementsList" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:16px;"></div>
+      </div>
+    </div>
+
+    <div class="page" id="page-settings">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">设置</h1>
+          <p class="page-subtitle">自定义你的学习体验</p>
+        </div>
+      </div>
+      
+      <div class="card">
+        <div class="settings-section">
+          <h3>🎨 外观</h3>
+          <div class="setting-item">
+            <div>
+              <div class="setting-label">深色模式</div>
+              <div class="setting-desc">切换深色/浅色主题</div>
+            </div>
+            <div class="toggle-switch" id="themeToggle" onclick="toggleTheme()"></div>
+          </div>
+          <div class="setting-item">
+            <div>
+              <div class="setting-label">字体大小</div>
+              <div class="setting-desc">调整文章显示字体大小</div>
+            </div>
+            <div class="font-size-control">
+              <button class="font-size-btn" onclick="changeFontSize(-1)">A-</button>
+              <span class="font-size-value" id="fontSizeValue">16px</span>
+              <button class="font-size-btn" onclick="changeFontSize(1)">A+</button>
+            </div>
+          </div>
+        </div>
+        
+        <div class="settings-section">
+          <h3>🔊 语音设置</h3>
+          <div class="setting-item">
+            <div>
+              <div class="setting-label">选择声音</div>
+              <div class="setting-desc">选择不同的语音朗读声音</div>
+            </div>
+            <select class="select" style="width:200px;" id="speechVoice" onchange="updateSpeechVoice()">
+              <option value="">加载中...</option>
+            </select>
+          </div>
+          <div class="setting-item">
+            <div>
+              <div class="setting-label">朗读语速</div>
+              <div class="setting-desc">调整语音朗读的速度</div>
+            </div>
+            <input type="range" min="0.5" max="2" step="0.1" value="1" id="speechRate" oninput="updateSpeechRate()">
+          </div>
+          <div class="setting-item">
+            <div>
+              <div class="setting-label">朗读音调</div>
+              <div class="setting-desc">调整语音朗读的音调高低</div>
+            </div>
+            <input type="range" min="0" max="2" step="0.1" value="1" id="speechPitch" oninput="updateSpeechPitch()">
+          </div>
+          <div class="setting-item">
+            <div>
+              <div class="setting-label">朗读音量</div>
+              <div class="setting-desc">调整语音朗读的音量</div>
+            </div>
+            <input type="range" min="0" max="1" step="0.1" value="1" id="speechVolume" oninput="updateSpeechVolume()">
+          </div>
+          <div class="setting-item">
+            <div>
+              <div class="setting-label">朗读测试</div>
+              <div class="setting-desc">点击测试当前语音效果</div>
+            </div>
+            <button class="btn btn-secondary btn-sm" onclick="testSpeech()">🔊 试听</button>
+          </div>
+        </div>
+        
+        <div class="settings-section">
+          <h3">🧠 背诵设置</h3>
+          <div class="setting-item">
+            <div>
+              <div class="setting-label">自动保存进度</div>
+              <div class="setting-desc">自动保存背诵进度到本地</div>
+            </div>
+            <div class="toggle-switch active" id="autoSaveToggle"></div>
+          </div>
+          <div class="setting-item">
+            <div>
+              <div class="setting-label">填空比例</div>
+              <div class="setting-desc">填空练习中挖空的比例</div>
+            </div>
+            <select class="select" style="width:120px;" id="blankRatio">
+              <option value="0.2">20%</option>
+              <option value="0.3" selected>30%</option>
+              <option value="0.4">40%</option>
+              <option value="0.5">50%</option>
+              <option value="0.6">60%</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="settings-section">
+          <h3>💾 数据管理</h3>
+          <div class="setting-item">
+            <div>
+              <div class="setting-label">导出为JSON</div>
+              <div class="setting-desc">完整导出所有数据（含学习记录）</div>
+            </div>
+            <button class="btn btn-secondary btn-sm" onclick="exportData()">导出JSON</button>
+          </div>
+          <div class="setting-item">
+            <div>
+              <div class="setting-label">导出为CSV</div>
+              <div class="setting-desc">导出文章列表为CSV表格</div>
+            </div>
+            <button class="btn btn-secondary btn-sm" onclick="exportCSV()">导出CSV</button>
+          </div>
+          <div class="setting-item">
+            <div>
+              <div class="setting-label">导入数据</div>
+              <div class="setting-desc">支持JSON和CSV格式导入</div>
+            </div>
+            <button class="btn btn-secondary btn-sm" onclick="showImportModal()">导入</button>
+          </div>
+          <div class="setting-item">
+            <div>
+              <div class="setting-label">重置所有数据</div>
+              <div class="setting-desc">清除所有文章和学习记录</div>
+            </div>
+            <button class="btn btn-danger btn-sm" onclick="resetAllData()">重置</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="modal-overlay" id="articleModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="articleModalTitle">新建文章</div>
+      <button class="modal-close" onclick="closeArticleModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">文章标题</label>
+        <input type="text" class="input" id="articleTitle" placeholder="请输入文章标题">
+      </div>
+      <div class="form-group">
+        <label class="form-label">分类</label>
+        <input type="text" class="input" id="articleCategory" placeholder="例如：语文、英语、古诗..." list="categoryList">
+        <datalist id="categoryList"></datalist>
+      </div>
+      <div class="form-group">
+        <label class="form-label">文章内容</label>
+        <textarea class="textarea" id="articleContent" placeholder="请输入文章内容，支持分段..." rows="12"></textarea>
+      </div>
+      <div style="font-size:13px;color:var(--text-secondary);">
+        字数统计：<span id="wordCount">0</span> 字
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeArticleModal()">取消</button>
+      <button class="btn btn-primary" onclick="saveArticle()">保存</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="importModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">导入数据</div>
+      <button class="modal-close" onclick="closeImportModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">选择文件（支持JSON/CSV/TXT）</label>
+        <input type="file" class="input" id="importFile" accept=".json,.csv,.txt" onchange="handleImportFile(event)">
+      </div>
+      <div class="form-group">
+        <label class="form-label">或粘贴数据</label>
+        <textarea class="textarea" id="importText" placeholder="粘贴JSON或CSV数据..." rows="8"></textarea>
+      </div>
+      <div style="font-size:12px;color:var(--text-secondary);">
+        💡 CSV格式说明：第一行为表头，需包含"标题"和"内容"列
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeImportModal()">取消</button>
+      <button class="btn btn-primary" onclick="importFromText()">导入</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="selectArticleModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">选择文章</div>
+      <button class="modal-close" onclick="closeSelectArticleModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <input type="text" class="input" placeholder="搜索文章..." id="selectSearchInput" oninput="filterSelectArticles()">
+      </div>
+      <div id="selectArticleList" style="max-height:400px;overflow-y:auto;"></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const STORAGE_KEY = 'recitation_tool_data';
+let appData = {
+  articles: [],
+  settings: {
+    theme: 'light',
+    fontSize: 16,
+    speechVoice: '',
+    speechRate: 1,
+    speechVolume: 1,
+    speechPitch: 1,
+    autoSave: true,
+    blankRatio: 0.3
+  },
+  statistics: {
+    totalStudyTime: 0,
+    totalSessions: 0,
+    articlesMastered: 0,
+    streak: 0,
+    lastStudyDate: null,
+    dailyRecords: {}
+  },
+  currentArticleId: null,
+  currentPracticeMode: null
+};
+
+let practiceState = {
+  timer: null,
+  seconds: 0,
+  currentLine: 0,
+  totalLines: 0,
+  lines: [],
+  revealedLines: [],
+  blanks: [],
+  correctCount: 0,
+  wrongCount: 0
+};
+
+function loadData() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      appData = { ...appData, ...parsed };
+    }
+  } catch (e) {
+    console.error('加载数据失败:', e);
+  }
+}
+
+function saveData() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+  } catch (e) {
+    console.error('保存数据失败:', e);
+    showToast('保存失败: ' + e.message);
+  }
+}
+
+function showToast(message, duration = 2000) {
+  const toast = document.getElementById('toast');
+  toast.textContent = message;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), duration);
+}
+
+function generateId() {
+  return Date.now().toString(36) + Math.random().toString(36).substr(2);
+}
+
+function formatDate(date) {
+  const d = new Date(date);
+  return d.toLocaleDateString('zh-CN');
+}
+
+function formatTime(seconds) {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+}
+
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+}
+
+function switchPage(pageName) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + pageName).classList.add('active');
+  document.querySelector(`.nav-item[data-page="${pageName}"]`).classList.add('active');
+  
+  if (window.innerWidth <= 768) {
+    document.getElementById('sidebar').classList.remove('open');
+  }
+  
+  if (pageName === 'review') renderReviewPage();
+  if (pageName === 'stats') renderStatsPage();
+  if (pageName === 'articles') renderArticles();
+}
+
+function getCategories() {
+  const categories = new Set();
+  appData.articles.forEach(a => {
+    if (a.category) categories.add(a.category);
+  });
+  return Array.from(categories);
+}
+
+function renderCategoryTabs() {
+  const tabs = document.getElementById('categoryTabs');
+  const categories = getCategories();
+  let html = '<div class="category-tab active" data-category="" onclick="filterByCategory(this)">全部</div>';
+  categories.forEach(cat => {
+    html += `<div class="category-tab" data-category="${cat}" onclick="filterByCategory(this)">${cat}</div>`;
+  });
+  tabs.innerHTML = html;
+  
+  const datalist = document.getElementById('categoryList');
+  datalist.innerHTML = categories.map(c => `<option value="${c}">`).join('');
+  
+  const filter = document.getElementById('categoryFilter');
+  filter.innerHTML = '<option value="">全部分类</option>' + categories.map(c => `<option value="${c}">${c}</option>`).join('');
+}
+
+function filterByCategory(tab) {
+  document.querySelectorAll('.category-tab').forEach(t => t.classList.remove('active'));
+  tab.classList.add('active');
+  document.getElementById('categoryFilter').value = tab.dataset.category;
+  filterArticles();
+}
+
+function filterArticles() {
+  const search = document.getElementById('searchInput').value.toLowerCase();
+  const category = document.getElementById('categoryFilter').value;
+  const sortBy = document.getElementById('sortBy').value;
+  
+  let filtered = appData.articles.filter(a => {
+    const matchSearch = !search || 
+      a.title.toLowerCase().includes(search) || 
+      a.content.toLowerCase().includes(search);
+    const matchCategory = !category || a.category === category;
+    return matchSearch && matchCategory;
+  });
+  
+  filtered.sort((a, b) => {
+    switch (sortBy) {
+      case 'newest': return new Date(b.createdAt) - new Date(a.createdAt);
+      case 'oldest': return new Date(a.createdAt) - new Date(b.createdAt);
+      case 'mastery-desc': return (b.mastery || 0) - (a.mastery || 0);
+      case 'mastery-asc': return (a.mastery || 0) - (b.mastery || 0);
+      case 'study-desc': return (b.studyCount || 0) - (a.studyCount || 0);
+      default: return 0;
+    }
+  });
+  
+  renderArticleList(filtered);
+}
+
+function renderArticles() {
+  renderCategoryTabs();
+  filterArticles();
+}
+
+function renderArticleList(articles) {
+  const list = document.getElementById('articleList');
+  
+  if (articles.length === 0) {
+    list.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">📭</div>
+        <p>还没有文章，点击"新建文章"开始添加吧</p>
+      </div>
+    `;
+    return;
+  }
+  
+  list.innerHTML = articles.map(article => {
+    const mastery = article.mastery || 0;
+    const preview = article.content.replace(/\n/g, ' ').substring(0, 80) + '...';
+    const isFavorite = article.favorite ? 'active' : '';
+    const favStar = article.favorite ? '⭐' : '☆';
+    return `
+      <div class="article-item" onclick="openArticleForPractice('${article.id}')">
+        <div class="article-header">
+          <div style="display:flex;align-items:center;flex:1;">
+            <span class="favorite-star ${isFavorite}" onclick="event.stopPropagation();toggleFavorite('${article.id}')">${favStar}</span>
+            <div class="article-title">${escapeHtml(article.title)}</div>
+          </div>
+          <div class="article-actions">
+            <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();copyArticleContent('${article.id}')">📋</button>
+            <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();editArticle('${article.id}')">编辑</button>
+            <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteArticle('${article.id}')">删除</button>
+          </div>
+        </div>
+        <div class="article-meta">
+          ${article.category ? `<span class="badge badge-primary">${escapeHtml(article.category)}</span>` : ''}
+          <span>📅 ${formatDate(article.createdAt)}</span>
+          <span>📖 ${article.studyCount || 0}次学习</span>
+          <span>📊 掌握度 ${mastery}%</span>
+          <span>📝 ${article.content.replace(/\s/g, '').length}字</span>
+        </div>
+        <div class="article-preview">${escapeHtml(preview)}</div>
+        <div class="mastery-bar">
+          <div class="mastery-fill" style="width:${mastery}%"></div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+let editingArticleId = null;
+
+function showArticleModal(articleId = null) {
+  editingArticleId = articleId;
+  const modal = document.getElementById('articleModal');
+  
+  if (articleId) {
+    const article = appData.articles.find(a => a.id === articleId);
+    if (article) {
+      document.getElementById('articleModalTitle').textContent = '编辑文章';
+      document.getElementById('articleTitle').value = article.title;
+      document.getElementById('articleCategory').value = article.category || '';
+      document.getElementById('articleContent').value = article.content;
+      updateWordCount();
+    }
+  } else {
+    document.getElementById('articleModalTitle').textContent = '新建文章';
+    document.getElementById('articleTitle').value = '';
+    document.getElementById('articleCategory').value = '';
+    document.getElementById('articleContent').value = '';
+    document.getElementById('wordCount').textContent = '0';
+  }
+  
+  modal.classList.add('show');
+}
+
+function closeArticleModal() {
+  document.getElementById('articleModal').classList.remove('show');
+  editingArticleId = null;
+}
+
+function editArticle(id) {
+  showArticleModal(id);
+}
+
+function saveArticle() {
+  const title = document.getElementById('articleTitle').value.trim();
+  const category = document.getElementById('articleCategory').value.trim();
+  const content = document.getElementById('articleContent').value.trim();
+  
+  if (!title) {
+    showToast('请输入文章标题');
+    return;
+  }
+  if (!content) {
+    showToast('请输入文章内容');
+    return;
+  }
+  
+  if (editingArticleId) {
+    const index = appData.articles.findIndex(a => a.id === editingArticleId);
+    if (index !== -1) {
+      appData.articles[index] = {
+        ...appData.articles[index],
+        title,
+        category,
+        content,
+        updatedAt: new Date().toISOString()
+      };
+      showToast('文章已更新');
+    }
+  } else {
+    const newArticle = {
+      id: generateId(),
+      title,
+      category,
+      content,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      studyCount: 0,
+      mastery: 0,
+      lastStudiedAt: null,
+      reviewStage: 0,
+      nextReviewAt: null
+    };
+    appData.articles.unshift(newArticle);
+    showToast('文章已添加');
+  }
+  
+  saveData();
+  closeArticleModal();
+  renderArticles();
+  renderCategoryTabs();
+}
+
+function deleteArticle(id) {
+  if (!confirm('确定要删除这篇文章吗？此操作不可撤销。')) return;
+  
+  const index = appData.articles.findIndex(a => a.id === id);
+  if (index !== -1) {
+    appData.articles.splice(index, 1);
+    saveData();
+    renderArticles();
+    renderCategoryTabs();
+    showToast('文章已删除');
+  }
+}
+
+document.getElementById('articleContent').addEventListener('input', updateWordCount);
+
+function updateWordCount() {
+  const content = document.getElementById('articleContent').value;
+  const count = content.replace(/\s/g, '').length;
+  document.getElementById('wordCount').textContent = count;
+}
+
+function openArticleForPractice(id) {
+  appData.currentArticleId = id;
+  switchPage('practice');
+  updateArticlePreview();
+  document.getElementById('practiceSelectSection').style.display = 'block';
+  document.getElementById('practiceArea').style.display = 'none';
+}
+
+function updateArticlePreview() {
+  const article = appData.articles.find(a => a.id === appData.currentArticleId);
+  const previewEl = document.getElementById('articlePreview');
+  const subtitleEl = document.getElementById('practiceSubtitle');
+  
+  if (!article) {
+    previewEl.style.display = 'none';
+    subtitleEl.textContent = '选择一篇文章开始练习';
+    return;
+  }
+  
+  subtitleEl.textContent = `当前文章：${article.title}`;
+  previewEl.style.display = 'block';
+  document.getElementById('articlePreviewContent').textContent = article.content;
+  document.getElementById('previewCategory').textContent = article.category ? `📂 ${article.category}` : '';
+  document.getElementById('previewWordCount').textContent = `📝 ${article.content.replace(/\s/g, '').length}字`;
+  document.getElementById('previewLineCount').textContent = `📃 ${article.content.split('\n').filter(l => l.trim()).length}句`;
+  document.getElementById('previewMastery').textContent = `📊 掌握度 ${article.mastery || 0}%`;
+  document.getElementById('previewStudyCount').textContent = `📖 ${article.studyCount || 0}次学习`;
+}
+
+function copyCurrentArticle() {
+  const article = appData.articles.find(a => a.id === appData.currentArticleId);
+  if (article) {
+    navigator.clipboard.writeText(article.content).then(() => {
+      showToast('已复制到剪贴板');
+    }).catch(() => {
+      const textarea = document.createElement('textarea');
+      textarea.value = article.content;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+      showToast('已复制');
+    });
+  }
+}
+
+function selectArticleForPractice() {
+  renderSelectArticleList();
+  document.getElementById('selectArticleModal').classList.add('show');
+}
+
+function closeSelectArticleModal() {
+  document.getElementById('selectArticleModal').classList.remove('show');
+}
+
+function renderSelectArticleList() {
+  const list = document.getElementById('selectArticleList');
+  const search = document.getElementById('selectSearchInput').value.toLowerCase();
+  
+  let articles = appData.articles.filter(a => 
+    !search || a.title.toLowerCase().includes(search)
+  );
+  
+  if (articles.length === 0) {
+    list.innerHTML = `<div class="empty-state" style="padding:30px;"><p>暂无文章</p></div>`;
+    return;
+  }
+  
+  list.innerHTML = articles.map(a => `
+    <div style="padding:12px 16px;cursor:pointer;border-radius:8px;transition:background 0.2s;" 
+         onmouseover="this.style.background='var(--bg)'" 
+         onmouseout="this.style.background='transparent'"
+         onclick="selectArticle('${a.id}')">
+      <div style="font-weight:500;">${escapeHtml(a.title)}</div>
+      <div style="font-size:12px;color:var(--text-secondary);">${a.category || '未分类'} · ${a.studyCount || 0}次学习</div>
+    </div>
+  `).join('');
+}
+
+function filterSelectArticles() {
+  renderSelectArticleList();
+}
+
+function selectArticle(id) {
+  appData.currentArticleId = id;
+  updateArticlePreview();
+  closeSelectArticleModal();
+  
+  const practiceArea = document.getElementById('practiceArea');
+  if (practiceArea && practiceArea.style.display === 'block' && appData.currentPracticeMode) {
+    stopTimer();
+    if (window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
+    startPractice(appData.currentPracticeMode);
+  }
+}
+
+function startPractice(mode) {
+  if (!appData.currentArticleId) {
+    showToast('请先选择一篇文章');
+    selectArticleForPractice();
+    return;
+  }
+  
+  const article = appData.articles.find(a => a.id === appData.currentArticleId);
+  if (!article) {
+    showToast('未找到文章');
+    return;
+  }
+  
+  appData.currentPracticeMode = mode;
+  document.getElementById('practiceSelectSection').style.display = 'none';
+  document.getElementById('practiceArea').style.display = 'block';
+  document.getElementById('currentArticleTitle').textContent = article.title;
+  
+  practiceState = {
+    timer: null,
+    seconds: 0,
+    currentLine: 0,
+    lines: article.content.split('\n').filter(l => l.trim()),
+    revealedLines: [],
+    blanks: [],
+    correctCount: 0,
+    wrongCount: 0
+  };
+  practiceState.totalLines = practiceState.lines.length;
+  
+  startTimer();
+  
+  switch (mode) {
+    case 'reveal':
+      initRevealMode();
+      break;
+    case 'blank':
+      initBlankMode();
+      break;
+    case 'firstLetter':
+      initFirstLetterMode();
+      break;
+    case 'dictation':
+      initDictationMode();
+      break;
+    case 'readAloud':
+      initReadAloudMode();
+      break;
+    case 'scramble':
+      initScrambleMode();
+      break;
+  }
+  
+  updatePracticeProgress();
+  
+  article.studyCount = (article.studyCount || 0) + 1;
+  article.lastStudiedAt = new Date().toISOString();
+  updateDailyStats();
+  saveData();
+}
+
+function startTimer() {
+  practiceState.timer = setInterval(() => {
+    practiceState.seconds++;
+    document.getElementById('practiceTimer').textContent = formatTime(practiceState.seconds);
+  }, 1000);
+}
+
+function stopTimer() {
+  if (practiceState.timer) {
+    clearInterval(practiceState.timer);
+    practiceState.timer = null;
+  }
+}
+
+function updatePracticeProgress() {
+  const progress = document.getElementById('practiceProgress');
+  if (practiceState.totalLines > 0) {
+    const percent = Math.round((practiceState.currentLine / practiceState.totalLines) * 100);
+    progress.textContent = `${practiceState.currentLine}/${practiceState.totalLines} (${percent}%)`;
+  }
+}
+
+function initRevealMode() {
+  const display = document.getElementById('textDisplay');
+  display.innerHTML = practiceState.lines.map((line, i) => `
+    <div class="text-line" data-line="${i}" onclick="revealLine(${i})">
+      <span class="word-hidden" id="line-${i}">${escapeHtml(line)}</span>
+    </div>
+  `).join('');
+  
+  document.getElementById('practiceControls').innerHTML = `
+    <button class="btn btn-primary" onclick="revealNextLine()">显示下一句</button>
+    <button class="btn btn-secondary" onclick="revealAll()">全部显示</button>
+    <button class="btn btn-secondary" onclick="hideAll()">全部隐藏</button>
+    <button class="btn btn-warning" onclick="endPractice()">结束练习</button>
+  `;
+}
+
+function revealLine(index) {
+  const el = document.getElementById(`line-${index}`);
+  if (el && el.classList.contains('word-hidden')) {
+    el.classList.remove('word-hidden');
+    el.classList.add('word-revealed');
+    if (!practiceState.revealedLines.includes(index)) {
+      practiceState.revealedLines.push(index);
+      practiceState.currentLine = practiceState.revealedLines.length;
+      updatePracticeProgress();
+    }
+  }
+}
+
+function revealNextLine() {
+  for (let i = 0; i < practiceState.lines.length; i++) {
+    if (!practiceState.revealedLines.includes(i)) {
+      revealLine(i);
+      break;
+    }
+  }
+}
+
+function revealAll() {
+  practiceState.lines.forEach((_, i) => revealLine(i));
+}
+
+function hideAll() {
+  practiceState.revealedLines = [];
+  practiceState.currentLine = 0;
+  practiceState.lines.forEach((_, i) => {
+    const el = document.getElementById(`line-${i}`);
+    if (el) {
+      el.classList.add('word-hidden');
+      el.classList.remove('word-revealed');
+    }
+  });
+  updatePracticeProgress();
+}
+
+function initBlankMode() {
+  const display = document.getElementById('textDisplay');
+  const ratio = parseFloat(document.getElementById('blankRatio')?.value || '0.3');
+  
+  let html = '';
+  let blankIndex = 0;
+  
+  practiceState.lines.forEach((line, lineIdx) => {
+    const chars = line.split('');
+    const numBlanks = Math.max(1, Math.floor(chars.length * ratio));
+    const blankPositions = [];
+    
+    while (blankPositions.length < numBlanks) {
+      const pos = Math.floor(Math.random() * chars.length);
+      if (!blankPositions.includes(pos) && chars[pos].trim()) {
+        blankPositions.push(pos);
+      }
+    }
+    
+    blankPositions.sort((a, b) => a - b);
+    
+    let lineHtml = '<div class="text-line">';
+    for (let i = 0; i < chars.length; i++) {
+      if (blankPositions.includes(i)) {
+        const bid = blankIndex++;
+        practiceState.blanks.push({
+          id: bid,
+          answer: chars[i],
+          lineIndex: lineIdx,
+          charIndex: i
+        });
+        lineHtml += `<input type="text" class="blank-input" data-blank="${bid}" maxlength="1" oninput="checkBlank(${bid}, this.value)">`;
+      } else {
+        lineHtml += escapeHtml(chars[i]);
+      }
+    }
+    lineHtml += '</div>';
+    html += lineHtml;
+  });
+  
+  display.innerHTML = html;
+  practiceState.totalLines = practiceState.blanks.length;
+  
+  document.getElementById('practiceControls').innerHTML = `
+    <button class="btn btn-primary" onclick="showAllBlanksAnswers()">显示答案</button>
+    <button class="btn btn-secondary" onclick="resetBlanks()">重新开始</button>
+    <button class="btn btn-warning" onclick="endPractice()">结束练习</button>
+    <div style="display:flex;gap:20px;align-items:center;">
+      <span style="color:var(--success);">✓ <span id="correctCount">0</span></span>
+      <span style="color:var(--danger);">✗ <span id="wrongCount">0</span></span>
+    </div>
+  `;
+}
+
+function checkBlank(blankId, value) {
+  const blank = practiceState.blanks.find(b => b.id === blankId);
+  if (!blank || !value) return;
+  
+  const input = document.querySelector(`[data-blank="${blankId}"]`);
+  
+  if (value === blank.answer) {
+    input.classList.add('correct');
+    input.classList.remove('wrong');
+    input.disabled = true;
+    practiceState.correctCount++;
+    practiceState.currentLine++;
+  } else {
+    input.classList.add('wrong');
+    input.classList.remove('correct');
+    practiceState.wrongCount++;
+  }
+  
+  document.getElementById('correctCount').textContent = practiceState.correctCount;
+  document.getElementById('wrongCount').textContent = practiceState.wrongCount;
+  updatePracticeProgress();
+}
+
+function showAllBlanksAnswers() {
+  practiceState.blanks.forEach(blank => {
+    const input = document.querySelector(`[data-blank="${blank.id}"]`);
+    if (input && input.disabled === false) {
+      input.value = blank.answer;
+      input.classList.add('correct');
+      input.disabled = true;
+    }
+  });
+}
+
+function resetBlanks() {
+  practiceState.correctCount = 0;
+  practiceState.wrongCount = 0;
+  practiceState.currentLine = 0;
+  practiceState.blanks = [];
+  initBlankMode();
+}
+
+function initFirstLetterMode() {
+  const display = document.getElementById('textDisplay');
+  
+  display.innerHTML = practiceState.lines.map((line, i) => {
+    const firstChar = line.charAt(0);
+    const rest = line.slice(1);
+    return `
+      <div class="text-line" onclick="revealLineFirstLetter(${i})">
+        <span>${escapeHtml(firstChar)}</span><span class="word-hidden" id="fll-${i}">${escapeHtml(rest)}</span>
+      </div>
+    `;
+  }).join('');
+  
+  document.getElementById('practiceControls').innerHTML = `
+    <button class="btn btn-primary" onclick="revealNextFirstLetter()">显示下一句</button>
+    <button class="btn btn-secondary" onclick="revealAllFirstLetters()">全部显示</button>
+    <button class="btn btn-secondary" onclick="hideAllFirstLetters()">重新隐藏</button>
+    <button class="btn btn-warning" onclick="endPractice()">结束练习</button>
+  `;
+  
+  practiceState.revealedLines = [];
+  practiceState.currentLine = 0;
+}
+
+function revealLineFirstLetter(index) {
+  const el = document.getElementById(`fll-${index}`);
+  if (el && el.classList.contains('word-hidden')) {
+    el.classList.remove('word-hidden');
+    el.classList.add('word-revealed');
+    if (!practiceState.revealedLines.includes(index)) {
+      practiceState.revealedLines.push(index);
+      practiceState.currentLine = practiceState.revealedLines.length;
+      updatePracticeProgress();
+    }
+  }
+}
+
+function revealNextFirstLetter() {
+  for (let i = 0; i < practiceState.lines.length; i++) {
+    if (!practiceState.revealedLines.includes(i)) {
+      revealLineFirstLetter(i);
+      break;
+    }
+  }
+}
+
+function revealAllFirstLetters() {
+  practiceState.lines.forEach((_, i) => revealLineFirstLetter(i));
+}
+
+function hideAllFirstLetters() {
+  practiceState.revealedLines = [];
+  practiceState.currentLine = 0;
+  practiceState.lines.forEach((_, i) => {
+    const el = document.getElementById(`fll-${i}`);
+    if (el) {
+      el.classList.add('word-hidden');
+      el.classList.remove('word-revealed');
+    }
+  });
+  updatePracticeProgress();
+}
+
+function initDictationMode() {
+  const display = document.getElementById('textDisplay');
+  
+  display.innerHTML = `
+    <div style="margin-bottom:16px;">
+      <p style="color:var(--text-secondary);margin-bottom:12px;">请在下方默写全文，完成后点击"检查"按钮进行对比。</p>
+    </div>
+    <textarea class="textarea" id="dictationInput" placeholder="开始默写..." rows="16" style="font-size:16px;line-height:2;"></textarea>
+    <div id="dictationResult" style="margin-top:20px;display:none;">
+      <h4 style="margin-bottom:12px;">对比结果</h4>
+      <div id="dictationCompare" style="background:var(--bg);padding:16px;border-radius:8px;line-height:2;"></div>
+    </div>
+  `;
+  
+  document.getElementById('practiceControls').innerHTML = `
+    <button class="btn btn-primary" onclick="checkDictation()">检查答案</button>
+    <button class="btn btn-secondary" onclick="showHintDictation()">显示提示</button>
+    <button class="btn btn-warning" onclick="endPractice()">结束练习</button>
+  `;
+  
+  practiceState.currentLine = 0;
+  updatePracticeProgress();
+}
+
+function checkDictation() {
+  const userInput = document.getElementById('dictationInput').value.trim();
+  const original = practiceState.lines.join('\n').trim();
+  
+  const result = compareTexts(original, userInput);
+  const resultDiv = document.getElementById('dictationResult');
+  const compareDiv = document.getElementById('dictationCompare');
+  
+  compareDiv.innerHTML = result.html;
+  resultDiv.style.display = 'block';
+  
+  const accuracy = Math.round(result.correctChars / result.totalChars * 100);
+  practiceState.correctCount = result.correctChars;
+  practiceState.wrongCount = result.totalChars - result.correctChars;
+  practiceState.currentLine = accuracy;
+  
+  document.getElementById('practiceProgress').textContent = `正确率: ${accuracy}%`;
+  
+  if (appData.currentArticleId) {
+    const article = appData.articles.find(a => a.id === appData.currentArticleId);
+    if (article) {
+      article.mastery = Math.max(article.mastery || 0, accuracy);
+      updateReviewSchedule(article);
+      saveData();
+    }
+  }
+  
+  showToast(`正确率: ${accuracy}%`);
+}
+
+function compareTexts(original, userText) {
+  const origChars = original.split('');
+  const userChars = userText.split('');
+  let html = '';
+  let correctChars = 0;
+  
+  const maxLen = Math.max(origChars.length, userChars.length);
+  
+  for (let i = 0; i < maxLen; i++) {
+    const oChar = origChars[i] || '';
+    const uChar = userChars[i] || '';
+    
+    if (oChar === uChar) {
+      html += escapeHtml(oChar);
+      correctChars++;
+    } else if (uChar === '' && oChar !== '') {
+      html += `<span style="background:rgba(239,68,68,0.2);text-decoration:line-through;">${escapeHtml(oChar)}</span>`;
+    } else if (oChar === '' && uChar !== '') {
+      html += `<span style="background:rgba(245,158,11,0.3);">${escapeHtml(uChar)}</span>`;
+    } else {
+      html += `<span style="background:rgba(239,68,68,0.3);">${escapeHtml(uChar)}</span>`;
+    }
+  }
+  
+  return {
+    html,
+    correctChars,
+    totalChars: origChars.length
+  };
+}
+
+function showHintDictation() {
+  const article = appData.articles.find(a => a.id === appData.currentArticleId);
+  if (article) {
+    const lines = article.content.split('\n');
+    const hint = lines.slice(0, 2).map(l => l.substring(0, 10) + '...').join('\n');
+    showToast('提示：' + hint, 3000);
+  }
+}
+
+function initReadAloudMode() {
+  const display = document.getElementById('textDisplay');
+  
+  const voices = getChineseVoices();
+  const voiceOptions = voices.length > 0 
+    ? voices.map((v, i) => `<option value="${i}">${v.name} (${v.lang})</option>`).join('')
+    : '<option value="">默认语音</option>';
+  
+  display.innerHTML = practiceState.lines.map((line, i) => `
+    <div class="text-line" id="read-line-${i}" style="cursor:pointer;" onclick="speakLine(${i})">
+      ${escapeHtml(line)}
+    </div>
+  `).join('');
+  
+  document.getElementById('practiceControls').innerHTML = `
+    <div class="reading-controls" style="margin-bottom:16px;">
+      <button class="btn btn-primary" onclick="toggleReadAloud()" id="readToggleBtn">▶ 开始朗读</button>
+      <button class="btn btn-secondary" onclick="stopSpeaking()">⏹ 停止</button>
+      <button class="btn btn-secondary" onclick="prevLine()">◀ 上一句</button>
+      <button class="btn btn-secondary" onclick="nextLine()">下一句 ▶</button>
+    </div>
+    <div class="reading-controls" style="gap:16px;flex-wrap:wrap;">
+      <div class="speed-control">
+        <span>🔊 声音:</span>
+        <select id="readVoiceSelect" onchange="changeReadVoice()">${voiceOptions}</select>
+      </div>
+      <div class="speed-control">
+        <span>⚡ 语速:</span>
+        <select id="readSpeedSelect" onchange="changeReadSpeed()">
+          <option value="0.5">0.5x</option>
+          <option value="0.75">0.75x</option>
+          <option value="1" selected>1.0x</option>
+          <option value="1.25">1.25x</option>
+          <option value="1.5">1.5x</option>
+          <option value="2">2.0x</option>
+        </select>
+      </div>
+      <div class="speed-control">
+        <span>⏸ 间隔:</span>
+        <select id="readIntervalSelect" onchange="changeReadInterval()">
+          <option value="200">短</option>
+          <option value="500" selected>中</option>
+          <option value="1000">长</option>
+          <option value="2000">很长</option>
+        </select>
+      </div>
+      <button class="btn btn-secondary btn-sm loop-btn" id="loopSingleBtn" onclick="toggleLoopSingle()">🔁 单句循环</button>
+      <button class="btn btn-secondary btn-sm loop-btn" id="loopAllBtn" onclick="toggleLoopAll()">🔄 全文循环</button>
+      <button class="btn btn-secondary btn-sm" onclick="toggleFullscreen()">⛶ 全屏</button>
+      <button class="btn btn-warning btn-sm" onclick="endPractice()">结束练习</button>
+    </div>
+    <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);font-size:12px;color:var(--text-secondary);text-align:center;">
+      快捷键: <span class="kbd-shortcut">空格</span> 播放/暂停 · 
+      <span class="kbd-shortcut">←</span> 上一句 · 
+      <span class="kbd-shortcut">→</span> 下一句 · 
+      <span class="kbd-shortcut">F</span> 全屏 · 
+      <span class="kbd-shortcut">Esc</span> 退出
+    </div>
+  `;
+  
+  practiceState.currentLine = 0;
+  practiceState.loopSingle = false;
+  practiceState.loopAll = false;
+  practiceState.readInterval = 500;
+  highlightCurrentLine();
+  updatePracticeProgress();
+}
+
+let isReading = false;
+let currentReadIndex = 0;
+
+function getChineseVoices() {
+  if (!window.speechSynthesis) return [];
+  const voices = window.speechSynthesis.getVoices();
+  return voices.filter(v => v.lang.startsWith('zh') || v.lang.includes('CN'));
+}
+
+function changeReadVoice() {
+  const select = document.getElementById('readVoiceSelect');
+  const voices = getChineseVoices();
+  const idx = parseInt(select.value);
+  if (voices[idx]) {
+    practiceState.selectedVoice = voices[idx];
+  }
+}
+
+function changeReadSpeed() {
+  const select = document.getElementById('readSpeedSelect');
+  practiceState.readSpeed = parseFloat(select.value);
+}
+
+function changeReadInterval() {
+  const select = document.getElementById('readIntervalSelect');
+  practiceState.readInterval = parseInt(select.value);
+}
+
+function toggleLoopSingle() {
+  practiceState.loopSingle = !practiceState.loopSingle;
+  if (practiceState.loopSingle) practiceState.loopAll = false;
+  document.getElementById('loopSingleBtn').classList.toggle('active', practiceState.loopSingle);
+  document.getElementById('loopAllBtn').classList.toggle('active', practiceState.loopAll);
+  showToast(practiceState.loopSingle ? '单句循环已开启' : '单句循环已关闭');
+}
+
+function toggleLoopAll() {
+  practiceState.loopAll = !practiceState.loopAll;
+  if (practiceState.loopAll) practiceState.loopSingle = false;
+  document.getElementById('loopSingleBtn').classList.toggle('active', practiceState.loopSingle);
+  document.getElementById('loopAllBtn').classList.toggle('active', practiceState.loopAll);
+  showToast(practiceState.loopAll ? '全文循环已开启' : '全文循环已关闭');
+}
+
+function toggleFullscreen() {
+  const container = document.querySelector('.practice-container');
+  const parent = container.parentElement;
+  
+  if (parent.classList.contains('fullscreen-mode')) {
+    parent.classList.remove('fullscreen-mode');
+    container.classList.remove('fullscreen-mode');
+    if (document.exitFullscreen) document.exitFullscreen();
+  } else {
+    parent.classList.add('fullscreen-mode');
+    container.classList.add('fullscreen-mode');
+    if (parent.requestFullscreen) parent.requestFullscreen().catch(() => {});
+  }
+}
+
+function toggleReadAloud() {
+  if (isReading) {
+    pauseSpeaking();
+  } else {
+    startReading();
+  }
+}
+
+function startReading() {
+  isReading = true;
+  document.getElementById('readToggleBtn').textContent = '⏸ 暂停朗读';
+  speakLine(currentReadIndex);
+}
+
+function pauseSpeaking() {
+  isReading = false;
+  window.speechSynthesis.cancel();
+  document.getElementById('readToggleBtn').textContent = '▶ 继续朗读';
+}
+
+function stopSpeaking() {
+  isReading = false;
+  window.speechSynthesis.cancel();
+  document.getElementById('readToggleBtn').textContent = '▶ 开始朗读';
+  currentReadIndex = 0;
+  practiceState.currentLine = 0;
+  highlightCurrentLine();
+  updatePracticeProgress();
+}
+
+function speakLine(index) {
+  if (index < 0 || index >= practiceState.lines.length) return;
+  
+  currentReadIndex = index;
+  practiceState.currentLine = index + 1;
+  highlightCurrentLine();
+  updatePracticeProgress();
+  
+  const utterance = new SpeechSynthesisUtterance(practiceState.lines[index]);
+  utterance.lang = 'zh-CN';
+  utterance.rate = practiceState.readSpeed || appData.settings.speechRate;
+  utterance.volume = appData.settings.speechVolume;
+  utterance.pitch = appData.settings.speechPitch || 1;
+  
+  const voices = getChineseVoices();
+  const voiceIdx = document.getElementById('readVoiceSelect')?.value;
+  if (voiceIdx !== undefined && voices[voiceIdx]) {
+    utterance.voice = voices[voiceIdx];
+  } else if (appData.settings.speechVoice) {
+    const savedVoice = voices.find(v => v.name === appData.settings.speechVoice);
+    if (savedVoice) utterance.voice = savedVoice;
+  }
+  
+  utterance.onend = () => {
+    if (practiceState.loopSingle) {
+      setTimeout(() => { if (isReading) speakLine(currentReadIndex); }, practiceState.readInterval);
+    } else if (isReading && currentReadIndex < practiceState.lines.length - 1) {
+      currentReadIndex++;
+      setTimeout(() => speakLine(currentReadIndex), practiceState.readInterval);
+    } else if (currentReadIndex >= practiceState.lines.length - 1) {
+      if (practiceState.loopAll) {
+        currentReadIndex = 0;
+        setTimeout(() => { if (isReading) speakLine(0); }, practiceState.readInterval);
+      } else {
+        isReading = false;
+        document.getElementById('readToggleBtn').textContent = '▶ 重新朗读';
+        currentReadIndex = 0;
+        practiceState.currentLine = 0;
+        highlightCurrentLine();
+        updatePracticeProgress();
+      }
+    }
+  };
+  
+  window.speechSynthesis.speak(utterance);
+}
+
+function highlightCurrentLine() {
+  practiceState.lines.forEach((_, i) => {
+    const el = document.getElementById(`read-line-${i}`);
+    if (el) {
+      if (i === currentReadIndex) {
+        el.style.background = 'rgba(99,102,241,0.1)';
+        el.style.borderRadius = '8px';
+        el.style.padding = '4px 8px';
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } else {
+        el.style.background = 'transparent';
+        el.style.padding = '4px 0';
+      }
+    }
+  });
+}
+
+function prevLine() {
+  if (currentReadIndex > 0) {
+    window.speechSynthesis.cancel();
+    speakLine(currentReadIndex - 1);
+  }
+}
+
+function nextLine() {
+  if (currentReadIndex < practiceState.lines.length - 1) {
+    window.speechSynthesis.cancel();
+    speakLine(currentReadIndex + 1);
+  }
+}
+
+function initScrambleMode() {
+  const display = document.getElementById('textDisplay');
+  
+  const shuffled = [...practiceState.lines].map((line, i) => ({ originalIndex: i, text: line }));
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  
+  practiceState.shuffled = shuffled;
+  practiceState.userOrder = shuffled.map(s => s.originalIndex);
+  
+  display.innerHTML = `
+    <p style="color:var(--text-secondary);margin-bottom:16px;">拖拽句子调整顺序，使文章内容正确。</p>
+    <div id="scrambleList" style="display:flex;flex-direction:column;gap:8px;">
+      ${shuffled.map((item, i) => `
+        <div class="scramble-item" draggable="true" data-index="${i}" 
+             style="padding:12px 16px;background:var(--bg);border-radius:8px;cursor:move;border:2px solid transparent;transition:all 0.2s;"
+             ondragstart="scrambleDragStart(event, ${i})"
+             ondragover="scrambleDragOver(event)"
+             ondrop="scrambleDrop(event, ${i})"
+             ondragend="scrambleDragEnd(event)">
+          <span style="display:inline-block;width:24px;height:24px;border-radius:50%;background:var(--primary);color:white;text-align:center;line-height:24px;font-size:12px;margin-right:12px;">${i + 1}</span>
+          ${escapeHtml(item.text.substring(0, 50))}${item.text.length > 50 ? '...' : ''}
+        </div>
+      `).join('')}
+    </div>
+  `;
+  
+  document.getElementById('practiceControls').innerHTML = `
+    <button class="btn btn-primary" onclick="checkScramble()">检查顺序</button>
+    <button class="btn btn-secondary" onclick="reshuffleScramble()">重新打乱</button>
+    <button class="btn btn-warning" onclick="endPractice()">结束练习</button>
+  `;
+  
+  practiceState.currentLine = 0;
+  updatePracticeProgress();
+}
+
+let dragSrcIndex = null;
+
+function scrambleDragStart(e, index) {
+  dragSrcIndex = index;
+  e.target.style.opacity = '0.5';
+  e.dataTransfer.effectAllowed = 'move';
+}
+
+function scrambleDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+}
+
+function scrambleDrop(e, targetIndex) {
+  e.preventDefault();
+  if (dragSrcIndex === null || dragSrcIndex === targetIndex) return;
+  
+  const items = practiceState.userOrder;
+  const [removed] = items.splice(dragSrcIndex, 1);
+  items.splice(targetIndex, 0, removed);
+  
+  const shuffledItems = practiceState.shuffled;
+  const [removedItem] = shuffledItems.splice(dragSrcIndex, 1);
+  shuffledItems.splice(targetIndex, 0, removedItem);
+  
+  updateScrambleDisplay();
+  dragSrcIndex = null;
+}
+
+function scrambleDragEnd(e) {
+  e.target.style.opacity = '1';
+}
+
+function updateScrambleDisplay() {
+  const list = document.getElementById('scrambleList');
+  list.innerHTML = practiceState.shuffled.map((item, i) => `
+    <div class="scramble-item" draggable="true" data-index="${i}" 
+         style="padding:12px 16px;background:var(--bg);border-radius:8px;cursor:move;border:2px solid transparent;transition:all 0.2s;"
+         ondragstart="scrambleDragStart(event, ${i})"
+         ondragover="scrambleDragOver(event)"
+         ondrop="scrambleDrop(event, ${i})"
+         ondragend="scrambleDragEnd(event)">
+      <span style="display:inline-block;width:24px;height:24px;border-radius:50%;background:var(--primary);color:white;text-align:center;line-height:24px;font-size:12px;margin-right:12px;">${i + 1}</span>
+      ${escapeHtml(item.text.substring(0, 50))}${item.text.length > 50 ? '...' : ''}
+    </div>
+  `).join('');
+}
+
+function checkScramble() {
+  let correct = 0;
+  const items = document.querySelectorAll('.scramble-item');
+  
+  practiceState.userOrder.forEach((originalIndex, i) => {
+    const item = items[i];
+    if (originalIndex === i) {
+      correct++;
+      item.style.borderColor = 'var(--success)';
+      item.style.background = 'rgba(16,185,129,0.1)';
+    } else {
+      item.style.borderColor = 'var(--danger)';
+      item.style.background = 'rgba(239,68,68,0.1)';
+    }
+  });
+  
+  const accuracy = Math.round(correct / practiceState.lines.length * 100);
+  practiceState.currentLine = correct;
+  practiceState.totalLines = practiceState.lines.length;
+  updatePracticeProgress();
+  document.getElementById('practiceProgress').textContent = `正确: ${correct}/${practiceState.lines.length} (${accuracy}%)`;
+  
+  if (correct === practiceState.lines.length) {
+    showToast('🎉 全部正确！');
+    if (appData.currentArticleId) {
+      const article = appData.articles.find(a => a.id === appData.currentArticleId);
+      if (article) {
+        article.mastery = Math.min(100, (article.mastery || 0) + 10);
+        updateReviewSchedule(article);
+        saveData();
+      }
+    }
+  } else {
+    showToast(`正确 ${correct}/${practiceState.lines.length}`);
+  }
+}
+
+function reshuffleScramble() {
+  initScrambleMode();
+}
+
+function endPractice() {
+  stopTimer();
+  
+  if (window.speechSynthesis) {
+    window.speechSynthesis.cancel();
+  }
+  
+  appData.statistics.totalStudyTime += practiceState.seconds;
+  appData.statistics.totalSessions++;
+  
+  const today = new Date().toISOString().split('T')[0];
+  if (!appData.statistics.dailyRecords[today]) {
+    appData.statistics.dailyRecords[today] = { studyTime: 0, sessions: 0 };
+  }
+  appData.statistics.dailyRecords[today].studyTime += practiceState.seconds;
+  appData.statistics.dailyRecords[today].sessions++;
+  
+  updateStreak();
+  
+  saveData();
+  
+  document.getElementById('practiceSelectSection').style.display = 'block';
+  document.getElementById('practiceArea').style.display = 'none';
+  
+  showToast(`本次练习 ${formatTime(practiceState.seconds)}，已保存记录`);
+}
+
+function updateDailyStats() {
+  const today = new Date().toISOString().split('T')[0];
+  if (!appData.statistics.dailyRecords[today]) {
+    appData.statistics.dailyRecords[today] = { studyTime: 0, sessions: 0 };
+  }
+  appData.statistics.dailyRecords[today].sessions++;
+}
+
+function updateStreak() {
+  const today = new Date().toISOString().split('T')[0];
+  const lastDate = appData.statistics.lastStudyDate;
+  
+  if (lastDate === today) return;
+  
+  if (lastDate) {
+    const last = new Date(lastDate);
+    const now = new Date(today);
+    const diffDays = Math.floor((now - last) / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 1) {
+      appData.statistics.streak++;
+    } else if (diffDays > 1) {
+      appData.statistics.streak = 1;
+    }
+  } else {
+    appData.statistics.streak = 1;
+  }
+  
+  appData.statistics.lastStudyDate = today;
+}
+
+const REVIEW_INTERVALS = [1, 2, 4, 7, 15, 30, 60];
+
+function updateReviewSchedule(article) {
+  if (article.mastery >= 90) {
+    article.reviewStage = Math.min(article.reviewStage + 1, REVIEW_INTERVALS.length - 1);
+  } else if (article.mastery < 50) {
+    article.reviewStage = Math.max(article.reviewStage - 1, 0);
+  }
+  
+  const days = REVIEW_INTERVALS[article.reviewStage] || 1;
+  const nextReview = new Date();
+  nextReview.setDate(nextReview.getDate() + days);
+  article.nextReviewAt = nextReview.toISOString();
+}
+
+function renderReviewPage() {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const nextWeek = new Date(today);
+  nextWeek.setDate(nextWeek.getDate() + 7);
+  
+  const todayReviews = [];
+  const upcomingReviews = [];
+  
+  appData.articles.forEach(article => {
+    if (!article.nextReviewAt) {
+      if (article.studyCount > 0) {
+        updateReviewSchedule(article);
+      }
+      return;
+    }
+    
+    const reviewDate = new Date(article.nextReviewAt);
+    const reviewDay = new Date(reviewDate.getFullYear(), reviewDate.getMonth(), reviewDate.getDate());
+    
+    if (reviewDay <= today) {
+      todayReviews.push(article);
+    } else if (reviewDay <= nextWeek) {
+      upcomingReviews.push(article);
+    }
+  });
+  
+  todayReviews.sort((a, b) => new Date(a.nextReviewAt) - new Date(b.nextReviewAt));
+  upcomingReviews.sort((a, b) => new Date(a.nextReviewAt) - new Date(b.nextReviewAt));
+  
+  const overdueCount = todayReviews.filter(a => new Date(a.nextReviewAt) < today).length;
+  
+  document.getElementById('reviewStats').innerHTML = `
+    <div class="stat-card">
+      <div class="stat-value">${todayReviews.length}</div>
+      <div class="stat-label">今日待复习</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" style="color:var(--danger);">${overdueCount}</div>
+      <div class="stat-label">已逾期</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" style="color:var(--warning);">${upcomingReviews.length}</div>
+      <div class="stat-label">本周待复习</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" style="color:var(--success);">${appData.articles.filter(a => (a.mastery || 0) >= 90).length}</div>
+      <div class="stat-label">已掌握</div>
+    </div>
+  `;
+  
+  const todayList = document.getElementById('todayReviewList');
+  if (todayReviews.length === 0) {
+    todayList.innerHTML = '<div class="empty-state" style="padding:30px;"><p>🎉 今天没有需要复习的内容</p></div>';
+  } else {
+    todayList.innerHTML = todayReviews.map(article => {
+      const isOverdue = new Date(article.nextReviewAt) < today;
+      return `
+        <div class="review-item">
+          <div class="review-priority ${isOverdue ? 'priority-high' : 'priority-medium'}"></div>
+          <div class="review-info">
+            <div class="review-title">${escapeHtml(article.title)}</div>
+            <div class="review-desc">
+              ${article.category || '未分类'} · 掌握度 ${article.mastery || 0}% · 
+              ${isOverdue ? '已逾期' : '今日待复习'}
+            </div>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="startReview('${article.id}')">开始复习</button>
+        </div>
+      `;
+    }).join('');
+  }
+  
+  const upcomingList = document.getElementById('upcomingReviewList');
+  if (upcomingReviews.length === 0) {
+    upcomingList.innerHTML = '<div class="empty-state" style="padding:30px;"><p>暂无即将到期的复习</p></div>';
+  } else {
+    upcomingList.innerHTML = upcomingReviews.map(article => {
+      const daysLeft = Math.ceil((new Date(article.nextReviewAt) - today) / (1000 * 60 * 60 * 24));
+      return `
+        <div class="review-item">
+          <div class="review-priority priority-low"></div>
+          <div class="review-info">
+            <div class="review-title">${escapeHtml(article.title)}</div>
+            <div class="review-desc">
+              ${article.category || '未分类'} · ${daysLeft}天后复习 · 掌握度 ${article.mastery || 0}%
+            </div>
+          </div>
+          <div style="color:var(--text-secondary);font-size:13px;">${formatDate(article.nextReviewAt)}</div>
+        </div>
+      `;
+    }).join('');
+  }
+}
+
+function startReview(articleId) {
+  appData.currentArticleId = articleId;
+  const article = appData.articles.find(a => a.id === articleId);
+  if (article) {
+    document.getElementById('practiceSubtitle').textContent = `当前文章：${article.title}`;
+  }
+  switchPage('practice');
+}
+
+function renderStatsPage() {
+  const stats = appData.statistics;
+  const masteredCount = appData.articles.filter(a => (a.mastery || 0) >= 90).length;
+  
+  document.getElementById('statsOverview').innerHTML = `
+    <div class="stat-card">
+      <div class="stat-value">${appData.articles.length}</div>
+      <div class="stat-label">总文章数</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" style="color:var(--success);">${masteredCount}</div>
+      <div class="stat-label">已掌握</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" style="color:var(--warning);">${stats.streak}</div>
+      <div class="stat-label">连续学习天数</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" style="color:var(--primary);">${stats.totalSessions}</div>
+      <div class="stat-label">总学习次数</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" style="font-size:22px;">${Math.floor(stats.totalStudyTime / 60)}分</div>
+      <div class="stat-label">总学习时长</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" style="color:var(--danger);">${appData.articles.filter(a => (a.mastery || 0) < 30).length}</div>
+      <div class="stat-label">待加强</div>
+    </div>
+  `;
+  
+  renderChart();
+  renderAchievements();
+}
+
+function renderChart() {
+  const container = document.getElementById('chartContainer');
+  const records = appData.statistics.dailyRecords;
+  const dates = [];
+  const today = new Date();
+  
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    dates.push(d.toISOString().split('T')[0]);
+  }
+  
+  const maxTime = Math.max(...dates.map(d => (records[d]?.studyTime || 0) / 60), 10);
+  
+  container.innerHTML = dates.map(date => {
+    const minutes = (records[date]?.studyTime || 0) / 60;
+    const height = (minutes / maxTime) * 100;
+    const dayLabel = new Date(date).toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' });
+    return `
+      <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;">
+        <div style="font-size:11px;color:var(--text-secondary);">${minutes > 0 ? Math.round(minutes) + '分' : ''}</div>
+        <div style="width:100%;background:linear-gradient(to top, var(--primary), var(--primary-light));border-radius:4px 4px 0 0;min-height:${height}%;height:${height}%;transition:height 0.5s;"></div>
+        <div style="font-size:11px;color:var(--text-secondary);">${dayLabel}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderAchievements() {
+  const achievements = [
+    { id: 'first_article', icon: '📝', name: '初学者', desc: '添加第一篇文章', unlocked: appData.articles.length >= 1 },
+    { id: 'ten_articles', icon: '📚', name: '收藏家', desc: '添加10篇文章', unlocked: appData.articles.length >= 10 },
+    { id: 'first_study', icon: '✍️', name: '第一堂课', desc: '完成第一次学习', unlocked: appData.statistics.totalSessions >= 1 },
+    { id: 'streak_3', icon: '🔥', name: '三日坚持', desc: '连续学习3天', unlocked: appData.statistics.streak >= 3 },
+    { id: 'streak_7', icon: '💪', name: '一周达人', desc: '连续学习7天', unlocked: appData.statistics.streak >= 7 },
+    { id: 'master_1', icon: '🏆', name: '小有所成', desc: '掌握1篇文章', unlocked: appData.articles.filter(a => (a.mastery || 0) >= 90).length >= 1 },
+    { id: 'master_5', icon: '🎖️', name: '记忆力大师', desc: '掌握5篇文章', unlocked: appData.articles.filter(a => (a.mastery || 0) >= 90).length >= 5 },
+    { id: 'hour_study', icon: '⏰', name: '一小时', desc: '累计学习1小时', unlocked: appData.statistics.totalStudyTime >= 3600 },
+  ];
+  
+  document.getElementById('achievementsList').innerHTML = achievements.map(a => `
+    <div style="text-align:center;padding:16px 8px;opacity:${a.unlocked ? 1 : 0.4};">
+      <div style="font-size:36px;margin-bottom:8px;">${a.icon}</div>
+      <div style="font-size:13px;font-weight:500;">${a.name}</div>
+      <div style="font-size:11px;color:var(--text-secondary);margin-top:4px;">${a.desc}</div>
+    </div>
+  `).join('');
+}
+
+function toggleTheme() {
+  const isDark = appData.settings.theme === 'dark';
+  appData.settings.theme = isDark ? 'light' : 'dark';
+  applyTheme();
+  saveData();
+}
+
+function applyTheme() {
+  document.documentElement.setAttribute('data-theme', appData.settings.theme);
+  document.getElementById('themeToggle').classList.toggle('active', appData.settings.theme === 'dark');
+}
+
+function changeFontSize(delta) {
+  let size = appData.settings.fontSize + delta;
+  size = Math.max(12, Math.min(28, size));
+  appData.settings.fontSize = size;
+  document.documentElement.style.setProperty('--font-size', size + 'px');
+  document.getElementById('fontSizeValue').textContent = size + 'px';
+  saveData();
+}
+
+function updateSpeechRate() {
+  appData.settings.speechRate = parseFloat(document.getElementById('speechRate').value);
+  saveData();
+}
+
+function updateSpeechVolume() {
+  appData.settings.speechVolume = parseFloat(document.getElementById('speechVolume').value);
+  saveData();
+}
+
+function updateSpeechPitch() {
+  appData.settings.speechPitch = parseFloat(document.getElementById('speechPitch').value);
+  saveData();
+}
+
+function updateSpeechVoice() {
+  const select = document.getElementById('speechVoice');
+  appData.settings.speechVoice = select.value;
+  saveData();
+}
+
+function testSpeech() {
+  const utterance = new SpeechSynthesisUtterance('床前明月光，疑是地上霜。举头望明月，低头思故乡。');
+  utterance.lang = 'zh-CN';
+  utterance.rate = appData.settings.speechRate;
+  utterance.volume = appData.settings.speechVolume;
+  utterance.pitch = appData.settings.speechPitch || 1;
+  
+  const voices = window.speechSynthesis?.getVoices() || [];
+  if (appData.settings.speechVoice) {
+    const voice = voices.find(v => v.name === appData.settings.speechVoice);
+    if (voice) utterance.voice = voice;
+  }
+  
+  window.speechSynthesis?.speak(utterance);
+  showToast('正在播放测试语音');
+}
+
+function loadVoices() {
+  if (!window.speechSynthesis) return;
+  
+  const voices = window.speechSynthesis.getVoices();
+  const chineseVoices = voices.filter(v => v.lang.startsWith('zh') || v.lang.includes('CN'));
+  const select = document.getElementById('speechVoice');
+  
+  if (select && chineseVoices.length > 0) {
+    select.innerHTML = chineseVoices.map(v => 
+      `<option value="${v.name}" ${appData.settings.speechVoice === v.name ? 'selected' : ''}>${v.name} (${v.lang})</option>`
+    ).join('');
+  }
+}
+
+function exportCSV() {
+  if (appData.articles.length === 0) {
+    showToast('没有文章可导出');
+    return;
+  }
+  
+  const headers = ['标题', '分类', '内容', '掌握度', '学习次数', '创建时间'];
+  const rows = appData.articles.map(a => [
+    a.title,
+    a.category || '',
+    a.content.replace(/\n/g, '\\n'),
+    a.mastery || 0,
+    a.studyCount || 0,
+    formatDate(a.createdAt)
+  ]);
+  
+  const csvContent = [
+    headers.join(','),
+    ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+  ].join('\n');
+  
+  const BOM = '\uFEFF';
+  const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `背诵文章_${new Date().toISOString().split('T')[0]}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('CSV已导出');
+}
+
+function exportAllAsText() {
+  if (appData.articles.length === 0) {
+    showToast('没有文章可导出');
+    return;
+  }
+  
+  const text = appData.articles.map((a, i) => 
+    `【${i + 1}】${a.title}${a.category ? `（${a.category}）` : ''}\n\n${a.content}\n\n${'='.repeat(50)}\n`
+  ).join('\n');
+  
+  const blob = new Blob([text], { type: 'text/plain;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `背诵文章_${new Date().toISOString().split('T')[0]}.txt`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('TXT已导出');
+}
+
+function showExportMenu(event) {
+  event.stopPropagation();
+  const menu = document.getElementById('exportMenu');
+  const btn = document.getElementById('exportBtn');
+  
+  if (menu.style.display === 'none' || !menu.style.display) {
+    const btnRect = btn.getBoundingClientRect();
+    const parentRect = btn.parentElement.getBoundingClientRect();
+    menu.style.display = 'block';
+    menu.style.top = (btnRect.bottom - parentRect.top + 4) + 'px';
+    menu.style.left = (btnRect.left - parentRect.left) + 'px';
+  } else {
+    menu.style.display = 'none';
+  }
+}
+
+function hideExportMenu() {
+  document.getElementById('exportMenu').style.display = 'none';
+}
+
+document.addEventListener('click', function(e) {
+  const menu = document.getElementById('exportMenu');
+  if (menu && menu.style.display === 'block' && 
+      !menu.contains(e.target) && 
+      e.target.id !== 'exportBtn' && 
+      !e.target.closest('#exportBtn')) {
+    hideExportMenu();
+  }
+});
+
+function showImportModal() {
+  document.getElementById('importModal').classList.add('show');
+}
+
+function closeImportModal() {
+  document.getElementById('importModal').classList.remove('show');
+  document.getElementById('importFile').value = '';
+  document.getElementById('importText').value = '';
+}
+
+function handleImportFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    document.getElementById('importText').value = e.target.result;
+  };
+  reader.readAsText(file);
+}
+
+function importFromText() {
+  const text = document.getElementById('importText').value.trim();
+  if (!text) {
+    showToast('请输入或选择要导入的数据');
+    return;
+  }
+  
+  if (text.startsWith('title,') || text.startsWith('标题,')) {
+    importCSV(text);
+    return;
+  }
+  
+  try {
+    const data = JSON.parse(text);
+    
+    if (data.articles && Array.isArray(data.articles)) {
+      if (confirm(`将导入 ${data.articles.length} 篇文章，是否继续？（将覆盖现有数据）`)) {
+        appData.articles = data.articles;
+        if (data.settings) appData.settings = { ...appData.settings, ...data.settings };
+        if (data.statistics) appData.statistics = { ...appData.statistics, ...data.statistics };
+        saveData();
+        applySettings();
+        renderArticles();
+        closeImportModal();
+        showToast('导入成功');
+      }
+    } else {
+      showToast('数据格式不正确');
+    }
+  } catch (e) {
+    showToast('导入失败: ' + e.message);
+  }
+}
+
+function importCSV(csvText) {
+  try {
+    const lines = csvText.split('\n').filter(l => l.trim());
+    if (lines.length < 2) {
+      showToast('CSV数据格式不正确');
+      return;
+    }
+    
+    const parseCSVLine = (line) => {
+      const result = [];
+      let current = '';
+      let inQuotes = false;
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        if (char === '"') {
+          if (inQuotes && line[i + 1] === '"') {
+            current += '"';
+            i++;
+          } else {
+            inQuotes = !inQuotes;
+          }
+        } else if (char === ',' && !inQuotes) {
+          result.push(current);
+          current = '';
+        } else {
+          current += char;
+        }
+      }
+      result.push(current);
+      return result;
+    };
+    
+    const headers = parseCSVLine(lines[0]);
+    const titleIdx = headers.findIndex(h => h === '标题' || h === 'title');
+    const catIdx = headers.findIndex(h => h === '分类' || h === 'category');
+    const contentIdx = headers.findIndex(h => h === '内容' || h === 'content');
+    
+    if (titleIdx === -1 || contentIdx === -1) {
+      showToast('CSV缺少必要的列（标题/内容）');
+      return;
+    }
+    
+    const newArticles = [];
+    for (let i = 1; i < lines.length; i++) {
+      const row = parseCSVLine(lines[i]);
+      if (row[titleIdx] && row[contentIdx]) {
+        newArticles.push({
+          id: generateId(),
+          title: row[titleIdx].trim(),
+          category: catIdx >= 0 ? (row[catIdx] || '').trim() : '',
+          content: row[contentIdx].replace(/\\n/g, '\n').trim(),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          studyCount: 0,
+          mastery: 0,
+          lastStudiedAt: null,
+          reviewStage: 0,
+          nextReviewAt: null
+        });
+      }
+    }
+    
+    if (newArticles.length === 0) {
+      showToast('未找到有效文章');
+      return;
+    }
+    
+    if (confirm(`将导入 ${newArticles.length} 篇文章，是否合并到现有文章？\n确定=合并，取消=覆盖`)) {
+      appData.articles = [...newArticles, ...appData.articles];
+    } else {
+      appData.articles = newArticles;
+    }
+    
+    saveData();
+    renderArticles();
+    closeImportModal();
+    showToast(`成功导入 ${newArticles.length} 篇文章`);
+  } catch (e) {
+    showToast('CSV导入失败: ' + e.message);
+  }
+}
+
+let showFavoritesOnly = false;
+
+function toggleFavoritesView() {
+  showFavoritesOnly = !showFavoritesOnly;
+  const btn = document.getElementById('favViewBtn');
+  btn.style.background = showFavoritesOnly ? 'var(--warning)' : '';
+  btn.style.color = showFavoritesOnly ? 'white' : '';
+  filterArticles();
+  showToast(showFavoritesOnly ? '显示收藏文章' : '显示全部文章');
+}
+
+function toggleFavorite(articleId) {
+  const article = appData.articles.find(a => a.id === articleId);
+  if (article) {
+    article.favorite = !article.favorite;
+    saveData();
+    filterArticles();
+    showToast(article.favorite ? '已添加收藏' : '已取消收藏');
+  }
+}
+
+function copyArticleContent(articleId) {
+  const article = appData.articles.find(a => a.id === articleId);
+  if (article) {
+    navigator.clipboard.writeText(article.content).then(() => {
+      showToast('内容已复制到剪贴板');
+    }).catch(() => {
+      const textarea = document.createElement('textarea');
+      textarea.value = article.content;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+      showToast('内容已复制');
+    });
+  }
+}
+
+function randomPractice() {
+  if (appData.articles.length === 0) {
+    showToast('请先添加文章');
+    return;
+  }
+  
+  const randomIdx = Math.floor(Math.random() * appData.articles.length);
+  const article = appData.articles[randomIdx];
+  openArticleForPractice(article.id);
+  showToast(`随机选择：${article.title}`);
+}
+
+function printArticle() {
+  if (!appData.currentArticleId) {
+    showToast('请先选择文章');
+    return;
+  }
+  const article = appData.articles.find(a => a.id === appData.currentArticleId);
+  if (article) {
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+      <html>
+      <head><title>${article.title}</title>
+      <style>
+        body { font-family: "Microsoft YaHei", sans-serif; padding: 40px; line-height: 2.5; font-size: 18px; }
+        h1 { text-align: center; margin-bottom: 30px; }
+        .content { white-space: pre-wrap; }
+      </style>
+      </head>
+      <body>
+        <h1>${article.title}</h1>
+        <p style="text-align:center;color:#999;margin-bottom:30px;">${article.category || ''}</p>
+        <div class="content">${article.content}</div>
+      </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.print();
+  }
+}
+
+let originalFilterArticles = null;
+
+const _origFilterArticles = filterArticles;
+filterArticles = function() {
+  const search = document.getElementById('searchInput').value.toLowerCase();
+  const category = document.getElementById('categoryFilter').value;
+  const sortBy = document.getElementById('sortBy').value;
+  
+  let filtered = appData.articles.filter(a => {
+    const matchSearch = !search || 
+      a.title.toLowerCase().includes(search) || 
+      a.content.toLowerCase().includes(search);
+    const matchCategory = !category || a.category === category;
+    const matchFavorite = !showFavoritesOnly || a.favorite;
+    return matchSearch && matchCategory && matchFavorite;
+  });
+  
+  filtered.sort((a, b) => {
+    switch (sortBy) {
+      case 'newest': return new Date(b.createdAt) - new Date(a.createdAt);
+      case 'oldest': return new Date(a.createdAt) - new Date(b.createdAt);
+      case 'mastery-desc': return (b.mastery || 0) - (a.mastery || 0);
+      case 'mastery-asc': return (a.mastery || 0) - (b.mastery || 0);
+      case 'study-desc': return (b.studyCount || 0) - (a.studyCount || 0);
+      default: return 0;
+    }
+  });
+  
+  renderArticleList(filtered);
+};
+
+document.addEventListener('keydown', function(e) {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') {
+    return;
+  }
+  
+  const practicePage = document.getElementById('page-practice');
+  const isPracticeActive = practicePage.classList.contains('active') && 
+    document.getElementById('practiceArea').style.display !== 'none';
+  
+  if (isPracticeActive) {
+    switch (e.key) {
+      case ' ':
+        e.preventDefault();
+        if (appData.currentPracticeMode === 'readAloud') {
+          toggleReadAloud();
+        }
+        break;
+      case 'ArrowLeft':
+        e.preventDefault();
+        if (appData.currentPracticeMode === 'readAloud') {
+          prevLine();
+        }
+        break;
+      case 'ArrowRight':
+        e.preventDefault();
+        if (appData.currentPracticeMode === 'readAloud') {
+          nextLine();
+        }
+        break;
+      case 'f':
+      case 'F':
+        e.preventDefault();
+        if (appData.currentPracticeMode === 'readAloud') {
+          toggleFullscreen();
+        }
+        break;
+      case 'Escape':
+        e.preventDefault();
+        const container = document.querySelector('.practice-container');
+        const parent = container?.parentElement;
+        if (parent?.classList.contains('fullscreen-mode')) {
+          toggleFullscreen();
+        }
+        break;
+    }
+  }
+});
+
+function resetAllData() {
+  if (!confirm('确定要重置所有数据吗？所有文章和学习记录将被清除，此操作不可撤销！')) return;
+  
+  appData = {
+    articles: [],
+    settings: {
+      theme: 'light',
+      fontSize: 16,
+      speechVoice: '',
+      speechRate: 1,
+      speechVolume: 1,
+      speechPitch: 1,
+      autoSave: true,
+      blankRatio: 0.3
+    },
+    statistics: {
+      totalStudyTime: 0,
+      totalSessions: 0,
+      articlesMastered: 0,
+      streak: 0,
+      lastStudyDate: null,
+      dailyRecords: {}
+    },
+    currentArticleId: null,
+    currentPracticeMode: null
+  };
+  
+  saveData();
+  applySettings();
+  renderArticles();
+  showToast('数据已重置');
+}
+
+function applySettings() {
+  document.documentElement.style.setProperty('--font-size', appData.settings.fontSize + 'px');
+  document.getElementById('fontSizeValue').textContent = appData.settings.fontSize + 'px';
+  document.getElementById('speechRate').value = appData.settings.speechRate;
+  document.getElementById('speechVolume').value = appData.settings.speechVolume;
+  if (document.getElementById('speechPitch')) {
+    document.getElementById('speechPitch').value = appData.settings.speechPitch || 1;
+  }
+  document.getElementById('blankRatio').value = appData.settings.blankRatio;
+  applyTheme();
+  loadVoices();
+}
+
+function init() {
+  loadData();
+  
+  if (window.speechSynthesis) {
+    window.speechSynthesis.onvoiceschanged = () => {
+      loadVoices();
+    };
+  }
+  
+  applySettings();
+  renderArticles();
+  
+  if (appData.articles.length === 0) {
+    addSampleArticles();
+  }
+}
+
+function addSampleArticles() {
+  const samples = [
+    {
+      title: '静夜思',
+      category: '古诗',
+      content: '床前明月光，\n疑是地上霜。\n举头望明月，\n低头思故乡。'
+    },
+    {
+      title: '春晓',
+      category: '古诗',
+      content: '春眠不觉晓，\n处处闻啼鸟。\n夜来风雨声，\n花落知多少。'
+    },
+    {
+      title: '登鹳雀楼',
+      category: '古诗',
+      content: '白日依山尽，\n黄河入海流。\n欲穷千里目，\n更上一层楼。'
+    }
+  ];
+  
+  samples.forEach(s => {
+    appData.articles.push({
+      id: generateId(),
+      title: s.title,
+      category: s.category,
+      content: s.content,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      studyCount: 0,
+      mastery: 0,
+      lastStudiedAt: null,
+      reviewStage: 0,
+      nextReviewAt: null
+    });
+  });
+  
+  saveData();
+}
+
+init();
+</script>
+</body>
+</html>

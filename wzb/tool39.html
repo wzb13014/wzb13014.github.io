@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>员工上岗证生成器 · A4打印增强版</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
+    <style>
+        :root {
+            --font-family: 'Noto Sans SC', '思源黑体', sans-serif;
+            --card-border-color: #1a3c5e;
+            --cut-line-color: #b0b0b0;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Noto Sans SC', 'PingFang SC', sans-serif;
+            background: #e8edf2;
+            color: #2c3e50;
+            min-height: 100vh;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .app-header {
+            background: #fff;
+            border-bottom: 1px solid #dce3ea;
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .app-header .logo-area { display: flex; align-items: center; gap: 10px; }
+        .app-header .logo-icon {
+            width: 40px; height: 40px; background: linear-gradient(135deg, #1a5276, #2980b9);
+            border-radius: 10px; display: flex; align-items: center; justify-content: center;
+            color: #fff; font-size: 20px; font-weight: 700;
+        }
+        .app-header h1 { font-size: 1.25rem; font-weight: 700; color: #1a3c5e; }
+        .header-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+        .btn {
+            padding: 9px 18px; border: none; border-radius: 8px; cursor: pointer;
+            font-size: 0.9rem; font-weight: 600; transition: all 0.2s;
+            display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
+            font-family: inherit; outline: none;
+        }
+        .btn:active { transform: scale(0.96); }
+        .btn-primary { background: #2980b9; color: #fff; }
+        .btn-primary:hover { background: #1a6daa; }
+        .btn-success { background: #27ae60; color: #fff; }
+        .btn-success:hover { background: #1e8c4c; }
+        .btn-outline { background: #fff; color: #2980b9; border: 1.5px solid #2980b9; }
+        .btn-outline:hover { background: #eaf4fb; }
+        .btn-danger { background: #c0392b; color: #fff; }
+        .btn-danger:hover { background: #a02d22; }
+        .btn-warning { background: #f39c12; color: #fff; }
+        .btn-warning:hover { background: #d68910; }
+        .btn-sm { padding: 5px 12px; font-size: 0.8rem; border-radius: 6px; }
+        .btn-xs { padding: 3px 8px; font-size: 0.7rem; border-radius: 4px; }
+
+        .main-container { display: flex; gap: 20px; padding: 20px 24px; max-width: 1500px; margin: 0 auto; }
+        .settings-panel {
+            width: 320px; min-width: 320px; background: #fff; border-radius: 16px; padding: 20px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.1); display: flex; flex-direction: column; gap: 16px;
+            position: sticky; top: 85px; border: 1px solid #dce3ea; height: fit-content;
+        }
+        .settings-panel h3 { font-size: 0.95rem; font-weight: 700; color: #1a3c5e; border-bottom: 2px solid #e8edf2; padding-bottom: 10px; }
+        .setting-group { display: flex; flex-direction: column; gap: 5px; }
+        .setting-group label { font-size: 0.82rem; font-weight: 600; color: #4a5568; }
+        .setting-group select, .setting-group input[type="text"], .setting-group input[type="number"], .setting-group input[type="color"] {
+            padding: 8px 12px; border: 1.5px solid #dce3ea; border-radius: 8px; font-size: 0.88rem; font-family: inherit; background: #fafbfc; width: 100%;
+        }
+        .setting-group input[type="color"] { height: 40px; padding: 4px; cursor: pointer; }
+        .toggle-switch { display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 0.85rem; font-weight: 500; }
+        .toggle-switch input { display: none; }
+        .toggle-track { width: 44px; height: 24px; border-radius: 12px; background: #cbd5e0; position: relative; transition: 0.3s; }
+        .toggle-track::after { content: ''; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: #fff; transition: 0.3s; }
+        .toggle-switch input:checked + .toggle-track { background: #2980b9; }
+        .toggle-switch input:checked + .toggle-track::after { transform: translateX(20px); }
+        input[type="range"] { width: 100%; }
+        .range-value { font-weight: 700; color: #2980b9; font-size: 0.85rem; }
+
+        .preview-area { flex: 1; display: flex; flex-direction: column; gap: 20px; align-items: center; }
+        .preview-toolbar { display: flex; gap: 10px; align-items: center; background: #fff; padding: 10px 18px; border-radius: 30px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border: 1px solid #dce3ea; }
+        .a4-wrapper { display: flex; flex-direction: column; gap: 30px; align-items: center; width: 100%; }
+        .a4-sheet { background: #fff; box-shadow: 0 8px 30px rgba(0,0,0,0.14); border-radius: 4px; overflow: hidden; transition: 0.3s; flex-shrink: 0; }
+        .a4-sheet.portrait { width: 210mm; height: 297mm; }
+        .a4-sheet.landscape { width: 297mm; height: 210mm; }
+        .a4-inner { width: 100%; height: 100%; display: grid; gap: 2.5mm; padding: 4mm; box-sizing: border-box; }
+        .a4-sheet.portrait .a4-inner.cards-1 { grid-template-columns: 1fr; grid-template-rows: 1fr; }
+        .a4-sheet.portrait .a4-inner.cards-2 { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
+        .a4-sheet.portrait .a4-inner.cards-4 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
+        .a4-sheet.portrait .a4-inner.cards-6 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr 1fr; }
+        .a4-sheet.portrait .a4-inner.cards-8 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr 1fr 1fr; }
+        .a4-sheet.landscape .a4-inner.cards-1 { grid-template-columns: 1fr; grid-template-rows: 1fr; }
+        .a4-sheet.landscape .a4-inner.cards-2 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr; }
+        .a4-sheet.landscape .a4-inner.cards-4 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
+        .a4-sheet.landscape .a4-inner.cards-6 { grid-template-columns: 1fr 1fr 1fr; grid-template-rows: 1fr 1fr; }
+        .a4-sheet.landscape .a4-inner.cards-8 { grid-template-columns: 1fr 1fr 1fr 1fr; grid-template-rows: 1fr 1fr; }
+
+        .id-card {
+            background: #fff; border: 2px solid #1a3c5e; border-radius: 4px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            position: relative; overflow: hidden; padding: 0; box-sizing: border-box;
+            font-family: var(--font-family);
+        }
+        .id-card.cut-lines { border-style: dashed; border-color: #b0b0b0; }
+
+        .card-accent-bar {
+            width: 100%; display: flex; align-items: center; justify-content: center;
+            background: linear-gradient(90deg, #1a5276, #2980b9); padding: 0 8px;
+            flex-shrink: 0; transition: height 0.2s;
+        }
+        .card-accent-bar .company-name {
+            color: #ffffff; font-weight: 700; letter-spacing: 0.5px;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            font-size: inherit;
+        }
+
+        .card-header { text-align: center; width: 100%; flex-shrink: 0; padding: 2% 6% 0; }
+        .company-logo-img { max-height: 24px; max-width: 80%; object-fit: contain; margin-bottom: 2px; display: block; margin-left: auto; margin-right: auto; }
+        .card-title {
+            font-weight: 900; letter-spacing: 1.5px; color: #1a5276;
+            font-size: 1.2em; text-transform: uppercase;
+            border-bottom: 2px solid #1a5276; padding-bottom: 2px; display: inline-block; margin-bottom: 3px;
+        }
+
+        .card-body { display: flex; align-items: center; gap: 5%; width: 100%; flex: 1; padding: 0 6%; }
+        .photo-area { border-radius: 4px; overflow: hidden; border: 1.5px solid #d0d8e0; background: #f5f7fa; display: flex; align-items: center; justify-content: center; aspect-ratio: 3/4; }
+        .photo-area img { width: 100%; height: 100%; object-fit: cover; }
+        .info-area { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+        .info-row { font-size: 0.75em; white-space: nowrap; }
+        .info-label { font-weight: 600; color: #5a6c7d; }
+        .info-value { font-weight: 500; color: #1a3c5e; }
+        .info-value.name { font-weight: 700; font-size: 1.1em; color: #0d2b45; }
+        .card-footer { width: 100%; text-align: center; font-size: 0.65em; color: #7a8b9a; border-top: 1px solid #e8edf2; padding: 4px 0; }
+        .card-number { position: absolute; bottom: 3px; right: 8px; font-size: 0.55em; color: #b0bec5; }
+
+        .employee-section { background: #fff; border-radius: 16px; padding: 16px 20px; margin-top: 10px; width: 100%; max-width: 1100px; box-shadow: 0 4px 16px rgba(0,0,0,0.1); }
+        .employee-table-wrap { overflow-x: auto; max-height: 280px; overflow-y: auto; border-radius: 8px; border: 1px solid #e8edf2; }
+        .employee-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; min-width: 700px; }
+        .employee-table th { background: #f0f4f8; padding: 10px 8px; text-align: left; font-weight: 700; color: #3a5068; border-bottom: 2px solid #dce3ea; position: sticky; top: 0; z-index: 5; }
+        .employee-table td { padding: 8px; border-bottom: 1px solid #f0f3f6; vertical-align: middle; }
+        .employee-table input[type="text"], .employee-table input[type="date"] { border: 1px solid #e0e5eb; padding: 5px 6px; border-radius: 4px; font-size: 0.78rem; width: 90%; background: #fafbfc; }
+        .employee-table input:focus { outline: none; border-color: #2980b9; }
+
+        .modal-overlay { position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.5); z-index:999; display:flex; align-items:center; justify-content:center; }
+        .modal-dialog { background:#fff; border-radius:16px; padding:24px; width:90%; max-width:650px; }
+        .toast { position:fixed; bottom:30px; left:50%; transform:translateX(-50%); background:#2c3e50; color:#fff; padding:12px 24px; border-radius:25px; font-weight:600; z-index:2000; }
+
+        /* 打印样式增强 */
+        @media print {
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                color-adjust: exact !important;
+            }
+            body { background: #fff !important; }
+            .app-header,.settings-panel,.preview-toolbar,.employee-section,.modal-overlay,.toast,.no-print { display: none !important; }
+            .main-container { display: block !important; padding:0 !important; margin:0 !important; }
+            .preview-area { display: block !important; width:100% !important; }
+            .a4-wrapper { gap:0 !important; }
+            .a4-sheet {
+                box-shadow: none !important; border-radius:0 !important; margin:0 !important;
+                width:210mm !important; height:297mm !important; transform: none !important;
+                page-break-after: always; overflow: visible !important;
+            }
+            .a4-sheet.landscape { width:297mm !important; height:210mm !important; }
+            .a4-sheet:last-child { page-break-after: auto; }
+            .a4-inner { gap:2.5mm !important; padding:4mm !important; }
+            @page { size: A4; margin: 0; }
+            @page landscape { size: A4 landscape; margin: 0; }
+            .a4-sheet.landscape { page: landscape; }
+            /* 强制显示装饰条背景与文字 */
+            .card-accent-bar {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            .card-accent-bar .company-name {
+                color: #ffffff !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<header class="app-header">
+    <div class="logo-area"><div class="logo-icon">🪪</div><h1>员工上岗证生成器</h1></div>
+    <div class="header-actions">
+        <button class="btn btn-outline btn-sm" onclick="loadSampleData()">📋 示例</button>
+        <button class="btn btn-outline btn-sm" onclick="openBatchModal()">📝 批量导入</button>
+        <button class="btn btn-outline btn-sm" onclick="addEmployee()">➕ 添加</button>
+        <button class="btn btn-success" onclick="exportPDF()">🖨️ 导出PDF</button>
+        <button class="btn btn-warning" onclick="exportImages()">🖼️ 导出图片</button>
+        <button class="btn btn-danger btn-sm" onclick="clearAll()">🗑️ 清空</button>
+    </div>
+</header>
+
+<div class="main-container">
+    <aside class="settings-panel no-print">
+        <h3>⚙️ 打印设置</h3>
+        <div class="setting-group"><label>📐 纸张方向</label><select id="orientation" onchange="updateAll()"><option value="portrait">纵向</option><option value="landscape">横向</option></select></div>
+        <div class="setting-group"><label>📇 每页卡片数</label><select id="cardsPerPage" onchange="updateAll()"><option value="1">1</option><option value="2">2</option><option value="4" selected>4</option><option value="6">6</option><option value="8">8</option></select></div>
+        <div class="setting-group"><label>🔤 字体</label><select id="fontFamily" onchange="updateAll()"><option value="noto">思源黑体</option><option value="fangsong">仿宋</option></select></div>
+        <div class="setting-group"><label>📏 基础字号 <span class="range-value" id="fontSizeVal">14</span>px</label><input type="range" id="fontSize" min="10" max="25" value="14" step="0.5" oninput="document.getElementById('fontSizeVal').textContent=this.value; updateAll();"></div>
+        <div class="setting-group"><label>🎨 装饰条颜色</label><input type="color" id="accentColor" value="#1a5276" onchange="updateAll()"></div>
+        <div class="setting-group"><label>📏 装饰条高度 <span class="range-value" id="accentHeightVal">3</span>px</label><input type="range" id="accentBarHeight" min="2" max="50" value="3" step="1" oninput="document.getElementById('accentHeightVal').textContent=this.value; updateAll();"></div>
+        <div class="setting-group"><label>🖼️ 公司Logo</label>
+            <div style="display:flex; gap:6px;"><button class="btn btn-sm btn-outline" onclick="document.getElementById('companyLogoFile').click()">📁 选择</button><button class="btn btn-sm btn-danger" id="removeLogoBtn" style="display:none;" onclick="removeCompanyLogo()">✕</button><input type="file" id="companyLogoFile" accept="image/*" style="display:none;" onchange="handleCompanyLogoUpload(event)"></div>
+            <img id="logoPreview" class="logo-preview-small" style="display:none; width:60px; height:30px; object-fit:contain;">
+        </div>
+        <div class="setting-group"><label>🏢 公司名称</label><input type="text" id="companyName" value="科技有限公司" oninput="updateAll()"></div>
+        <div class="setting-row"><label class="toggle-switch"><input type="checkbox" id="showCutLines" checked onchange="updateAll()"><span class="toggle-track"></span> ✂️ 裁剪虚线</label></div>
+        <div class="setting-row"><label class="toggle-switch"><input type="checkbox" id="showPhotos" checked onchange="updateAll()"><span class="toggle-track"></span> 📷 显示照片</label></div>
+        <div class="setting-group"><label>🔍 缩放 <span class="range-value" id="zoomVal">100</span>%</label><input type="range" id="zoomSlider" min="40" max="120" value="100" oninput="document.getElementById('zoomVal').textContent=this.value; applyZoom();"></div>
+        <div>员工: <strong id="totalCount">0</strong> | 页: <strong id="estimatedPages">0</strong></div>
+    </aside>
+
+    <div class="preview-area">
+        <div class="preview-toolbar no-print"><span>📄 预览</span> <span class="page-indicator" id="pageIndicator">共 0 页</span></div>
+        <div class="a4-wrapper" id="a4Wrapper"></div>
+    </div>
+</div>
+
+<div class="employee-section no-print" style="max-width:1500px;margin:0 auto 20px;">
+    <h3>👥 员工管理</h3>
+    <div class="employee-table-wrap">
+        <table class="employee-table" id="employeeTable">
+            <thead><tr><th>序号</th><th>照片</th><th>姓名</th><th>工号</th><th>部门</th><th>职位</th><th>有效期</th><th>编号</th><th>操作</th></tr></thead>
+            <tbody id="employeeTableBody"></tbody>
+        </table>
+    </div>
+    <div style="margin-top:10px;display:flex;gap:8px;">
+        <button class="btn btn-sm btn-primary" onclick="addEmployee()">➕ 添加</button>
+        <button class="btn btn-sm btn-outline" onclick="openBatchModal()">📝 批量导入</button>
+        <button class="btn btn-sm btn-outline" onclick="loadSampleData()">📋 示例</button>
+        <button class="btn btn-sm btn-danger" onclick="clearAll()">🗑️ 清空</button>
+    </div>
+</div>
+
+<div class="modal-overlay" id="batchModal" style="display:none;" onclick="if(event.target===this)closeBatchModal()">
+    <div class="modal-dialog" onclick="event.stopPropagation()">
+        <h3>📝 批量导入</h3>
+        <textarea id="batchInput" style="width:100%; height:200px;" placeholder="姓名,工号,部门,职位,有效期"></textarea>
+        <div style="background:#f8fafb;padding:8px;margin:6px 0;">💡 逗号/制表符分隔，有效期可省略</div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;"><button class="btn btn-outline" onclick="closeBatchModal()">取消</button><button class="btn btn-primary" onclick="batchImport()">导入</button></div>
+    </div>
+</div>
+<div class="toast" id="toast" style="display:none;"></div>
+
+<script>
+    let employees = [], employeeIdCounter = 0, companyLogoData = null;
+
+    function loadFromStorage() {
+        try {
+            const e = localStorage.getItem('idcard_emp_v4');
+            if (e) { employees = JSON.parse(e); employeeIdCounter = employees.reduce((m,x)=>Math.max(m,x._id||0),0)+1; }
+            const s = localStorage.getItem('idcard_set_v4');
+            if (s) {
+                const st = JSON.parse(s);
+                document.getElementById('orientation').value = st.orientation||'portrait';
+                document.getElementById('cardsPerPage').value = st.cardsPerPage||'4';
+                document.getElementById('fontFamily').value = st.fontFamily||'noto';
+                document.getElementById('fontSize').value = st.fontSize||14;
+                document.getElementById('accentColor').value = st.accentColor||'#1a5276';
+                document.getElementById('accentBarHeight').value = st.accentBarHeight||3;
+                document.getElementById('companyName').value = st.companyName||'科技有限公司';
+                document.getElementById('showCutLines').checked = st.showCutLines!==false;
+                document.getElementById('showPhotos').checked = st.showPhotos!==false;
+                document.getElementById('zoomSlider').value = st.zoomLevel||100;
+                document.getElementById('fontSizeVal').textContent = st.fontSize||14;
+                document.getElementById('accentHeightVal').textContent = st.accentBarHeight||3;
+                document.getElementById('zoomVal').textContent = st.zoomLevel||100;
+                if(st.companyLogo) { companyLogoData = st.companyLogo; updateLogoPreview(); }
+            }
+        } catch(e){}
+    }
+
+    function saveToStorage() {
+        localStorage.setItem('idcard_emp_v4', JSON.stringify(employees));
+        localStorage.setItem('idcard_set_v4', JSON.stringify({
+            orientation: document.getElementById('orientation').value,
+            cardsPerPage: document.getElementById('cardsPerPage').value,
+            fontFamily: document.getElementById('fontFamily').value,
+            fontSize: parseFloat(document.getElementById('fontSize').value),
+            accentColor: document.getElementById('accentColor').value,
+            accentBarHeight: parseInt(document.getElementById('accentBarHeight').value),
+            companyName: document.getElementById('companyName').value,
+            showCutLines: document.getElementById('showCutLines').checked,
+            showPhotos: document.getElementById('showPhotos').checked,
+            zoomLevel: parseInt(document.getElementById('zoomSlider').value),
+            companyLogo: companyLogoData
+        }));
+    }
+
+    function handleCompanyLogoUpload(e) {
+        const f = e.target.files[0]; if(!f) return;
+        const r = new FileReader();
+        r.onload = ev => compressImage(ev.target.result,300,80,0.7, d => { companyLogoData=d; updateLogoPreview(); updateAll(); saveToStorage(); });
+        r.readAsDataURL(f); e.target.value='';
+    }
+    function removeCompanyLogo() { companyLogoData=null; updateLogoPreview(); updateAll(); saveToStorage(); }
+    function updateLogoPreview() {
+        const p=document.getElementById('logoPreview'), b=document.getElementById('removeLogoBtn');
+        if(companyLogoData) { p.src=companyLogoData; p.style.display='block'; b.style.display='inline-flex'; }
+        else { p.src=''; p.style.display='none'; b.style.display='none'; }
+    }
+
+    function createEmployee(n='',eid='',dept='',pos='',vu='',photo=null,cn='') {
+        const id=employeeIdCounter++; const dv=new Date(); dv.setFullYear(dv.getFullYear()+1);
+        return {_id:id,name:n||'未命名',employeeId:eid||('EMP'+String(id).padStart(4,'0')),department:dept||'部门',position:pos||'员工',validUntil:vu||dv.toISOString().split('T')[0],photo:photo,cardNumber:cn||('SC-'+new Date().getFullYear()+'-'+String(id).padStart(5,'0'))};
+    }
+    function addEmployee() { employees.push(createEmployee()); updateAll(); saveToStorage(); }
+    function deleteEmployee(i) { employees.splice(i,1); updateAll(); saveToStorage(); }
+    function clearAll() { if(confirm('清空所有？')) { employees=[]; employeeIdCounter=0; updateAll(); saveToStorage(); } }
+    function loadSampleData() {
+        if(employees.length && !confirm('替换现有数据？')) return;
+        employees=[]; employeeIdCounter=0;
+        [{n:'张伟明',e:'ZG001',d:'技术部',p:'高级工程师'},{n:'李丽',e:'ZG002',d:'市场部',p:'经理'},{n:'王强',e:'ZG003',d:'财务部',p:'主管'},{n:'陈静',e:'ZG004',d:'人事部',p:'HR'},{n:'赵刚',e:'ZG005',d:'研发部',p:'架构师'},{n:'周芳',e:'ZG006',d:'设计部',p:'设计师'}].forEach(x=>employees.push(createEmployee(x.n,x.e,x.d,x.p)));
+        updateAll(); saveToStorage();
+    }
+    function openBatchModal() { document.getElementById('batchModal').style.display='flex'; }
+    function closeBatchModal() { document.getElementById('batchModal').style.display='none'; }
+    function batchImport() {
+        const raw=document.getElementById('batchInput').value.trim(); if(!raw) return;
+        raw.split(/[\n\r]+/).filter(l=>l.trim()).forEach(l=>{
+            const p=l.split(/[,\t]+|\s{2,}/).map(s=>s.trim()).filter(s=>s);
+            if(p.length>=2) employees.push(createEmployee(p[0],p[1],p[2]||'部门',p[3]||'员工',p[4]||''));
+        });
+        closeBatchModal(); updateAll(); saveToStorage(); showToast('✅ 导入完成');
+    }
+    function showToast(m) {
+        const t=document.getElementById('toast'); t.textContent=m; t.style.display='block';
+        clearTimeout(t._t); t._t=setTimeout(()=>t.style.display='none',2600);
+    }
+    function lightenColor(color, percent) {
+        const num = parseInt(color.replace('#',''),16);
+        const amt = Math.round(2.55 * percent * 100);
+        const R = Math.min(255, (num>>16) + amt);
+        const G = Math.min(255, ((num>>8)&0x00FF) + amt);
+        const B = Math.min(255, (num&0x0000FF) + amt);
+        return `rgb(${R},${G},${B})`;
+    }
+
+    function escapeHTML(s) { const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
+
+    function updatePreviewOnly() {
+        const s = {
+            orientation: document.getElementById('orientation').value,
+            cardsPerPage: +document.getElementById('cardsPerPage').value,
+            fontFamily: document.getElementById('fontFamily').value,
+            fontSize: +document.getElementById('fontSize').value,
+            accentColor: document.getElementById('accentColor').value,
+            accentBarHeight: +document.getElementById('accentBarHeight').value,
+            companyName: document.getElementById('companyName').value,
+            showCutLines: document.getElementById('showCutLines').checked,
+            showPhotos: document.getElementById('showPhotos').checked,
+            zoomLevel: +document.getElementById('zoomSlider').value,
+            companyLogo: companyLogoData
+        };
+        const wrap = document.getElementById('a4Wrapper'); wrap.innerHTML = '';
+        if (!employees.length) {
+            wrap.innerHTML = '<div style="padding:60px;color:#a0b0c0;">📭 暂无员工</div>';
+            document.getElementById('pageIndicator').textContent = '共 0 页';
+            document.getElementById('totalCount').textContent = '0';
+            document.getElementById('estimatedPages').textContent = '0';
+            return;
+        }
+        const pp = s.cardsPerPage, pages = Math.ceil(employees.length / pp);
+        for (let pg = 0; pg < pages; pg++) {
+            const sheet = document.createElement('div'); sheet.className = 'a4-sheet ' + s.orientation;
+            const inner = document.createElement('div'); inner.className = 'a4-inner cards-' + pp;
+            const start = pg * pp, end = Math.min(start + pp, employees.length);
+            for (let i = start; i < end; i++) {
+                const card = createCardElement(employees[i], s, pp);
+                inner.appendChild(card);
+            }
+            sheet.appendChild(inner); wrap.appendChild(sheet);
+        }
+        document.getElementById('pageIndicator').textContent = '共 ' + pages + ' 页';
+        document.getElementById('totalCount').textContent = employees.length;
+        document.getElementById('estimatedPages').textContent = pages;
+        applyZoom();
+    }
+
+    function createCardElement(emp, s, cardsPerPage) {
+        const card = document.createElement('div'); card.className = 'id-card' + (s.showCutLines ? ' cut-lines' : '');
+        card.style.fontFamily = s.fontFamily === 'fangsong' ? '"FangSong","仿宋",serif' : '"Noto Sans SC","思源黑体",sans-serif';
+        let mul = 1; if (cardsPerPage >= 6) mul = 0.78; if (cardsPerPage >= 8) mul = 0.65; if (cardsPerPage <= 2) mul = 1.2;
+        card.style.fontSize = (s.fontSize * mul) + 'px';
+        // 装饰条（带公司名称）
+        const bar = document.createElement('div'); bar.className = 'card-accent-bar';
+        bar.style.height = s.accentBarHeight + 'px';
+        bar.style.background = `linear-gradient(90deg, ${s.accentColor}, ${lightenColor(s.accentColor,0.2)})`;
+        const cname = document.createElement('span'); cname.className = 'company-name'; cname.textContent = s.companyName;
+        bar.appendChild(cname); card.appendChild(bar);
+        // 头部：Logo 在上，标题在下
+        const header = document.createElement('div'); header.className = 'card-header';
+        if (s.companyLogo) {
+            const img = document.createElement('img'); img.className = 'company-logo-img'; img.src = s.companyLogo;
+            header.appendChild(img);
+        }
+        const title = document.createElement('div'); title.className = 'card-title'; title.textContent = '上岗证';
+        header.appendChild(title);
+        card.appendChild(header);
+        // 主体
+        const body = document.createElement('div'); body.className = 'card-body';
+        const pa = document.createElement('div'); pa.className = 'photo-area'; pa.style.width = cardsPerPage >= 6 ? '22%' : cardsPerPage >= 4 ? '28%' : '32%';
+        if (s.showPhotos && emp.photo) { const im = document.createElement('img'); im.src = emp.photo; pa.appendChild(im); }
+        else if (s.showPhotos) pa.innerHTML = '<div class="no-photo" style="font-size:2em;">👤</div>';
+        else pa.style.display = 'none';
+        body.appendChild(pa);
+        const info = document.createElement('div'); info.className = 'info-area';
+        info.innerHTML = `<div class="info-row"><span class="info-value name">${escapeHTML(emp.name)}</span></div>
+            <div class="info-row"><span class="info-label">工号:</span><span class="info-value">${escapeHTML(emp.employeeId)}</span></div>
+            <div class="info-row"><span class="info-label">部门:</span><span class="info-value">${escapeHTML(emp.department)}</span></div>
+            <div class="info-row"><span class="info-label">职位:</span><span class="info-value">${escapeHTML(emp.position)}</span></div>
+            <div class="info-row"><span class="info-label">有效期:</span><span class="info-value">${escapeHTML(emp.validUntil)}</span></div>`;
+        body.appendChild(info); card.appendChild(body);
+        const footer = document.createElement('div'); footer.className = 'card-footer'; footer.textContent = '此证仅限本人使用 · 不得转借'; card.appendChild(footer);
+        const num = document.createElement('div'); num.className = 'card-number'; num.textContent = emp.cardNumber; card.appendChild(num);
+        return card;
+    }
+
+    function applyZoom() {
+        const z = +document.getElementById('zoomSlider').value;
+        document.querySelectorAll('.a4-sheet').forEach(s => { s.style.transform = `scale(${z/100})`; s.style.transformOrigin = 'top center'; });
+    }
+
+    function updateEmployeeTable() {
+        const tb = document.getElementById('employeeTableBody'); tb.innerHTML = '';
+        if (!employees.length) { tb.innerHTML = '<tr><td colspan="9">暂无员工</td></tr>'; return; }
+        employees.forEach((e, i) => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td style="text-align:center;font-weight:600;">${i+1}</td>`;
+            const tdPhoto = document.createElement('td'); tdPhoto.style.textAlign = 'center';
+            if (e.photo) {
+                const img = document.createElement('img'); img.className = 'photo-thumb'; img.src = e.photo; img.style.width='36px'; img.style.height='48px'; img.style.objectFit='cover'; img.style.cursor='pointer';
+                img.onclick = () => triggerPhotoUpload(i); tdPhoto.appendChild(img);
+            } else {
+                const div = document.createElement('div'); div.className = 'no-photo-thumb'; div.textContent = '👤'; div.style.cursor='pointer';
+                div.onclick = () => triggerPhotoUpload(i); tdPhoto.appendChild(div);
+            }
+            tr.appendChild(tdPhoto);
+            const fields = ['name','employeeId','department','position','validUntil','cardNumber'];
+            fields.forEach(f => {
+                const td = document.createElement('td');
+                const input = document.createElement('input');
+                input.type = f === 'validUntil' ? 'date' : 'text';
+                input.value = e[f] || '';
+                input.style.width = f === 'validUntil' ? '110px' : (f==='name'?'80px':f==='cardNumber'?'130px':'90px');
+                const handler = function() { employees[i][f] = this.value; updatePreviewOnly(); saveToStorage(); };
+                if (f === 'validUntil') input.onchange = handler;
+                else input.oninput = handler;
+                td.appendChild(input); tr.appendChild(td);
+            });
+            const tdAct = document.createElement('td');
+            const btnPhoto = document.createElement('button'); btnPhoto.className = 'btn btn-xs btn-outline'; btnPhoto.textContent = '📷'; btnPhoto.onclick = () => triggerPhotoUpload(i);
+            tdAct.appendChild(btnPhoto);
+            if (e.photo) {
+                const btnRm = document.createElement('button'); btnRm.className = 'btn btn-xs btn-danger'; btnRm.textContent = '✕'; btnRm.onclick = () => { employees[i].photo=null; updateAll(); saveToStorage(); };
+                tdAct.appendChild(btnRm);
+            }
+            const btnDel = document.createElement('button'); btnDel.className = 'btn btn-xs btn-danger'; btnDel.textContent = '🗑'; btnDel.onclick = () => deleteEmployee(i);
+            tdAct.appendChild(btnDel);
+            tr.appendChild(tdAct);
+            tb.appendChild(tr);
+        });
+    }
+
+    function triggerPhotoUpload(i) {
+        const inp = document.createElement('input'); inp.type='file'; inp.accept='image/*';
+        inp.onchange = function(e) { handlePhotoUpload(i, e); }; inp.click();
+    }
+    function handlePhotoUpload(i, event) {
+        const f = event.target.files[0]; if (!f) return;
+        const r = new FileReader();
+        r.onload = function(e) { compressImage(e.target.result,400,500,0.7, d => { employees[i].photo = d; updateAll(); saveToStorage(); }); };
+        r.readAsDataURL(f);
+    }
+    function compressImage(url,w,h,q,cb) {
+        const img = new Image(); img.onload = function() {
+            let cw=img.width, ch=img.height; if(cw>w||ch>h){ const r=Math.min(w/cw,h/ch); cw*=r; ch*=r; }
+            const cv=document.createElement('canvas'); cv.width=cw; cv.height=ch; cv.getContext('2d').drawImage(img,0,0,cw,ch); cb(cv.toDataURL('image/jpeg',q));
+        }; img.src=url;
+    }
+
+    function updateAll() {
+        updatePreviewOnly();
+        updateEmployeeTable();
+        saveToStorage();
+    }
+
+    function exportPDF() {
+        if (!employees.length) { showToast('⚠️ 请先添加员工'); return; }
+        updateAll();
+        setTimeout(() => { showToast('🖨️ 请选择另存为PDF，纸张A4'); setTimeout(() => window.print(), 300); }, 200);
+    }
+
+    async function exportImages() {
+        const sheets = document.querySelectorAll('.a4-sheet');
+        if (!sheets.length) { showToast('⚠️ 没有可导出的页面'); return; }
+        const totalPages = sheets.length;
+        const prefix = document.getElementById('orientation').value === 'landscape' ? '上岗证_横向_' : '上岗证_纵向_';
+        showToast(`🖼️ 正在导出 ${totalPages} 张图片...`);
+        const original = []; sheets.forEach(s => { original.push(s.style.transform); s.style.transform = 'scale(1)'; s.style.boxShadow = 'none'; });
+        await new Promise(r => setTimeout(r, 200));
+        try {
+            for (let i=0; i<sheets.length; i++) {
+                const canvas = await html2canvas(sheets[i], { scale: 3, backgroundColor:'#ffffff', logging: false });
+                const a = document.createElement('a'); a.download = `${prefix}第${i+1}页.png`; a.href = canvas.toDataURL('image/png'); a.click();
+                if (i<sheets.length-1) await new Promise(r => setTimeout(r, 400));
+            }
+            showToast(`✅ 已导出 ${totalPages} 张图片`);
+        } catch(err) { showToast('❌ 导出失败'); }
+        sheets.forEach((s,idx) => { s.style.transform = original[idx]; s.style.boxShadow = ''; });
+        applyZoom();
+    }
+
+    document.addEventListener('keydown', e => {
+        if ((e.ctrlKey||e.metaKey) && e.key==='p') { e.preventDefault(); exportPDF(); }
+        if ((e.ctrlKey||e.metaKey) && e.key==='i') { e.preventDefault(); exportImages(); }
+    });
+
+    loadFromStorage();
+    if (!employees.length) loadSampleData();
+    else updateAll();
+</script>
+</body>
+</html>

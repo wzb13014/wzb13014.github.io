@@ -1,0 +1,3336 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Folder Icon Studio - 文件夹图标设置工具</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0
+        }
+        :root {
+            --bg-primary: #0a0a1a;
+            --bg-secondary: #14142b;
+            --bg-tertiary: #1e1e3f;
+            --bg-card: rgba(30, 30, 63, 0.6);
+            --border-color: rgba(139, 92, 246, 0.2);
+            --border-hover: rgba(139, 92, 246, 0.5);
+            --text-primary: #f0f0ff;
+            --text-secondary: #a0a0c0;
+            --text-muted: #6b6b8f;
+            --accent-primary: #8b5cf6;
+            --accent-secondary: #06b6d4;
+            --accent-tertiary: #ec4899;
+            --accent-gradient: linear-gradient(135deg, #8b5cf6 0%, #06b6d4 50%, #ec4899 100%);
+            --shadow-glow: 0 0 30px rgba(139, 92, 246, 0.3);
+            --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.4);
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --radius-xl: 24px;
+        }
+        [data-theme="light"] {
+            --bg-primary: #f5f5ff;
+            --bg-secondary: #ffffff;
+            --bg-tertiary: #f0f0ff;
+            --bg-card: rgba(255, 255, 255, 0.8);
+            --border-color: rgba(139, 92, 246, 0.15);
+            --border-hover: rgba(139, 92, 246, 0.4);
+            --text-primary: #1a1a3a;
+            --text-secondary: #5a5a8a;
+            --text-muted: #8a8ab0;
+            --shadow-glow: 0 0 20px rgba(139, 92, 246, 0.2);
+            --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+        html,
+        body {
+            height: 100%;
+            overflow: hidden
+        }
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(ellipse at 20% 20%, rgba(139, 92, 246, 0.15) 0%, transparent 50%), radial-gradient(ellipse at 80% 80%, rgba(6, 182, 212, 0.1) 0%, transparent 50%), radial-gradient(ellipse at 50% 50%, rgba(236, 72, 153, 0.05) 0%, transparent 60%);
+            pointer-events: none;
+            z-index: 0;
+        }
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.5;
+        }
+
+        /* Top Navbar */
+        .navbar {
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            background: var(--bg-card);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-color);
+            position: relative;
+            z-index: 10;
+            flex-shrink: 0;
+        }
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 700;
+            font-size: 18px;
+            letter-spacing: -0.02em;
+        }
+        .logo-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: var(--accent-gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: var(--shadow-glow);
+        }
+        .logo-text {
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px
+        }
+        .nav-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+        .nav-btn:hover {
+            color: var(--text-primary);
+            border-color: var(--border-hover);
+            background: var(--bg-secondary);
+            transform: translateY(-1px);
+        }
+        .nav-btn svg {
+            width: 20px;
+            height: 20px;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round
+        }
+
+        /* Main Layout */
+        .main-container {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 280px 1fr 300px;
+            gap: 0;
+            position: relative;
+            z-index: 1;
+            overflow: hidden;
+        }
+
+        /* Panels */
+        .panel {
+            background: var(--bg-card);
+            backdrop-filter: blur(20px);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .panel.right {
+            border-right: none;
+            border-left: 1px solid var(--border-color)
+        }
+        .panel-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border-color);
+            font-weight: 600;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+        .panel-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            scrollbar-width: thin;
+            scrollbar-color: var(--border-color) transparent;
+        }
+        .panel-content::-webkit-scrollbar {
+            width: 6px
+        }
+        .panel-content::-webkit-scrollbar-track {
+            background: transparent
+        }
+        .panel-content::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 3px
+        }
+
+        /* Source Panel */
+        .source-section {
+            margin-bottom: 24px
+        }
+        .source-section-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .source-section-title::before {
+            content: '';
+            width: 3px;
+            height: 12px;
+            background: var(--accent-primary);
+            border-radius: 2px;
+        }
+        .source-section-title .mini-btn {
+            margin-left: auto;
+        }
+        .upload-zone {
+            border: 2px dashed var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 32px 16px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: var(--bg-tertiary);
+        }
+        .upload-zone:hover {
+            border-color: var(--accent-primary);
+            background: var(--bg-secondary);
+            transform: translateY(-2px);
+        }
+        .upload-zone.dragover {
+            border-color: var(--accent-secondary);
+            background: rgba(6, 182, 212, 0.1);
+            box-shadow: var(--shadow-glow);
+        }
+        .upload-icon {
+            width: 48px;
+            height: 48px;
+            margin: 0 auto 12px;
+            color: var(--accent-primary);
+        }
+        .upload-icon svg {
+            width: 100%;
+            height: 100%;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 1.5;
+            stroke-linecap: round;
+            stroke-linejoin: round
+        }
+        .upload-text {
+            font-size: 13px;
+            color: var(--text-secondary);
+            font-weight: 500
+        }
+        .upload-hint {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 4px
+        }
+
+        .preset-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+        }
+        .preset-item {
+            aspect-ratio: 1;
+            border-radius: var(--radius-sm);
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            overflow: hidden;
+        }
+        .preset-item:hover {
+            border-color: var(--accent-primary);
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(139, 92, 246, 0.3);
+        }
+        .preset-item svg {
+            width: 60%;
+            height: 60%;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 1.5
+        }
+        .preset-item.active {
+            border-color: var(--accent-primary);
+            background: rgba(139, 92, 246, 0.1);
+        }
+
+        .text-input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .text-input {
+            width: 100%;
+            padding: 10px 14px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 13px;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+        .text-input:focus {
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+        }
+        .text-input::placeholder {
+            color: var(--text-muted)
+        }
+        .select-input {
+            width: 100%;
+            padding: 10px 14px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 13px;
+            outline: none;
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238b5cf6' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            padding-right: 36px;
+        }
+        .color-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .color-picker-wrapper {
+            position: relative;
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+            flex-shrink: 0;
+        }
+        .color-picker-wrapper input[type="color"] {
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            cursor: pointer;
+            border: none;
+            padding: 0;
+        }
+        .color-hex {
+            flex: 1;
+            padding: 10px 12px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            outline: none;
+            text-transform: uppercase;
+        }
+        .gradient-preview {
+            height: 40px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-color);
+            cursor: pointer;
+        }
+
+        .category-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 12px;
+        }
+        .category-tab {
+            padding: 6px 10px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            font-size: 11px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+        .category-tab:hover {
+            border-color: var(--border-hover);
+            color: var(--text-primary);
+        }
+        .category-tab.active {
+            background: var(--accent-primary);
+            border-color: var(--accent-primary);
+            color: white;
+        }
+
+        .style-toggle {
+            display: flex;
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-sm);
+            padding: 4px;
+            border: 1px solid var(--border-color);
+        }
+        .style-btn {
+            flex: 1;
+            padding: 8px 4px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-family: inherit;
+            background: transparent;
+            border: none;
+            transition: all 0.2s ease;
+        }
+        .style-btn.active {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+        }
+
+        .color-preset-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 8px;
+        }
+        .color-preset {
+            aspect-ratio: 1;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.2s ease;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .color-preset:hover {
+            transform: scale(1.1);
+        }
+        .color-preset.active {
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 2px var(--bg-primary), 0 0 0 4px var(--accent-primary);
+        }
+        .color-preset.gradient span {
+            font-size: 10px;
+            font-weight: 700;
+            color: white;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+        }
+
+        .mini-btn {
+            padding: 4px 10px;
+            background: var(--accent-primary);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-size: 11px;
+            font-weight: 500;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.2s ease;
+        }
+        .mini-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+        }
+
+        /* Center Preview */
+        .preview-area {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+        .preview-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--bg-card);
+            backdrop-filter: blur(20px);
+            flex-shrink: 0;
+        }
+        .tool-btn {
+            padding: 8px 14px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            color: var(--text-secondary);
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+        .tool-btn:hover {
+            color: var(--text-primary);
+            border-color: var(--border-hover);
+            background: var(--bg-secondary);
+        }
+        .tool-btn.active {
+            background: var(--accent-primary);
+            border-color: var(--accent-primary);
+            color: white;
+        }
+        .tool-btn svg {
+            width: 16px;
+            height: 16px;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round
+        }
+        .tool-divider {
+            width: 1px;
+            height: 24px;
+            background: var(--border-color);
+            margin: 0 4px;
+        }
+        .zoom-display {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            color: var(--text-muted);
+            min-width: 50px;
+            text-align: center;
+        }
+
+        .preview-canvas-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            overflow: hidden;
+            position: relative;
+        }
+        .canvas-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #previewCanvas {
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-card), var(--shadow-glow);
+            cursor: grab;
+            transition: box-shadow 0.3s ease;
+        }
+        #previewCanvas:active {
+            cursor: grabbing
+        }
+        .canvas-wrapper::before {
+            content: '';
+            position: absolute;
+            inset: -20px;
+            background-image: linear-gradient(45deg, var(--bg-tertiary) 25%, transparent 25%), linear-gradient(-45deg, var(--bg-tertiary) 25%, transparent 25%), linear-gradient(45deg, transparent 75%, var(--bg-tertiary) 75%), linear-gradient(-45deg, transparent 75%, var(--bg-tertiary) 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+            border-radius: var(--radius-xl);
+            z-index: -1;
+            opacity: 0.5;
+        }
+
+        /* Right Panel - Properties */
+        .prop-group {
+            margin-bottom: 24px
+        }
+        .prop-group-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .prop-group-title::before {
+            content: '';
+            width: 3px;
+            height: 12px;
+            background: var(--accent-secondary);
+            border-radius: 2px;
+        }
+
+        .slider-group {
+            margin-bottom: 14px
+        }
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+        .slider-label span:first-child {
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+        .slider-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: var(--accent-primary);
+            background: rgba(139, 92, 246, 0.1);
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+        .slider {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: var(--bg-tertiary);
+            outline: none;
+            cursor: pointer;
+        }
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--accent-primary);
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(139, 92, 246, 0.5);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .slider::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            box-shadow: 0 0 15px rgba(139, 92, 246, 0.7);
+        }
+        .slider::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--accent-primary);
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 0 10px rgba(139, 92, 246, 0.5);
+        }
+
+        .shape-options {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+        .shape-option {
+            padding: 12px 8px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s ease;
+        }
+        .shape-option:hover {
+            border-color: var(--border-hover);
+            background: var(--bg-secondary);
+        }
+        .shape-option.active {
+            border-color: var(--accent-primary);
+            background: rgba(139, 92, 246, 0.1);
+        }
+        .shape-preview {
+            width: 24px;
+            height: 24px;
+            background: var(--accent-primary);
+        }
+        .shape-option span {
+            font-size: 11px;
+            color: var(--text-secondary)
+        }
+
+        .bg-options {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .bg-option {
+            padding: 10px 14px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.2s ease;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        .bg-option:hover {
+            border-color: var(--border-hover);
+            background: var(--bg-secondary);
+        }
+        .bg-option.active {
+            border-color: var(--accent-primary);
+            background: rgba(139, 92, 246, 0.1);
+            color: var(--text-primary);
+        }
+        .bg-swatch {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            flex-shrink: 0;
+        }
+        .bg-swatch.transparent {
+            background-image: linear-gradient(45deg, #ccc 25%, transparent 25%), linear-gradient(-45deg, #ccc 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ccc 75%), linear-gradient(-45deg, transparent 75%, #ccc 75%);
+            background-size: 8px 8px;
+            background-position: 0 0, 0 4px, 4px -4px, -4px 0px;
+        }
+
+        /* Bottom Export Bar */
+        .export-bar {
+            height: 100px;
+            background: var(--bg-card);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            padding: 0 24px;
+            gap: 24px;
+            flex-shrink: 0;
+            position: relative;
+            z-index: 5;
+        }
+        .export-section {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .export-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+        .size-chips {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .size-chip {
+            padding: 6px 12px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            font-size: 11px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-family: 'JetBrains Mono', monospace;
+            transition: all 0.2s ease;
+        }
+        .size-chip:hover {
+            border-color: var(--border-hover);
+            color: var(--text-primary);
+        }
+        .size-chip.active {
+            background: var(--accent-primary);
+            border-color: var(--accent-primary);
+            color: white;
+        }
+
+        .format-toggle {
+            display: flex;
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-sm);
+            padding: 4px;
+            border: 1px solid var(--border-color);
+        }
+        .format-option {
+            padding: 6px 16px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+        .format-option.active {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+
+        .export-buttons {
+            display: flex;
+            gap: 10px;
+            margin-left: auto;
+        }
+        .btn-primary {
+            padding: 12px 28px;
+            background: var(--accent-gradient);
+            border: none;
+            border-radius: var(--radius-md);
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            font-family: inherit;
+            position: relative;
+            overflow: hidden;
+        }
+        .btn-primary::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s ease;
+        }
+        .btn-primary:hover::before {
+            left: 100%
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(139, 92, 246, 0.4);
+        }
+        .btn-primary:active {
+            transform: translateY(0)
+        }
+        .btn-primary svg {
+            width: 18px;
+            height: 18px;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round
+        }
+
+        .btn-secondary {
+            padding: 12px 20px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            color: var(--text-secondary);
+            font-weight: 500;
+            font-size: 13px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+        .btn-secondary:hover {
+            color: var(--text-primary);
+            border-color: var(--border-hover);
+            background: var(--bg-secondary);
+        }
+        .btn-secondary svg {
+            width: 16px;
+            height: 16px;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round
+        }
+
+        /* Sidebar / Modal */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            right: -400px;
+            width: 400px;
+            height: 100%;
+            background: var(--bg-secondary);
+            border-left: 1px solid var(--border-color);
+            z-index: 100;
+            transition: right 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex;
+            flex-direction: column;
+        }
+        .sidebar.open {
+            right: 0
+        }
+        .sidebar-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-weight: 600;
+            font-size: 16px;
+        }
+        .sidebar-close {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+        .sidebar-close:hover {
+            color: var(--text-primary);
+            background: var(--bg-secondary)
+        }
+        .sidebar-close svg {
+            width: 18px;
+            height: 18px;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round
+        }
+        .sidebar-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+        }
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            z-index: 99;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        .overlay.visible {
+            opacity: 1;
+            pointer-events: auto
+        }
+
+        .history-item {
+            display: flex;
+            gap: 12px;
+            padding: 12px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            align-items: center;
+        }
+        .history-item:hover {
+            border-color: var(--accent-primary);
+            transform: translateX(-4px);
+        }
+        .history-thumb {
+            width: 48px;
+            height: 48px;
+            border-radius: 8px;
+            background: var(--bg-secondary);
+            flex-shrink: 0;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .history-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain
+        }
+        .history-info {
+            flex: 1;
+            min-width: 0
+        }
+        .history-time {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .history-delete {
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+        .history-delete:hover {
+            color: #ef4444;
+            background: rgba(239, 68, 68, 0.1)
+        }
+        .history-delete svg {
+            width: 16px;
+            height: 16px;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round
+        }
+
+        /* Help Modal */
+        .modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.95);
+            width: min(600px, 90vw);
+            max-height: 80vh;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-xl);
+            z-index: 101;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .modal.visible {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translate(-50%, -50%) scale(1);
+        }
+        .modal-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .modal-title {
+            font-size: 18px;
+            font-weight: 700;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .modal-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+        }
+        .help-section {
+            margin-bottom: 24px
+        }
+        .help-section h3 {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .help-section h3::before {
+            content: '';
+            width: 4px;
+            height: 16px;
+            background: var(--accent-primary);
+            border-radius: 2px;
+        }
+        .help-section p {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 8px;
+        }
+        .help-section code {
+            background: var(--bg-tertiary);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            color: var(--accent-secondary);
+        }
+        .kbd-shortcut {
+            display: inline-flex;
+            gap: 4px;
+        }
+        .kbd {
+            display: inline-block;
+            padding: 3px 8px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: var(--text-primary);
+            box-shadow: 0 2px 0 var(--border-color);
+        }
+
+        /* Toast */
+        .toast-container {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 200;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .toast {
+            padding: 12px 20px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-card);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 13px;
+            color: var(--text-primary);
+            animation: slideIn 0.3s ease;
+            min-width: 250px;
+        }
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1
+            }
+        }
+        .toast-icon {
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+        }
+        .toast-icon.success {
+            color: #10b981
+        }
+        .toast-icon.error {
+            color: #ef4444
+        }
+        .toast-icon.info {
+            color: var(--accent-secondary)
+        }
+        .toast-icon svg {
+            width: 100%;
+            height: 100%;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px)
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0)
+            }
+        }
+        .panel,
+        .preview-area,
+        .export-bar {
+            animation: fadeInUp 0.6s ease both;
+        }
+        .panel {
+            animation-delay: 0.1s
+        }
+        .preview-area {
+            animation-delay: 0.2s
+        }
+        .panel.right {
+            animation-delay: 0.3s
+        }
+        .export-bar {
+            animation-delay: 0.4s
+        }
+
+        /* Responsive */
+        @media (max-width:1024px) {
+            .main-container {
+                grid-template-columns: 240px 1fr 260px
+            }
+            .export-bar {
+                height: auto;
+                padding: 16px;
+                flex-wrap: wrap
+            }
+        }
+        @media (max-width:768px) {
+            .main-container {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto 1fr auto;
+            }
+            .panel {
+                position: fixed;
+                top: 60px;
+                bottom: 0;
+                width: 280px;
+                z-index: 50;
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+            .panel.open {
+                transform: translateX(0)
+            }
+            .panel.right {
+                right: 0;
+                left: auto;
+                border-left: 1px solid var(--border-color);
+                border-right: none;
+                transform: translateX(100%);
+            }
+            .panel.right.open {
+                transform: translateX(0)
+            }
+            .export-bar {
+                flex-direction: column;
+                align-items: flex-start;
+                height: auto;
+                padding: 16px
+            }
+            .export-buttons {
+                margin-left: 0;
+                width: 100%
+            }
+            .btn-primary,
+            .btn-secondary {
+                flex: 1;
+                justify-content: center
+            }
+        }
+
+        .hidden {
+            display: none !important
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="logo">
+            <div class="logo-icon">
+                <svg viewBox="0 0 24 24" width="20" height="20" stroke="white" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                </svg>
+            </div>
+            <span class="logo-text">Folder Icon Studio</span>
+        </div>
+        <div class="nav-actions">
+            <button class="nav-btn" id="undoBtn" title="撤销 (Ctrl+Z)">
+                <svg viewBox="0 0 24 24"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6.7 3L3 13"/></svg>
+            </button>
+            <button class="nav-btn" id="redoBtn" title="重做 (Ctrl+Y)">
+                <svg viewBox="0 0 24 24"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6.7 3L21 13"/></svg>
+            </button>
+            <button class="nav-btn" id="resetBtn" title="重置">
+                <svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+            </button>
+            <button class="nav-btn" id="historyBtn" title="历史记录">
+                <svg viewBox="0 0 24 24"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="10"/></svg>
+            </button>
+            <button class="nav-btn" id="helpBtn" title="使用帮助">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
+            </button>
+            <button class="nav-btn" id="themeBtn" title="切换主题">
+                <svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main -->
+    <div class="main-container">
+        <!-- Left Panel -->
+        <aside class="panel left" id="leftPanel">
+            <div class="panel-header">
+                <span>图标来源</span>
+            </div>
+            <div class="panel-content">
+                <div class="source-section">
+                    <div class="source-section-title">上传图片</div>
+                    <div class="upload-zone" id="uploadZone">
+                        <div class="upload-icon">
+                            <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                        </div>
+                        <div class="upload-text">点击或拖拽上传</div>
+                        <div class="upload-hint">支持 PNG / JPG / SVG</div>
+                        <input type="file" id="fileInput" accept="image/*" style="display:none">
+                    </div>
+                </div>
+
+                <div class="source-section">
+                    <div class="source-section-title">
+                        <span>URL 加载</span>
+                        <button class="mini-btn" id="loadUrlBtn" title="从URL加载">加载</button>
+                    </div>
+                    <div class="text-input-group">
+                        <input type="text" class="text-input" id="urlInput" placeholder="粘贴图片URL...">
+                    </div>
+                </div>
+
+                <div class="source-section">
+                    <div class="source-section-title">
+                        <span>预设图标</span>
+                        <button class="mini-btn" id="randomBtn">随机</button>
+                    </div>
+                    <div class="category-tabs" id="categoryTabs">
+                        <button class="category-tab active" data-cat="全部">全部</button>
+                        <button class="category-tab" data-cat="文件">文件</button>
+                        <button class="category-tab" data-cat="常用">常用</button>
+                        <button class="category-tab" data-cat="工具">工具</button>
+                        <button class="category-tab" data-cat="符号">符号</button>
+                        <button class="category-tab" data-cat="更多">更多</button>
+                    </div>
+                    <div class="preset-grid" id="presetGrid"></div>
+                </div>
+
+                <div class="source-section">
+                    <div class="source-section-title">文字生成</div>
+                    <div class="text-input-group">
+                        <input type="text" class="text-input" id="textInput" placeholder="输入文字（1-2字最佳）" maxlength="4">
+                        <select class="select-input" id="fontSelect">
+                            <option value="Space Grotesk">Space Grotesk</option>
+                            <option value="serif">衬线字体</option>
+                            <option value="monospace">等宽字体</option>
+                            <option value="cursive">手写字体</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="source-section">
+                    <div class="source-section-title">图标样式</div>
+                    <div class="style-toggle">
+                        <button class="style-btn active" data-style="fill">填充</button>
+                        <button class="style-btn" data-style="stroke">描边</button>
+                        <button class="style-btn" data-style="both">双重</button>
+                    </div>
+                    <div class="slider-group" style="margin-top:12px">
+                        <div class="slider-label">
+                            <span>描边宽度</span>
+                            <span class="slider-value" id="strokeWidthValue">2</span>
+                        </div>
+                        <input type="range" class="slider" id="strokeWidthSlider" min="1" max="10" value="2" step="0.5">
+                    </div>
+                </div>
+
+                <div class="source-section">
+                    <div class="source-section-title">填充颜色</div>
+                    <div class="color-preset-grid" id="fillColorPresets">
+                        <div class="color-preset active" data-color="#8b5cf6" style="background:#8b5cf6"></div>
+                        <div class="color-preset" data-color="#06b6d4" style="background:#06b6d4"></div>
+                        <div class="color-preset" data-color="#ec4899" style="background:#ec4899"></div>
+                        <div class="color-preset" data-color="#10b981" style="background:#10b981"></div>
+                        <div class="color-preset" data-color="#f59e0b" style="background:#f59e0b"></div>
+                        <div class="color-preset" data-color="#ef4444" style="background:#ef4444"></div>
+                        <div class="color-preset" data-color="#6366f1" style="background:#6366f1"></div>
+                        <div class="color-preset" data-color="#64748b" style="background:#64748b"></div>
+                        <div class="color-preset" data-color="#ffffff" style="background:#ffffff;border:1px solid var(--border-color)"></div>
+                        <div class="color-preset" data-color="#000000" style="background:#000000"></div>
+                        <div class="color-preset gradient" data-color="gradient1" style="background:linear-gradient(135deg,#8b5cf6,#ec4899)">
+                            <span>G</span>
+                        </div>
+                        <div class="color-preset gradient" data-color="gradient2" style="background:linear-gradient(135deg,#06b6d4,#8b5cf6)">
+                            <span>G</span>
+                        </div>
+                    </div>
+                    <div class="color-row" style="margin-top:12px">
+                        <div class="color-picker-wrapper">
+                            <input type="color" id="fillColorPicker" value="#8b5cf6">
+                        </div>
+                        <input type="text" class="color-hex" id="fillColorHex" value="#8b5cf6">
+                    </div>
+                </div>
+
+                <div class="source-section">
+                    <div class="source-section-title">描边颜色</div>
+                    <div class="color-preset-grid" id="strokeColorPresets">
+                        <div class="color-preset stroke-preset active" data-color="#8b5cf6" style="background:#8b5cf6"></div>
+                        <div class="color-preset stroke-preset" data-color="#06b6d4" style="background:#06b6d4"></div>
+                        <div class="color-preset stroke-preset" data-color="#ec4899" style="background:#ec4899"></div>
+                        <div class="color-preset stroke-preset" data-color="#10b981" style="background:#10b981"></div>
+                        <div class="color-preset stroke-preset" data-color="#ffffff" style="background:#ffffff;border:1px solid var(--border-color)"></div>
+                        <div class="color-preset stroke-preset" data-color="#000000" style="background:#000000"></div>
+                    </div>
+                    <div class="color-row" style="margin-top:12px">
+                        <div class="color-picker-wrapper">
+                            <input type="color" id="strokeColorPicker" value="#8b5cf6">
+                        </div>
+                        <input type="text" class="color-hex" id="strokeColorHex" value="#8b5cf6">
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Center Preview -->
+        <main class="preview-area">
+            <div class="preview-toolbar">
+                <button class="tool-btn" id="moveBtn" title="移动">
+                    <svg viewBox="0 0 24 24"><polyline points="5 9 2 12 5 15"/><polyline points="9 5 12 2 15 5"/><polyline points="15 19 12 22 9 19"/><polyline points="19 9 22 12 19 15"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/></svg>
+                    <span>移动</span>
+                </button>
+                <div class="tool-divider"></div>
+                <button class="tool-btn" id="zoomOutBtn" title="缩小">
+                    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+                </button>
+                <span class="zoom-display" id="zoomDisplay">100%</span>
+                <button class="tool-btn" id="zoomInBtn" title="放大">
+                    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+                </button>
+                <div class="tool-divider"></div>
+                <button class="tool-btn" id="rotateLeftBtn" title="左旋90°">
+                    <svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+                </button>
+                <button class="tool-btn" id="rotateRightBtn" title="右旋90°">
+                    <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                </button>
+                <div class="tool-divider"></div>
+                <button class="tool-btn" id="fitBtn" title="适应画布">
+                    <svg viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
+                    <span>适应</span>
+                </button>
+                <button class="tool-btn" id="gridBtn" title="网格">
+                    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                </button>
+            </div>
+            <div class="preview-canvas-container">
+                <div class="canvas-wrapper">
+                    <canvas id="previewCanvas" width="256" height="256"></canvas>
+                </div>
+            </div>
+        </main>
+
+        <!-- Right Panel -->
+        <aside class="panel right" id="rightPanel">
+            <div class="panel-header">
+                <span>属性设置</span>
+            </div>
+            <div class="panel-content">
+                <div class="prop-group">
+                    <div class="prop-group-title">图标尺寸</div>
+                    <div class="slider-group">
+                        <div class="slider-label">
+                            <span>大小</span>
+                            <span class="slider-value" id="sizeValue">70%</span>
+                        </div>
+                        <input type="range" class="slider" id="sizeSlider" min="10" max="100" value="70">
+                    </div>
+                    <div class="slider-group">
+                        <div class="slider-label">
+                            <span>旋转</span>
+                            <span class="slider-value" id="rotationValue">0°</span>
+                        </div>
+                        <input type="range" class="slider" id="rotationSlider" min="-180" max="180" value="0">
+                    </div>
+                </div>
+
+                <div class="prop-group">
+                    <div class="prop-group-title">形状裁剪</div>
+                    <div class="shape-options">
+                        <div class="shape-option active" data-shape="square">
+                            <div class="shape-preview" style="border-radius:2px"></div>
+                            <span>方形</span>
+                        </div>
+                        <div class="shape-option" data-shape="rounded">
+                            <div class="shape-preview" style="border-radius:6px"></div>
+                            <span>圆角</span>
+                        </div>
+                        <div class="shape-option" data-shape="circle">
+                            <div class="shape-preview" style="border-radius:50%"></div>
+                            <span>圆形</span>
+                        </div>
+                    </div>
+                    <div class="slider-group" style="margin-top:14px">
+                        <div class="slider-label">
+                            <span>圆角大小</span>
+                            <span class="slider-value" id="radiusValue">20%</span>
+                        </div>
+                        <input type="range" class="slider" id="radiusSlider" min="0" max="50" value="20">
+                    </div>
+                </div>
+
+                <div class="prop-group">
+                    <div class="prop-group-title">背景设置</div>
+                    <div class="bg-options">
+                        <div class="bg-option active" data-bg="transparent">
+                            <div class="bg-swatch transparent"></div>
+                            <span>透明背景</span>
+                        </div>
+                        <div class="bg-option" data-bg="solid">
+                            <div class="bg-swatch" id="bgColorSwatch" style="background:#1e1b4b"></div>
+                            <span>纯色背景</span>
+                        </div>
+                        <div class="bg-option" data-bg="gradient">
+                            <div class="bg-swatch" style="background:linear-gradient(135deg,#8b5cf6,#06b6d4)"></div>
+                            <span>渐变背景</span>
+                        </div>
+                    </div>
+                    <div class="color-row" id="bgColorRow" style="margin-top:12px;display:none">
+                        <div class="color-picker-wrapper">
+                            <input type="color" id="bgColorPicker" value="#1e1b4b">
+                        </div>
+                        <input type="text" class="color-hex" id="bgColorHex" value="#1e1b4b">
+                    </div>
+                </div>
+
+                <div class="prop-group">
+                    <div class="prop-group-title">滤镜效果</div>
+                    <div class="slider-group">
+                        <div class="slider-label">
+                            <span>亮度</span>
+                            <span class="slider-value" id="brightnessValue">100%</span>
+                        </div>
+                        <input type="range" class="slider" id="brightnessSlider" min="0" max="200" value="100">
+                    </div>
+                    <div class="slider-group">
+                        <div class="slider-label">
+                            <span>对比度</span>
+                            <span class="slider-value" id="contrastValue">100%</span>
+                        </div>
+                        <input type="range" class="slider" id="contrastSlider" min="0" max="200" value="100">
+                    </div>
+                    <div class="slider-group">
+                        <div class="slider-label">
+                            <span>饱和度</span>
+                            <span class="slider-value" id="saturationValue">100%</span>
+                        </div>
+                        <input type="range" class="slider" id="saturationSlider" min="0" max="200" value="100">
+                    </div>
+                    <div class="slider-group">
+                        <div class="slider-label">
+                            <span>色相偏移</span>
+                            <span class="slider-value" id="hueValue">0°</span>
+                        </div>
+                        <input type="range" class="slider" id="hueSlider" min="0" max="360" value="0">
+                    </div>
+                    <div class="slider-group">
+                        <div class="slider-label">
+                            <span>模糊</span>
+                            <span class="slider-value" id="blurValue">0px</span>
+                        </div>
+                        <input type="range" class="slider" id="blurSlider" min="0" max="20" value="0">
+                    </div>
+                    <div class="slider-group">
+                        <div class="slider-label">
+                            <span>不透明度</span>
+                            <span class="slider-value" id="opacityValue">100%</span>
+                        </div>
+                        <input type="range" class="slider" id="opacitySlider" min="0" max="100" value="100">
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- Export Bar -->
+    <div class="export-bar">
+        <div class="export-section">
+            <span class="export-label">导出尺寸</span>
+            <div class="size-chips" id="sizeChips">
+                <div class="size-chip" data-size="16">16px</div>
+                <div class="size-chip" data-size="32">32px</div>
+                <div class="size-chip" data-size="48">48px</div>
+                <div class="size-chip active" data-size="64">64px</div>
+                <div class="size-chip" data-size="128">128px</div>
+                <div class="size-chip" data-size="256">256px</div>
+                <div class="size-chip" data-size="512">512px</div>
+            </div>
+        </div>
+        <div class="export-section">
+            <span class="export-label">导出格式</span>
+            <div class="format-toggle">
+                <div class="format-option active" data-format="png">PNG</div>
+                <div class="format-option" data-format="ico">ICO</div>
+            </div>
+        </div>
+        <div class="export-buttons">
+            <button class="btn-secondary" id="copyBtn">
+                <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                复制图标
+            </button>
+            <button class="btn-secondary" id="desktopIniBtn">
+                <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                生成 desktop.ini
+            </button>
+            <button class="btn-primary" id="exportBtn">
+                <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                下载图标
+            </button>
+        </div>
+    </div>
+
+    <!-- History Sidebar -->
+    <div class="overlay" id="overlay"></div>
+    <aside class="sidebar" id="historySidebar">
+        <div class="sidebar-header">
+            <span>历史记录</span>
+            <button class="sidebar-close" id="closeHistory">
+                <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+        </div>
+        <div class="sidebar-content" id="historyList">
+            <p style="color:var(--text-muted);font-size:13px;text-align:center;padding:40px 0">暂无历史记录</p>
+        </div>
+    </aside>
+
+    <!-- Help Modal -->
+    <div class="modal" id="helpModal">
+        <div class="modal-header">
+            <div class="modal-title">使用帮助</div>
+            <button class="sidebar-close" id="closeHelp">
+                <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div class="help-section">
+                <h3>快速开始</h3>
+                <p>1. 从左侧面板选择图标来源：上传图片、选择预设图标或输入文字</p>
+                <p>2. 在中央预览区查看效果，拖拽可移动图标</p>
+                <p>3. 在右侧面板调整尺寸、形状、背景和滤镜</p>
+                <p>4. 选择导出尺寸和格式，点击下载</p>
+            </div>
+            <div class="help-section">
+                <h3>设置文件夹图标（Windows）</h3>
+                <p>1. 下载 ICO 格式的图标文件</p>
+                <p>2. 右键文件夹 → 属性 → 自定义 → 更改图标</p>
+                <p>3. 选择下载的 .ico 文件，确定即可</p>
+                <p>或者：下载 <code>desktop.ini</code>，将其与图标文件放入目标文件夹，重启资源管理器</p>
+            </div>
+            <div class="help-section">
+                <h3>设置文件夹图标（macOS）</h3>
+                <p>1. 下载 PNG 格式图标（512px 最佳）</p>
+                <p>2. 双击打开图片，按 <span class="kbd-shortcut"><kbd class="kbd">Cmd</kbd><kbd class="kbd">A</kbd></span> 全选，按 <span class="kbd-shortcut"><kbd class="kbd">Cmd</kbd><kbd class="kbd">C</kbd></span> 复制</p>
+                <p>3. 右键文件夹 → 显示简介 → 点击左上角图标 → 按 <span class="kbd-shortcut"><kbd class="kbd">Cmd</kbd><kbd class="kbd">V</kbd></span> 粘贴</p>
+            </div>
+            <div class="help-section">
+                <h3>快捷键</h3>
+                <p><span class="kbd-shortcut"><kbd class="kbd">Ctrl</kbd><kbd class="kbd">Z</kbd></span> 撤销操作</p>
+                <p><span class="kbd-shortcut"><kbd class="kbd">Ctrl</kbd><kbd class="kbd">Y</kbd></span> 重做操作</p>
+                <p><span class="kbd-shortcut"><kbd class="kbd">+</kbd></span> / <span class="kbd-shortcut"><kbd class="kbd">-</kbd></span> 放大/缩小预览</p>
+                <p><span class="kbd-shortcut"><kbd class="kbd">0</kbd></span> 适应画布</p>
+                <p><span class="kbd-shortcut"><kbd class="kbd">Ctrl</kbd><kbd class="kbd">S</kbd></span> 导出图标</p>
+            </div>
+            <div class="help-section">
+                <h3>关于 ICO 格式</h3>
+                <p>ICO 是 Windows 图标格式，一个 ICO 文件可包含多个尺寸的图标，系统会根据显示场景自动选择最合适的尺寸。</p>
+                <p>导出的 ICO 文件包含：16×16、32×32、48×48、64×64、128×128、256×256 六种尺寸。</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Hidden SVG Gradients for preset grid -->
+    <svg style="position:absolute;width:0;height:0;overflow:hidden">
+        <defs>
+            <linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#8b5cf6" />
+                <stop offset="100%" stop-color="#ec4899" />
+            </linearGradient>
+            <linearGradient id="g2" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#06b6d4" />
+                <stop offset="100%" stop-color="#8b5cf6" />
+            </linearGradient>
+        </defs>
+    </svg>
+
+    <script>
+        // ==================== State Management ====================
+        const state = {
+            sourceType: 'preset',
+            sourceImage: null,
+            sourceText: '',
+            sourceFont: 'Space Grotesk',
+            presetIndex: 0,
+            presetCategory: '文件',
+            iconFillColor: '#8b5cf6',
+            iconStrokeColor: '#8b5cf6',
+            iconStyle: 'fill',
+            strokeWidth: 2,
+            flipH: false,
+            flipV: false,
+            transform: { x: 0, y: 0, scale: 0.7, rotation: 0 },
+            filters: {
+                brightness: 100,
+                contrast: 100,
+                saturation: 100,
+                hueRotate: 0,
+                blur: 0,
+                opacity: 100
+            },
+            shape: 'square',
+            borderRadius: 20,
+            background: { type: 'transparent', color: '#1e1b4b' },
+            canvasSize: 256,
+            previewZoom: 1,
+            showGrid: false,
+            historyStack: [],
+            historyIndex: -1,
+            selectedSizes: [64],
+            exportFormat: 'png'
+        };
+
+        const colorPresets = [
+            { name: '霓虹紫', fill: '#8b5cf6', stroke: '#8b5cf6' },
+            { name: '天空蓝', fill: '#06b6d4', stroke: '#06b6d4' },
+            { name: '玫瑰粉', fill: '#ec4899', stroke: '#ec4899' },
+            { name: '翡翠绿', fill: '#10b981', stroke: '#10b981' },
+            { name: '琥珀橙', fill: '#f59e0b', stroke: '#f59e0b' },
+            { name: '玫瑰红', fill: '#ef4444', stroke: '#ef4444' },
+            { name: '靛青蓝', fill: '#6366f1', stroke: '#6366f1' },
+            { name: '深灰色', fill: '#64748b', stroke: '#64748b' },
+            { name: '纯白色', fill: '#ffffff', stroke: '#ffffff' },
+            { name: '纯黑色', fill: '#000000', stroke: '#000000' },
+            { name: '紫粉渐变', fill: 'gradient1', stroke: '#8b5cf6' },
+            { name: '蓝紫渐变', fill: 'gradient2', stroke: '#6366f1' }
+        ];
+
+        const presetIconCategories = [
+            { name: '文件', icons: [
+                    { name: '文件夹', path: 'M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z' },
+                    { name: '文档', path: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6' },
+                    { name: '图片', path: 'M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z M12 13a3 3 0 1 0 0-6 3 3 0 0 0 0 6z M21 15l-5-5L5 21' },
+                    { name: '音乐', path: 'M9 18V5l12-2v13 M16 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6z M9 18a3 3 0 1 0 0-6 3 3 0 0 0 0 6z' },
+                    { name: '视频', path: 'M23 7l-7 5 7 5V7z M14 5H3a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2z' },
+                    { name: '下载', path: 'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4 M7 10l5 5 5-5 M12 15V3' },
+                    { name: '上传', path: 'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4 M17 8l-5-5-5 5 M12 3v12' },
+                    { name: '复制', path: 'M20 9h-9a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2z M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1' }
+                ]
+            },
+            { name: '常用', icons: [
+                    { name: '星星', path: 'M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z' },
+                    { name: '心形', path: 'M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z' },
+                    { name: '书签', path: 'M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z' },
+                    { name: '闪电', path: 'M13 2L3 14h9l-1 8 10-12h-9l1-8z' },
+                    { name: '火焰', path: 'M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z' },
+                    { name: '云朵', path: 'M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z' },
+                    { name: '太阳', path: 'M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42 M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10z' },
+                    { name: '月亮', path: 'M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z' }
+                ]
+            },
+            { name: '工具', icons: [
+                    { name: '设置', path: 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z' },
+                    { name: '搜索', path: 'M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16z M21 21l-4.35-4.35' },
+                    { name: '用户', path: 'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2 M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z' },
+                    { name: '锁', path: 'M19 11H5a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2z M7 11V7a5 5 0 0 1 10 0v4' },
+                    { name: '解锁', path: 'M19 11H7a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2z M7 11V7a5 5 0 0 1 9.9-1' },
+                    { name: '邮件', path: 'M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z M22 6l-10 7L2 6' },
+                    { name: '电话', path: 'M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z' },
+                    { name: '信息', path: 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z M12 16v-4 M12 8h.01' }
+                ]
+            },
+            { name: '时间', icons: [
+                    { name: '时钟', path: 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z M12 6v6l4 2' },
+                    { name: '日历', path: 'M19 4H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z M16 2v4 M8 2v4 M3 10h18' },
+                    { name: '闹钟', path: 'M12 6v6l4 2 M17 2.94 21.66 6 M7 2.94 2.34 6 M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z' },
+                    { name: '暂停', path: 'M6 4h4v16H6V4z M14 4h4v16h-4V4z' },
+                    { name: '播放', path: 'M6 4l15 8-15 8V4z' },
+                    { name: '快进', path: 'M13 19 2 5v14l11-14z M22 5v14l-9-7 9-7z' },
+                    { name: '倒带', path: 'M11 19 0 12l11-7v14z M22 5v14l-9-7 9-7z' },
+                    { name: '沙漏', path: 'M6 2v6a6 6 0 0 0 12 0V2 M18 22v-6a6 6 0 0 0-12 0v6' }
+                ]
+            },
+            { name: '编辑', icons: [
+                    { name: '编辑', path: 'M12 20h9 M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z' },
+                    { name: '画笔', path: 'M12 19l7-7 3 3-7 7-3-3z M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z M2 2l7.586 7.586 M11 11a2 2 0 1 1-4 0 2 2 0 0 1 4 0z' },
+                    { name: '橡皮擦', path: 'M20 20H7L3 16a2 2 0 0 1 0-2.83l9.17-9.17a2 2 0 0 1 2.83 0l5.83 5.83a2 2 0 0 1 0 2.83L12 20' },
+                    { name: '裁剪', path: 'M6 2v14a2 2 0 0 0 2 2h14 M18 22V8a2 2 0 0 0-2-2H2' },
+                    { name: '复制2', path: 'M20 9h-9a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2z M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1' },
+                    { name: '删除', path: 'M3 6h18 M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2' },
+                    { name: '加粗', path: 'M6 4h8a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z M6 12h9a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z' },
+                    { name: '斜体', path: 'M19 4h-9 M14 20H5 M15 4 9 20' }
+                ]
+            },
+            { name: '符号', icons: [
+                    { name: '标签', path: 'M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z M7 7h.01' },
+                    { name: '勾选', path: 'M20 6 9 17l-5-5' },
+                    { name: '关闭', path: 'M18 6 6 18 M6 6l12 12' },
+                    { name: '加号', path: 'M12 5v14 M5 12h14' },
+                    { name: '减号', path: 'M5 12h14' },
+                    { name: '对号圆', path: 'M22 11.08V12a10 10 0 1 1-5.93-9.14 M22 4 12 14.01 9 11.01' },
+                    { name: '警告', path: 'M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z M12 9v4 M12 17h.01' },
+                    { name: '问号', path: 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3 M12 17h.01' }
+                ]
+            },
+            { name: '箭头', icons: [
+                    { name: '上箭头', path: 'M12 19V5 M5 12l7-7 7 7' },
+                    { name: '下箭头', path: 'M12 5v14 M19 12l-7 7-7-7' },
+                    { name: '左箭头', path: 'M19 12H5 M12 19l-7-7 7-7' },
+                    { name: '右箭头', path: 'M5 12h14 M12 5l7 7-7 7' },
+                    { name: '上尖角', path: 'M18 15l-6-6-6 6' },
+                    { name: '下尖角', path: 'M6 9l6 6 6-6' },
+                    { name: '刷新', path: 'M23 4v6h-6 M1 20v-6h6 M3.51 9a9 9 0 0 1 14.85-3.36L23 10 M1 14l4.64 4.36A9 9 0 0 0 20.49 15' },
+                    { name: '外部链接', path: 'M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6 M15 3h6v6 M10 14 21 3' }
+                ]
+            },
+            { name: '购物', icons: [
+                    { name: '购物车', path: 'M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z M3 6h18 M16 10a4 4 0 0 1-8 0' },
+                    { name: '购物袋', path: 'M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z M3 6h18' },
+                    { name: '礼物', path: 'M20 12v10H4V12 M2 7h20v5H2V7z M12 22V7 M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z' },
+                    { name: '钻石', path: 'M22 12 12 2 2 12l10 10 10-10z M2 12h20 M12 2v20 M16 6l4 6-4 6-4-6 4-6z M8 6l-4 6 4 6 4-6-4-6z' },
+                    { name: '皇冠', path: 'M2 19 5 8l5 4 5-6 5 6 5-4 2 11H2z' },
+                    { name: '奖杯', path: 'M6 9H4.5a2.5 2.5 0 0 1 0-5H6 M18 9h1.5a2.5 2.5 0 0 0 0-5H18 M4 22h16 M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22 M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22 M18 2H6v7a6 6 0 0 0 12 0V2z' },
+                    { name: '钱袋', path: 'M20.82 12.87A8.78 8.78 0 0 1 22 16a8 8 0 0 1-16 0 8.78 8.78 0 0 1 1.18-3.13 A10.94 10.94 0 0 0 18 5a10.94 10.94 0 0 0-8.17 3.49 M12 18v-6 M9 15h6' }
+                ]
+            }
+        ];
+
+        let flatPresetIcons = [];
+        presetIconCategories.forEach(cat => {
+            cat.icons.forEach(icon => {
+                flatPresetIcons.push({ ...icon, category: cat.name });
+            });
+        });
+
+        // ==================== DOM Elements ====================
+        const canvas = document.getElementById('previewCanvas');
+        const ctx = canvas.getContext('2d');
+        const uploadZone = document.getElementById('uploadZone');
+        const fileInput = document.getElementById('fileInput');
+        const presetGrid = document.getElementById('presetGrid');
+        const textInput = document.getElementById('textInput');
+        const fontSelect = document.getElementById('fontSelect');
+        const iconColorPicker = document.getElementById('fillColorPicker');
+        const iconColorHex = document.getElementById('fillColorHex');
+        const strokeColorPicker = document.getElementById('strokeColorPicker');
+        const strokeColorHex = document.getElementById('strokeColorHex');
+        const sizeSlider = document.getElementById('sizeSlider');
+        const sizeValue = document.getElementById('sizeValue');
+        const rotationSlider = document.getElementById('rotationSlider');
+        const rotationValue = document.getElementById('rotationValue');
+        const radiusSlider = document.getElementById('radiusSlider');
+        const radiusValue = document.getElementById('radiusValue');
+        const brightnessSlider = document.getElementById('brightnessSlider');
+        const brightnessValue = document.getElementById('brightnessValue');
+        const contrastSlider = document.getElementById('contrastSlider');
+        const contrastValue = document.getElementById('contrastValue');
+        const saturationSlider = document.getElementById('saturationSlider');
+        const saturationValue = document.getElementById('saturationValue');
+        const hueSlider = document.getElementById('hueSlider');
+        const hueValue = document.getElementById('hueValue');
+        const blurSlider = document.getElementById('blurSlider');
+        const blurValue = document.getElementById('blurValue');
+        const opacitySlider = document.getElementById('opacitySlider');
+        const opacityValue = document.getElementById('opacityValue');
+        const zoomDisplay = document.getElementById('zoomDisplay');
+        const exportBtn = document.getElementById('exportBtn');
+        const desktopIniBtn = document.getElementById('desktopIniBtn');
+        const themeBtn = document.getElementById('themeBtn');
+        const historyBtn = document.getElementById('historyBtn');
+        const helpBtn = document.getElementById('helpBtn');
+        const undoBtn = document.getElementById('undoBtn');
+        const redoBtn = document.getElementById('redoBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const randomBtn = document.getElementById('randomBtn');
+
+        // ==================== Utility Functions ====================
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+
+            const icons = {
+                success: '<svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>',
+                error: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>',
+                info: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>'
+            };
+
+            toast.innerHTML =
+                `<div class="toast-icon ${type}">${icons[type] || icons.info}</div><span>${message}</span>`;
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.animation = 'slideIn 0.3s ease reverse';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        function downloadFile(dataUrl, filename) {
+            const link = document.createElement('a');
+            link.download = filename;
+            link.href = dataUrl;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function saveHistory() {
+            const snapshot = JSON.stringify({
+                sourceType: state.sourceType,
+                sourceText: state.sourceText,
+                sourceFont: state.sourceFont,
+                presetIndex: state.presetIndex,
+                iconFillColor: state.iconFillColor,
+                iconStrokeColor: state.iconStrokeColor,
+                iconStyle: state.iconStyle,
+                strokeWidth: state.strokeWidth,
+                flipH: state.flipH,
+                flipV: state.flipV,
+                transform: { ...state.transform },
+                filters: { ...state.filters },
+                shape: state.shape,
+                borderRadius: state.borderRadius,
+                background: { ...state.background }
+            });
+
+            state.historyStack = state.historyStack.slice(0, state.historyIndex + 1);
+            state.historyStack.push(snapshot);
+            if (state.historyStack.length > 50) state.historyStack.shift();
+            state.historyIndex = state.historyStack.length - 1;
+
+            saveToLocalHistory();
+        }
+
+        function undo() {
+            if (state.historyIndex > 0) {
+                state.historyIndex--;
+                const snap = JSON.parse(state.historyStack[state.historyIndex]);
+                Object.assign(state, snap);
+                state.transform = { ...snap.transform };
+                state.filters = { ...snap.filters };
+                state.background = { ...snap.background };
+                if (!state.iconStyle) state.iconStyle = 'fill';
+                if (!state.strokeWidth) state.strokeWidth = 2;
+                if (state.flipH === undefined) state.flipH = false;
+                if (state.flipV === undefined) state.flipV = false;
+                updateUIFromState();
+                render();
+                return true;
+            }
+            return false;
+        }
+
+        function redo() {
+            if (state.historyIndex < state.historyStack.length - 1) {
+                state.historyIndex++;
+                const snap = JSON.parse(state.historyStack[state.historyIndex]);
+                Object.assign(state, snap);
+                state.transform = { ...snap.transform };
+                state.filters = { ...snap.filters };
+                state.background = { ...snap.background };
+                if (!state.iconStyle) state.iconStyle = 'fill';
+                if (!state.strokeWidth) state.strokeWidth = 2;
+                if (state.flipH === undefined) state.flipH = false;
+                if (state.flipV === undefined) state.flipV = false;
+                updateUIFromState();
+                render();
+                return true;
+            }
+            return false;
+        }
+
+        function updateUIFromState() {
+            sizeSlider.value = state.transform.scale * 100;
+            sizeValue.textContent = Math.round(state.transform.scale * 100) + '%';
+            rotationSlider.value = state.transform.rotation;
+            rotationValue.textContent = state.transform.rotation + '°';
+            radiusSlider.value = state.borderRadius;
+            radiusValue.textContent = state.borderRadius + '%';
+            brightnessSlider.value = state.filters.brightness;
+            brightnessValue.textContent = state.filters.brightness + '%';
+            contrastSlider.value = state.filters.contrast;
+            contrastValue.textContent = state.filters.contrast + '%';
+            saturationSlider.value = state.filters.saturation;
+            saturationValue.textContent = state.filters.saturation + '%';
+            hueSlider.value = state.filters.hueRotate;
+            hueValue.textContent = state.filters.hueRotate + '°';
+            blurSlider.value = state.filters.blur;
+            blurValue.textContent = state.filters.blur + 'px';
+            opacitySlider.value = state.filters.opacity;
+            opacityValue.textContent = state.filters.opacity + '%';
+
+            document.querySelectorAll('.shape-option').forEach(el => {
+                el.classList.toggle('active', el.dataset.shape === state.shape);
+            });
+
+            document.querySelectorAll('.bg-option').forEach(el => {
+                el.classList.toggle('active', el.dataset.bg === state.background.type);
+            });
+
+            document.getElementById('bgColorRow').style.display =
+                state.background.type === 'solid' ? 'flex' : 'none';
+
+            if (state.iconFillColor && !state.iconFillColor.startsWith('gradient')) {
+                iconColorPicker.value = state.iconFillColor;
+                iconColorHex.value = state.iconFillColor;
+            }
+
+            if (state.iconStrokeColor && !state.iconStrokeColor.startsWith('gradient')) {
+                strokeColorPicker.value = state.iconStrokeColor;
+                strokeColorHex.value = state.iconStrokeColor;
+            }
+
+            textInput.value = state.sourceText;
+            fontSelect.value = state.sourceFont;
+
+            document.querySelectorAll('.style-btn').forEach(b => {
+                b.classList.toggle('active', b.dataset.style === state.iconStyle);
+            });
+
+            const strokeSlider = document.getElementById('strokeWidthSlider');
+            const strokeVal = document.getElementById('strokeWidthValue');
+            if (strokeSlider && strokeVal) {
+                strokeSlider.value = state.strokeWidth;
+                strokeVal.textContent = state.strokeWidth.toFixed(1);
+            }
+
+            const activeCat = document.querySelector('.category-tab.active');
+            if (activeCat) {
+                renderPresetGrid(activeCat.dataset.cat);
+            }
+        }
+
+        // ==================== Rendering ====================
+        function render() {
+            const size = state.canvasSize;
+            ctx.clearRect(0, 0, size, size);
+
+            ctx.save();
+            applyShapeClip(size);
+            drawBackground(size);
+            drawIcon(size);
+            ctx.restore();
+
+            if (state.showGrid) drawGrid(size);
+        }
+
+        function applyShapeClip(size) {
+            ctx.beginPath();
+            if (state.shape === 'circle') {
+                ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
+            } else if (state.shape === 'rounded') {
+                const r = size * state.borderRadius / 100;
+                roundRect(ctx, 0, 0, size, size, r);
+            } else {
+                ctx.rect(0, 0, size, size);
+            }
+            ctx.clip();
+        }
+
+        function roundRect(ctx, x, y, w, h, r) {
+            ctx.moveTo(x + r, y);
+            ctx.lineTo(x + w - r, y);
+            ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+            ctx.lineTo(x + w, y + h - r);
+            ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+            ctx.lineTo(x + r, y + h);
+            ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+            ctx.lineTo(x, y + r);
+            ctx.quadraticCurveTo(x, y, x + r, y);
+        }
+
+        function drawBackground(size) {
+            if (state.background.type === 'transparent') return;
+
+            if (state.background.type === 'solid') {
+                ctx.fillStyle = state.background.color;
+                ctx.fillRect(0, 0, size, size);
+            } else if (state.background.type === 'gradient') {
+                const grad = ctx.createLinearGradient(0, 0, size, size);
+                grad.addColorStop(0, '#8b5cf6');
+                grad.addColorStop(0.5, '#06b6d4');
+                grad.addColorStop(1, '#ec4899');
+                ctx.fillStyle = grad;
+                ctx.fillRect(0, 0, size, size);
+            }
+        }
+
+        function drawIcon(size) {
+            ctx.save();
+            ctx.translate(size / 2 + state.transform.x, size / 2 + state.transform.y);
+            ctx.rotate(state.transform.rotation * Math.PI / 180);
+            ctx.scale(state.transform.scale, state.transform.scale);
+
+            ctx.filter =
+                `brightness(${state.filters.brightness}%) contrast(${state.filters.contrast}%) saturate(${state.filters.saturation}%) hue-rotate(${state.filters.hueRotate}deg) blur(${state.filters.blur}px) opacity(${state.filters.opacity}%)`;
+
+            const iconSize = size;
+
+            if (state.sourceType === 'upload' && state.sourceImage) {
+                const img = state.sourceImage;
+                const scale = Math.min(iconSize / img.width, iconSize / img.height);
+                const w = img.width * scale;
+                const h = img.height * scale;
+                ctx.drawImage(img, -w / 2, -h / 2, w, h);
+            } else if (state.sourceType === 'preset') {
+                drawPresetIcon(iconSize);
+            } else if (state.sourceType === 'text' && state.sourceText) {
+                drawTextIcon(iconSize);
+            }
+
+            ctx.restore();
+        }
+
+        function drawPresetIcon(size) {
+            const icon = flatPresetIcons[state.presetIndex];
+            if (!icon) return;
+
+            const s = size * 0.6;
+            const x = -s / 2;
+            const y = -s / 2;
+            const scale = s / 24;
+
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.scale(scale, scale);
+
+            const path = new Path2D(icon.path);
+
+            let fillColor = state.iconFillColor;
+            if (fillColor === 'gradient1') {
+                const grad = ctx.createLinearGradient(0, 0, 24, 24);
+                grad.addColorStop(0, '#8b5cf6');
+                grad.addColorStop(1, '#ec4899');
+                fillColor = grad;
+            } else if (fillColor === 'gradient2') {
+                const grad = ctx.createLinearGradient(0, 0, 24, 24);
+                grad.addColorStop(0, '#06b6d4');
+                grad.addColorStop(1, '#8b5cf6');
+                fillColor = grad;
+            }
+
+            let strokeColor = state.iconStrokeColor;
+
+            ctx.lineWidth = state.strokeWidth;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            if (state.iconStyle === 'fill' || state.iconStyle === 'both') {
+                ctx.fillStyle = fillColor;
+                ctx.fill(path);
+            }
+            if (state.iconStyle === 'stroke' || state.iconStyle === 'both') {
+                ctx.strokeStyle = strokeColor;
+                ctx.stroke(path);
+            }
+
+            ctx.restore();
+        }
+
+        function drawTextIcon(size) {
+            ctx.save();
+
+            let fillColor = state.iconFillColor;
+            if (fillColor === 'gradient1') {
+                const grad = ctx.createLinearGradient(0, -size / 2, size, size / 2);
+                grad.addColorStop(0, '#8b5cf6');
+                grad.addColorStop(1, '#ec4899');
+                fillColor = grad;
+            } else if (fillColor === 'gradient2') {
+                const grad = ctx.createLinearGradient(0, -size / 2, size, size / 2);
+                grad.addColorStop(0, '#06b6d4');
+                grad.addColorStop(1, '#8b5cf6');
+                fillColor = grad;
+            }
+
+            ctx.fillStyle = fillColor;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            let fontSize = size * 0.5;
+            if (state.sourceText.length === 1) fontSize = size * 0.6;
+            if (state.sourceText.length >= 3) fontSize = size * 0.35;
+
+            ctx.font = `bold ${fontSize}px ${state.sourceFont}`;
+            ctx.fillText(state.sourceText, 0, 0);
+
+            if (state.iconStyle === 'stroke' || state.iconStyle === 'both') {
+                ctx.strokeStyle = state.iconStrokeColor;
+                ctx.lineWidth = state.strokeWidth * (size / 24);
+                ctx.lineJoin = 'round';
+                ctx.strokeText(state.sourceText, 0, 0);
+            }
+
+            ctx.restore();
+        }
+
+        function drawGrid(size) {
+            ctx.save();
+            ctx.strokeStyle = 'rgba(139,92,246,0.15)';
+            ctx.lineWidth = 1;
+
+            const step = size / 8;
+            for (let i = 1; i < 8; i++) {
+                ctx.beginPath();
+                ctx.moveTo(i * step, 0);
+                ctx.lineTo(i * step, size);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(0, i * step);
+                ctx.lineTo(size, i * step);
+                ctx.stroke();
+            }
+
+            ctx.strokeStyle = 'rgba(139,92,246,0.3)';
+            ctx.beginPath();
+            ctx.moveTo(size / 2, 0);
+            ctx.lineTo(size / 2, size);
+            ctx.moveTo(0, size / 2);
+            ctx.lineTo(size, size / 2);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // ==================== Export Functions ====================
+        function exportIcon() {
+            const sizes = state.selectedSizes;
+
+            if (state.exportFormat === 'ico') {
+                exportICO(sizes);
+            } else {
+                sizes.forEach((size, i) => {
+                    setTimeout(() => exportPNG(size), i * 100);
+                });
+            }
+
+            showToast('导出成功！', 'success');
+        }
+
+        function exportPNG(targetSize) {
+            const offscreen = document.createElement('canvas');
+            offscreen.width = targetSize;
+            offscreen.height = targetSize;
+            const offCtx = offscreen.getContext('2d');
+
+            renderToContext(offCtx, targetSize);
+
+            const dataUrl = offscreen.toDataURL('image/png');
+            downloadFile(dataUrl, `folder-icon-${targetSize}.png`);
+        }
+
+        function renderToContext(ctx, size) {
+            ctx.clearRect(0, 0, size, size);
+
+            ctx.save();
+
+            ctx.beginPath();
+            if (state.shape === 'circle') {
+                ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
+            } else if (state.shape === 'rounded') {
+                const r = size * state.borderRadius / 100;
+                roundRect(ctx, 0, 0, size, size, r);
+            } else {
+                ctx.rect(0, 0, size, size);
+            }
+            ctx.clip();
+
+            if (state.background.type === 'solid') {
+                ctx.fillStyle = state.background.color;
+                ctx.fillRect(0, 0, size, size);
+            } else if (state.background.type === 'gradient') {
+                const grad = ctx.createLinearGradient(0, 0, size, size);
+                grad.addColorStop(0, '#8b5cf6');
+                grad.addColorStop(0.5, '#06b6d4');
+                grad.addColorStop(1, '#ec4899');
+                ctx.fillStyle = grad;
+                ctx.fillRect(0, 0, size, size);
+            }
+
+            ctx.save();
+            ctx.translate(size / 2 + state.transform.x * (size / state.canvasSize), size / 2 + state.transform.y * (size /
+                state.canvasSize));
+            ctx.rotate(state.transform.rotation * Math.PI / 180);
+            ctx.scale(state.transform.scale, state.transform.scale);
+
+            ctx.filter =
+                `brightness(${state.filters.brightness}%) contrast(${state.filters.contrast}%) saturate(${state.filters.saturation}%) hue-rotate(${state.filters.hueRotate}deg) blur(${state.filters.blur * (size/state.canvasSize)}px) opacity(${state.filters.opacity}%)`;
+
+            if (state.sourceType === 'upload' && state.sourceImage) {
+                const img = state.sourceImage;
+                const scale = Math.min(size / img.width, size / img.height);
+                const w = img.width * scale;
+                const h = img.height * scale;
+                ctx.drawImage(img, -w / 2, -h / 2, w, h);
+            } else if (state.sourceType === 'preset') {
+                drawPresetIconToCtx(ctx, size);
+            } else if (state.sourceType === 'text' && state.sourceText) {
+                drawTextIconToCtx(ctx, size);
+            }
+
+            ctx.restore();
+            ctx.restore();
+        }
+
+        function drawPresetIconToCtx(ctx, size) {
+            const icon = flatPresetIcons[state.presetIndex];
+            if (!icon) return;
+
+            const s = size * 0.6;
+            const x = -s / 2;
+            const y = -s / 2;
+            const scale = s / 24;
+
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.scale(scale, scale);
+
+            const path = new Path2D(icon.path);
+
+            let fillColor = state.iconFillColor;
+            if (fillColor === 'gradient1') {
+                const grad = ctx.createLinearGradient(0, 0, 24, 24);
+                grad.addColorStop(0, '#8b5cf6');
+                grad.addColorStop(1, '#ec4899');
+                fillColor = grad;
+            } else if (fillColor === 'gradient2') {
+                const grad = ctx.createLinearGradient(0, 0, 24, 24);
+                grad.addColorStop(0, '#06b6d4');
+                grad.addColorStop(1, '#8b5cf6');
+                fillColor = grad;
+            }
+
+            ctx.lineWidth = state.strokeWidth;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            if (state.iconStyle === 'fill' || state.iconStyle === 'both') {
+                ctx.fillStyle = fillColor;
+                ctx.fill(path);
+            }
+            if (state.iconStyle === 'stroke' || state.iconStyle === 'both') {
+                ctx.strokeStyle = state.iconStrokeColor;
+                ctx.stroke(path);
+            }
+            ctx.restore();
+        }
+
+        function drawTextIconToCtx(ctx, size) {
+            ctx.save();
+
+            let fillColor = state.iconFillColor;
+            if (fillColor === 'gradient1') {
+                const grad = ctx.createLinearGradient(0, -size / 2, size, size / 2);
+                grad.addColorStop(0, '#8b5cf6');
+                grad.addColorStop(1, '#ec4899');
+                fillColor = grad;
+            } else if (fillColor === 'gradient2') {
+                const grad = ctx.createLinearGradient(0, -size / 2, size, size / 2);
+                grad.addColorStop(0, '#06b6d4');
+                grad.addColorStop(1, '#8b5cf6');
+                fillColor = grad;
+            }
+
+            ctx.fillStyle = fillColor;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            let fontSize = size * 0.5;
+            if (state.sourceText.length === 1) fontSize = size * 0.6;
+            if (state.sourceText.length >= 3) fontSize = size * 0.35;
+
+            ctx.font = `bold ${fontSize}px ${state.sourceFont}`;
+            ctx.fillText(state.sourceText, 0, 0);
+
+            if (state.iconStyle === 'stroke' || state.iconStyle === 'both') {
+                ctx.strokeStyle = state.iconStrokeColor;
+                ctx.lineWidth = state.strokeWidth * (size / 24);
+                ctx.lineJoin = 'round';
+                ctx.strokeText(state.sourceText, 0, 0);
+            }
+            ctx.restore();
+        }
+
+        function canvasToImageData(size) {
+            const offscreen = document.createElement('canvas');
+            offscreen.width = size;
+            offscreen.height = size;
+            const offCtx = offscreen.getContext('2d');
+            renderToContext(offCtx, size);
+            return offCtx.getImageData(0, 0, size, size);
+        }
+
+        function createBMPWithANDMask(imageData) {
+            const w = imageData.width;
+            const h = imageData.height;
+            const data = imageData.data;
+
+            const rowStride = Math.ceil(w * 3 / 4) * 4;
+            const xorSize = rowStride * h;
+
+            const andRowStride = Math.ceil(w / 32) * 4;
+            const andSize = andRowStride * h;
+
+            const bmpHeaderSize = 40;
+            const totalSize = bmpHeaderSize + xorSize + andSize;
+
+            const buffer = new ArrayBuffer(totalSize);
+            const view = new DataView(buffer);
+            const bytes = new Uint8Array(buffer);
+
+            view.setUint32(0, 40, true);
+            view.setInt32(4, w, true);
+            view.setInt32(8, h * 2, true);
+            view.setUint16(12, 1, true);
+            view.setUint16(14, 24, true);
+            view.setUint32(16, 0, true);
+            view.setUint32(20, xorSize + andSize, true);
+            view.setInt32(24, 0, true);
+            view.setInt32(28, 0, true);
+            view.setUint32(32, 0, true);
+            view.setUint32(36, 0, true);
+
+            let xorOffset = bmpHeaderSize;
+            for (let y = h - 1; y >= 0; y--) {
+                let rowOffset = xorOffset + (h - 1 - y) * rowStride;
+                for (let x = 0; x < w; x++) {
+                    const idx = (y * w + x) * 4;
+                    bytes[rowOffset++] = data[idx + 2];
+                    bytes[rowOffset++] = data[idx + 1];
+                    bytes[rowOffset++] = data[idx];
+                }
+            }
+
+            let andOffset = bmpHeaderSize + xorSize;
+            for (let y = h - 1; y >= 0; y--) {
+                let byteVal = 0;
+                let bitCount = 0;
+                let andRowIdx = 0;
+                for (let x = 0; x < w; x++) {
+                    const idx = (y * w + x) * 4;
+                    const alpha = data[idx + 3];
+
+                    byteVal <<= 1;
+                    if (alpha < 128) byteVal |= 1;
+                    bitCount++;
+
+                    if (bitCount === 8) {
+                        bytes[andOffset + andRowIdx++] = byteVal;
+                        byteVal = 0;
+                        bitCount = 0;
+                    }
+                }
+                if (bitCount > 0) {
+                    byteVal <<= (8 - bitCount);
+                    bytes[andOffset + andRowIdx++] = byteVal;
+                }
+                while (andRowIdx < andRowStride) {
+                    bytes[andOffset + andRowIdx++] = 0;
+                }
+                andOffset += andRowStride;
+            }
+
+            return { buffer, dataSize: totalSize, bitCount: 24 };
+        }
+
+        function createPNGIcon(size) {
+            const offscreen = document.createElement('canvas');
+            offscreen.width = size;
+            offscreen.height = size;
+            const offCtx = offscreen.getContext('2d');
+            renderToContext(offCtx, size);
+
+            const dataUrl = offscreen.toDataURL('image/png');
+            const base64 = dataUrl.split(',')[1];
+            const binary = atob(base64);
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+
+            return { buffer: bytes.buffer, dataSize: bytes.length, bitCount: 32, offset: 0, isPNG: true, bytes };
+        }
+
+        function exportICO(sizes) {
+            const icoSizes = [16, 32, 48, 64, 128, 256];
+            const iconDataArray = [];
+
+            icoSizes.forEach(size => {
+                if (size >= 128) {
+                    const png = createPNGIcon(size);
+                    iconDataArray.push({ iconSize: size, ...png });
+                } else {
+                    const imageData = canvasToImageData(size);
+                    const bmp = createBMPWithANDMask(imageData);
+                    iconDataArray.push({ iconSize: size, ...bmp, isPNG: false });
+                }
+            });
+
+            const headerSize = 6 + 16 * iconDataArray.length;
+            let dataOffset = headerSize;
+
+            let totalSize = headerSize;
+            iconDataArray.forEach(item => { totalSize += item.dataSize; });
+
+            const buffer = new ArrayBuffer(totalSize);
+            const view = new DataView(buffer);
+            const byteView = new Uint8Array(buffer);
+
+            view.setUint16(0, 0, true);
+            view.setUint16(2, 1, true);
+            view.setUint16(4, iconDataArray.length, true);
+
+            let dirOffset = 6;
+            iconDataArray.forEach((item, i) => {
+                const w = item.iconSize >= 256 ? 0 : item.iconSize;
+                const h = item.iconSize >= 256 ? 0 : item.iconSize;
+                view.setUint8(dirOffset, w);
+                dirOffset++;
+                view.setUint8(dirOffset, h);
+                dirOffset++;
+                view.setUint8(dirOffset, 0);
+                dirOffset++;
+                view.setUint8(dirOffset, 0);
+                dirOffset++;
+                view.setUint16(dirOffset, 1, true);
+                dirOffset += 2;
+                view.setUint16(dirOffset, item.bitCount, true);
+                dirOffset += 2;
+                view.setUint32(dirOffset, item.dataSize, true);
+                dirOffset += 4;
+                view.setUint32(dirOffset, dataOffset, true);
+                dirOffset += 4;
+
+                const srcBytes = new Uint8Array(item.buffer, item.offset || 0, item.dataSize);
+                byteView.set(srcBytes, dataOffset);
+                dataOffset += item.dataSize;
+            });
+
+            const blob = new Blob([buffer], { type: 'image/x-icon' });
+            const url = URL.createObjectURL(blob);
+            downloadFile(url, 'folder-icon.ico');
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }
+
+        function generateDesktopIni() {
+            const content = `[.ShellClassInfo]
+        IconResource=folder-icon.ico,0
+        [ViewState]
+        Mode=
+        Vid=
+        FolderType=Generic
+        `;
+
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            downloadFile(url, 'desktop.ini');
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+            showToast('desktop.ini 已生成！将其与图标文件放入文件夹即可', 'success');
+        }
+
+        // ==================== Local Storage History ====================
+        function saveToLocalHistory() {
+            const thumbCanvas = document.createElement('canvas');
+            thumbCanvas.width = 64;
+            thumbCanvas.height = 64;
+            const thumbCtx = thumbCanvas.getContext('2d');
+            renderToContext(thumbCtx, 64);
+
+            const thumbnail = thumbCanvas.toDataURL('image/png');
+
+            let history = [];
+            try {
+                history = JSON.parse(localStorage.getItem('folderIconHistory') || '[]');
+            } catch (e) {}
+
+            history.unshift({
+                id: Date.now(),
+                timestamp: Date.now(),
+                thumbnail,
+                state: {
+                    sourceType: state.sourceType,
+                    sourceText: state.sourceText,
+                    sourceFont: state.sourceFont,
+                    presetIndex: state.presetIndex,
+                    iconFillColor: state.iconFillColor,
+                    iconStrokeColor: state.iconStrokeColor,
+                    iconStyle: state.iconStyle,
+                    strokeWidth: state.strokeWidth,
+                    transform: { ...state.transform },
+                    filters: { ...state.filters },
+                    shape: state.shape,
+                    borderRadius: state.borderRadius,
+                    background: { ...state.background }
+                }
+            });
+
+            if (history.length > 20) history = history.slice(0, 20);
+            localStorage.setItem('folderIconHistory', JSON.stringify(history));
+            renderHistoryList();
+        }
+
+        function loadFromLocalHistory() {
+            let history = [];
+            try {
+                history = JSON.parse(localStorage.getItem('folderIconHistory') || '[]');
+            } catch (e) {}
+            return history;
+        }
+
+        function renderHistoryList() {
+            const list = document.getElementById('historyList');
+            const history = loadFromLocalHistory();
+
+            if (history.length === 0) {
+                list.innerHTML = '<p style="color:var(--text-muted);font-size:13px;text-align:center;padding:40px 0">暂无历史记录</p>';
+                return;
+            }
+
+            list.innerHTML = history.map(item => {
+                const date = new Date(item.timestamp);
+                const timeStr =
+                    `${date.getMonth()+1}/${date.getDate()} ${date.getHours().toString().padStart(2,'0')}:${date.getMinutes().toString().padStart(2,'0')}`;
+                return `
+                    <div class="history-item" data-id="${item.id}">
+                        <div class="history-thumb"><img src="${item.thumbnail}" alt=""></div>
+                        <div class="history-info">
+                            <div style="font-size:12px;font-weight:500;color:var(--text-primary)">${item.state.sourceType === 'upload' ? '上传图片' : item.state.sourceType === 'preset' ? '预设图标' : item.state.sourceType === 'text' ? '文字图标' : '纯色'}</div>
+                            <div class="history-time">${timeStr}</div>
+                        </div>
+                        <button class="history-delete" data-delete="${item.id}">
+                            <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                        </button>
+                    </div>
+                `;
+            }).join('');
+
+            list.querySelectorAll('.history-item').forEach(el => {
+                el.addEventListener('click', (e) => {
+                    if (e.target.closest('[data-delete]')) return;
+                    const id = parseInt(el.dataset.id);
+                    const item = history.find(h => h.id === id);
+                    if (item) {
+                        Object.assign(state, item.state);
+                        state.transform = { ...item.state.transform };
+                        state.filters = { ...item.state.filters };
+                        state.background = { ...item.state.background };
+                        if (!state.iconStyle) state.iconStyle = 'fill';
+                        if (!state.strokeWidth) state.strokeWidth = 2;
+                        updateUIFromState();
+                        render();
+                        saveHistory();
+                        closeHistory();
+                        showToast('已恢复历史记录', 'success');
+                    }
+                });
+            });
+
+            list.querySelectorAll('[data-delete]').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const id = parseInt(btn.dataset.delete);
+                    let history = loadFromLocalHistory();
+                    history = history.filter(h => h.id !== id);
+                    localStorage.setItem('folderIconHistory', JSON.stringify(history));
+                    renderHistoryList();
+                });
+            });
+        }
+
+        // ==================== Event Handlers ====================
+        function initPresetGrid() {
+            renderPresetGrid('全部');
+
+            document.querySelectorAll('.category-tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    document.querySelectorAll('.category-tab').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    renderPresetGrid(tab.dataset.cat);
+                });
+            });
+        }
+
+        function renderPresetGrid(category) {
+            let icons = flatPresetIcons;
+            if (category !== '全部' && category !== '更多') {
+                icons = flatPresetIcons.filter(icon => icon.category === category);
+            } else if (category === '更多') {
+                const mainCats = ['文件', '常用', '工具', '符号'];
+                icons = flatPresetIcons.filter(icon => !mainCats.includes(icon.category));
+            }
+
+            presetGrid.innerHTML = icons.map((icon, i) => {
+                const realIndex = flatPresetIcons.indexOf(icon);
+                const fillStyle = state.iconFillColor.startsWith('gradient') ? `url(#${state.iconFillColor})` :
+                state.iconFillColor;
+                const isFill = state.iconStyle === 'fill' || state.iconStyle === 'both';
+                const isStroke = state.iconStyle === 'stroke' || state.iconStyle === 'both';
+                const strokeColor = state.iconStrokeColor.startsWith('gradient') ? '#8b5cf6' : state.iconStrokeColor;
+                // For gradient fill in SVG, use the gradient id
+                const fillAttr = isFill ? `fill="${fillStyle}"` : 'fill="none"';
+                const strokeAttr = isStroke ?
+                    `stroke="${strokeColor}" stroke-width="${state.strokeWidth * 0.5}" stroke-linecap="round" stroke-linejoin="round"` :
+                    '';
+
+                return `
+                        <div class="preset-item ${realIndex === state.presetIndex ? 'active' : ''}" data-index="${realIndex}" title="${icon.name}">
+                            <svg viewBox="0 0 24 24" style="width:60%;height:60%">
+                                <path d="${icon.path}" ${fillAttr} ${strokeAttr} />
+                            </svg>
+                        </div>
+                    `;
+            }).join('');
+
+            presetGrid.querySelectorAll('.preset-item').forEach(el => {
+                el.addEventListener('click', () => {
+                    state.presetIndex = parseInt(el.dataset.index);
+                    state.sourceType = 'preset';
+                    renderPresetGrid(document.querySelector('.category-tab.active')?.dataset.cat || '全部');
+                    saveHistory();
+                    render();
+                });
+            });
+        }
+
+        // Icon Style Toggle
+        document.querySelectorAll('.style-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.style-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                state.iconStyle = btn.dataset.style;
+                renderPresetGrid(document.querySelector('.category-tab.active')?.dataset.cat || '全部');
+                saveHistory();
+                render();
+            });
+        });
+
+        // Stroke Width
+        const strokeSliderEl = document.getElementById('strokeWidthSlider');
+        const strokeValEl = document.getElementById('strokeWidthValue');
+        if (strokeSliderEl && strokeValEl) {
+            strokeSliderEl.addEventListener('input', (e) => {
+                state.strokeWidth = parseFloat(e.target.value);
+                strokeValEl.textContent = state.strokeWidth.toFixed(1);
+                renderPresetGrid(document.querySelector('.category-tab.active')?.dataset.cat || '全部');
+                render();
+            });
+            strokeSliderEl.addEventListener('change', saveHistory);
+        }
+
+        // Color Presets - Fill
+        const fillPresets = document.querySelectorAll('#fillColorPresets .color-preset');
+        fillPresets.forEach(preset => {
+            preset.addEventListener('click', () => {
+                state.iconFillColor = preset.dataset.color;
+                fillPresets.forEach(p => p.classList.remove('active'));
+                preset.classList.add('active');
+                // Update color picker if not gradient
+                if (!state.iconFillColor.startsWith('gradient')) {
+                    iconColorPicker.value = state.iconFillColor;
+                    iconColorHex.value = state.iconFillColor;
+                }
+                renderPresetGrid(document.querySelector('.category-tab.active')?.dataset.cat || '全部');
+                saveHistory();
+                render();
+            });
+        });
+
+        // Color Presets - Stroke
+        const strokePresets = document.querySelectorAll('#strokeColorPresets .color-preset');
+        strokePresets.forEach(preset => {
+            preset.addEventListener('click', () => {
+                state.iconStrokeColor = preset.dataset.color;
+                strokePresets.forEach(p => p.classList.remove('active'));
+                preset.classList.add('active');
+                if (!state.iconStrokeColor.startsWith('gradient')) {
+                    strokeColorPicker.value = state.iconStrokeColor;
+                    strokeColorHex.value = state.iconStrokeColor;
+                }
+                renderPresetGrid(document.querySelector('.category-tab.active')?.dataset.cat || '全部');
+                saveHistory();
+                render();
+            });
+        });
+
+        // Random Button
+        if (randomBtn) {
+            randomBtn.addEventListener('click', () => {
+                // Random preset
+                state.presetIndex = Math.floor(Math.random() * flatPresetIcons.length);
+                state.sourceType = 'preset';
+
+                // Random style
+                const styles = ['stroke', 'fill', 'both'];
+                state.iconStyle = styles[Math.floor(Math.random() * styles.length)];
+                document.querySelectorAll('.style-btn').forEach(b => {
+                    b.classList.toggle('active', b.dataset.style === state.iconStyle);
+                });
+
+                // Random colors
+                const colors = ['#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#06b6d4', '#ef4444', '#6366f1', '#f97316'];
+                const c1 = colors[Math.floor(Math.random() * colors.length)];
+                const c2 = colors[Math.floor(Math.random() * colors.length)];
+                state.iconFillColor = c1;
+                state.iconStrokeColor = c2;
+
+                // Update color pickers
+                iconColorPicker.value = c1;
+                iconColorHex.value = c1;
+                strokeColorPicker.value = c2;
+                strokeColorHex.value = c2;
+
+                // Update fill preset active
+                fillPresets.forEach(p => {
+                    p.classList.toggle('active', p.dataset.color === c1);
+                });
+                strokePresets.forEach(p => {
+                    p.classList.toggle('active', p.dataset.color === c2);
+                });
+
+                // Random rotation (0, 90, 180, 270)
+                state.transform.rotation = Math.floor(Math.random() * 4) * 90;
+                rotationSlider.value = state.transform.rotation;
+                rotationValue.textContent = state.transform.rotation + '°';
+
+                renderPresetGrid(document.querySelector('.category-tab.active')?.dataset.cat || '全部');
+                saveHistory();
+                render();
+                showToast('随机生成成功！', 'success');
+            });
+        }
+
+        // URL Image Load
+        const urlInput = document.getElementById('urlInput');
+        const loadUrlBtn = document.getElementById('loadUrlBtn');
+        if (urlInput && loadUrlBtn) {
+            loadUrlBtn.addEventListener('click', () => {
+                const url = urlInput.value.trim();
+                if (!url) {
+                    showToast('请输入图片链接', 'error');
+                    return;
+                }
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+                img.onload = () => {
+                    state.sourceImage = img;
+                    state.sourceType = 'upload';
+                    state.transform.scale = 0.7;
+                    state.transform.x = 0;
+                    state.transform.y = 0;
+                    sizeSlider.value = 70;
+                    sizeValue.textContent = '70%';
+                    saveHistory();
+                    render();
+                    showToast('图片加载成功', 'success');
+                };
+                img.onerror = () => {
+                    showToast('图片加载失败，请检查链接', 'error');
+                };
+                img.src = url;
+            });
+            urlInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') loadUrlBtn.click();
+            });
+        }
+
+        // Upload
+        uploadZone.addEventListener('click', () => fileInput.click());
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.classList.add('dragover');
+        });
+        uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith('image/')) loadImage(file);
+        });
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files[0]) loadImage(e.target.files[0]);
+        });
+
+        function loadImage(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    state.sourceImage = img;
+                    state.sourceType = 'upload';
+                    state.transform.scale = 0.7;
+                    state.transform.x = 0;
+                    state.transform.y = 0;
+                    sizeSlider.value = 70;
+                    sizeValue.textContent = '70%';
+                    saveHistory();
+                    render();
+                    showToast('图片加载成功', 'success');
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Text
+        textInput.addEventListener('input', (e) => {
+            state.sourceText = e.target.value;
+            state.sourceType = 'text';
+            saveHistory();
+            render();
+        });
+
+        fontSelect.addEventListener('change', (e) => {
+            state.sourceFont = e.target.value;
+            saveHistory();
+            render();
+        });
+
+        // Fill Color
+        iconColorPicker.addEventListener('input', (e) => {
+            state.iconFillColor = e.target.value;
+            iconColorHex.value = e.target.value;
+            fillPresets.forEach(p => {
+                p.classList.toggle('active', p.dataset.color === e.target.value);
+            });
+            renderPresetGrid(document.querySelector('.category-tab.active')?.dataset.cat || '全部');
+            render();
+        });
+        iconColorPicker.addEventListener('change', () => saveHistory());
+        iconColorHex.addEventListener('change', (e) => {
+            let val = e.target.value;
+            if (!val.startsWith('#')) val = '#' + val;
+            if (/^#[0-9a-f]{6}$/i.test(val)) {
+                state.iconFillColor = val;
+                iconColorPicker.value = val;
+                fillPresets.forEach(p => {
+                    p.classList.toggle('active', p.dataset.color === val);
+                });
+                renderPresetGrid(document.querySelector('.category-tab.active')?.dataset.cat || '全部');
+                saveHistory();
+                render();
+            }
+        });
+
+        // Stroke Color
+        if (strokeColorPicker && strokeColorHex) {
+            strokeColorPicker.addEventListener('input', (e) => {
+                state.iconStrokeColor = e.target.value;
+                strokeColorHex.value = e.target.value;
+                strokePresets.forEach(p => {
+                    p.classList.toggle('active', p.dataset.color === e.target.value);
+                });
+                renderPresetGrid(document.querySelector('.category-tab.active')?.dataset.cat || '全部');
+                render();
+            });
+            strokeColorPicker.addEventListener('change', () => saveHistory());
+            strokeColorHex.addEventListener('change', (e) => {
+                let val = e.target.value;
+                if (!val.startsWith('#')) val = '#' + val;
+                if (/^#[0-9a-f]{6}$/i.test(val)) {
+                    state.iconStrokeColor = val;
+                    strokeColorPicker.value = val;
+                    strokePresets.forEach(p => {
+                        p.classList.toggle('active', p.dataset.color === val);
+                    });
+                    renderPresetGrid(document.querySelector('.category-tab.active')?.dataset.cat || '全部');
+                    saveHistory();
+                    render();
+                }
+            });
+        }
+
+        // Size & Rotation
+        sizeSlider.addEventListener('input', (e) => {
+            state.transform.scale = e.target.value / 100;
+            sizeValue.textContent = e.target.value + '%';
+            render();
+        });
+        sizeSlider.addEventListener('change', () => saveHistory());
+
+        rotationSlider.addEventListener('input', (e) => {
+            state.transform.rotation = parseInt(e.target.value);
+            rotationValue.textContent = e.target.value + '°';
+            render();
+        });
+        rotationSlider.addEventListener('change', () => saveHistory());
+
+        // Shape
+        document.querySelectorAll('.shape-option').forEach(el => {
+            el.addEventListener('click', () => {
+                state.shape = el.dataset.shape;
+                document.querySelectorAll('.shape-option').forEach(o => o.classList.remove('active'));
+                el.classList.add('active');
+                saveHistory();
+                render();
+            });
+        });
+
+        radiusSlider.addEventListener('input', (e) => {
+            state.borderRadius = parseInt(e.target.value);
+            radiusValue.textContent = e.target.value + '%';
+            render();
+        });
+        radiusSlider.addEventListener('change', () => saveHistory());
+
+        // Background
+        document.querySelectorAll('.bg-option').forEach(el => {
+            el.addEventListener('click', () => {
+                state.background.type = el.dataset.bg;
+                document.querySelectorAll('.bg-option').forEach(o => o.classList.remove('active'));
+                el.classList.add('active');
+                document.getElementById('bgColorRow').style.display =
+                    state.background.type === 'solid' ? 'flex' : 'none';
+                saveHistory();
+                render();
+            });
+        });
+
+        document.getElementById('bgColorPicker').addEventListener('input', (e) => {
+            state.background.color = e.target.value;
+            document.getElementById('bgColorHex').value = e.target.value;
+            document.getElementById('bgColorSwatch').style.background = e.target.value;
+            render();
+        });
+        document.getElementById('bgColorPicker').addEventListener('change', () => saveHistory());
+        document.getElementById('bgColorHex').addEventListener('change', (e) => {
+            let val = e.target.value;
+            if (!val.startsWith('#')) val = '#' + val;
+            if (/^#[0-9a-f]{6}$/i.test(val)) {
+                state.background.color = val;
+                document.getElementById('bgColorPicker').value = val;
+                document.getElementById('bgColorSwatch').style.background = val;
+                saveHistory();
+                render();
+            }
+        });
+
+        // Filters
+        function setupFilter(sliderId, valueId, filterKey, suffix = '%') {
+            const slider = document.getElementById(sliderId);
+            const value = document.getElementById(valueId);
+            slider.addEventListener('input', (e) => {
+                state.filters[filterKey] = parseInt(e.target.value);
+                value.textContent = e.target.value + suffix;
+                render();
+            });
+            slider.addEventListener('change', () => saveHistory());
+        }
+
+        setupFilter('brightnessSlider', 'brightnessValue', 'brightness');
+        setupFilter('contrastSlider', 'contrastValue', 'contrast');
+        setupFilter('saturationSlider', 'saturationValue', 'saturation');
+        setupFilter('hueSlider', 'hueValue', 'hueRotate', '°');
+        setupFilter('blurSlider', 'blurValue', 'blur', 'px');
+        setupFilter('opacitySlider', 'opacityValue', 'opacity');
+
+        // Zoom
+        function setZoom(zoom) {
+            state.previewZoom = Math.max(0.25, Math.min(4, zoom));
+            canvas.style.width = (256 * state.previewZoom) + 'px';
+            canvas.style.height = (256 * state.previewZoom) + 'px';
+            zoomDisplay.textContent = Math.round(state.previewZoom * 100) + '%';
+        }
+
+        document.getElementById('zoomInBtn').addEventListener('click', () => setZoom(state.previewZoom * 1.2));
+        document.getElementById('zoomOutBtn').addEventListener('click', () => setZoom(state.previewZoom / 1.2));
+        document.getElementById('fitBtn').addEventListener('click', () => setZoom(1));
+
+        // Rotate
+        document.getElementById('rotateLeftBtn').addEventListener('click', () => {
+            state.transform.rotation = (state.transform.rotation - 90 + 360) % 360 - 180;
+            if (state.transform.rotation > 180) state.transform.rotation -= 360;
+            rotationSlider.value = state.transform.rotation;
+            rotationValue.textContent = state.transform.rotation + '°';
+            saveHistory();
+            render();
+        });
+        document.getElementById('rotateRightBtn').addEventListener('click', () => {
+            state.transform.rotation = (state.transform.rotation + 90 + 180) % 360 - 180;
+            rotationSlider.value = state.transform.rotation;
+            rotationValue.textContent = state.transform.rotation + '°';
+            saveHistory();
+            render();
+        });
+
+        // Grid
+        document.getElementById('gridBtn').addEventListener('click', () => {
+            state.showGrid = !state.showGrid;
+            document.getElementById('gridBtn').classList.toggle('active', state.showGrid);
+            render();
+        });
+
+        // Canvas Drag
+        let isDragging = false;
+        let dragStart = { x: 0, y: 0 };
+        let transformStart = { x: 0, y: 0 };
+
+        canvas.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            const rect = canvas.getBoundingClientRect();
+            dragStart = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+            transformStart = { x: state.transform.x, y: state.transform.y };
+            canvas.style.cursor = 'grabbing';
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            const rect = canvas.getBoundingClientRect();
+            const dx = (e.clientX - rect.left - dragStart.x) / state.previewZoom;
+            const dy = (e.clientY - rect.top - dragStart.y) / state.previewZoom;
+            state.transform.x = transformStart.x + dx;
+            state.transform.y = transformStart.y + dy;
+            render();
+        });
+
+        document.addEventListener('mouseup', () => {
+            if (isDragging) {
+                isDragging = false;
+                canvas.style.cursor = 'grab';
+                saveHistory();
+            }
+        });
+
+        canvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const delta = e.deltaY > 0 ? 0.9 : 1.1;
+            setZoom(state.previewZoom * delta);
+        }, { passive: false });
+
+        // Export size selection
+        document.querySelectorAll('.size-chip').forEach(chip => {
+            chip.addEventListener('click', (e) => {
+                if (e.shiftKey || e.ctrlKey || e.metaKey) {
+                    const size = parseInt(chip.dataset.size);
+                    const idx = state.selectedSizes.indexOf(size);
+                    if (idx > -1) {
+                        if (state.selectedSizes.length > 1) {
+                            state.selectedSizes.splice(idx, 1);
+                            chip.classList.remove('active');
+                        }
+                    } else {
+                        state.selectedSizes.push(size);
+                        chip.classList.add('active');
+                    }
+                } else {
+                    state.selectedSizes = [parseInt(chip.dataset.size)];
+                    document.querySelectorAll('.size-chip').forEach(c => c.classList.remove('active'));
+                    chip.classList.add('active');
+                }
+            });
+        });
+
+        // Format toggle
+        document.querySelectorAll('.format-option').forEach(opt => {
+            opt.addEventListener('click', () => {
+                state.exportFormat = opt.dataset.format;
+                document.querySelectorAll('.format-option').forEach(o => o.classList.remove('active'));
+                opt.classList.add('active');
+            });
+        });
+
+        // Export buttons
+        exportBtn.addEventListener('click', exportIcon);
+        desktopIniBtn.addEventListener('click', generateDesktopIni);
+
+        // Copy to clipboard
+        const copyBtn = document.getElementById('copyBtn');
+        if (copyBtn) {
+            copyBtn.addEventListener('click', async () => {
+                try {
+                    const dataUrl = canvas.toDataURL('image/png');
+                    const response = await fetch(dataUrl);
+                    const blob = await response.blob();
+                    await navigator.clipboard.write([
+                        new ClipboardItem({ 'image/png': blob })
+                    ]);
+                    showToast('图标已复制到剪贴板', 'success');
+                } catch (err) {
+                    try {
+                        const dataUrl = canvas.toDataURL('image/png');
+                        const textArea = document.createElement('textarea');
+                        textArea.value = dataUrl;
+                        document.body.appendChild(textArea);
+                        textArea.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(textArea);
+                        showToast('图像数据已复制（PNG Base64）', 'success');
+                    } catch (e) {
+                        showToast('复制失败，请尝试下载', 'error');
+                    }
+                }
+            });
+        }
+
+        // Theme
+        function toggleTheme() {
+            const current = document.documentElement.getAttribute('data-theme') || 'dark';
+            const next = current === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', next);
+            localStorage.setItem('theme', next);
+        }
+        themeBtn.addEventListener('click', toggleTheme);
+
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme) document.documentElement.setAttribute('data-theme', savedTheme);
+
+        // History sidebar
+        function openHistory() {
+            renderHistoryList();
+            document.getElementById('historySidebar').classList.add('open');
+            document.getElementById('overlay').classList.add('visible');
+        }
+
+        function closeHistory() {
+            document.getElementById('historySidebar').classList.remove('open');
+            document.getElementById('overlay').classList.remove('visible');
+        }
+        historyBtn.addEventListener('click', openHistory);
+        document.getElementById('closeHistory').addEventListener('click', closeHistory);
+        document.getElementById('overlay').addEventListener('click', () => {
+            closeHistory();
+            closeHelp();
+        });
+
+        // Help modal
+        function openHelp() {
+            document.getElementById('helpModal').classList.add('visible');
+            document.getElementById('overlay').classList.add('visible');
+        }
+
+        function closeHelp() {
+            document.getElementById('helpModal').classList.remove('visible');
+            document.getElementById('overlay').classList.remove('visible');
+        }
+        helpBtn.addEventListener('click', openHelp);
+        document.getElementById('closeHelp').addEventListener('click', closeHelp);
+
+        // Undo/Redo/Reset
+        undoBtn.addEventListener('click', () => {
+            if (undo()) showToast('已撤销', 'info');
+            else showToast('无法撤销', 'error');
+        });
+        redoBtn.addEventListener('click', () => {
+            if (redo()) showToast('已重做', 'info');
+            else showToast('无法重做', 'error');
+        });
+        resetBtn.addEventListener('click', () => {
+            state.transform = { x: 0, y: 0, scale: 0.7, rotation: 0 };
+            state.filters = { brightness: 100, contrast: 100, saturation: 100, hueRotate: 0, blur: 0, opacity: 100 };
+            state.shape = 'square';
+            state.borderRadius = 20;
+            state.background = { type: 'transparent', color: '#1e1b4b' };
+            updateUIFromState();
+            saveHistory();
+            render();
+            showToast('已重置', 'info');
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA')
+                return;
+
+            if (e.ctrlKey && e.key === 'z') {
+                e.preventDefault();
+                undo();
+            } else if (e.ctrlKey && (e.key === 'y' || (e.shiftKey && e.key === 'Z'))) {
+                e.preventDefault();
+                redo();
+            } else if (e.ctrlKey && e.key === 's') {
+                e.preventDefault();
+                exportIcon();
+            } else if (e.key === '+' || e.key === '=') {
+                setZoom(state.previewZoom * 1.2);
+            } else if (e.key === '-') {
+                setZoom(state.previewZoom / 1.2);
+            } else if (e.key === '0') {
+                setZoom(1);
+            }
+        });
+
+        // ==================== Init ====================
+        function init() {
+            initPresetGrid();
+            setZoom(1);
+            saveHistory();
+            render();
+            renderHistoryList();
+        }
+
+        init();
+    </script>
+</body>
+</html>

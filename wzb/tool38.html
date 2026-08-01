@@ -1,0 +1,2394 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>专业提词器 - Teleprompter Pro</title>
+    <style>
+        :root {
+            --bg: #1a1a2e;
+            --bg-panel: #16213e;
+            --bg-display: #0a0a14;
+            --text: #e0e0e0;
+            --text-secondary: #b0b0b0;
+            --accent: #4da6ff;
+            --accent-hover: #69b4ff;
+            --danger: #e05555;
+            --danger-hover: #f07070;
+            --border: #2a2a45;
+            --border-light: #3a3a55;
+            --shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+            --radius: 10px;
+            --radius-sm: 6px;
+            --focus-glow: rgba(77, 166, 255, 0.4);
+            --focus-frame-color: #4da6ff;
+            --overlay-bg: rgba(0, 0, 0, 0.7);
+            --scrollbar-bg: #1a1a30;
+            --scrollbar-thumb: #3a3a55;
+            --font-display: 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', 'Helvetica Neue', Arial, sans-serif;
+            --transition: 0.2s ease;
+            --panel-width: 380px;
+            --toolbar-height: 48px;
+            --control-height: 56px;
+            --text-color-override: '';
+            --bg-display-override: '';
+            --accent-override: '';
+        }
+
+        .theme-light {
+            --bg: #f5f5f0;
+            --bg-panel: #ffffff;
+            --bg-display: #fafaf8;
+            --text: #1a1a1a;
+            --text-secondary: #555;
+            --accent: #2563eb;
+            --accent-hover: #3b82f6;
+            --danger: #dc2626;
+            --danger-hover: #ef4444;
+            --border: #ddd;
+            --border-light: #e8e8e8;
+            --shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+            --focus-glow: rgba(37, 99, 235, 0.3);
+            --focus-frame-color: #2563eb;
+            --overlay-bg: rgba(255, 255, 255, 0.8);
+            --scrollbar-bg: #e8e8e8;
+            --scrollbar-thumb: #c0c0c0;
+        }
+
+        .theme-green {
+            --bg: #0d1a0d;
+            --bg-panel: #0f1f0f;
+            --bg-display: #050d05;
+            --text: #c8e6c8;
+            --text-secondary: #8ab88a;
+            --accent: #4caf50;
+            --accent-hover: #66d469;
+            --danger: #e05555;
+            --danger-hover: #f07070;
+            --border: #1a3a1a;
+            --border-light: #254025;
+            --focus-glow: rgba(76, 175, 80, 0.4);
+            --focus-frame-color: #4caf50;
+            --scrollbar-bg: #0d1a0d;
+            --scrollbar-thumb: #1a3a1a;
+        }
+
+        .theme-amber {
+            --bg: #1a1410;
+            --bg-panel: #1f1812;
+            --bg-display: #0d0a07;
+            --text: #f0dcc0;
+            --text-secondary: #b89570;
+            --accent: #e6a040;
+            --accent-hover: #f0b860;
+            --danger: #d06848;
+            --danger-hover: #e88060;
+            --border: #302418;
+            --border-light: #403428;
+            --focus-glow: rgba(230, 160, 64, 0.4);
+            --focus-frame-color: #e6a040;
+            --scrollbar-bg: #1a1410;
+            --scrollbar-thumb: #302418;
+        }
+
+        .theme-purple {
+            --bg: #11071f;
+            --bg-panel: #1a0d2e;
+            --bg-display: #080312;
+            --text: #e0d0f0;
+            --text-secondary: #9a80b8;
+            --accent: #a855f7;
+            --accent-hover: #c084fc;
+            --danger: #e05570;
+            --danger-hover: #f07090;
+            --border: #2a1540;
+            --border-light: #3a2055;
+            --focus-glow: rgba(168, 85, 247, 0.45);
+            --focus-frame-color: #a855f7;
+            --scrollbar-bg: #11071f;
+            --scrollbar-thumb: #2a1540;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            transition: background var(--transition), color var(--transition);
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ============ 顶部工具栏 ============ */
+        .toolbar {
+            height: var(--toolbar-height);
+            background: var(--bg-panel);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            padding: 0 12px;
+            gap: 6px;
+            z-index: 100;
+            flex-shrink: 0;
+            transition: background var(--transition), border-color var(--transition);
+            flex-wrap: wrap;
+            min-height: var(--toolbar-height);
+        }
+        .toolbar .brand {
+            font-weight: 700;
+            font-size: 15px;
+            letter-spacing: 0.5px;
+            margin-right: 8px;
+            white-space: nowrap;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .toolbar .brand svg {
+            width: 20px;
+            height: 20px;
+        }
+        .toolbar .sep {
+            width: 1px;
+            height: 22px;
+            background: var(--border-light);
+            margin: 0 4px;
+            flex-shrink: 0;
+        }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 6px 12px;
+            border-radius: var(--radius-sm);
+            border: 1px solid transparent;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all var(--transition);
+            white-space: nowrap;
+            background: transparent;
+            color: var(--text);
+            font-family: inherit;
+            position: relative;
+            outline: none;
+        }
+        .btn:hover {
+            background: var(--border);
+            border-color: var(--border-light);
+        }
+        .btn:active {
+            transform: scale(0.96);
+            opacity: 0.85;
+        }
+        .btn.accent {
+            background: var(--accent);
+            color: #fff;
+            border-color: var(--accent);
+            font-weight: 600;
+        }
+        .btn.accent:hover {
+            background: var(--accent-hover);
+            border-color: var(--accent-hover);
+        }
+        .btn.danger {
+            color: var(--danger);
+        }
+        .btn.danger:hover {
+            background: rgba(220, 50, 50, 0.1);
+            border-color: var(--danger);
+        }
+        .btn.sm {
+            padding: 4px 8px;
+            font-size: 11px;
+            gap: 3px;
+        }
+        .btn.icon-only {
+            padding: 6px 8px;
+            min-width: 32px;
+            justify-content: center;
+            gap: 0;
+        }
+        .btn .icon-text {
+            font-size: 16px;
+            line-height: 1;
+        }
+        .toolbar .spacer {
+            flex: 1;
+            min-width: 8px;
+        }
+        .badge {
+            font-size: 10px;
+            background: var(--accent);
+            color: #fff;
+            border-radius: 10px;
+            padding: 2px 7px;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            animation: pulse-badge 2s infinite;
+        }
+        @keyframes pulse-badge {
+            0%,
+            100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.7;
+            }
+        }
+        .mirror-indicator {
+            font-size: 10px;
+            background: #e05555;
+            color: #fff;
+            border-radius: 10px;
+            padding: 2px 7px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            animation: pulse-mirror 1.5s infinite;
+            display: none;
+        }
+        .mirror-indicator.active {
+            display: inline-block;
+        }
+        @keyframes pulse-mirror {
+            0%,
+            100% {
+                background: #e05555;
+            }
+            50% {
+                background: #ff4444;
+            }
+        }
+
+        /* ============ 主布局 ============ */
+        .main-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* ============ 左侧面板 ============ */
+        .side-panel {
+            width: var(--panel-width);
+            background: var(--bg-panel);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+            transition: all 0.3s ease;
+            z-index: 50;
+            overflow: hidden;
+        }
+        .side-panel.collapsed {
+            width: 0;
+            border-right: none;
+            min-width: 0;
+        }
+        .side-panel .panel-tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+        .side-panel .panel-tab {
+            flex: 1;
+            padding: 10px 8px;
+            text-align: center;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            transition: all var(--transition);
+            border-bottom: 2px solid transparent;
+            font-family: inherit;
+            white-space: nowrap;
+        }
+        .side-panel .panel-tab.active {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+            background: rgba(77, 166, 255, 0.05);
+        }
+        .side-panel .panel-tab:hover {
+            color: var(--text);
+            background: rgba(255, 255, 255, 0.02);
+        }
+        .side-panel .panel-content {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 12px;
+            display: none;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .side-panel .panel-content.active {
+            display: flex;
+        }
+        .side-panel textarea {
+            flex: 1;
+            min-height: 160px;
+            background: var(--bg-display);
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 10px;
+            font-family: 'SF Mono', 'Consolas', 'PingFang SC', 'Microsoft YaHei', monospace;
+            font-size: 14px;
+            line-height: 1.7;
+            resize: vertical;
+            transition: all var(--transition);
+            user-select: text;
+            -webkit-user-select: text;
+            tab-size: 4;
+        }
+        .side-panel textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--focus-glow);
+        }
+        .setting-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .setting-group label {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .setting-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .setting-row .val {
+            font-size: 12px;
+            font-weight: 600;
+            min-width: 36px;
+            text-align: center;
+            color: var(--accent);
+            background: rgba(77, 166, 255, 0.1);
+            border-radius: 4px;
+            padding: 2px 6px;
+        }
+        input[type="range"] {
+            -webkit-appearance: none;
+            flex: 1;
+            min-width: 80px;
+            height: 6px;
+            border-radius: 3px;
+            background: var(--border-light);
+            outline: none;
+            cursor: pointer;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: var(--accent);
+            cursor: pointer;
+            border: 2px solid var(--bg-panel);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            transition: transform var(--transition);
+        }
+        input[type="range"]::-webkit-slider-thumb:active {
+            transform: scale(1.2);
+        }
+        select {
+            background: var(--bg-display);
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 7px 10px;
+            font-size: 13px;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all var(--transition);
+            outline: none;
+            width: 100%;
+        }
+        select:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px var(--focus-glow);
+        }
+        input[type="color"] {
+            -webkit-appearance: none;
+            width: 36px;
+            height: 28px;
+            border-radius: var(--radius-sm);
+            border: 2px solid var(--border-light);
+            cursor: pointer;
+            background: transparent;
+            padding: 2px;
+            transition: all var(--transition);
+            vertical-align: middle;
+        }
+        input[type="color"]:hover {
+            border-color: var(--accent);
+        }
+        input[type="color"]::-webkit-color-swatch-wrapper {
+            padding: 0;
+        }
+        input[type="color"]::-webkit-color-swatch {
+            border-radius: 3px;
+            border: none;
+        }
+        .color-presets {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .color-dot {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all var(--transition);
+            flex-shrink: 0;
+            position: relative;
+        }
+        .color-dot:hover {
+            transform: scale(1.15);
+            border-color: var(--text);
+        }
+        .color-dot.active {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--focus-glow);
+        }
+        .color-dot.custom-dot {
+            background: conic-gradient(red, yellow, lime, cyan, blue, magenta, red) !important;
+            border: 2px dashed var(--text-secondary);
+        }
+        .text-color-preset {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all var(--transition);
+            flex-shrink: 0;
+        }
+        .text-color-preset:hover {
+            transform: scale(1.2);
+            border-color: var(--accent);
+        }
+        .text-color-preset.active {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--focus-glow);
+        }
+        .custom-color-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            color: var(--text-secondary);
+            flex-wrap: wrap;
+        }
+        .custom-color-row span {
+            min-width: 32px;
+            white-space: nowrap;
+        }
+
+        /* ============ 提词器显示区 ============ */
+        .display-area {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-display);
+            position: relative;
+            overflow: hidden;
+            cursor: default;
+            transition: background var(--transition);
+            min-width: 0;
+        }
+        .display-container {
+            position: relative;
+            width: 90%;
+            max-width: 900px;
+            height: 78%;
+            overflow: hidden;
+            border-radius: var(--radius);
+            background: transparent;
+        }
+        /* 焦点边框 - 框住中间一行文本 */
+        .focus-frame {
+            position: absolute;
+            left: 3%;
+            right: 3%;
+            top: 50%;
+            transform: translateY(-50%);
+            border: 2.5px solid var(--focus-frame-color, var(--accent));
+            border-radius: 8px;
+            pointer-events: none;
+            z-index: 10;
+            background: transparent;
+            box-shadow: 0 0 14px var(--focus-glow), 0 0 4px rgba(0, 0, 0, 0.2);
+            transition: border-color var(--transition), box-shadow var(--transition), height 0.25s ease, opacity 0.3s ease;
+            opacity: 1;
+        }
+        .theme-light .focus-frame {
+            box-shadow: 0 0 10px var(--focus-glow), 0 0 4px rgba(0, 0, 0, 0.08);
+        }
+        /* 焦点边框内部微弱高亮 */
+        .focus-frame::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.025);
+            pointer-events: none;
+            z-index: -1;
+        }
+        .theme-light .focus-frame::after {
+            background: rgba(0, 0, 0, 0.025);
+        }
+        .text-scroller {
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 0;
+            padding: 40px 8%;
+            will-change: transform;
+            transition: none;
+            line-height: 1.6;
+            word-wrap: break-word;
+            white-space: pre-wrap;
+            font-family: var(--font-display);
+            color: var(--text);
+            text-align: left;
+            z-index: 5;
+        }
+        .text-scroller.mirror-x {
+            transform: scaleX(-1);
+        }
+        .text-scroller.mirror-y {
+            transform: scaleY(-1);
+        }
+        .text-scroller.mirror-xy {
+            transform: scaleX(-1) scaleY(-1);
+        }
+        /* 计时器浮层 */
+        .timer-overlay {
+            position: absolute;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            background: var(--overlay-bg);
+            padding: 6px 12px;
+            border-radius: 20px;
+            z-index: 20;
+            pointer-events: none;
+            letter-spacing: 0.5px;
+            font-variant-numeric: tabular-nums;
+            font-family: 'SF Mono', 'Consolas', monospace;
+            transition: opacity 0.3s;
+        }
+        .timer-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .progress-indicator {
+            position: absolute;
+            right: 8px;
+            top: 10%;
+            bottom: 10%;
+            width: 4px;
+            background: var(--border);
+            border-radius: 2px;
+            z-index: 20;
+            pointer-events: none;
+            opacity: 0.5;
+            transition: opacity 0.3s;
+        }
+        .progress-indicator-fill {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: var(--accent);
+            border-radius: 2px;
+            transition: height 0.1s linear;
+        }
+        .display-overlay-hint {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: var(--text-secondary);
+            font-size: 24px;
+            font-weight: 300;
+            pointer-events: none;
+            z-index: 6;
+            opacity: 0.5;
+            text-align: center;
+            transition: opacity 0.5s;
+            letter-spacing: 1px;
+        }
+        .display-overlay-hint.fading {
+            opacity: 0;
+        }
+
+        /* ============ 底部控制栏 ============ */
+        .control-bar {
+            height: var(--control-height);
+            background: var(--bg-panel);
+            border-top: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            padding: 0 12px;
+            gap: 8px;
+            z-index: 100;
+            flex-shrink: 0;
+            transition: background var(--transition), border-color var(--transition);
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .control-bar .btn.play-btn {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            font-size: 20px;
+            padding: 0;
+            justify-content: center;
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            flex-shrink: 0;
+            transition: all var(--transition);
+        }
+        .control-bar .btn.play-btn:hover {
+            background: var(--accent-hover);
+            transform: scale(1.05);
+            box-shadow: 0 4px 16px var(--focus-glow);
+        }
+        .control-bar .btn.play-btn.paused {
+            background: var(--border-light);
+            color: var(--text);
+        }
+        .speed-display {
+            font-weight: 700;
+            font-size: 13px;
+            min-width: 52px;
+            text-align: center;
+            color: var(--accent);
+            letter-spacing: 0.5px;
+        }
+        .time-display {
+            font-size: 11px;
+            color: var(--text-secondary);
+            font-variant-numeric: tabular-nums;
+            font-family: 'SF Mono', 'Consolas', monospace;
+            min-width: 70px;
+            text-align: center;
+        }
+
+        /* ============ 响应式 ============ */
+        @media (max-width: 768px) {
+            :root {
+                --panel-width: 100%;
+                --toolbar-height: 44px;
+                --control-height: 50px;
+            }
+            .side-panel {
+                position: absolute;
+                left: 0;
+                top: 0;
+                bottom: 0;
+                z-index: 200;
+                box-shadow: var(--shadow);
+                width: 85%;
+                max-width: 360px;
+            }
+            .side-panel.collapsed {
+                width: 0;
+            }
+            .display-container {
+                width: 94%;
+                height: 72%;
+            }
+            .text-scroller {
+                padding: 30px 5%;
+            }
+            .focus-frame {
+                left: 2%;
+                right: 2%;
+                border-width: 2px;
+            }
+            .toolbar .btn span.btn-label {
+                display: none;
+            }
+            .toolbar .btn {
+                padding: 5px 8px;
+                font-size: 11px;
+            }
+            .toolbar .brand {
+                font-size: 13px;
+                margin-right: 2px;
+            }
+            .control-bar {
+                gap: 4px;
+                padding: 0 6px;
+            }
+            .control-bar .btn {
+                padding: 5px 8px;
+                font-size: 11px;
+            }
+            .control-bar .btn.play-btn {
+                width: 36px;
+                height: 36px;
+                font-size: 16px;
+            }
+            .display-overlay-hint {
+                font-size: 18px;
+            }
+        }
+        @media (max-width: 400px) {
+            .text-scroller {
+                padding: 20px 3%;
+                font-size: inherit;
+            }
+            .display-container {
+                width: 97%;
+                height: 68%;
+            }
+            .focus-frame {
+                left: 1%;
+                right: 1%;
+                border-width: 1.5px;
+                border-radius: 5px;
+            }
+            .toolbar {
+                padding: 0 4px;
+                gap: 2px;
+            }
+            .control-bar {
+                padding: 0 3px;
+                gap: 2px;
+            }
+            .btn {
+                padding: 4px 6px;
+                font-size: 10px;
+            }
+            .btn.sm {
+                padding: 3px 5px;
+                font-size: 10px;
+            }
+        }
+
+        /* 滚动条美化 */
+        ::-webkit-scrollbar {
+            width: 5px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--scrollbar-bg);
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--scrollbar-thumb);
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-secondary);
+        }
+
+        /* 全屏时隐藏工具栏 */
+        .fullscreen-mode .toolbar {
+            opacity: 0;
+            pointer-events: none;
+            height: 0;
+            min-height: 0;
+            border: none;
+            overflow: hidden;
+            transition: all 0.4s ease;
+        }
+        .fullscreen-mode .control-bar {
+            opacity: 0.35;
+            transition: opacity 0.4s ease;
+            background: transparent;
+            border-top-color: transparent;
+        }
+        .fullscreen-mode .control-bar:hover {
+            opacity: 1;
+            background: var(--bg-panel);
+            border-top-color: var(--border);
+        }
+        .fullscreen-mode .side-panel {
+            opacity: 0;
+            pointer-events: none;
+            width: 0;
+            border: none;
+            overflow: hidden;
+        }
+        .fullscreen-mode .display-container {
+            width: 95%;
+            height: 88%;
+        }
+        .fullscreen-mode .focus-frame {
+            left: 2%;
+            right: 2%;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ==================== 顶部工具栏 ==================== -->
+    <div class="toolbar" id="toolbar">
+        <span class="brand">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="12" y2="16"/></svg>
+            提词器 Pro
+        </span>
+        <span class="sep"></span>
+        <button class="btn sm" onclick="togglePanel()" title="显示/隐藏编辑面板">
+            <span class="icon-text">📋</span> <span class="btn-label">编辑</span>
+        </button>
+        <button class="btn sm" onclick="importFile()" title="导入txt文本">
+            <span class="icon-text">📂</span> <span class="btn-label">导入</span>
+        </button>
+        <button class="btn sm" onclick="exportFile()" title="导出为txt文件">
+            <span class="icon-text">💾</span> <span class="btn-label">导出</span>
+        </button>
+        <button class="btn sm" onclick="loadSampleText()" title="加载示例文本">
+            <span class="icon-text">📝</span> <span class="btn-label">示例</span>
+        </button>
+        <span class="sep"></span>
+        <button class="btn sm" id="btnMirror" onclick="cycleMirror()" title="切换镜像模式（垂直翻转/水平翻转/双向/关闭）">
+            <span class="icon-text">🪞</span> <span class="btn-label">镜像</span>
+        </button>
+        <span class="mirror-indicator" id="mirrorIndicator">镜像中</span>
+        <button class="btn sm" onclick="toggleFullscreen()" title="全屏模式 (F)">
+            <span class="icon-text">⛶</span> <span class="btn-label">全屏</span>
+        </button>
+        <span class="sep"></span>
+        <span class="badge" id="wordCountBadge" title="字数统计">0 字</span>
+        <span style="font-size:11px;color:var(--text-secondary);" id="estTimeBadge" title="预估朗读时间">~0分钟</span>
+        <span class="spacer"></span>
+        <button class="btn sm" onclick="cycleTheme()" title="切换主题配色">
+            <span class="icon-text">🎨</span> <span class="btn-label">主题</span>
+        </button>
+        <button class="btn sm danger" onclick="resetAll()" title="重置所有设置和文本">
+            <span class="icon-text">🔄</span> <span class="btn-label">重置</span>
+        </button>
+    </div>
+
+    <!-- ==================== 主体 ==================== -->
+    <div class="main-container" id="mainContainer">
+        <!-- 左侧面板 -->
+        <div class="side-panel" id="sidePanel">
+            <div class="panel-tabs">
+                <button class="panel-tab active" data-tab="tab-edit">✏️ 文本编辑</button>
+                <button class="panel-tab" data-tab="tab-settings">⚙️ 显示设置</button>
+                <button class="panel-tab" data-tab="tab-colors">🎨 配色定制</button>
+                <button class="panel-tab" data-tab="tab-shortcuts">⌨️ 快捷键</button>
+            </div>
+
+            <!-- 编辑标签页 -->
+            <div class="panel-content active" id="tab-edit">
+                <textarea id="textEditor" placeholder="在此输入或粘贴您的文稿内容...&#10;&#10;提示：&#10;- 使用空行分隔段落&#10;- Ctrl+S 保存到本地&#10;- 支持中英文混排" spellcheck="false"></textarea>
+                <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                    <button class="btn sm accent" onclick="saveText()">💾 保存文本</button>
+                    <button class="btn sm" onclick="clearText()">🗑️ 清空</button>
+                    <button class="btn sm" onclick="copyText()">📋 复制全部</button>
+                </div>
+                <div style="font-size:11px;color:var(--text-secondary);text-align:center;" id="saveStatus">
+                    自动保存已启用
+                </div>
+            </div>
+
+            <!-- 显示设置标签页 -->
+            <div class="panel-content" id="tab-settings">
+                <div class="setting-group">
+                    <label>📏 字体大小 <span class="val" id="valFontSize">36px</span></label>
+                    <input type="range" id="fontSizeSlider" min="16" max="80" value="36" step="1">
+                </div>
+                <div class="setting-group">
+                    <label>⚡ 滚动速度 <span class="val" id="valSpeed">5</span></label>
+                    <input type="range" id="speedSlider" min="1" max="20" value="5" step="0.5">
+                    <div style="font-size:10px;color:var(--text-secondary);">1=极慢 · 10=标准 · 20=极快</div>
+                </div>
+                <div class="setting-group">
+                    <label>📐 行高倍率 <span class="val" id="valLineHeight">1.6</span></label>
+                    <input type="range" id="lineHeightSlider" min="1.1" max="2.5" value="1.6" step="0.05">
+                </div>
+                <div class="setting-group">
+                    <label>↔️ 左右边距 <span class="val" id="valPadding">8%</span></label>
+                    <input type="range" id="paddingSlider" min="2" max="20" value="8" step="1">
+                </div>
+                <div class="setting-group">
+                    <label>🖼️ 焦点边框透明度 <span class="val" id="valFocusOpacity">1.00</span></label>
+                    <input type="range" id="focusOpacitySlider" min="0.1" max="1" value="1" step="0.05">
+                    <div style="font-size:10px;color:var(--text-secondary);">调整中间焦点边框的可见程度</div>
+                </div>
+                <div class="setting-group">
+                    <label>⏱️ 计时器位置</label>
+                    <select id="timerPosition">
+                        <option value="bottom-right">右下角</option>
+                        <option value="bottom-left">左下角</option>
+                        <option value="top-right">右上角</option>
+                        <option value="top-left">左上角</option>
+                        <option value="hidden">隐藏</option>
+                    </select>
+                </div>
+                <div class="setting-group">
+                    <label>🔤 字体选择</label>
+                    <select id="fontFamily">
+                        <option value="'PingFang SC','Microsoft YaHei','Noto Sans SC','Helvetica Neue',Arial,sans-serif">
+                            系统默认（中文优化）</option>
+                        <option value="'SF Mono','Consolas','Courier New',monospace">等宽字体</option>
+                        <option value="'Songti SC','STSong','SimSun',serif">宋体/衬线</option>
+                        <option value="'KaiTi SC','STKaiti',serif">楷体</option>
+                        <option value="'Helvetica Neue',Arial,sans-serif">无衬线（西文优化）</option>
+                    </select>
+                </div>
+                <button class="btn sm" onclick="resetSettings()" style="margin-top:6px;">🔄 恢复默认显示设置</button>
+            </div>
+
+            <!-- 配色定制标签页 -->
+            <div class="panel-content" id="tab-colors">
+                <div class="setting-group">
+                    <label>🎨 快速主题配色</label>
+                    <div class="color-presets" id="themeColorPresets">
+                        <span class="color-dot active" data-theme="dark" style="background:#1a1a2e;" title="暗夜蓝"></span>
+                        <span class="color-dot" data-theme="light" style="background:#f5f5f0;border:1px solid #ccc;" title="浅色"></span>
+                        <span class="color-dot" data-theme="green" style="background:#0d1a0d;" title="暗绿"></span>
+                        <span class="color-dot" data-theme="amber" style="background:#1a1410;" title="琥珀"></span>
+                        <span class="color-dot" data-theme="purple" style="background:#11071f;" title="紫罗兰"></span>
+                        <span class="color-dot custom-dot" data-theme="custom" title="自定义配色"></span>
+                    </div>
+                </div>
+                <hr style="border-color:var(--border);margin:4px 0;">
+                <div class="setting-group">
+                    <label>🔤 文字颜色预设</label>
+                    <div class="color-presets" id="textColorPresets">
+                        <span class="text-color-preset active" data-text-color="#e0e0e0" style="background:#e0e0e0;" title="冷白"></span>
+                        <span class="text-color-preset" data-text-color="#ffffff" style="background:#ffffff;border:1px solid #ccc;" title="纯白"></span>
+                        <span class="text-color-preset" data-text-color="#f5f0e0" style="background:#f5f0e0;" title="暖白"></span>
+                        <span class="text-color-preset" data-text-color="#f0e8c8" style="background:#f0e8c8;" title="淡黄"></span>
+                        <span class="text-color-preset" data-text-color="#d8f0d8" style="background:#d8f0d8;" title="淡绿"></span>
+                        <span class="text-color-preset" data-text-color="#d8e8f8" style="background:#d8e8f8;" title="淡蓝"></span>
+                        <span class="text-color-preset" data-text-color="#f0d8e8" style="background:#f0d8e8;" title="淡粉"></span>
+                    </div>
+                </div>
+                <div class="setting-group">
+                    <label>🖋️ 自定义文字颜色</label>
+                    <div class="custom-color-row">
+                        <input type="color" id="customTextColor" value="#e0e0e0">
+                        <span>选中后自动应用</span>
+                    </div>
+                </div>
+                <hr style="border-color:var(--border);margin:4px 0;">
+                <div class="setting-group">
+                    <label>🌑 自定义显示区背景色</label>
+                    <div class="custom-color-row">
+                        <input type="color" id="customBgDisplay" value="#0a0a14">
+                        <span>提词器显示区域背景</span>
+                    </div>
+                </div>
+                <div class="setting-group">
+                    <label>✨ 自定义强调色（边框等）</label>
+                    <div class="custom-color-row">
+                        <input type="color" id="customAccent" value="#4da6ff">
+                        <span>焦点边框 / 按钮等</span>
+                    </div>
+                </div>
+                <div class="setting-group">
+                    <label>🖼️ 自定义焦点边框颜色</label>
+                    <div class="custom-color-row">
+                        <input type="color" id="customFrameColor" value="#4da6ff">
+                        <span>留空则跟随强调色</span>
+                        <button class="btn sm" onclick="clearFrameColor()" style="font-size:10px;">跟随强调色</button>
+                    </div>
+                </div>
+                <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;">
+                    <button class="btn sm accent" onclick="applyCustomColors()">✅ 应用自定义配色</button>
+                    <button class="btn sm" onclick="clearCustomColors()">🔄 清除自定义配色</button>
+                </div>
+                <div style="font-size:10px;color:var(--text-secondary);text-align:center;" id="customColorStatus">
+                    自定义配色可覆盖主题默认值
+                </div>
+            </div>
+
+            <!-- 快捷键标签页 -->
+            <div class="panel-content" id="tab-shortcuts">
+                <div style="font-size:12px;line-height:2;color:var(--text-secondary);">
+                    <div><b style="color:var(--accent);">空格</b> — 播放 / 暂停</div>
+                    <div><b style="color:var(--accent);">↑ / ↓</b> — 加速 / 减速</div>
+                    <div><b style="color:var(--accent);">← / →</b> — 快退 / 快进 5秒</div>
+                    <div><b style="color:var(--accent);">+ / -</b> — 放大 / 缩小字体</div>
+                    <div><b style="color:var(--accent);">F</b> — 切换全屏</div>
+                    <div><b style="color:var(--accent);">M</b> — 切换镜像模式</div>
+                    <div><b style="color:var(--accent);">R</b> — 回到开头</div>
+                    <div><b style="color:var(--accent);">E</b> — 跳转到结尾</div>
+                    <div><b style="color:var(--accent);">0–9</b> — 跳转到对应百分比</div>
+                    <div><b style="color:var(--accent);">[ / ]</b> — 微调速度 -0.5/+0.5</div>
+                    <div><b style="color:var(--accent);">Ctrl+S</b> — 保存文本</div>
+                    <div><b style="color:var(--accent);">双击屏幕</b> — 播放/暂停</div>
+                    <div><b style="color:var(--accent);">滚轮</b> — 手动微调位置</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 提词器显示区域 -->
+        <div class="display-area" id="displayArea">
+            <div class="display-container" id="displayContainer">
+                <!-- 焦点边框 - 框住中间一行文本 -->
+                <div class="focus-frame" id="focusFrame"></div>
+                <div class="text-scroller" id="textScroller"></div>
+                <div class="timer-overlay" id="timerOverlay">00:00</div>
+                <div class="progress-indicator" id="progressIndicator">
+                    <div class="progress-indicator-fill" id="progressFill"></div>
+                </div>
+                <div class="display-overlay-hint" id="overlayHint">点击播放按钮或按空格键开始</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== 底部控制栏 ==================== -->
+    <div class="control-bar" id="controlBar">
+        <button class="btn sm" onclick="jumpToStart()" title="回到开头 (R)">⏮</button>
+        <button class="btn sm" onclick="jumpBack()" title="快退5秒 (←)">⏪ -5s</button>
+        <button class="btn play-btn paused" id="playBtn" onclick="togglePlay()" title="播放/暂停 (空格)">▶</button>
+        <button class="btn sm" onclick="jumpForward()" title="快进5秒 (→)">⏩ +5s</button>
+        <button class="btn sm" onclick="jumpToEnd()" title="跳转到结尾 (E)">⏭</button>
+        <span class="sep" style="height:24px;"></span>
+        <button class="btn sm" onclick="adjustSpeed(-0.5)" title="减速">🐢</button>
+        <span class="speed-display" id="speedDisplay">速度 5</span>
+        <button class="btn sm" onclick="adjustSpeed(0.5)" title="加速">🐇</button>
+        <span class="sep" style="height:24px;"></span>
+        <span class="time-display" id="timeDisplay">00:00 / --:--</span>
+        <span style="font-size:10px;color:var(--text-secondary);" id="progressPercent">0%</span>
+    </div>
+
+    <!-- 隐藏的文件输入 -->
+    <input type="file" id="fileInput" accept=".txt,.md,.text" style="display:none;" onchange="handleFileImport(event)">
+
+    <script>
+        (function() {
+            // ==================== DOM元素缓存 ====================
+            const textScroller = document.getElementById('textScroller');
+            const displayContainer = document.getElementById('displayContainer');
+            const displayArea = document.getElementById('displayArea');
+            const focusFrame = document.getElementById('focusFrame');
+            const timerOverlay = document.getElementById('timerOverlay');
+            const progressFill = document.getElementById('progressFill');
+            const progressIndicator = document.getElementById('progressIndicator');
+            const overlayHint = document.getElementById('overlayHint');
+            const playBtn = document.getElementById('playBtn');
+            const speedDisplay = document.getElementById('speedDisplay');
+            const timeDisplay = document.getElementById('timeDisplay');
+            const progressPercent = document.getElementById('progressPercent');
+            const wordCountBadge = document.getElementById('wordCountBadge');
+            const estTimeBadge = document.getElementById('estTimeBadge');
+            const mirrorIndicator = document.getElementById('mirrorIndicator');
+            const textEditor = document.getElementById('textEditor');
+            const saveStatus = document.getElementById('saveStatus');
+            const customColorStatus = document.getElementById('customColorStatus');
+            const sidePanel = document.getElementById('sidePanel');
+            const toolbar = document.getElementById('toolbar');
+            const controlBar = document.getElementById('controlBar');
+            const fontSizeSlider = document.getElementById('fontSizeSlider');
+            const speedSlider = document.getElementById('speedSlider');
+            const lineHeightSlider = document.getElementById('lineHeightSlider');
+            const paddingSlider = document.getElementById('paddingSlider');
+            const focusOpacitySlider = document.getElementById('focusOpacitySlider');
+            const timerPosition = document.getElementById('timerPosition');
+            const fontFamily = document.getElementById('fontFamily');
+            const valFontSize = document.getElementById('valFontSize');
+            const valSpeed = document.getElementById('valSpeed');
+            const valLineHeight = document.getElementById('valLineHeight');
+            const valPadding = document.getElementById('valPadding');
+            const valFocusOpacity = document.getElementById('valFocusOpacity');
+            const fileInput = document.getElementById('fileInput');
+            const customTextColor = document.getElementById('customTextColor');
+            const customBgDisplay = document.getElementById('customBgDisplay');
+            const customAccent = document.getElementById('customAccent');
+            const customFrameColor = document.getElementById('customFrameColor');
+            const themeColorPresets = document.getElementById('themeColorPresets');
+            const textColorPresets = document.getElementById('textColorPresets');
+
+            // ==================== 状态变量 ====================
+            let isPlaying = false;
+            let scrollPosition = 0;
+            let maxScroll = 0;
+            let speed = 5;
+            let fontSize = 36;
+            let lineHeight = 1.6;
+            let sidePadding = 8;
+            let focusOpacity = 1;
+            let mirrorMode = 0;
+            let currentTheme = 'dark';
+            let timerPos = 'bottom-right';
+            let currentFontFamily = "'PingFang SC','Microsoft YaHei','Noto Sans SC','Helvetica Neue',Arial,sans-serif";
+            let elapsedSeconds = 0;
+            let timerInterval = null;
+            let animationId = null;
+            let lastFrameTime = null;
+            let displayHeight = 0;
+            let textTotalHeight = 0;
+            let isFullscreen = false;
+            let panelVisible = true;
+            // 自定义颜色覆盖
+            let customTextColorVal = '';
+            let customBgDisplayVal = '';
+            let customAccentVal = '';
+            let customFrameColorVal = '';
+            let hasCustomColors = false;
+
+            // ==================== 本地存储 ====================
+            const STORAGE_KEY_TEXT = 'teleprompter_pro_text_v2';
+            const STORAGE_KEY_SETTINGS = 'teleprompter_pro_settings_v2';
+
+            function saveToStorage() {
+                try {
+                    const settings = {
+                        speed,
+                        fontSize,
+                        lineHeight,
+                        sidePadding,
+                        focusOpacity,
+                        mirrorMode,
+                        currentTheme,
+                        timerPos,
+                        currentFontFamily,
+                        scrollPosition,
+                        panelVisible,
+                        customTextColorVal,
+                        customBgDisplayVal,
+                        customAccentVal,
+                        customFrameColorVal,
+                        hasCustomColors,
+                    };
+                    localStorage.setItem(STORAGE_KEY_SETTINGS, JSON.stringify(settings));
+                    localStorage.setItem(STORAGE_KEY_TEXT, textEditor.value);
+                } catch (e) { /* 忽略 */ }
+            }
+
+            function loadFromStorage() {
+                try {
+                    const savedText = localStorage.getItem(STORAGE_KEY_TEXT);
+                    if (savedText !== null) textEditor.value = savedText;
+                    const savedSettings = localStorage.getItem(STORAGE_KEY_SETTINGS);
+                    if (savedSettings !== null) {
+                        const s = JSON.parse(savedSettings);
+                        speed = s.speed ?? 5;
+                        fontSize = s.fontSize ?? 36;
+                        lineHeight = s.lineHeight ?? 1.6;
+                        sidePadding = s.sidePadding ?? 8;
+                        focusOpacity = s.focusOpacity ?? 1;
+                        mirrorMode = s.mirrorMode ?? 0;
+                        currentTheme = s.currentTheme ?? 'dark';
+                        timerPos = s.timerPosition ?? 'bottom-right';
+                        currentFontFamily = s.currentFontFamily ??
+                            "'PingFang SC','Microsoft YaHei','Noto Sans SC','Helvetica Neue',Arial,sans-serif";
+                        scrollPosition = s.scrollPosition ?? 0;
+                        panelVisible = s.panelVisible ?? true;
+                        customTextColorVal = s.customTextColorVal ?? '';
+                        customBgDisplayVal = s.customBgDisplayVal ?? '';
+                        customAccentVal = s.customAccentVal ?? '';
+                        customFrameColorVal = s.customFrameColorVal ?? '';
+                        hasCustomColors = s.hasCustomColors ?? false;
+                    }
+                } catch (e) { /* 忽略 */ }
+            }
+
+            // ==================== 应用设置 ====================
+            function applyAllSettings() {
+                textScroller.style.fontSize = fontSize + 'px';
+                fontSizeSlider.value = fontSize;
+                valFontSize.textContent = fontSize + 'px';
+
+                speedSlider.value = speed;
+                valSpeed.textContent = speed;
+                speedDisplay.textContent = '速度 ' + speed;
+
+                textScroller.style.lineHeight = lineHeight;
+                lineHeightSlider.value = lineHeight;
+                valLineHeight.textContent = lineHeight;
+
+                textScroller.style.paddingLeft = sidePadding + '%';
+                textScroller.style.paddingRight = sidePadding + '%';
+                paddingSlider.value = sidePadding;
+                valPadding.textContent = sidePadding + '%';
+
+                focusOpacitySlider.value = focusOpacity;
+                valFocusOpacity.textContent = focusOpacity.toFixed(2);
+                focusFrame.style.opacity = focusOpacity;
+
+                timerPosition.value = timerPos;
+                updateTimerPosition();
+
+                fontFamily.value = currentFontFamily;
+                textScroller.style.fontFamily = currentFontFamily;
+
+                applyTheme(currentTheme);
+                applyMirrorMode();
+                applyCustomColorOverrides();
+                updateFocusFrameHeight();
+                updateCustomColorInputs();
+
+                if (!panelVisible) {
+                    sidePanel.classList.add('collapsed');
+                } else {
+                    sidePanel.classList.remove('collapsed');
+                }
+
+                updateTextDisplay();
+                recalculateScroll();
+                updateProgressUI();
+                updateWordCount();
+                updateThemeDotActive();
+                updateTextColorPresetActive();
+            }
+
+            function applyTheme(theme) {
+                document.body.classList.remove('theme-light', 'theme-green', 'theme-amber', 'theme-purple');
+                if (theme === 'light') document.body.classList.add('theme-light');
+                if (theme === 'green') document.body.classList.add('theme-green');
+                if (theme === 'amber') document.body.classList.add('theme-amber');
+                if (theme === 'purple') document.body.classList.add('theme-purple');
+                currentTheme = theme;
+                updateThemeDotActive();
+                // 更新焦点边框颜色（如果用户没有自定义）
+                if (!customFrameColorVal) {
+                    focusFrame.style.borderColor = '';
+                    focusFrame.style.setProperty('--focus-frame-color', '');
+                }
+                // 更新颜色选择器默认值
+                updateCustomColorInputs();
+                // 如果用户有自定义颜色，重新应用
+                if (hasCustomColors) {
+                    applyCustomColorOverrides();
+                }
+            }
+
+            function updateThemeDotActive() {
+                document.querySelectorAll('#themeColorPresets .color-dot').forEach(d => d.classList.remove('active'));
+                const dot = document.querySelector(`#themeColorPresets .color-dot[data-theme="${currentTheme}"]`);
+                if (dot) dot.classList.add('active');
+                // 如果使用了自定义颜色，高亮自定义圆点
+                if (hasCustomColors) {
+                    const customDot = document.querySelector('#themeColorPresets .color-dot[data-theme="custom"]');
+                    if (customDot) customDot.classList.add('active');
+                }
+            }
+
+            function updateTextColorPresetActive() {
+                document.querySelectorAll('#textColorPresets .text-color-preset').forEach(d => d.classList.remove(
+                    'active'));
+                if (customTextColorVal) {
+                    const preset = document.querySelector(
+                        `#textColorPresets .text-color-preset[data-text-color="${customTextColorVal.toLowerCase()}"]`);
+                    if (preset) preset.classList.add('active');
+                }
+            }
+
+            function updateCustomColorInputs() {
+                // 根据当前主题更新颜色选择器的默认值
+                const style = getComputedStyle(document.body);
+                if (!hasCustomColors || !customTextColorVal) {
+                    customTextColor.value = rgbToHex(style.getPropertyValue('--text').trim()) || '#e0e0e0';
+                } else {
+                    customTextColor.value = customTextColorVal;
+                }
+                if (!hasCustomColors || !customBgDisplayVal) {
+                    customBgDisplay.value = rgbToHex(style.getPropertyValue('--bg-display').trim()) || '#0a0a14';
+                } else {
+                    customBgDisplay.value = customBgDisplayVal;
+                }
+                if (!hasCustomColors || !customAccentVal) {
+                    customAccent.value = rgbToHex(style.getPropertyValue('--accent').trim()) || '#4da6ff';
+                } else {
+                    customAccent.value = customAccentVal;
+                }
+                if (!hasCustomColors || !customFrameColorVal) {
+                    customFrameColor.value = rgbToHex(style.getPropertyValue('--accent').trim()) || '#4da6ff';
+                } else {
+                    customFrameColor.value = customFrameColorVal;
+                }
+            }
+
+            function rgbToHex(rgb) {
+                if (!rgb || rgb === '') return '';
+                const match = rgb.match(/^rgb\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)$/i);
+                if (match) {
+                    return '#' + [1, 2, 3].map(i => parseInt(match[i]).toString(16).padStart(2, '0')).join('');
+                }
+                // 如果已经是hex格式或颜色名称
+                if (rgb.startsWith('#')) return rgb;
+                return rgb;
+            }
+
+            function applyCustomColorOverrides() {
+                if (!hasCustomColors) {
+                    document.documentElement.style.removeProperty('--text');
+                    document.documentElement.style.removeProperty('--bg-display');
+                    document.documentElement.style.removeProperty('--accent');
+                    document.documentElement.style.removeProperty('--focus-frame-color');
+                    focusFrame.style.borderColor = '';
+                    focusFrame.style.setProperty('--focus-frame-color', '');
+                    customColorStatus.textContent = '自定义配色可覆盖主题默认值';
+                    customColorStatus.style.color = 'var(--text-secondary)';
+                    return;
+                }
+                if (customTextColorVal) {
+                    document.documentElement.style.setProperty('--text', customTextColorVal);
+                }
+                if (customBgDisplayVal) {
+                    document.documentElement.style.setProperty('--bg-display', customBgDisplayVal);
+                }
+                if (customAccentVal) {
+                    document.documentElement.style.setProperty('--accent', customAccentVal);
+                }
+                if (customFrameColorVal) {
+                    focusFrame.style.borderColor = customFrameColorVal;
+                    focusFrame.style.setProperty('--focus-frame-color', customFrameColorVal);
+                } else {
+                    focusFrame.style.borderColor = '';
+                    focusFrame.style.setProperty('--focus-frame-color', '');
+                }
+                customColorStatus.textContent = '✅ 自定义配色已应用';
+                customColorStatus.style.color = 'var(--accent)';
+                updateThemeDotActive();
+            }
+
+            function applyMirrorMode() {
+                textScroller.classList.remove('mirror-x', 'mirror-y', 'mirror-xy');
+                if (mirrorMode === 1) textScroller.classList.add('mirror-y');
+                if (mirrorMode === 2) textScroller.classList.add('mirror-x');
+                if (mirrorMode === 3) textScroller.classList.add('mirror-xy');
+                if (mirrorMode > 0) {
+                    mirrorIndicator.classList.add('active');
+                    document.getElementById('btnMirror').classList.add('accent');
+                } else {
+                    mirrorIndicator.classList.remove('active');
+                    document.getElementById('btnMirror').classList.remove('accent');
+                }
+            }
+
+            function updateFocusFrameHeight() {
+                const frameHeight = fontSize * lineHeight;
+                focusFrame.style.height = frameHeight + 'px';
+                // 同步更新焦点边框透明度
+                focusFrame.style.opacity = focusOpacity;
+            }
+
+            function updateTimerPosition() {
+                timerOverlay.classList.remove('hidden');
+                timerOverlay.style.top = 'auto';
+                timerOverlay.style.bottom = 'auto';
+                timerOverlay.style.left = 'auto';
+                timerOverlay.style.right = 'auto';
+                switch (timerPos) {
+                    case 'bottom-right':
+                        timerOverlay.style.bottom = '16px';
+                        timerOverlay.style.right = '20px';
+                        break;
+                    case 'bottom-left':
+                        timerOverlay.style.bottom = '16px';
+                        timerOverlay.style.left = '20px';
+                        break;
+                    case 'top-right':
+                        timerOverlay.style.top = '16px';
+                        timerOverlay.style.right = '20px';
+                        break;
+                    case 'top-left':
+                        timerOverlay.style.top = '16px';
+                        timerOverlay.style.left = '20px';
+                        break;
+                    case 'hidden':
+                        timerOverlay.classList.add('hidden');
+                        break;
+                }
+            }
+
+            function updateTextDisplay() {
+                const text = textEditor.value || '';
+                textScroller.textContent = text;
+                if (!text.trim()) {
+                    textScroller.textContent = '';
+                    overlayHint.classList.remove('fading');
+                    overlayHint.textContent = '请在编辑面板中输入文稿内容';
+                } else {
+                    overlayHint.classList.add('fading');
+                }
+            }
+
+            function updateWordCount() {
+                const text = textEditor.value || '';
+                const charCount = text.replace(/\s/g, '').length;
+                const totalUnits = charCount;
+                const estMinutes = Math.max(0, Math.ceil(totalUnits / 200));
+                wordCountBadge.textContent = charCount + ' 字符';
+                estTimeBadge.textContent = '~' + estMinutes + '分钟';
+            }
+
+            function recalculateScroll() {
+                displayHeight = displayContainer.clientHeight;
+                const textContent = textScroller.textContent || '';
+                if (!textContent.trim()) {
+                    textTotalHeight = 0;
+                    maxScroll = 0;
+                    scrollPosition = 0;
+                } else {
+                    const measure = document.createElement('div');
+                    measure.style.position = 'absolute';
+                    measure.style.visibility = 'hidden';
+                    measure.style.width = displayContainer.clientWidth - (displayContainer.clientWidth * sidePadding /
+                        100 * 2) + 'px';
+                    measure.style.fontSize = fontSize + 'px';
+                    measure.style.lineHeight = lineHeight;
+                    measure.style.fontFamily = currentFontFamily;
+                    measure.style.whiteSpace = 'pre-wrap';
+                    measure.style.wordWrap = 'break-word';
+                    measure.style.padding = '0';
+                    measure.textContent = textContent;
+                    displayContainer.appendChild(measure);
+                    textTotalHeight = measure.offsetHeight;
+                    displayContainer.removeChild(measure);
+                    maxScroll = textTotalHeight + displayHeight;
+                    if (scrollPosition > maxScroll) scrollPosition = maxScroll;
+                    if (scrollPosition < 0) scrollPosition = 0;
+                }
+                applyScrollPosition();
+                updateFocusFrameHeight();
+            }
+
+            function applyScrollPosition() {
+                const translateY = displayHeight - scrollPosition;
+                textScroller.style.transform = 'translateY(' + translateY + 'px)';
+                if (mirrorMode === 1) textScroller.style.transform = 'scaleY(-1) translateY(' + (-translateY) + 'px)';
+                if (mirrorMode === 2) textScroller.style.transform = 'scaleX(-1) translateY(' + translateY + 'px)';
+                if (mirrorMode === 3) textScroller.style.transform = 'scaleX(-1) scaleY(-1) translateY(' + (-translateY) +
+                    'px)';
+                updateProgressUI();
+            }
+
+            function updateProgressUI() {
+                if (maxScroll <= 0) {
+                    progressFill.style.height = '0%';
+                    progressPercent.textContent = '0%';
+                    timeDisplay.textContent = '00:00 / --:--';
+                    return;
+                }
+                const pct = Math.min(100, Math.max(0, (scrollPosition / maxScroll) * 100));
+                progressFill.style.height = pct + '%';
+                progressPercent.textContent = Math.round(pct) + '%';
+                const totalEstSeconds = maxScroll / (speed * 8);
+                const curMin = Math.floor(elapsedSeconds / 60);
+                const curSec = Math.floor(elapsedSeconds % 60);
+                const totalMin = Math.floor(totalEstSeconds / 60);
+                const totalSec = Math.floor(totalEstSeconds % 60);
+                timeDisplay.textContent =
+                    String(curMin).padStart(2, '0') + ':' + String(curSec).padStart(2, '0') +
+                    ' / ' + String(totalMin).padStart(2, '0') + ':' + String(totalSec).padStart(2, '0');
+            }
+
+            // ==================== 播放控制 ====================
+            function togglePlay() {
+                if (isPlaying) { pause(); } else { play(); }
+            }
+
+            function play() {
+                if (!textEditor.value.trim()) { shakeElement(playBtn); return; }
+                if (scrollPosition >= maxScroll && maxScroll > 0) {
+                    scrollPosition = 0;
+                    applyScrollPosition();
+                    elapsedSeconds = 0;
+                    updateTimerDisplay();
+                }
+                isPlaying = true;
+                playBtn.classList.remove('paused');
+                playBtn.textContent = '⏸';
+                lastFrameTime = performance.now();
+                startTimer();
+                animate();
+                overlayHint.classList.add('fading');
+                saveToStorage();
+            }
+
+            function pause() {
+                isPlaying = false;
+                playBtn.classList.add('paused');
+                playBtn.textContent = '▶';
+                stopTimer();
+                if (animationId) { cancelAnimationFrame(animationId);
+                    animationId = null; }
+                lastFrameTime = null;
+                saveToStorage();
+            }
+
+            function animate(timestamp) {
+                if (!isPlaying) return;
+                if (!timestamp) timestamp = performance.now();
+                if (lastFrameTime === null) lastFrameTime = timestamp;
+                const delta = timestamp - lastFrameTime;
+                lastFrameTime = timestamp;
+                const pixelsPerSecond = speed * 10;
+                const deltaPixels = (pixelsPerSecond * delta) / 1000;
+                scrollPosition += deltaPixels;
+                if (scrollPosition >= maxScroll) {
+                    scrollPosition = maxScroll;
+                    applyScrollPosition();
+                    pause();
+                    updateProgressUI();
+                    return;
+                }
+                if (scrollPosition < 0) scrollPosition = 0;
+                applyScrollPosition();
+                animationId = requestAnimationFrame(animate);
+            }
+
+            function startTimer() {
+                stopTimer();
+                timerInterval = setInterval(() => { elapsedSeconds++;
+                    updateTimerDisplay(); }, 1000);
+            }
+
+            function stopTimer() {
+                if (timerInterval) { clearInterval(timerInterval);
+                    timerInterval = null; }
+            }
+
+            function updateTimerDisplay() {
+                const min = Math.floor(elapsedSeconds / 60);
+                const sec = Math.floor(elapsedSeconds % 60);
+                timerOverlay.textContent = String(min).padStart(2, '0') + ':' + String(sec).padStart(2, '0');
+            }
+
+            // ==================== 跳转控制 ====================
+            function jumpToStart() {
+                const wasPlaying = isPlaying;
+                if (wasPlaying) pause();
+                scrollPosition = 0;
+                elapsedSeconds = 0;
+                updateTimerDisplay();
+                applyScrollPosition();
+                updateProgressUI();
+                if (wasPlaying) play();
+                saveToStorage();
+            }
+
+            function jumpToEnd() {
+                const wasPlaying = isPlaying;
+                if (wasPlaying) pause();
+                scrollPosition = Math.max(0, maxScroll - displayHeight);
+                applyScrollPosition();
+                updateProgressUI();
+                if (wasPlaying && scrollPosition < maxScroll) play();
+                saveToStorage();
+            }
+
+            function jumpBack() {
+                const wasPlaying = isPlaying;
+                if (wasPlaying) pause();
+                const jumpPixels = speed * 10 * 5;
+                scrollPosition = Math.max(0, scrollPosition - jumpPixels);
+                elapsedSeconds = Math.max(0, elapsedSeconds - 5);
+                updateTimerDisplay();
+                applyScrollPosition();
+                updateProgressUI();
+                if (wasPlaying && scrollPosition < maxScroll) play();
+                saveToStorage();
+            }
+
+            function jumpForward() {
+                const wasPlaying = isPlaying;
+                if (wasPlaying) pause();
+                const jumpPixels = speed * 10 * 5;
+                scrollPosition = Math.min(maxScroll, scrollPosition + jumpPixels);
+                elapsedSeconds += 5;
+                updateTimerDisplay();
+                applyScrollPosition();
+                updateProgressUI();
+                if (wasPlaying && scrollPosition < maxScroll) play();
+                saveToStorage();
+            }
+
+            function jumpToPercent(pct) {
+                const wasPlaying = isPlaying;
+                if (wasPlaying) pause();
+                scrollPosition = (maxScroll * pct) / 100;
+                elapsedSeconds = Math.floor(scrollPosition / (speed * 10));
+                updateTimerDisplay();
+                applyScrollPosition();
+                updateProgressUI();
+                if (wasPlaying && scrollPosition < maxScroll) play();
+                saveToStorage();
+            }
+
+            function adjustSpeed(delta) {
+                speed = Math.max(1, Math.min(20, speed + delta));
+                speed = Math.round(speed * 2) / 2;
+                speedSlider.value = speed;
+                valSpeed.textContent = speed;
+                speedDisplay.textContent = '速度 ' + speed;
+                saveToStorage();
+            }
+
+            // ==================== 镜像 ====================
+            function cycleMirror() {
+                mirrorMode = (mirrorMode + 1) % 4;
+                applyMirrorMode();
+                applyScrollPosition();
+                saveToStorage();
+            }
+
+            // ==================== 全屏 ====================
+            function toggleFullscreen() {
+                if (!isFullscreen) {
+                    if (document.documentElement.requestFullscreen) {
+                        document.documentElement.requestFullscreen().then(() => { enterFullscreenMode(); }).catch(
+                            () => { enterFullscreenMode(); });
+                    } else {
+                        enterFullscreenMode();
+                    }
+                } else {
+                    exitFullscreenMode();
+                    if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen();
+                }
+            }
+
+            function enterFullscreenMode() {
+                isFullscreen = true;
+                document.body.classList.add('fullscreen-mode');
+                displayContainer.style.width = '95%';
+                displayContainer.style.height = '88%';
+                setTimeout(() => { recalculateScroll();
+                    applyScrollPosition(); }, 400);
+            }
+
+            function exitFullscreenMode() {
+                isFullscreen = false;
+                document.body.classList.remove('fullscreen-mode');
+                displayContainer.style.width = '90%';
+                displayContainer.style.height = '78%';
+                setTimeout(() => { recalculateScroll();
+                    applyScrollPosition(); }, 100);
+            }
+
+            document.addEventListener('fullscreenchange', () => {
+                if (!document.fullscreenElement && isFullscreen) exitFullscreenMode();
+            });
+
+            // ==================== 面板 ====================
+            function togglePanel() {
+                panelVisible = !panelVisible;
+                if (panelVisible) { sidePanel.classList.remove('collapsed'); } else { sidePanel.classList.add(
+                        'collapsed'); }
+                setTimeout(() => { recalculateScroll();
+                    applyScrollPosition(); }, 350);
+                saveToStorage();
+            }
+
+            // ==================== 文件操作 ====================
+            function importFile() { fileInput.click(); }
+
+            function handleFileImport(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    textEditor.value = e.target.result;
+                    updateTextDisplay();
+                    recalculateScroll();
+                    scrollPosition = 0;
+                    elapsedSeconds = 0;
+                    updateTimerDisplay();
+                    applyScrollPosition();
+                    updateWordCount();
+                    saveToStorage();
+                    showSaveStatus('✅ 文件已导入');
+                };
+                reader.readAsText(file, 'UTF-8');
+                fileInput.value = '';
+            }
+
+            function exportFile() {
+                const text = textEditor.value;
+                if (!text.trim()) { showSaveStatus('⚠️ 没有可导出的内容'); return; }
+                const blob = new Blob([text], { type: 'text/plain;charset=UTF-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                const now = new Date();
+                const filename = '提词器文稿_' + now.getFullYear() + String(now.getMonth() + 1).padStart(2, '0') +
+                    String(now.getDate()).padStart(2, '0') + '_' + String(now.getHours()).padStart(2, '0') + String(now
+                        .getMinutes()).padStart(2, '0') + '.txt';
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                showSaveStatus('✅ 已导出: ' + filename);
+            }
+
+            function loadSampleText() {
+                const sample = `欢迎使用专业提词器
+
+            这是一个功能齐全的提词器工具，适用于视频拍摄、演讲排练、直播等场景。
+
+            主要功能包括：
+            • 自动滚动显示文稿内容
+            • 可调节滚动速度和字体大小
+            • 镜像模式，适配物理提词器设备
+            • 全屏模式，适合实际拍摄使用
+            • 多种配色主题可选（暗夜蓝/浅色/暗绿/琥珀/紫罗兰）
+            • 自定义配色功能，文字颜色可自由选择
+            • 焦点边框清晰框住当前行
+            • 文本导入导出功能
+            • 键盘快捷键全面支持
+            • 本地自动保存，刷新不丢失
+
+            使用提示：
+            按空格键可以随时开始或暂停滚动。
+            使用上下方向键调整速度，左右方向键快进快退。
+            按F键进入全屏模式，获得更好的提词体验。
+            如果需要使用物理镜面反射，请开启镜像模式。
+            中间的高亮边框就是您的焦点位置，框住的正是当前朗读行。
+
+            祝您使用愉快！`;
+                textEditor.value = sample;
+                updateTextDisplay();
+                recalculateScroll();
+                scrollPosition = 0;
+                elapsedSeconds = 0;
+                updateTimerDisplay();
+                applyScrollPosition();
+                updateWordCount();
+                saveToStorage();
+                showSaveStatus('✅ 示例文本已加载');
+            }
+
+            function clearText() {
+                if (textEditor.value.trim() && !confirm('确定要清空所有文本吗？')) return;
+                textEditor.value = '';
+                updateTextDisplay();
+                recalculateScroll();
+                scrollPosition = 0;
+                elapsedSeconds = 0;
+                updateTimerDisplay();
+                applyScrollPosition();
+                updateWordCount();
+                pause();
+                stopTimer();
+                overlayHint.classList.remove('fading');
+                overlayHint.textContent = '请在编辑面板中输入文稿内容';
+                saveToStorage();
+            }
+
+            function copyText() {
+                const text = textEditor.value;
+                if (!text.trim()) { showSaveStatus('⚠️ 没有可复制的内容'); return; }
+                navigator.clipboard.writeText(text).then(() => { showSaveStatus('✅ 已复制到剪贴板'); }).catch(() => {
+                    textEditor.select();
+                    document.execCommand('copy');
+                    showSaveStatus('✅ 已复制到剪贴板');
+                });
+            }
+
+            function saveText() {
+                updateTextDisplay();
+                recalculateScroll();
+                updateWordCount();
+                saveToStorage();
+                showSaveStatus('✅ 文本已保存');
+            }
+
+            function showSaveStatus(msg) {
+                saveStatus.textContent = msg;
+                saveStatus.style.color = 'var(--accent)';
+                saveStatus.style.fontWeight = '600';
+                setTimeout(() => {
+                    saveStatus.textContent = '自动保存已启用';
+                    saveStatus.style.color = 'var(--text-secondary)';
+                    saveStatus.style.fontWeight = 'normal';
+                }, 2000);
+            }
+
+            // ==================== 自定义配色 ====================
+            function applyCustomColors() {
+                customTextColorVal = customTextColor.value;
+                customBgDisplayVal = customBgDisplay.value;
+                customAccentVal = customAccent.value;
+                customFrameColorVal = customFrameColor.value;
+                // 判断是否与主题默认值不同
+                const style = getComputedStyle(document.body);
+                const defaultText = rgbToHex(style.getPropertyValue('--text').trim());
+                const defaultBg = rgbToHex(style.getPropertyValue('--bg-display').trim());
+                const defaultAccent = rgbToHex(style.getPropertyValue('--accent').trim());
+                const isCustom = customTextColorVal !== defaultText ||
+                    customBgDisplayVal !== defaultBg ||
+                    customAccentVal !== defaultAccent ||
+                    customFrameColorVal !== '';
+                hasCustomColors = isCustom;
+                applyCustomColorOverrides();
+                updateTextColorPresetActive();
+                updateThemeDotActive();
+                saveToStorage();
+                if (hasCustomColors) {
+                    showCustomColorStatus('✅ 自定义配色已应用');
+                } else {
+                    showCustomColorStatus('ℹ️ 颜色与主题默认相同，未启用自定义');
+                }
+            }
+
+            function clearCustomColors() {
+                customTextColorVal = '';
+                customBgDisplayVal = '';
+                customAccentVal = '';
+                customFrameColorVal = '';
+                hasCustomColors = false;
+                applyCustomColorOverrides();
+                updateCustomColorInputs();
+                updateTextColorPresetActive();
+                updateThemeDotActive();
+                focusFrame.style.borderColor = '';
+                focusFrame.style.setProperty('--focus-frame-color', '');
+                customColorStatus.textContent = '自定义配色可覆盖主题默认值';
+                customColorStatus.style.color = 'var(--text-secondary)';
+                saveToStorage();
+            }
+
+            function clearFrameColor() {
+                customFrameColorVal = '';
+                customFrameColor.value = customAccentVal || rgbToHex(getComputedStyle(document.body).getPropertyValue(
+                    '--accent').trim());
+                focusFrame.style.borderColor = '';
+                focusFrame.style.setProperty('--focus-frame-color', '');
+                if (hasCustomColors) applyCustomColorOverrides();
+                saveToStorage();
+                showCustomColorStatus('✅ 焦点边框已设置为跟随强调色');
+            }
+
+            function showCustomColorStatus(msg) {
+                customColorStatus.textContent = msg;
+                customColorStatus.style.color = 'var(--accent)';
+                customColorStatus.style.fontWeight = '600';
+                setTimeout(() => {
+                    customColorStatus.textContent = hasCustomColors ? '✅ 自定义配色已应用' : '自定义配色可覆盖主题默认值';
+                    customColorStatus.style.color = hasCustomColors ? 'var(--accent)' : 'var(--text-secondary)';
+                    customColorStatus.style.fontWeight = 'normal';
+                }, 2000);
+            }
+
+            // ==================== 重置 ====================
+            function resetAll() {
+                if (!confirm('确定要重置所有设置和文本吗？此操作不可恢复！')) return;
+                textEditor.value = '';
+                speed = 5;
+                fontSize = 36;
+                lineHeight = 1.6;
+                sidePadding = 8;
+                focusOpacity = 1;
+                mirrorMode = 0;
+                currentTheme = 'dark';
+                timerPos = 'bottom-right';
+                currentFontFamily = "'PingFang SC','Microsoft YaHei','Noto Sans SC','Helvetica Neue',Arial,sans-serif";
+                scrollPosition = 0;
+                elapsedSeconds = 0;
+                panelVisible = true;
+                customTextColorVal = '';
+                customBgDisplayVal = '';
+                customAccentVal = '';
+                customFrameColorVal = '';
+                hasCustomColors = false;
+                isPlaying = false;
+                playBtn.classList.add('paused');
+                playBtn.textContent = '▶';
+                stopTimer();
+                if (animationId) cancelAnimationFrame(animationId);
+                animationId = null;
+                lastFrameTime = null;
+                focusFrame.style.borderColor = '';
+                focusFrame.style.setProperty('--focus-frame-color', '');
+                document.documentElement.style.removeProperty('--text');
+                document.documentElement.style.removeProperty('--bg-display');
+                document.documentElement.style.removeProperty('--accent');
+                document.documentElement.style.removeProperty('--focus-frame-color');
+                applyAllSettings();
+                updateTextDisplay();
+                recalculateScroll();
+                applyScrollPosition();
+                updateWordCount();
+                updateTimerDisplay();
+                updateCustomColorInputs();
+                overlayHint.classList.remove('fading');
+                overlayHint.textContent = '点击播放按钮或按空格键开始';
+                customColorStatus.textContent = '自定义配色可覆盖主题默认值';
+                customColorStatus.style.color = 'var(--text-secondary)';
+                saveToStorage();
+                showSaveStatus('✅ 已重置所有设置');
+            }
+
+            function resetSettings() {
+                if (!confirm('确定恢复默认显示设置吗？文本内容不会改变。')) return;
+                speed = 5;
+                fontSize = 36;
+                lineHeight = 1.6;
+                sidePadding = 8;
+                focusOpacity = 1;
+                mirrorMode = 0;
+                currentTheme = 'dark';
+                timerPos = 'bottom-right';
+                currentFontFamily = "'PingFang SC','Microsoft YaHei','Noto Sans SC','Helvetica Neue',Arial,sans-serif";
+                customTextColorVal = '';
+                customBgDisplayVal = '';
+                customAccentVal = '';
+                customFrameColorVal = '';
+                hasCustomColors = false;
+                focusFrame.style.borderColor = '';
+                focusFrame.style.setProperty('--focus-frame-color', '');
+                document.documentElement.style.removeProperty('--text');
+                document.documentElement.style.removeProperty('--bg-display');
+                document.documentElement.style.removeProperty('--accent');
+                document.documentElement.style.removeProperty('--focus-frame-color');
+                applyAllSettings();
+                recalculateScroll();
+                applyScrollPosition();
+                updateCustomColorInputs();
+                customColorStatus.textContent = '自定义配色可覆盖主题默认值';
+                customColorStatus.style.color = 'var(--text-secondary)';
+                saveToStorage();
+                showSaveStatus('✅ 显示设置已恢复默认');
+            }
+
+            function cycleTheme() {
+                const themes = ['dark', 'light', 'green', 'amber', 'purple'];
+                const idx = themes.indexOf(currentTheme);
+                const next = themes[(idx + 1) % themes.length];
+                // 切换主题时清除自定义颜色覆盖
+                if (hasCustomColors) {
+                    // 保留自定义颜色值但重新应用
+                    applyTheme(next);
+                    applyCustomColorOverrides();
+                } else {
+                    applyTheme(next);
+                }
+                updateCustomColorInputs();
+                recalculateScroll();
+                applyScrollPosition();
+                saveToStorage();
+            }
+
+            // ==================== 辅助 ====================
+            function shakeElement(el) {
+                el.style.animation = 'none';
+                el.offsetHeight;
+                el.style.animation = 'shake 0.4s ease';
+                setTimeout(() => { el.style.animation = ''; }, 400);
+            }
+
+            // ==================== 事件监听 ====================
+            document.addEventListener('keydown', function(e) {
+                const isEditing = document.activeElement === textEditor;
+                const key = e.key;
+                const ctrl = e.ctrlKey || e.metaKey;
+                if (ctrl && key === 's') { e.preventDefault();
+                    saveText(); return; }
+                if (isEditing && !ctrl) return;
+                switch (key) {
+                    case ' ':
+                        e.preventDefault();
+                        togglePlay();
+                        break;
+                    case 'ArrowUp':
+                        e.preventDefault();
+                        adjustSpeed(0.5);
+                        break;
+                    case 'ArrowDown':
+                        e.preventDefault();
+                        adjustSpeed(-0.5);
+                        break;
+                    case 'ArrowLeft':
+                        e.preventDefault();
+                        jumpBack();
+                        break;
+                    case 'ArrowRight':
+                        e.preventDefault();
+                        jumpForward();
+                        break;
+                    case '+':
+                    case '=':
+                        e.preventDefault();
+                        fontSize = Math.min(80, fontSize + 2);
+                        fontSizeSlider.value = fontSize;
+                        valFontSize.textContent = fontSize + 'px';
+                        textScroller.style.fontSize = fontSize + 'px';
+                        recalculateScroll();
+                        applyScrollPosition();
+                        saveToStorage();
+                        break;
+                    case '-':
+                        e.preventDefault();
+                        fontSize = Math.max(16, fontSize - 2);
+                        fontSizeSlider.value = fontSize;
+                        valFontSize.textContent = fontSize + 'px';
+                        textScroller.style.fontSize = fontSize + 'px';
+                        recalculateScroll();
+                        applyScrollPosition();
+                        saveToStorage();
+                        break;
+                    case 'f':
+                    case 'F':
+                        e.preventDefault();
+                        toggleFullscreen();
+                        break;
+                    case 'm':
+                    case 'M':
+                        e.preventDefault();
+                        cycleMirror();
+                        break;
+                    case 'r':
+                    case 'R':
+                        e.preventDefault();
+                        jumpToStart();
+                        break;
+                    case 'e':
+                    case 'E':
+                        e.preventDefault();
+                        jumpToEnd();
+                        break;
+                    case '[':
+                        e.preventDefault();
+                        adjustSpeed(-0.5);
+                        break;
+                    case ']':
+                        e.preventDefault();
+                        adjustSpeed(0.5);
+                        break;
+                    case '0':
+                    case '1':
+                    case '2':
+                    case '3':
+                    case '4':
+                    case '5':
+                    case '6':
+                    case '7':
+                    case '8':
+                    case '9':
+                        e.preventDefault();
+                        jumpToPercent(parseInt(key) * 10);
+                        break;
+                    case 'Escape':
+                        if (isFullscreen) {
+                            e.preventDefault();
+                            exitFullscreenMode();
+                            if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen();
+                        }
+                        break;
+                }
+            });
+
+            displayArea.addEventListener('dblclick', function(e) {
+                if (e.target.closest('.timer-overlay') || e.target.closest('.progress-indicator') || e.target
+                    .closest('.focus-frame')) return;
+                togglePlay();
+            });
+
+            displayArea.addEventListener('wheel', function(e) {
+                if (isPlaying) {
+                    e.preventDefault();
+                    if (e.deltaY < 0) adjustSpeed(0.3);
+                    else adjustSpeed(-0.3);
+                } else {
+                    e.preventDefault();
+                    const delta = e.deltaY * 1.5;
+                    scrollPosition = Math.max(0, Math.min(maxScroll, scrollPosition + delta));
+                    applyScrollPosition();
+                    saveToStorage();
+                }
+            }, { passive: false });
+
+            let touchStartY = null;
+            let touchStartTime = null;
+            displayArea.addEventListener('touchstart', function(e) {
+                if (e.touches.length === 1) { touchStartY = e.touches[0].clientY;
+                    touchStartTime = Date.now(); }
+            }, { passive: true });
+            displayArea.addEventListener('touchend', function(e) {
+                if (touchStartY !== null && touchStartTime !== null) {
+                    const dt = Date.now() - touchStartTime;
+                    const dy = (e.changedTouches[0]?.clientY || touchStartY) - touchStartY;
+                    if (dt < 300 && Math.abs(dy) < 20) { togglePlay(); } else if (dt < 500 && Math.abs(dy) > 40) {
+                        if (dy > 0) adjustSpeed(-0.5);
+                        else adjustSpeed(0.5);
+                    }
+                    touchStartY = null;
+                    touchStartTime = null;
+                }
+            });
+
+            // 面板标签切换
+            document.querySelectorAll('.panel-tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const targetId = this.getAttribute('data-tab');
+                    document.querySelectorAll('.panel-tab').forEach(t => t.classList.remove('active'));
+                    document.querySelectorAll('.panel-content').forEach(p => p.classList.remove('active'));
+                    this.classList.add('active');
+                    const target = document.getElementById(targetId);
+                    if (target) target.classList.add('active');
+                });
+            });
+
+            // 设置滑块事件
+            fontSizeSlider.addEventListener('input', function() {
+                fontSize = parseInt(this.value);
+                valFontSize.textContent = fontSize + 'px';
+                textScroller.style.fontSize = fontSize + 'px';
+                recalculateScroll();
+                applyScrollPosition();
+                saveToStorage();
+            });
+            speedSlider.addEventListener('input', function() {
+                speed = parseFloat(this.value);
+                valSpeed.textContent = speed;
+                speedDisplay.textContent = '速度 ' + speed;
+                saveToStorage();
+            });
+            lineHeightSlider.addEventListener('input', function() {
+                lineHeight = parseFloat(this.value);
+                valLineHeight.textContent = lineHeight;
+                textScroller.style.lineHeight = lineHeight;
+                recalculateScroll();
+                applyScrollPosition();
+                saveToStorage();
+            });
+            paddingSlider.addEventListener('input', function() {
+                sidePadding = parseInt(this.value);
+                valPadding.textContent = sidePadding + '%';
+                textScroller.style.paddingLeft = sidePadding + '%';
+                textScroller.style.paddingRight = sidePadding + '%';
+                recalculateScroll();
+                applyScrollPosition();
+                saveToStorage();
+            });
+            focusOpacitySlider.addEventListener('input', function() {
+                focusOpacity = parseFloat(this.value);
+                valFocusOpacity.textContent = focusOpacity.toFixed(2);
+                focusFrame.style.opacity = focusOpacity;
+                saveToStorage();
+            });
+            timerPosition.addEventListener('change', function() {
+                timerPos = this.value;
+                updateTimerPosition();
+                saveToStorage();
+            });
+            fontFamily.addEventListener('change', function() {
+                currentFontFamily = this.value;
+                textScroller.style.fontFamily = currentFontFamily;
+                recalculateScroll();
+                applyScrollPosition();
+                saveToStorage();
+            });
+
+            // 主题颜色圆点点击
+            themeColorPresets.addEventListener('click', function(e) {
+                const dot = e.target.closest('.color-dot');
+                if (!dot) return;
+                const theme = dot.getAttribute('data-theme');
+                if (theme === 'custom') {
+                    // 切换到自定义模式，应用当前自定义颜色
+                    if (!hasCustomColors && !customTextColorVal && !customBgDisplayVal && !customAccentVal) {
+                        // 如果没有自定义颜色，先捕获当前颜色
+                        const style = getComputedStyle(document.body);
+                        customTextColor.value = rgbToHex(style.getPropertyValue('--text').trim());
+                        customBgDisplay.value = rgbToHex(style.getPropertyValue('--bg-display').trim());
+                        customAccent.value = rgbToHex(style.getPropertyValue('--accent').trim());
+                        customFrameColor.value = '';
+                        showCustomColorStatus('ℹ️ 请点击"应用自定义配色"来启用');
+                    }
+                    return;
+                }
+                if (hasCustomColors) {
+                    // 切换到预设主题但保留自定义覆盖
+                    applyTheme(theme);
+                    applyCustomColorOverrides();
+                } else {
+                    applyTheme(theme);
+                }
+                updateCustomColorInputs();
+                recalculateScroll();
+                applyScrollPosition();
+                saveToStorage();
+            });
+
+            // 文字颜色预设点击
+            textColorPresets.addEventListener('click', function(e) {
+                const dot = e.target.closest('.text-color-preset');
+                if (!dot) return;
+                const color = dot.getAttribute('data-text-color');
+                customTextColor.value = color;
+                customTextColorVal = color;
+                customTextColor.dispatchEvent(new Event('input', { bubbles: true }));
+                // 自动应用
+                applyCustomColorsQuick();
+                updateTextColorPresetActive();
+            });
+
+            function applyCustomColorsQuick() {
+                customTextColorVal = customTextColor.value;
+                customBgDisplayVal = customBgDisplay.value;
+                customAccentVal = customAccent.value;
+                customFrameColorVal = customFrameColor.value;
+                const style = getComputedStyle(document.body);
+                const defaultText = rgbToHex(style.getPropertyValue('--text').trim());
+                const defaultBg = rgbToHex(style.getPropertyValue('--bg-display').trim());
+                const defaultAccent = rgbToHex(style.getPropertyValue('--accent').trim());
+                const isCustom = customTextColorVal !== defaultText ||
+                    customBgDisplayVal !== defaultBg ||
+                    customAccentVal !== defaultAccent ||
+                    customFrameColorVal !== '';
+                hasCustomColors = isCustom;
+                applyCustomColorOverrides();
+                updateThemeDotActive();
+                saveToStorage();
+            }
+
+            // 自定义颜色输入变化时自动预览
+            customTextColor.addEventListener('input', function() {
+                customTextColorVal = this.value;
+                if (hasCustomColors || customTextColorVal) {
+                    applyCustomColorsQuick();
+                }
+            });
+            customBgDisplay.addEventListener('input', function() {
+                customBgDisplayVal = this.value;
+                if (hasCustomColors || customBgDisplayVal) {
+                    applyCustomColorsQuick();
+                }
+            });
+            customAccent.addEventListener('input', function() {
+                customAccentVal = this.value;
+                if (hasCustomColors || customAccentVal) {
+                    applyCustomColorsQuick();
+                }
+            });
+            customFrameColor.addEventListener('input', function() {
+                customFrameColorVal = this.value;
+                if (hasCustomColors || customFrameColorVal) {
+                    applyCustomColorsQuick();
+                }
+            });
+
+            // 文本编辑器输入
+            textEditor.addEventListener('input', function() {
+                updateTextDisplay();
+                recalculateScroll();
+                updateWordCount();
+                clearTimeout(textEditor._debounceTimer);
+                textEditor._debounceTimer = setTimeout(() => {
+                    saveToStorage();
+                    if (isPlaying) {
+                        recalculateScroll();
+                        if (scrollPosition > maxScroll) {
+                            scrollPosition = maxScroll;
+                            applyScrollPosition();
+                        }
+                    }
+                }, 800);
+            });
+
+            // 窗口大小变化
+            let resizeDebounce;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeDebounce);
+                resizeDebounce = setTimeout(() => { recalculateScroll();
+                    applyScrollPosition(); }, 300);
+            });
+
+            if (window.ResizeObserver) {
+                const ro = new ResizeObserver(() => { recalculateScroll();
+                    applyScrollPosition(); });
+                ro.observe(displayContainer);
+            }
+
+            window.addEventListener('beforeunload', () => { saveToStorage(); });
+            setInterval(() => { if (textEditor.value) saveToStorage(); }, 30000);
+
+            // ==================== 初始化 ====================
+            function init() {
+                loadFromStorage();
+                applyAllSettings();
+                updateTextDisplay();
+                recalculateScroll();
+                if (scrollPosition > maxScroll) scrollPosition = maxScroll;
+                if (scrollPosition < 0) scrollPosition = 0;
+                applyScrollPosition();
+                updateWordCount();
+                updateTimerDisplay();
+                if (scrollPosition > 0 && scrollPosition < maxScroll) overlayHint.classList.add('fading');
+                updateProgressUI();
+                updateCustomColorInputs();
+                if (hasCustomColors) applyCustomColorOverrides();
+                saveToStorage();
+            }
+
+            const shakeStyle = document.createElement('style');
+            shakeStyle.textContent = `
+                @keyframes shake {
+                    0%,100% { transform: translateX(0); }
+                    25% { transform: translateX(-6px); }
+                    50% { transform: translateX(6px); }
+                    75% { transform: translateX(-4px); }
+                }
+            `;
+            document.head.appendChild(shakeStyle);
+
+            init();
+
+            // ==================== 暴露全局函数 ====================
+            window.togglePlay = togglePlay;
+            window.togglePanel = togglePanel;
+            window.importFile = importFile;
+            window.exportFile = exportFile;
+            window.loadSampleText = loadSampleText;
+            window.clearText = clearText;
+            window.copyText = copyText;
+            window.saveText = saveText;
+            window.jumpToStart = jumpToStart;
+            window.jumpToEnd = jumpToEnd;
+            window.jumpBack = jumpBack;
+            window.jumpForward = jumpForward;
+            window.adjustSpeed = adjustSpeed;
+            window.cycleMirror = cycleMirror;
+            window.toggleFullscreen = toggleFullscreen;
+            window.cycleTheme = cycleTheme;
+            window.resetAll = resetAll;
+            window.resetSettings = resetSettings;
+            window.handleFileImport = handleFileImport;
+            window.applyCustomColors = applyCustomColors;
+            window.clearCustomColors = clearCustomColors;
+            window.clearFrameColor = clearFrameColor;
+
+            console.log('✅ 专业提词器 Pro 已就绪');
+            console.log('  空格键 播放/暂停 | ↑↓ 调速 | ←→ 快进快退');
+            console.log('  F 全屏 | M 镜像 | R 回到开头 | 0-9 跳转百分比');
+            console.log('  焦点边框框住中间一行文本 | 支持5种主题+自定义配色');
+            console.log('  文字颜色可独立选择 | 所有设置自动保存');
+        })();
+    </script>
+</body>
+</html>

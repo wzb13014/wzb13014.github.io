@@ -1,0 +1,3032 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZipMaster - ZIP 压缩解压工具</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@zip.js/zip.js@2.7.59/dist/zip.min.js"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg-primary: #fafafa;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #f3f4f6;
+  --text-primary: #1f2937;
+  --text-secondary: #6b7280;
+  --text-tertiary: #9ca3af;
+  --border: #e5e7eb;
+  --primary: #3B4DDB;
+  --primary-light: #6684FF;
+  --primary-dark: #2F3EB0;
+  --accent: #10B981;
+  --accent-light: #34D399;
+  --accent-dark: #059669;
+  --danger: #ef4444;
+  --warning: #f59e0b;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+  --shadow-glow-primary: 0 0 40px -10px rgba(59, 77, 219, 0.5);
+  --shadow-glow-accent: 0 0 40px -10px rgba(16, 185, 129, 0.5);
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.2);
+}
+
+.dark {
+  --bg-primary: #0a0a0f;
+  --bg-secondary: #111827;
+  --bg-tertiary: #1f2937;
+  --text-primary: #f9fafb;
+  --text-secondary: #9ca3af;
+  --text-tertiary: #6b7280;
+  --border: #374151;
+  --glass-bg: rgba(17, 24, 39, 0.7);
+  --glass-border: rgba(55, 65, 81, 0.5);
+}
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  line-height: 1.5;
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background:
+    radial-gradient(ellipse at top left, rgba(59, 77, 219, 0.08), transparent 50%),
+    radial-gradient(ellipse at bottom right, rgba(16, 185, 129, 0.08), transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.dark body::before {
+  background:
+    radial-gradient(ellipse at top left, rgba(59, 77, 219, 0.15), transparent 50%),
+    radial-gradient(ellipse at bottom right, rgba(16, 185, 129, 0.1), transparent 50%);
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+  position: relative;
+  z-index: 1;
+}
+
+/* Header */
+header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  backdrop-filter: blur(20px);
+  background: var(--glass-bg);
+  border-bottom: 1px solid var(--glass-border);
+  transition: all 0.3s ease;
+}
+
+.header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 0;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-md);
+  position: relative;
+}
+
+.logo-icon::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid var(--bg-primary);
+}
+
+.logo-icon svg { width: 22px; height: 22px; color: white; }
+
+.logo-text h1 {
+  font-size: 20px;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.logo-text p {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.tabs {
+  display: flex;
+  padding: 4px;
+  background: var(--bg-tertiary);
+  border-radius: 999px;
+}
+
+.tab-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.tab-btn.active {
+  background: var(--bg-secondary);
+  color: var(--primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.tab-btn.active.unpack-tab {
+  color: var(--accent);
+}
+
+.tab-btn:hover { color: var(--text-primary); }
+
+.theme-toggle {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: none;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.theme-toggle:hover {
+  background: var(--border);
+  transform: scale(1.05);
+}
+
+.theme-toggle svg { width: 20px; height: 20px; }
+
+/* Main Content */
+main { padding: 48px 0; }
+
+.hero {
+  text-align: center;
+  margin-bottom: 40px;
+  animation: fadeInUp 0.6s ease;
+}
+
+.hero h2 {
+  font-size: 36px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.hero h2 span {
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hero p {
+  color: var(--text-secondary);
+  font-size: 16px;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+/* Grid Layout */
+.grid-layout {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+@media (max-width: 968px) {
+  .grid-layout { grid-template-columns: 1fr; }
+}
+
+/* Card */
+.card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  padding: 28px;
+  box-shadow: var(--shadow-sm);
+  animation: fadeInUp 0.5s ease;
+}
+
+.card-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 20px;
+  color: var(--text-primary);
+}
+
+.card-title svg {
+  width: 20px;
+  height: 20px;
+  color: var(--primary);
+}
+
+.card-title.accent svg { color: var(--accent); }
+
+/* Drop Zone */
+.drop-zone {
+  border: 2px dashed var(--border);
+  border-radius: 20px;
+  padding: 48px 32px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.drop-zone:hover {
+  border-color: var(--primary-light);
+  background: rgba(59, 77, 219, 0.03);
+}
+
+.drop-zone.accent:hover {
+  border-color: var(--accent-light);
+  background: rgba(16, 185, 129, 0.03);
+}
+
+.drop-zone.dragging {
+  border-color: var(--primary);
+  background: rgba(59, 77, 219, 0.08);
+  transform: scale(1.02);
+  box-shadow: var(--shadow-glow-primary);
+}
+
+.drop-zone.accent.dragging {
+  border-color: var(--accent);
+  background: rgba(16, 185, 129, 0.08);
+  box-shadow: var(--shadow-glow-accent);
+}
+
+.drop-zone-icon {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 20px;
+  border-radius: 20px;
+  background: var(--bg-tertiary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.drop-zone.dragging .drop-zone-icon {
+  background: var(--primary);
+  transform: scale(1.1);
+}
+
+.drop-zone.accent.dragging .drop-zone-icon { background: var(--accent); }
+
+.drop-zone-icon svg {
+  width: 36px;
+  height: 36px;
+  color: var(--text-tertiary);
+  transition: all 0.3s ease;
+}
+
+.drop-zone.dragging .drop-zone-icon svg { color: white; }
+
+.drop-zone h3 {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--text-primary);
+}
+
+.drop-zone p {
+  color: var(--text-secondary);
+  font-size: 14px;
+  margin-bottom: 24px;
+}
+
+.drop-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: inherit;
+}
+
+.btn svg { width: 16px; height: 16px; }
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: white;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px -5px rgba(59, 77, 219, 0.4);
+}
+
+.btn-accent {
+  background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+  color: white;
+}
+
+.btn-accent:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.4);
+}
+
+.btn-secondary {
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+}
+
+.btn-secondary:hover {
+  background: var(--border);
+  color: var(--text-primary);
+}
+
+.btn-large {
+  width: 100%;
+  padding: 18px 28px;
+  font-size: 16px;
+  font-weight: 600;
+  border-radius: 16px;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+/* File List */
+.file-list {
+  max-height: 400px;
+  overflow-y: auto;
+  padding-right: 8px;
+}
+
+.file-list::-webkit-scrollbar { width: 6px; }
+.file-list::-webkit-scrollbar-track { background: transparent; }
+.file-list::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+.file-list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.file-list-header .count {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.badge {
+  padding: 4px 10px;
+  background: rgba(59, 77, 219, 0.1);
+  color: var(--primary);
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.badge.accent {
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--accent);
+}
+
+.text-sm {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.link-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 13px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 8px;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.link-btn:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--danger);
+}
+
+.folder-group { margin-bottom: 16px; }
+
+.folder-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.folder-header svg {
+  width: 16px;
+  height: 16px;
+  color: var(--warning);
+}
+
+.file-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 12px;
+  transition: background 0.2s;
+  cursor: default;
+}
+
+.file-item:hover { background: var(--bg-tertiary); }
+
+.file-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.file-icon svg { width: 20px; height: 20px; }
+
+.file-icon.image { background: rgba(236, 72, 153, 0.1); color: #ec4899; }
+.file-icon.document { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
+.file-icon.code { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+.file-icon.archive { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
+.file-icon.video { background: rgba(139, 92, 246, 0.1); color: #8b5cf6; }
+.file-icon.audio { background: rgba(234, 179, 8, 0.1); color: #eab308; }
+.file-icon.default { background: var(--bg-tertiary); color: var(--text-tertiary); }
+
+.file-info { flex: 1; min-width: 0; }
+
+.file-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.file-size {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.file-actions {
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.file-item:hover .file-actions { opacity: 1; }
+
+.icon-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.icon-btn:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--danger);
+}
+
+.icon-btn svg { width: 16px; height: 16px; }
+
+.icon-btn.accent:hover {
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--accent);
+}
+
+.icon-btn.primary:hover {
+  background: rgba(59, 77, 219, 0.1);
+  color: var(--primary);
+}
+
+/* Settings */
+.settings-group { margin-bottom: 24px; }
+
+.settings-group:last-child { margin-bottom: 0; }
+
+.settings-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+}
+
+.compression-levels {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.level-btn {
+  padding: 12px 8px;
+  border: none;
+  border-radius: 12px;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+  font-family: inherit;
+}
+
+.level-btn:hover { background: var(--border); }
+
+.level-btn.active {
+  background: var(--primary);
+  color: white;
+  box-shadow: 0 4px 12px rgba(59, 77, 219, 0.3);
+}
+
+.level-btn-name {
+  font-size: 13px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin-bottom: 2px;
+}
+
+.level-btn-name svg { width: 14px; height: 14px; }
+
+.level-btn-speed {
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+.input-group {
+  position: relative;
+}
+
+.input-group input {
+  width: 100%;
+  padding: 12px 16px;
+  padding-right: 60px;
+  border: none;
+  border-radius: 12px;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-family: inherit;
+  transition: all 0.2s;
+}
+
+.input-group input:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--primary);
+}
+
+.input-group .suffix {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-tertiary);
+  font-size: 13px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.toggle-label svg { width: 16px; height: 16px; }
+
+.toggle {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  border-radius: 999px;
+  background: var(--border);
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.toggle.active { background: var(--primary); }
+
+.toggle::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: white;
+  transition: transform 0.3s;
+  box-shadow: var(--shadow-sm);
+}
+
+.toggle.active::after { transform: translateX(20px); }
+
+.password-input-wrap {
+  position: relative;
+  overflow: hidden;
+  max-height: 0;
+  transition: max-height 0.3s ease, margin 0.3s ease;
+}
+
+.password-input-wrap.show {
+  max-height: 60px;
+  margin-top: 12px;
+}
+
+.password-input-wrap input {
+  width: 100%;
+  padding: 12px 44px 12px 16px;
+  border: none;
+  border-radius: 12px;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.password-input-wrap input:focus { outline: none; box-shadow: 0 0 0 2px var(--primary); }
+
+.toggle-password {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  padding: 4px;
+}
+
+.toggle-password:hover { color: var(--text-secondary); }
+.toggle-password svg { width: 18px; height: 18px; }
+
+.stats-box {
+  background: var(--bg-tertiary);
+  border-radius: 12px;
+  padding: 16px;
+  text-align: center;
+}
+
+.stats-label {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  margin-bottom: 4px;
+}
+
+.stats-value {
+  font-size: 20px;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* Search */
+.search-wrap {
+  position: relative;
+  margin-bottom: 16px;
+}
+
+.search-wrap svg {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  color: var(--text-tertiary);
+}
+
+.search-wrap input {
+  width: 100%;
+  padding: 10px 16px 10px 40px;
+  border: none;
+  border-radius: 12px;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-family: inherit;
+}
+
+.search-wrap input:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
+/* File Tree */
+.tree-node { padding-left: 0; }
+
+.tree-children {
+  margin-left: 20px;
+  border-left: 1px solid var(--border);
+  padding-left: 8px;
+}
+
+.tree-folder {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.tree-folder:hover { background: var(--bg-tertiary); }
+
+.tree-folder svg.chevron {
+  width: 14px;
+  height: 14px;
+  color: var(--text-tertiary);
+  transition: transform 0.2s;
+}
+
+.tree-folder.expanded svg.chevron { transform: rotate(90deg); }
+
+.tree-folder-icon {
+  width: 20px;
+  height: 20px;
+  color: var(--warning);
+}
+
+.tree-folder-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  flex: 1;
+}
+
+.tree-folder-count {
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+.tree-file {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: default;
+  transition: background 0.2s;
+}
+
+.tree-file:hover { background: var(--bg-tertiary); }
+
+.tree-file .checkbox {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  border: 2px solid var(--border);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.tree-file .checkbox.checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.tree-file .checkbox svg {
+  width: 10px;
+  height: 10px;
+  color: white;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.tree-file .checkbox.checked svg { opacity: 1; }
+
+.tree-file-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.tree-file-icon svg { width: 14px; height: 14px; }
+
+.tree-file-info { flex: 1; min-width: 0; }
+
+.tree-file-name {
+  font-size: 13px;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tree-file-meta {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.tree-file-actions {
+  display: flex;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.tree-file:hover .tree-file-actions { opacity: 1; }
+
+/* Progress Modal */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 20px;
+  animation: fadeIn 0.3s ease;
+}
+
+.modal {
+  background: var(--bg-secondary);
+  border-radius: 24px;
+  padding: 40px;
+  max-width: 420px;
+  width: 100%;
+  text-align: center;
+  box-shadow: var(--shadow-lg);
+  animation: slideUp 0.4s ease;
+  position: relative;
+}
+
+.modal-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: var(--bg-tertiary);
+  color: var(--text-tertiary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.modal-close:hover {
+  background: var(--border);
+  color: var(--text-secondary);
+}
+
+.progress-ring-wrap {
+  position: relative;
+  width: 128px;
+  height: 128px;
+  margin: 0 auto 28px;
+}
+
+.progress-ring {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.progress-ring-bg {
+  fill: none;
+  stroke: var(--bg-tertiary);
+  stroke-width: 8;
+}
+
+.progress-ring-fill {
+  fill: none;
+  stroke: url(#progressGradient);
+  stroke-width: 8;
+  stroke-linecap: round;
+  stroke-dasharray: 283;
+  stroke-dashoffset: 283;
+  transition: stroke-dashoffset 0.3s ease;
+}
+
+.progress-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.progress-percent {
+  font-size: 28px;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.progress-label {
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.progress-icon {
+  width: 56px;
+  height: 56px;
+}
+
+.progress-icon.success { color: var(--accent); }
+.progress-icon.error { color: var(--danger); }
+
+.modal h3 {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: var(--text-primary);
+}
+
+.modal-file {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 24px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0 20px;
+}
+
+.modal-desc {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-bottom: 24px;
+}
+
+.modal-stats {
+  display: flex;
+  justify-content: center;
+  gap: 48px;
+  margin-bottom: 24px;
+}
+
+.modal-stat { text-align: center; }
+.modal-stat-label {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  margin-bottom: 4px;
+}
+.modal-stat-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* Features */
+.features {
+  margin-top: 64px;
+}
+
+.features h3 {
+  text-align: center;
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 32px;
+  color: var(--text-primary);
+}
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 768px) {
+  .features-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+.feature-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  padding: 24px;
+  text-align: center;
+  transition: transform 0.3s ease;
+}
+
+.feature-card:hover { transform: translateY(-4px); }
+
+.feature-icon {
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 16px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(59, 77, 219, 0.1), rgba(16, 185, 129, 0.1));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary);
+}
+
+.feature-icon svg { width: 24px; height: 24px; }
+
+.feature-card h4 {
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--text-primary);
+}
+
+.feature-card p {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+/* Password prompt */
+.password-prompt {
+  margin-top: 20px;
+  padding: 16px;
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: 12px;
+  animation: slideUp 0.3s ease;
+}
+
+.password-prompt p {
+  font-size: 13px;
+  color: var(--warning);
+  margin-bottom: 12px;
+}
+
+.password-prompt-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.password-prompt-actions input {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: 8px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.password-prompt-actions input:focus {
+  outline: none;
+  border-color: var(--warning);
+}
+
+/* Preview Modal */
+.preview-modal {
+  max-width: 720px;
+  max-height: 80vh;
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.preview-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.preview-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  margin-right: 16px;
+}
+
+.preview-body {
+  flex: 1;
+  overflow: auto;
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+}
+
+.preview-body img {
+  max-width: 100%;
+  max-height: 500px;
+  border-radius: 8px;
+}
+
+.preview-body iframe {
+  width: 100%;
+  height: 500px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.preview-unsupported {
+  text-align: center;
+  color: var(--text-tertiary);
+}
+
+.preview-unsupported svg {
+  width: 64px;
+  height: 64px;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+.preview-unsupported p {
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+
+/* Footer */
+footer {
+  text-align: center;
+  padding: 32px 0;
+  color: var(--text-tertiary);
+  font-size: 13px;
+}
+
+.hidden { display: none !important; }
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.animate-pulse { animation: pulse 2s ease-in-out infinite; }
+
+/* Mobile adjustments */
+@media (max-width: 640px) {
+  .hero h2 { font-size: 28px; }
+  .card { padding: 20px; }
+  .drop-zone { padding: 32px 20px; }
+  .tabs { display: none; }
+  .header-inner { padding: 12px 0; }
+  .logo-text h1 { font-size: 18px; }
+  .logo-text p { display: none; }
+  .features-grid { grid-template-columns: 1fr 1fr; }
+  .compression-levels { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="container header-inner">
+    <div class="logo">
+      <div class="logo-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 8v13H3V8"/>
+          <path d="M1 3h22v5H1z"/>
+          <path d="M10 12h4"/>
+        </svg>
+      </div>
+      <div class="logo-text">
+        <h1>ZipMaster</h1>
+        <p>ZIP 压缩解压工具</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <div class="tabs">
+        <button class="tab-btn active" id="tabPack" onclick="switchTab('pack')">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m7.5 4.27 9 5.15"/>
+            <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/>
+            <path d="m3.3 7 8.7 5 8.7-5"/>
+            <path d="M12 22V12"/>
+          </svg>
+          打包
+        </button>
+        <button class="tab-btn unpack-tab" id="tabUnpack" onclick="switchTab('unpack')">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 8v13H3V8"/>
+            <path d="M1 3h22v5H1z"/>
+            <path d="M10 12h4"/>
+          </svg>
+          解压
+        </button>
+      </div>
+      <button class="theme-toggle" onclick="toggleTheme()" title="切换主题">
+        <svg id="themeIcon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="4"/>
+          <path d="M12 2v2"/>
+          <path d="M12 20v2"/>
+          <path d="m4.93 4.93 1.41 1.41"/>
+          <path d="m17.66 17.66 1.41 1.41"/>
+          <path d="M2 12h2"/>
+          <path d="M20 12h2"/>
+          <path d="m6.34 17.66-1.41 1.41"/>
+          <path d="m19.07 4.93-1.41 1.41"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main class="container">
+
+  <!-- Pack Section -->
+  <section id="packSection">
+    <div class="hero">
+      <h2><span>ZIP 压缩打包</span></h2>
+      <p>拖拽文件或文件夹到下方区域，快速创建 ZIP 压缩包</p>
+    </div>
+
+    <div class="grid-layout">
+      <div>
+        <div class="card" style="margin-bottom: 24px;">
+          <div id="dropZone" class="drop-zone"
+               ondragenter="handleDragEnter(event)"
+               ondragleave="handleDragLeave(event)"
+               ondragover="handleDragOver(event)"
+               ondrop="handleDrop(event)"
+               onclick="document.getElementById('fileInput').click()">
+            <input type="file" id="fileInput" multiple style="display:none" onchange="handleFileSelect(event)">
+            <input type="file" id="folderInput" multiple webkitdirectory directory style="display:none" onchange="handleFolderSelect(event)">
+            <div class="drop-zone-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="17 8 12 3 7 8"/>
+                <line x1="12" y1="3" x2="12" y2="15"/>
+              </svg>
+            </div>
+            <h3>拖拽文件到此处</h3>
+            <p>支持拖拽多个文件或文件夹，或点击选择文件</p>
+            <div class="drop-buttons">
+              <button type="button" class="btn btn-primary" onclick="event.stopPropagation(); document.getElementById('fileInput').click()">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
+                  <polyline points="14 2 14 8 20 8"/>
+                  <line x1="12" y1="18" x2="12" y2="12"/>
+                  <line x1="9" y1="15" x2="15" y2="15"/>
+                </svg>
+                选择文件
+              </button>
+              <button type="button" class="btn btn-secondary" onclick="event.stopPropagation(); document.getElementById('folderInput').click()">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/>
+                </svg>
+                选择文件夹
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" id="fileListCard" style="display:none">
+          <div class="file-list-header">
+            <div class="count">
+              <h3 style="font-size:16px;font-weight:600;">文件列表</h3>
+              <span class="badge" id="fileCount">0 个文件</span>
+              <span class="text-sm" id="totalSize">0 B</span>
+            </div>
+            <button class="link-btn" onclick="clearAllFiles()">清空全部</button>
+          </div>
+          <div class="file-list" id="fileList"></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="card">
+          <div class="card-title">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+            压缩设置
+          </div>
+
+          <div class="settings-group">
+            <label class="settings-label">压缩级别</label>
+            <div class="compression-levels" id="compressionLevels">
+              <button class="level-btn" data-level="0" onclick="setCompressionLevel(0)">
+                <div class="level-btn-name">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 8v13H3V8"/>
+                    <path d="M1 3h22v5H1z"/>
+                  </svg>
+                  存储
+                </div>
+                <div class="level-btn-speed">最快</div>
+              </button>
+              <button class="level-btn" data-level="1" onclick="setCompressionLevel(1)">
+                <div class="level-btn-name">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                  </svg>
+                  最快
+                </div>
+                <div class="level-btn-speed">快</div>
+              </button>
+              <button class="level-btn" data-level="3" onclick="setCompressionLevel(3)">
+                <div class="level-btn-name">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                  </svg>
+                  较快
+                </div>
+                <div class="level-btn-speed">较快</div>
+              </button>
+              <button class="level-btn active" data-level="6" onclick="setCompressionLevel(6)">
+                <div class="level-btn-name">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                  </svg>
+                  标准
+                </div>
+                <div class="level-btn-speed">中等</div>
+              </button>
+              <button class="level-btn" data-level="8" onclick="setCompressionLevel(8)">
+                <div class="level-btn-name">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="11 2 2 14 12 14 10 22 22 10 12 10 11 2"/>
+                  </svg>
+                  较好
+                </div>
+                <div class="level-btn-speed">较慢</div>
+              </button>
+              <button class="level-btn" data-level="9" onclick="setCompressionLevel(9)">
+                <div class="level-btn-name">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="11 2 2 14 12 14 10 22 22 10 12 10 11 2"/>
+                  </svg>
+                  最佳
+                </div>
+                <div class="level-btn-speed">最慢</div>
+              </button>
+            </div>
+          </div>
+
+          <div class="settings-group">
+            <label class="settings-label">ZIP 文件名</label>
+            <div class="input-group">
+              <input type="text" id="zipName" value="archive" oninput="updateZipName(this.value)">
+              <span class="suffix">.zip</span>
+            </div>
+          </div>
+
+          <div class="settings-group">
+            <div class="toggle-row">
+              <label class="toggle-label">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                </svg>
+                密码保护
+              </label>
+              <div class="toggle" id="passwordToggle" onclick="togglePassword()"></div>
+            </div>
+            <div class="password-input-wrap" id="passwordInputWrap">
+              <input type="password" id="packPassword" placeholder="设置密码">
+              <button class="toggle-password" onclick="togglePasswordVisibility('packPassword', this)">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="settings-group" style="padding-top:16px;border-top:1px solid var(--border);">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+              <span style="font-size:14px;color:var(--text-secondary);">文件数量</span>
+              <span style="font-size:14px;font-weight:500;color:var(--text-primary);" id="statsFileCount">0 个</span>
+            </div>
+            <div class="stats-box">
+              <div class="stats-label">预计压缩比</div>
+              <div class="stats-value" id="compressionRatio">52%</div>
+            </div>
+          </div>
+        </div>
+
+        <div id="packBtnWrap" style="margin-top:24px;display:none;">
+          <button class="btn btn-primary btn-large" onclick="startPack()">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m7.5 4.27 9 5.15"/>
+              <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/>
+              <path d="m3.3 7 8.7 5 8.7-5"/>
+              <path d="M12 22V12"/>
+            </svg>
+            开始打包
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="features">
+      <h3>为什么选择 ZipMaster？</h3>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/>
+              <path d="m9 12 2 2 4-4"/>
+            </svg>
+          </div>
+          <h4>本地处理</h4>
+          <p>所有操作在浏览器本地完成，文件不上传服务器</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+            </svg>
+          </div>
+          <h4>快速高效</h4>
+          <p>支持多级别压缩，平衡速度与压缩率</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m7.5 4.27 9 5.15"/>
+              <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/>
+              <path d="m3.3 7 8.7 5 8.7-5"/>
+            </svg>
+          </div>
+          <h4>批量操作</h4>
+          <p>支持多文件、文件夹打包，批量提取</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M2 12h20"/>
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+            </svg>
+          </div>
+          <h4>即开即用</h4>
+          <p>无需安装，打开浏览器即可使用</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Unpack Section -->
+  <section id="unpackSection" style="display:none">
+    <div class="hero">
+      <h2><span>ZIP 解压预览</span></h2>
+      <p>上传 ZIP 文件，在线预览内容，选择性提取文件</p>
+    </div>
+
+    <div class="grid-layout">
+      <div>
+        <div class="card" id="unpackUploaderCard">
+          <div class="drop-zone accent" id="unpackDropZone"
+               ondragenter="handleUnpackDragEnter(event)"
+               ondragleave="handleUnpackDragLeave(event)"
+               ondragover="handleDragOver(event)"
+               ondrop="handleUnpackDrop(event)"
+               onclick="document.getElementById('zipFileInput').click()">
+            <input type="file" id="zipFileInput" accept=".zip" style="display:none" onchange="handleZipFileSelect(event)">
+            <div class="drop-zone-icon" id="unpackIcon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 8v13H3V8"/>
+                <path d="M1 3h22v5H1z"/>
+                <path d="M10 12h4"/>
+              </svg>
+            </div>
+            <h3 id="unpackTitle">上传 ZIP 文件</h3>
+            <p>拖拽 ZIP 文件到此处，或点击选择文件</p>
+            <div class="drop-buttons">
+              <button type="button" class="btn btn-accent" onclick="event.stopPropagation(); document.getElementById('zipFileInput').click()">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="17 8 12 3 7 8"/>
+                  <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+                选择 ZIP 文件
+              </button>
+            </div>
+          </div>
+
+          <div id="passwordPrompt" style="display:none">
+            <div class="password-prompt">
+              <p>此 ZIP 文件需要密码才能解压</p>
+              <div class="password-prompt-actions">
+                <input type="password" id="unpackPassword" placeholder="输入密码" onkeydown="if(event.key==='Enter') retryUnpackWithPassword()">
+                <button class="btn btn-accent" onclick="retryUnpackWithPassword()">确认</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" id="zipContentCard" style="display:none;margin-top:24px;">
+          <div class="file-list-header">
+            <div class="count">
+              <h3 style="font-size:16px;font-weight:600;">文件内容</h3>
+              <span class="badge accent" id="zipFileCount">0 个文件</span>
+              <span class="text-sm" id="zipTotalSize">0 B</span>
+            </div>
+            <div style="display:flex;gap:8px;">
+              <button class="link-btn" onclick="selectAllZipEntries()">全选</button>
+              <button class="link-btn" onclick="clearZipSelection()">清除</button>
+            </div>
+          </div>
+
+          <div class="search-wrap">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"/>
+              <path d="m21 21-4.3-4.3"/>
+            </svg>
+            <input type="text" id="zipSearch" placeholder="搜索文件..." oninput="filterZipEntries()">
+          </div>
+
+          <div class="file-list" id="zipFileTree"></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="card" id="extractPanel" style="display:none">
+          <div class="card-title accent">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M12 16v-4"/>
+              <path d="M12 8h.01"/>
+            </svg>
+            ZIP 信息
+          </div>
+
+          <button class="icon-btn" style="position:absolute;top:20px;right:20px;" onclick="resetUnpack()" title="重新选择">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/>
+              <path d="M21 3v5h-5"/>
+            </svg>
+          </button>
+
+          <div class="stats-grid" style="margin-bottom:20px;">
+            <div class="stats-box">
+              <div class="stats-label">原始大小</div>
+              <div class="stats-value" style="font-size:16px;" id="originalSize">0 B</div>
+            </div>
+            <div class="stats-box">
+              <div class="stats-label">压缩率</div>
+              <div class="stats-value" style="font-size:16px;color:var(--accent);-webkit-text-fill-color:var(--accent);" id="zipRatio">0%</div>
+            </div>
+          </div>
+
+          <div id="selectedInfo" style="display:none;margin-bottom:20px;padding:16px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.2);border-radius:12px;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="9 11 12 14 22 4"/>
+                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+              </svg>
+              <span style="font-size:14px;font-weight:500;color:var(--accent);" id="selectedCountText">已选择 0 个文件</span>
+            </div>
+            <p style="font-size:12px;color:var(--accent);opacity:80;font-family:'JetBrains Mono',monospace;" id="selectedSizeText">共 0 B</p>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:12px;">
+            <button class="btn btn-accent btn-large" onclick="extractAllToFolder()">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/>
+              </svg>
+              解压到文件夹
+            </button>
+            <button class="btn btn-primary btn-large" id="extractSelectedBtn" style="display:none" onclick="extractSelectedToFolder()">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/>
+              </svg>
+              选中文件解压到文件夹
+            </button>
+            <div style="display:flex;gap:8px;">
+              <button class="btn btn-secondary" style="flex:1;padding:10px 14px;font-size:13px;" onclick="extractAllAsZip()">
+                <svg xmlns="http://www.w3.org/2000/svg" style="width:14px;height:14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="7 10 12 15 17 10"/>
+                  <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                打包下载
+              </button>
+              <button class="btn btn-secondary" style="flex:1;padding:10px 14px;font-size:13px;" onclick="resetUnpack()">
+                <svg xmlns="http://www.w3.org/2000/svg" style="width:14px;height:14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 6h18"/>
+                  <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
+                  <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+                </svg>
+                清空
+              </button>
+            </div>
+            <div style="padding:10px 12px;background:var(--bg-tertiary);border-radius:10px;font-size:12px;color:var(--text-secondary);line-height:1.5;">
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;font-weight:500;">
+                <svg xmlns="http://www.w3.org/2000/svg" style="width:14px;height:14px;color:var(--accent);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"/>
+                  <path d="M12 16v-4"/>
+                  <path d="M12 8h.01"/>
+                </svg>
+                说明
+              </div>
+              "解压到文件夹"会让您选择一个本地文件夹，文件将直接解压到该文件夹中，保持原始目录结构。
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <p>ZipMaster · 纯前端 ZIP 工具 · 保护您的隐私安全</p>
+</footer>
+
+<!-- Progress Modal -->
+<div class="modal-overlay" id="progressModal" style="display:none">
+  <div class="modal">
+    <button class="modal-close" onclick="closeProgressModal()">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M18 6 6 18"/>
+        <path d="m6 6 12 12"/>
+      </svg>
+    </button>
+
+    <div class="progress-ring-wrap" id="progressRingWrap">
+      <svg class="progress-ring" viewBox="0 0 100 100">
+        <defs>
+          <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#3B4DDB"/>
+            <stop offset="100%" stop-color="#10B981"/>
+          </linearGradient>
+        </defs>
+        <circle class="progress-ring-bg" cx="50" cy="50" r="45"/>
+        <circle class="progress-ring-fill" id="progressRingFill" cx="50" cy="50" r="45"/>
+      </svg>
+      <div class="progress-center" id="progressCenter">
+        <div class="progress-percent" id="progressPercent">0%</div>
+        <div class="progress-label">完成</div>
+      </div>
+    </div>
+
+    <h3 id="progressTitle">正在打包文件...</h3>
+    <p class="modal-file" id="progressFile"></p>
+    <p class="modal-desc" id="progressDesc" style="display:none"></p>
+
+    <div class="modal-stats" id="progressStats">
+      <div class="modal-stat">
+        <div class="modal-stat-label">速度</div>
+        <div class="modal-stat-value" id="progressSpeed">0 B/s</div>
+      </div>
+      <div class="modal-stat">
+        <div class="modal-stat-label">剩余</div>
+        <div class="modal-stat-value" id="progressTime">--:--</div>
+      </div>
+    </div>
+
+    <button class="btn btn-primary btn-large" id="progressDoneBtn" style="display:none" onclick="closeProgressModal()">
+      好的
+    </button>
+  </div>
+</div>
+
+<!-- Preview Modal -->
+<div class="modal-overlay" id="previewModal" style="display:none" onclick="closePreviewModal(event)">
+  <div class="modal preview-modal" onclick="event.stopPropagation()">
+    <div class="preview-header">
+      <div class="preview-title" id="previewTitle"></div>
+      <button class="icon-btn" onclick="closePreviewModal()">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 6 6 18"/>
+          <path d="m6 6 12 12"/>
+        </svg>
+      </button>
+    </div>
+    <div class="preview-body" id="previewBody"></div>
+  </div>
+</div>
+
+<script>
+// ============= State =============
+let files = [];
+let compressionLevel = 6;
+let zipName = 'archive';
+let passwordEnabled = false;
+let currentTheme = 'light';
+
+let zipEntries = [];
+let selectedZipEntries = new Set();
+let currentZip = null;
+let expandedFolders = new Set(['']);
+let zipSearchQuery = '';
+
+// ============= Theme =============
+function initTheme() {
+  const saved = localStorage.getItem('zipmaster-theme');
+  if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+    currentTheme = 'dark';
+    updateThemeIcon();
+  }
+}
+
+function toggleTheme() {
+  const html = document.documentElement;
+  if (html.classList.contains('dark')) {
+    html.classList.remove('dark');
+    currentTheme = 'light';
+  } else {
+    html.classList.add('dark');
+    currentTheme = 'dark';
+  }
+  localStorage.setItem('zipmaster-theme', currentTheme);
+  updateThemeIcon();
+}
+
+function updateThemeIcon() {
+  const icon = document.getElementById('themeIcon');
+  if (currentTheme === 'dark') {
+    icon.innerHTML = `
+      <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>
+    `;
+  } else {
+    icon.innerHTML = `
+      <circle cx="12" cy="12" r="4"/>
+      <path d="M12 2v2"/>
+      <path d="M12 20v2"/>
+      <path d="m4.93 4.93 1.41 1.41"/>
+      <path d="m17.66 17.66 1.41 1.41"/>
+      <path d="M2 12h2"/>
+      <path d="M20 12h2"/>
+      <path d="m6.34 17.66-1.41 1.41"/>
+      <path d="m19.07 4.93-1.41 1.41"/>
+    `;
+  }
+}
+
+// ============= Tabs =============
+function switchTab(tab) {
+  const packSection = document.getElementById('packSection');
+  const unpackSection = document.getElementById('unpackSection');
+  const tabPack = document.getElementById('tabPack');
+  const tabUnpack = document.getElementById('tabUnpack');
+
+  if (tab === 'pack') {
+    packSection.style.display = 'block';
+    unpackSection.style.display = 'none';
+    tabPack.classList.add('active');
+    tabUnpack.classList.remove('active');
+  } else {
+    packSection.style.display = 'none';
+    unpackSection.style.display = 'block';
+    tabPack.classList.remove('active');
+    tabUnpack.classList.add('active');
+  }
+}
+
+// ============= Utils =============
+function formatFileSize(bytes) {
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+function formatSpeed(bytesPerSecond) {
+  if (bytesPerSecond === 0) return '0 B/s';
+  const k = 1024;
+  const sizes = ['B/s', 'KB/s', 'MB/s', 'GB/s'];
+  const i = Math.floor(Math.log(bytesPerSecond) / Math.log(k));
+  return parseFloat((bytesPerSecond / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+function formatTime(seconds) {
+  if (!isFinite(seconds) || seconds < 0) return '--:--';
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return mins.toString().padStart(2, '0') + ':' + secs.toString().padStart(2, '0');
+}
+
+function formatDate(date) {
+  const year = date.getFullYear();
+  const month = (date.getMonth() + 1).toString().padStart(2, '0');
+  const day = date.getDate().toString().padStart(2, '0');
+  const hours = date.getHours().toString().padStart(2, '0');
+  const minutes = date.getMinutes().toString().padStart(2, '0');
+  return year + '-' + month + '-' + day + ' ' + hours + ':' + minutes;
+}
+
+function getFileIconType(filename) {
+  const ext = filename.split('.').pop().toLowerCase();
+  const imageExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'ico'];
+  const docExts = ['doc', 'docx', 'pdf', 'txt', 'md', 'rtf'];
+  const codeExts = ['js', 'ts', 'jsx', 'tsx', 'html', 'css', 'py', 'java', 'c', 'cpp', 'go', 'rs', 'json', 'xml'];
+  const archiveExts = ['zip', 'rar', '7z', 'tar', 'gz', 'bz2'];
+  const videoExts = ['mp4', 'avi', 'mkv', 'mov', 'webm'];
+  const audioExts = ['mp3', 'wav', 'flac', 'ogg', 'aac'];
+
+  if (imageExts.includes(ext)) return 'image';
+  if (docExts.includes(ext)) return 'document';
+  if (codeExts.includes(ext)) return 'code';
+  if (archiveExts.includes(ext)) return 'archive';
+  if (videoExts.includes(ext)) return 'video';
+  if (audioExts.includes(ext)) return 'audio';
+  return 'default';
+}
+
+function getFileIconSvg(type) {
+  const icons = {
+    image: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>',
+    document: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>',
+    code: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>',
+    archive: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg>',
+    video: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 8-6 4 6 4V8Z"/><rect width="14" height="12" x="2" y="6" rx="2" ry="2"/></svg>',
+    audio: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>',
+    default: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>'
+  };
+  return icons[type] || icons.default;
+}
+
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 100);
+}
+
+// ============= Pack - Drag & Drop =============
+function handleDragEnter(e) {
+  e.preventDefault();
+  document.getElementById('dropZone').classList.add('dragging');
+}
+
+function handleDragLeave(e) {
+  e.preventDefault();
+  if (!e.currentTarget.contains(e.relatedTarget)) {
+    document.getElementById('dropZone').classList.remove('dragging');
+  }
+}
+
+function handleDragOver(e) {
+  e.preventDefault();
+}
+
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('dropZone').classList.remove('dragging');
+  if (e.dataTransfer.files.length > 0) {
+    addFiles(e.dataTransfer.files);
+  }
+}
+
+// ============= Pack - File Select =============
+function handleFileSelect(e) {
+  if (e.target.files.length > 0) {
+    addFiles(e.target.files);
+    e.target.value = '';
+  }
+}
+
+function handleFolderSelect(e) {
+  if (e.target.files.length > 0) {
+    addFiles(e.target.files);
+    e.target.value = '';
+  }
+}
+
+function addFiles(fileList) {
+  for (let i = 0; i < fileList.length; i++) {
+    const file = fileList[i];
+    const path = file.webkitRelativePath || file.name;
+    const exists = files.some(f => f.path === path);
+    if (!exists) {
+      files.push({
+        id: Math.random().toString(36).substr(2, 9),
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        path: path,
+        file: file
+      });
+    }
+  }
+  renderFileList();
+}
+
+// ============= Pack - File List =============
+function renderFileList() {
+  const card = document.getElementById('fileListCard');
+  const btnWrap = document.getElementById('packBtnWrap');
+
+  if (files.length === 0) {
+    card.style.display = 'none';
+    btnWrap.style.display = 'none';
+    return;
+  }
+
+  card.style.display = 'block';
+  btnWrap.style.display = 'block';
+
+  const totalSize = files.reduce((sum, f) => sum + f.size, 0);
+  document.getElementById('fileCount').textContent = files.length + ' 个文件';
+  document.getElementById('totalSize').textContent = formatFileSize(totalSize);
+  document.getElementById('statsFileCount').textContent = files.length + ' 个';
+
+  const grouped = {};
+  files.forEach(f => {
+    const parts = f.path.split('/');
+    const folder = parts.length > 1 ? parts.slice(0, -1).join('/') : '';
+    if (!grouped[folder]) grouped[folder] = [];
+    grouped[folder].push(f);
+  });
+
+  const folders = Object.keys(grouped).filter(Boolean);
+  let html = '';
+
+  if (folders.length > 0) {
+    folders.forEach(folder => {
+      html += `
+        <div class="folder-group">
+          <div class="folder-header">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/>
+            </svg>
+            <span>${folder}</span>
+            <span style="margin-left:4px;font-size:11px;color:var(--text-tertiary);">(${grouped[folder].length} 个文件)</span>
+          </div>
+          <div style="padding-left:24px;">
+      `;
+      grouped[folder].forEach(f => {
+        html += renderFileItem(f);
+      });
+      html += '</div></div>';
+    });
+  }
+
+  if (grouped['']) {
+    grouped[''].forEach(f => {
+      html += renderFileItem(f);
+    });
+  }
+
+  document.getElementById('fileList').innerHTML = html;
+}
+
+function renderFileItem(file) {
+  const iconType = getFileIconType(file.name);
+  return `
+    <div class="file-item">
+      <div class="file-icon ${iconType}">${getFileIconSvg(iconType)}</div>
+      <div class="file-info">
+        <div class="file-name">${file.name}</div>
+        <div class="file-size">${formatFileSize(file.size)}</div>
+      </div>
+      <div class="file-actions">
+        <button class="icon-btn" onclick="removeFile('${file.id}')" title="删除">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 6 6 18"/>
+            <path d="m6 6 12 12"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+function removeFile(id) {
+  files = files.filter(f => f.id !== id);
+  renderFileList();
+}
+
+function clearAllFiles() {
+  files = [];
+  renderFileList();
+}
+
+// ============= Pack - Settings =============
+function setCompressionLevel(level) {
+  compressionLevel = level;
+  document.querySelectorAll('.level-btn').forEach(btn => {
+    btn.classList.toggle('active', parseInt(btn.dataset.level) === level);
+  });
+  updateCompressionRatio();
+}
+
+function updateCompressionRatio() {
+  const ratio = compressionLevel === 0 ? '100%' : Math.max(30, 100 - compressionLevel * 8) + '%';
+  document.getElementById('compressionRatio').textContent = ratio;
+}
+
+function updateZipName(value) {
+  zipName = value || 'archive';
+}
+
+function togglePassword() {
+  passwordEnabled = !passwordEnabled;
+  const toggle = document.getElementById('passwordToggle');
+  const wrap = document.getElementById('passwordInputWrap');
+  toggle.classList.toggle('active', passwordEnabled);
+  wrap.classList.toggle('show', passwordEnabled);
+}
+
+function togglePasswordVisibility(inputId, btn) {
+  const input = document.getElementById(inputId);
+  if (input.type === 'password') {
+    input.type = 'text';
+    btn.innerHTML = `
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/>
+        <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/>
+        <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/>
+        <line x1="2" x2="22" y1="2" y2="22"/>
+      </svg>
+    `;
+  } else {
+    input.type = 'password';
+    btn.innerHTML = `
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
+        <circle cx="12" cy="12" r="3"/>
+      </svg>
+    `;
+  }
+}
+
+// ============= Pack - Start =============
+async function startPack() {
+  if (files.length === 0) return;
+
+  const password = passwordEnabled ? document.getElementById('packPassword').value : '';
+
+  showProgressModal('正在打包文件...');
+
+  const writerOptions = {
+    level: compressionLevel
+  };
+
+  if (password) {
+    writerOptions.password = password;
+    writerOptions.encryptionStrength = 3;
+  }
+
+  const writer = new zip.ZipWriter(new zip.BlobWriter('application/zip'), writerOptions);
+  const startTime = Date.now();
+  let processedSize = 0;
+  const totalSize = files.reduce((sum, f) => sum + f.size, 0);
+
+  try {
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      updateProgress({
+        currentFile: file.name,
+        percent: totalSize > 0 ? Math.min(90, (processedSize / totalSize) * 90) : 0
+      });
+
+      const reader = new zip.BlobReader(file.file);
+      await writer.add(file.path, reader, {
+        level: compressionLevel,
+        lastModDate: new Date(file.file.lastModified)
+      });
+
+      processedSize += file.size;
+      const elapsed = (Date.now() - startTime) / 1000;
+      const speed = elapsed > 0 ? processedSize / elapsed : 0;
+      const remaining = speed > 0 ? (totalSize - processedSize) / speed : 0;
+
+      updateProgress({
+        percent: totalSize > 0 ? Math.min(90, (processedSize / totalSize) * 90) : 0,
+        speed: speed,
+        time: remaining
+      });
+
+      await new Promise(r => setTimeout(r, 0));
+    }
+
+    updateProgress({ currentFile: '完成打包中...', percent: 90 });
+    const content = await writer.close();
+
+    updateProgress({ percent: 100, status: 'done' });
+
+    const filename = zipName.endsWith('.zip') ? zipName : zipName + '.zip';
+    downloadBlob(content, filename);
+
+  } catch (error) {
+    try { await writer.close(); } catch (e) {}
+    updateProgress({ status: 'error', message: error.message || '打包失败' });
+  }
+}
+
+// ============= Progress Modal =============
+function showProgressModal(title) {
+  document.getElementById('progressModal').style.display = 'flex';
+  document.getElementById('progressTitle').textContent = title;
+  document.getElementById('progressFile').textContent = '';
+  document.getElementById('progressDesc').style.display = 'none';
+  document.getElementById('progressStats').style.display = 'flex';
+  document.getElementById('progressDoneBtn').style.display = 'none';
+  document.getElementById('progressRingWrap').style.display = 'block';
+  updateProgress({ percent: 0, speed: 0, time: 0, status: 'processing' });
+}
+
+function updateProgress({ percent, currentFile, speed, time, status, message }) {
+  if (percent !== undefined) {
+    const circumference = 2 * Math.PI * 45;
+    const offset = circumference - (percent / 100) * circumference;
+    document.getElementById('progressRingFill').style.strokeDashoffset = offset;
+    document.getElementById('progressPercent').textContent = Math.round(percent) + '%';
+  }
+
+  if (currentFile !== undefined) {
+    document.getElementById('progressFile').textContent = currentFile;
+  }
+
+  if (speed !== undefined) {
+    document.getElementById('progressSpeed').textContent = formatSpeed(speed);
+  }
+
+  if (time !== undefined) {
+    document.getElementById('progressTime').textContent = formatTime(time);
+  }
+
+  if (status === 'done') {
+    document.getElementById('progressTitle').textContent = '完成！';
+    document.getElementById('progressFile').textContent = '';
+    document.getElementById('progressDesc').style.display = 'block';
+    document.getElementById('progressDesc').textContent = '文件已准备好下载';
+    document.getElementById('progressStats').style.display = 'none';
+    document.getElementById('progressDoneBtn').style.display = 'block';
+    document.getElementById('progressRingWrap').innerHTML = `
+      <svg class="progress-icon success" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:64px;height:64px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+        <polyline points="22 4 12 14.01 9 11.01"/>
+      </svg>
+    `;
+  }
+
+  if (status === 'error') {
+    document.getElementById('progressTitle').textContent = '出错了';
+    document.getElementById('progressFile').textContent = '';
+    document.getElementById('progressDesc').style.display = 'block';
+    document.getElementById('progressDesc').textContent = message || '操作失败';
+    document.getElementById('progressDesc').style.color = 'var(--danger)';
+    document.getElementById('progressStats').style.display = 'none';
+    document.getElementById('progressDoneBtn').style.display = 'block';
+    document.getElementById('progressDoneBtn').textContent = '关闭';
+    document.getElementById('progressRingWrap').innerHTML = `
+      <svg class="progress-icon error" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:64px;height:64px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="15" y1="9" x2="9" y2="15"/>
+        <line x1="9" y1="9" x2="15" y2="15"/>
+      </svg>
+    `;
+  }
+}
+
+function closeProgressModal() {
+  document.getElementById('progressModal').style.display = 'none';
+  document.getElementById('progressRingWrap').innerHTML = `
+    <svg class="progress-ring" viewBox="0 0 100 100">
+      <defs>
+        <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#3B4DDB"/>
+          <stop offset="100%" stop-color="#10B981"/>
+        </linearGradient>
+      </defs>
+      <circle class="progress-ring-bg" cx="50" cy="50" r="45"/>
+      <circle class="progress-ring-fill" id="progressRingFill" cx="50" cy="50" r="45"/>
+    </svg>
+    <div class="progress-center" id="progressCenter">
+      <div class="progress-percent" id="progressPercent">0%</div>
+      <div class="progress-label">完成</div>
+    </div>
+  `;
+}
+
+// ============= Unpack =============
+function handleUnpackDragEnter(e) {
+  e.preventDefault();
+  document.getElementById('unpackDropZone').classList.add('dragging');
+}
+
+function handleUnpackDragLeave(e) {
+  e.preventDefault();
+  if (!e.currentTarget.contains(e.relatedTarget)) {
+    document.getElementById('unpackDropZone').classList.remove('dragging');
+  }
+}
+
+function handleUnpackDrop(e) {
+  e.preventDefault();
+  document.getElementById('unpackDropZone').classList.remove('dragging');
+  const file = e.dataTransfer.files[0];
+  if (file && file.name.toLowerCase().endsWith('.zip')) {
+    loadZipFile(file);
+  }
+}
+
+function handleZipFileSelect(e) {
+  const file = e.target.files[0];
+  if (file) {
+    loadZipFile(file);
+  }
+  e.target.value = '';
+}
+
+let pendingZipFile = null;
+
+async function loadZipFile(file, password) {
+  pendingZipFile = file;
+  document.getElementById('passwordPrompt').style.display = 'none';
+
+  const icon = document.getElementById('unpackIcon');
+  const title = document.getElementById('unpackTitle');
+  icon.innerHTML = `
+    <svg class="animate-pulse" style="color:var(--accent);" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+    </svg>
+  `;
+  title.textContent = '正在解析 ZIP 文件...';
+
+  let reader = null;
+  try {
+    const blob = file;
+    const options = {};
+    if (password) options.password = password;
+
+    reader = new zip.ZipReader(new zip.BlobReader(blob), options);
+    const entries = await reader.getEntries();
+    currentZip = reader;
+
+    zipEntries = [];
+    let hasEncrypted = false;
+    entries.forEach(entry => {
+      if (entry.encrypted) hasEncrypted = true;
+      zipEntries.push({
+        name: entry.filename.split('/').pop() || entry.filename,
+        dir: entry.directory,
+        size: entry.uncompressedSize || 0,
+        compressedSize: entry.compressedSize || 0,
+        date: entry.lastModDate || new Date(),
+        path: entry.filename,
+        comment: entry.comment,
+        encrypted: entry.encrypted,
+        _zipEntry: entry
+      });
+    });
+
+    if (hasEncrypted && !password) {
+      currentZip = null;
+      try { await reader.close(); } catch (e) {}
+      document.getElementById('passwordPrompt').style.display = 'block';
+      icon.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </svg>
+      `;
+      title.textContent = '需要密码才能解压';
+      return;
+    }
+
+    if (hasEncrypted && password) {
+      const testEntry = entries.find(e => !e.directory && e.encrypted);
+      if (testEntry) {
+        try {
+          const testWriter = new zip.BlobWriter();
+          await testEntry.getData(testWriter);
+        } catch (pwError) {
+          currentZip = null;
+          try { await reader.close(); } catch (e) {}
+          document.getElementById('passwordPrompt').style.display = 'block';
+          const errorMsg = document.createElement('div');
+          errorMsg.style.color = 'var(--danger)';
+          errorMsg.style.fontSize = '12px';
+          errorMsg.style.marginTop = '8px';
+          errorMsg.textContent = '密码错误，请重新输入';
+          const existing = document.getElementById('passwordError');
+          if (existing) existing.remove();
+          errorMsg.id = 'passwordError';
+          document.querySelector('.password-prompt').appendChild(errorMsg);
+          icon.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+          `;
+          title.textContent = '需要密码才能解压';
+          return;
+        }
+      }
+    }
+
+    zipEntries.sort((a, b) => {
+      if (a.dir && !b.dir) return -1;
+      if (!a.dir && b.dir) return 1;
+      return a.path.localeCompare(b.path);
+    });
+
+    icon.innerHTML = `
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 8v13H3V8"/>
+        <path d="M1 3h22v5H1z"/>
+        <path d="M10 12h4"/>
+      </svg>
+    `;
+    title.textContent = 'ZIP 文件已加载';
+
+    renderZipContent();
+
+  } catch (error) {
+    if (reader) {
+      try { await reader.close(); } catch (e) {}
+    }
+    currentZip = null;
+    icon.innerHTML = `
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 8v13H3V8"/>
+        <path d="M1 3h22v5H1z"/>
+        <path d="M10 12h4"/>
+      </svg>
+    `;
+    title.textContent = '上传 ZIP 文件';
+
+    if (error.message && (error.message.includes('password') || error.message.includes('encrypted') || error.message.includes('Encryption'))) {
+      document.getElementById('passwordPrompt').style.display = 'block';
+    } else {
+      alert('解压失败: ' + (error.message || '未知错误'));
+    }
+  }
+}
+
+function retryUnpackWithPassword() {
+  const password = document.getElementById('unpackPassword').value;
+  if (password && pendingZipFile) {
+    loadZipFile(pendingZipFile, password);
+  }
+}
+
+function renderZipContent() {
+  document.getElementById('unpackUploaderCard').style.display = 'none';
+  document.getElementById('zipContentCard').style.display = 'block';
+  document.getElementById('extractPanel').style.display = 'block';
+
+  const fileEntries = zipEntries.filter(e => !e.dir);
+  const totalSize = fileEntries.reduce((sum, e) => sum + e.size, 0);
+  const compressedSize = fileEntries.reduce((sum, e) => sum + (e.compressedSize || 0), 0);
+  const ratio = totalSize > 0 ? ((1 - compressedSize / totalSize) * 100).toFixed(1) : '0';
+
+  document.getElementById('zipFileCount').textContent = fileEntries.length + ' 个文件';
+  document.getElementById('zipTotalSize').textContent = formatFileSize(totalSize);
+  document.getElementById('originalSize').textContent = formatFileSize(totalSize);
+  document.getElementById('zipRatio').textContent = ratio + '%';
+
+  renderZipTree();
+  updateSelectedInfo();
+}
+
+function renderZipTree() {
+  const tree = buildTree(zipEntries.filter(e => {
+    if (!zipSearchQuery) return true;
+    return e.name.toLowerCase().includes(zipSearchQuery.toLowerCase());
+  }));
+
+  let html = '';
+  tree.forEach(node => {
+    html += renderTreeNode(node, 0);
+  });
+
+  if (!html) {
+    html = '<div style="text-align:center;padding:32px;color:var(--text-tertiary);">未找到匹配的文件</div>';
+  }
+
+  document.getElementById('zipFileTree').innerHTML = html;
+}
+
+function buildTree(entries) {
+  const root = [];
+  const map = new Map();
+
+  entries.forEach(entry => {
+    const parts = entry.path.split('/').filter(Boolean);
+    let currentPath = '';
+    let currentLevel = root;
+
+    parts.forEach((part, index) => {
+      const isLast = index === parts.length - 1;
+      currentPath = currentPath ? currentPath + '/' + part : part;
+
+      let node = map.get(currentPath);
+      if (!node) {
+        node = {
+          name: part,
+          path: currentPath,
+          dir: !isLast || entry.dir,
+          entry: isLast ? entry : undefined,
+          children: []
+        };
+        map.set(currentPath, node);
+        currentLevel.push(node);
+      }
+      currentLevel = node.children;
+    });
+  });
+
+  const sortTree = nodes => {
+    nodes.sort((a, b) => {
+      if (a.dir && !b.dir) return -1;
+      if (!a.dir && b.dir) return 1;
+      return a.name.localeCompare(b.name);
+    });
+    nodes.forEach(n => n.children.length && sortTree(n.children));
+  };
+  sortTree(root);
+
+  return root;
+}
+
+function renderTreeNode(node, depth) {
+  if (node.dir) {
+    const isExpanded = expandedFolders.has(node.path);
+    const count = countFiles(node);
+    return `
+      <div class="tree-node">
+        <div class="tree-folder ${isExpanded ? 'expanded' : ''}" onclick="toggleFolder('${node.path}')">
+          <svg class="chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+          <svg class="tree-folder-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/>
+          </svg>
+          <span class="tree-folder-name">${node.name}</span>
+          <span class="tree-folder-count">${count}</span>
+        </div>
+        ${isExpanded ? `
+          <div class="tree-children">
+            ${node.children.map(child => renderTreeNode(child, depth + 1)).join('')}
+          </div>
+        ` : ''}
+      </div>
+    `;
+  } else {
+    const isSelected = selectedZipEntries.has(node.path);
+    const iconType = getFileIconType(node.name);
+    return `
+      <div class="tree-file">
+        <div class="checkbox ${isSelected ? 'checked' : ''}" onclick="toggleZipEntry('${node.path}')">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+        </div>
+        <div class="tree-file-icon ${iconType}">${getFileIconSvg(iconType)}</div>
+        <div class="tree-file-info">
+          <div class="tree-file-name">${node.name}</div>
+          <div class="tree-file-meta">${formatFileSize(node.entry.size)} · ${formatDate(node.entry.date)}</div>
+        </div>
+        <div class="tree-file-actions">
+          <button class="icon-btn primary" onclick="previewFile('${node.path}')" title="预览">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+          </button>
+          <button class="icon-btn accent" onclick="extractSingle('${node.path}')" title="下载">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    `;
+  }
+}
+
+function countFiles(node) {
+  if (!node.dir) return 1;
+  let count = 0;
+  node.children.forEach(child => {
+    count += countFiles(child);
+  });
+  return count;
+}
+
+function toggleFolder(path) {
+  if (expandedFolders.has(path)) {
+    expandedFolders.delete(path);
+  } else {
+    expandedFolders.add(path);
+  }
+  renderZipTree();
+}
+
+function toggleZipEntry(path) {
+  if (selectedZipEntries.has(path)) {
+    selectedZipEntries.delete(path);
+  } else {
+    selectedZipEntries.add(path);
+  }
+  renderZipTree();
+  updateSelectedInfo();
+}
+
+function selectAllZipEntries() {
+  zipEntries.filter(e => !e.dir).forEach(e => {
+    selectedZipEntries.add(e.path);
+  });
+  renderZipTree();
+  updateSelectedInfo();
+}
+
+function clearZipSelection() {
+  selectedZipEntries.clear();
+  renderZipTree();
+  updateSelectedInfo();
+}
+
+function updateSelectedInfo() {
+  const info = document.getElementById('selectedInfo');
+  const btn = document.getElementById('extractSelectedBtn');
+
+  if (selectedZipEntries.size === 0) {
+    info.style.display = 'none';
+    btn.style.display = 'none';
+    return;
+  }
+
+  info.style.display = 'block';
+  btn.style.display = 'block';
+
+  const size = zipEntries
+    .filter(e => selectedZipEntries.has(e.path))
+    .reduce((sum, e) => sum + e.size, 0);
+
+  document.getElementById('selectedCountText').textContent = '已选择 ' + selectedZipEntries.size + ' 个文件';
+  document.getElementById('selectedSizeText').textContent = '共 ' + formatFileSize(size);
+  btn.textContent = '提取选中 (' + selectedZipEntries.size + ')';
+}
+
+function filterZipEntries() {
+  zipSearchQuery = document.getElementById('zipSearch').value;
+  renderZipTree();
+}
+
+// ============= Unpack - Extract =============
+async function extractAllToFolder() {
+  if (!currentZip || zipEntries.length === 0) return;
+
+  if (!window.showDirectoryPicker) {
+    showFallbackDialog('all');
+    return;
+  }
+
+  try {
+    const dirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+    await extractEntriesToFolder(dirHandle, zipEntries.filter(e => !e.dir), '全部解压');
+  } catch (error) {
+    if (error.name !== 'AbortError') {
+      alert('解压失败: ' + error.message);
+    }
+  }
+}
+
+async function extractSelectedToFolder() {
+  if (!currentZip || selectedZipEntries.size === 0) return;
+
+  if (!window.showDirectoryPicker) {
+    showFallbackDialog('selected');
+    return;
+  }
+
+  try {
+    const dirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+    const entries = zipEntries.filter(e => selectedZipEntries.has(e.path) && !e.dir);
+    await extractEntriesToFolder(dirHandle, entries, '解压选中文件');
+  } catch (error) {
+    if (error.name !== 'AbortError') {
+      alert('解压失败: ' + error.message);
+    }
+  }
+}
+
+async function extractEntriesToFolder(dirHandle, entries, title) {
+  showProgressModal(title + '...');
+
+  const startTime = Date.now();
+  let processed = 0;
+  const totalSize = entries.reduce((sum, e) => sum + e.size, 0);
+  let processedSize = 0;
+
+  try {
+    for (let i = 0; i < entries.length; i++) {
+      const entry = entries[i];
+      updateProgress({ currentFile: entry.name });
+
+      const content = await entry._zipEntry.getData(new zip.BlobWriter());
+
+      const pathParts = entry.path.split('/');
+      let currentDir = dirHandle;
+
+      for (let j = 0; j < pathParts.length - 1; j++) {
+        currentDir = await currentDir.getDirectoryHandle(pathParts[j], { create: true });
+      }
+
+      const fileName = pathParts[pathParts.length - 1];
+      const fileHandle = await currentDir.getFileHandle(fileName, { create: true });
+      const writable = await fileHandle.createWritable();
+      await writable.write(content);
+      await writable.close();
+
+      processedSize += entry.size;
+
+      processed++;
+      const percent = (processed / entries.length) * 100;
+      const elapsed = (Date.now() - startTime) / 1000;
+      const speed = elapsed > 0 ? processedSize / elapsed : 0;
+      const remaining = speed > 0 ? (totalSize - processedSize) / speed : 0;
+
+      updateProgress({
+        percent: percent,
+        speed: speed,
+        time: remaining
+      });
+
+      await new Promise(r => setTimeout(r, 0));
+    }
+
+    updateProgress({ percent: 100, status: 'done' });
+
+  } catch (error) {
+    updateProgress({ status: 'error', message: error.message || '解压失败' });
+  }
+}
+
+function showFallbackDialog(mode) {
+  const msg = mode === 'all'
+    ? '您的浏览器不支持直接解压到文件夹功能。\n\n将使用打包下载方式：文件会被打包成一个 ZIP 文件下载，下载后您需要手动解压。\n\n建议使用 Chrome、Edge 或 Opera 浏览器以获得最佳体验。'
+    : '您的浏览器不支持直接解压到文件夹功能。\n\n将使用打包下载方式。\n\n建议使用 Chrome、Edge 或 Opera 浏览器。';
+
+  if (confirm(msg)) {
+    if (mode === 'all') {
+      extractAllAsZip();
+    } else {
+      extractSelectedAsZip();
+    }
+  }
+}
+
+async function extractAllAsZip() {
+  if (!currentZip || zipEntries.length === 0) return;
+
+  showProgressModal('正在打包文件...');
+
+  const fileEntries = zipEntries.filter(e => !e.dir);
+  const writer = new zip.ZipWriter(new zip.BlobWriter('application/zip'));
+  const startTime = Date.now();
+  let processed = 0;
+  let processedSize = 0;
+  const totalSize = fileEntries.reduce((sum, e) => sum + e.size, 0);
+
+  try {
+    for (let i = 0; i < fileEntries.length; i++) {
+      const entry = fileEntries[i];
+      updateProgress({ currentFile: entry.name });
+
+      const content = await entry._zipEntry.getData(new zip.BlobWriter());
+      await writer.add(entry.path, new zip.BlobReader(content), {
+        lastModDate: entry.date
+      });
+
+      processed++;
+      processedSize += entry.size;
+      const percent = (processed / fileEntries.length) * 100;
+      const elapsed = (Date.now() - startTime) / 1000;
+      const speed = elapsed > 0 ? processedSize / elapsed : 0;
+      const remaining = speed > 0 ? (totalSize - processedSize) / speed : 0;
+
+      updateProgress({
+        percent: percent,
+        speed: speed,
+        time: remaining
+      });
+
+      await new Promise(r => setTimeout(r, 0));
+    }
+
+    const content = await writer.close();
+    downloadBlob(content, 'extracted_files.zip');
+
+    updateProgress({ percent: 100, status: 'done' });
+
+  } catch (error) {
+    try { await writer.close(); } catch (e) {}
+    updateProgress({ status: 'error', message: error.message || '提取失败' });
+  }
+}
+
+async function extractSelectedAsZip() {
+  if (!currentZip || selectedZipEntries.size === 0) return;
+
+  showProgressModal('正在打包选中文件...');
+
+  const writer = new zip.ZipWriter(new zip.BlobWriter('application/zip'));
+  const entries = Array.from(selectedZipEntries);
+  const startTime = Date.now();
+  let processedSize = 0;
+  const fileEntries = zipEntries.filter(e => selectedZipEntries.has(e.path) && !e.dir);
+  const totalSize = fileEntries.reduce((sum, e) => sum + e.size, 0);
+
+  try {
+    for (let i = 0; i < entries.length; i++) {
+      const entryPath = entries[i];
+      const entry = zipEntries.find(e => e.path === entryPath);
+      if (!entry || entry.dir) continue;
+
+      updateProgress({ currentFile: entry.name });
+
+      const content = await entry._zipEntry.getData(new zip.BlobWriter());
+      await writer.add(entryPath, new zip.BlobReader(content), {
+        lastModDate: entry.date
+      });
+
+      processedSize += entry.size;
+      const percent = ((i + 1) / entries.length) * 100;
+      const elapsed = (Date.now() - startTime) / 1000;
+      const speed = elapsed > 0 ? processedSize / elapsed : 0;
+      const remaining = speed > 0 ? (totalSize - processedSize) / speed : 0;
+
+      updateProgress({
+        percent: percent,
+        speed: speed,
+        time: remaining
+      });
+    }
+
+    const content = await writer.close();
+    downloadBlob(content, 'selected_files.zip');
+
+    updateProgress({ percent: 100, status: 'done' });
+
+  } catch (error) {
+    try { await writer.close(); } catch (e) {}
+    updateProgress({ status: 'error', message: error.message || '提取失败' });
+  }
+}
+
+function extractAll() { extractAllToFolder(); }
+function extractSelected() { extractSelectedToFolder(); }
+
+async function extractSingle(path) {
+  if (!currentZip) return;
+
+  try {
+    const entry = zipEntries.find(e => e.path === path);
+    if (!entry || entry.dir) return;
+
+    const blob = await entry._zipEntry.getData(new zip.BlobWriter());
+    const filename = path.split('/').pop() || 'file';
+    downloadBlob(blob, filename);
+  } catch (error) {
+    alert('提取失败: ' + error.message);
+  }
+}
+
+async function previewFile(path) {
+  if (!currentZip) return;
+
+  try {
+    const entry = zipEntries.find(e => e.path === path);
+    if (!entry || entry.dir) return;
+
+    const blob = await entry._zipEntry.getData(new zip.BlobWriter());
+    const url = URL.createObjectURL(blob);
+    const filename = path.split('/').pop() || 'file';
+
+    document.getElementById('previewTitle').textContent = filename;
+
+    const body = document.getElementById('previewBody');
+    const ext = filename.split('.').pop().toLowerCase();
+    const imageExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp'];
+    const textExts = ['txt', 'md', 'json', 'js', 'ts', 'css', 'html', 'xml', 'csv'];
+
+    if (imageExts.includes(ext)) {
+      body.innerHTML = `<img src="${url}" alt="${filename}">`;
+    } else if (textExts.includes(ext)) {
+      body.innerHTML = `<iframe src="${url}" title="${filename}"></iframe>`;
+    } else {
+      body.innerHTML = `
+        <div class="preview-unsupported">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
+            <polyline points="14 2 14 8 20 8"/>
+          </svg>
+          <p>此文件类型不支持预览</p>
+          <button class="btn btn-accent" onclick="downloadPreviewFile('${url}', '${filename}')">下载文件</button>
+        </div>
+      `;
+    }
+
+    document.getElementById('previewModal').style.display = 'flex';
+    document.getElementById('previewModal').dataset.url = url;
+
+  } catch (error) {
+    alert('预览失败: ' + error.message);
+  }
+}
+
+function downloadPreviewFile(url, filename) {
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+}
+
+function closePreviewModal(e) {
+  if (e && e.target !== e.currentTarget) return;
+  const modal = document.getElementById('previewModal');
+  const url = modal.dataset.url;
+  if (url) {
+    URL.revokeObjectURL(url);
+  }
+  modal.style.display = 'none';
+}
+
+async function resetUnpack() {
+  if (currentZip) {
+    try { await currentZip.close(); } catch (e) {}
+  }
+  zipEntries = [];
+  selectedZipEntries.clear();
+  currentZip = null;
+  expandedFolders = new Set(['']);
+  zipSearchQuery = '';
+  pendingZipFile = null;
+
+  document.getElementById('unpackUploaderCard').style.display = 'block';
+  document.getElementById('zipContentCard').style.display = 'none';
+  document.getElementById('extractPanel').style.display = 'none';
+  document.getElementById('passwordPrompt').style.display = 'none';
+  document.getElementById('unpackPassword').value = '';
+  document.getElementById('zipSearch').value = '';
+  document.getElementById('unpackTitle').textContent = '上传 ZIP 文件';
+}
+
+// ============= Init =============
+initTheme();
+updateCompressionRatio();
+</script>
+
+</body>
+</html>

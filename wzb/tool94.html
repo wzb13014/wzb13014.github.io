@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF 压缩大师 - 专业级 PDF 优化工具</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .header { text-align: center; color: white; padding: 40px 0; }
+        .header h1 { font-size: 2.5rem; margin-bottom: 10px; text-shadow: 2px 2px 4px rgba(0,0,0,0.2); }
+        .header p { font-size: 1.1rem; opacity: 0.9; }
+        .main-card {
+            background: white; border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+            padding: 40px; margin-bottom: 20px;
+        }
+        .upload-area {
+            border: 3px dashed #667eea; border-radius: 15px;
+            padding: 60px 20px; text-align: center; cursor: pointer;
+            transition: all 0.3s ease; background: #f8f9ff; position: relative;
+        }
+        .upload-area:hover { border-color: #764ba2; background: #f0f2ff; transform: translateY(-2px); }
+        .upload-area.dragover { border-color: #764ba2; background: #e8ebff; transform: scale(1.02); }
+        .upload-icon { font-size: 4rem; margin-bottom: 15px; }
+        .upload-text { font-size: 1.2rem; color: #555; margin-bottom: 10px; }
+        .upload-hint { color: #888; font-size: 0.9rem; }
+        #fileInput { display: none; }
+        .file-list { margin-top: 20px; }
+        .file-item {
+            display: flex; align-items: center; padding: 15px;
+            background: #f8f9fa; border-radius: 10px; margin-bottom: 10px;
+            border-left: 4px solid #667eea; transition: all 0.3s ease;
+        }
+        .file-item:hover { transform: translateX(5px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .file-icon { font-size: 2rem; margin-right: 15px; }
+        .file-info { flex: 1; }
+        .file-name { font-weight: 600; color: #333; margin-bottom: 3px; }
+        .file-size { color: #888; font-size: 0.85rem; }
+        .file-status { padding: 5px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; }
+        .status-pending { background: #fff3cd; color: #856404; }
+        .status-processing { background: #cce5ff; color: #004085; }
+        .status-done { background: #d4edda; color: #155724; }
+        .status-error { background: #f8d7da; color: #721c24; }
+        .remove-btn {
+            background: none; border: none; color: #dc3545; cursor: pointer;
+            font-size: 1.2rem; padding: 5px; margin-left: 10px; transition: transform 0.2s;
+        }
+        .remove-btn:hover { transform: scale(1.2); }
+        .settings-section { margin-top: 30px; padding-top: 30px; border-top: 2px solid #eee; }
+        .section-title { font-size: 1.3rem; color: #333; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+        .settings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+        .setting-card { background: #f8f9fa; border-radius: 12px; padding: 20px; border: 1px solid #e9ecef; }
+        .setting-label { font-weight: 600; color: #555; margin-bottom: 10px; display: block; }
+        .setting-desc { font-size: 0.85rem; color: #888; margin-bottom: 12px; }
+        select, input[type="range"], input[type="text"] {
+            width: 100%; padding: 10px; border: 2px solid #ddd;
+            border-radius: 8px; font-size: 1rem; transition: border-color 0.3s;
+        }
+        select:focus, input:focus { outline: none; border-color: #667eea; }
+        .range-container { display: flex; align-items: center; gap: 15px; }
+        .range-value {
+            min-width: 50px; text-align: center; font-weight: 600; color: #667eea;
+            background: white; padding: 5px 10px; border-radius: 6px; border: 2px solid #667eea;
+        }
+        input[type="range"] {
+            flex: 1; -webkit-appearance: none; height: 8px;
+            background: #ddd; border-radius: 4px; outline: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none; width: 22px; height: 22px;
+            background: #667eea; border-radius: 50%; cursor: pointer;
+            box-shadow: 0 2px 6px rgba(102, 126, 234, 0.4);
+        }
+        input[type="range"]::-moz-range-thumb {
+            width: 22px; height: 22px; background: #667eea;
+            border-radius: 50%; cursor: pointer; border: none;
+        }
+        .checkbox-group { display: flex; flex-direction: column; gap: 10px; }
+        .checkbox-item {
+            display: flex; align-items: center; gap: 10px;
+            cursor: pointer; padding: 8px; border-radius: 6px; transition: background 0.2s;
+        }
+        .checkbox-item:hover { background: #e9ecef; }
+        .checkbox-item input[type="checkbox"] { width: 20px; height: 20px; accent-color: #667eea; }
+        .action-buttons {
+            display: flex; gap: 15px; margin-top: 30px;
+            flex-wrap: wrap; justify-content: center;
+        }
+        .btn {
+            padding: 14px 32px; border: none; border-radius: 10px;
+            font-size: 1rem; font-weight: 600; cursor: pointer;
+            transition: all 0.3s ease; display: flex; align-items: center; gap: 8px;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5); }
+        .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+        .btn-secondary { background: #6c757d; color: white; }
+        .btn-secondary:hover { background: #5a6268; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-success:hover { background: #218838; }
+        .progress-section { margin-top: 30px; display: none; }
+        .progress-bar-container {
+            background: #e9ecef; border-radius: 10px;
+            overflow: hidden; height: 30px; position: relative;
+        }
+        .progress-bar {
+            height: 100%; background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            border-radius: 10px; transition: width 0.3s ease;
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-weight: 600;
+        }
+        .progress-text { text-align: center; margin-top: 10px; color: #555; font-weight: 500; }
+        .results-section { margin-top: 30px; display: none; }
+        .results-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        .results-table th, .results-table td {
+            padding: 12px; text-align: left; border-bottom: 1px solid #dee2e6;
+        }
+        .results-table th { background: #f8f9fa; font-weight: 600; color: #555; }
+        .results-table tr:hover { background: #f8f9fa; }
+        .size-comparison { display: flex; align-items: center; gap: 10px; }
+        .size-before { color: #dc3545; text-decoration: line-through; }
+        .size-after { color: #28a745; font-weight: 600; }
+        .savings-badge {
+            background: #d4edda; color: #155724;
+            padding: 3px 10px; border-radius: 12px;
+            font-size: 0.85rem; font-weight: 600;
+        }
+        .download-btn {
+            background: #28a745; color: white; border: none;
+            padding: 6px 16px; border-radius: 6px; cursor: pointer;
+            font-size: 0.85rem; transition: background 0.2s;
+        }
+        .download-btn:hover { background: #218838; }
+        .stats-cards {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px; margin-bottom: 20px;
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; padding: 20px; border-radius: 12px; text-align: center;
+        }
+        .stat-value { font-size: 1.8rem; font-weight: 700; margin-bottom: 5px; }
+        .stat-label { font-size: 0.9rem; opacity: 0.9; }
+        .toast {
+            position: fixed; bottom: 30px; right: 30px;
+            background: #333; color: white; padding: 15px 25px;
+            border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            transform: translateY(100px); opacity: 0;
+            transition: all 0.3s ease; z-index: 2000;
+        }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.success { background: #28a745; }
+        .toast.error { background: #dc3545; }
+        .toast.info { background: #17a2b8; }
+        @media (max-width: 768px) {
+            .header h1 { font-size: 1.8rem; }
+            .main-card { padding: 20px; }
+            .settings-grid { grid-template-columns: 1fr; }
+        }
+        .spinner {
+            display: inline-block; width: 20px; height: 20px;
+            border: 3px solid rgba(255,255,255,0.3); border-radius: 50%;
+            border-top-color: white; animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .advanced-toggle {
+            display: flex; align-items: center; gap: 10px;
+            cursor: pointer; color: #667eea; font-weight: 600;
+            margin-top: 20px; padding: 10px; border-radius: 8px;
+            transition: background 0.2s;
+        }
+        .advanced-toggle:hover { background: #f0f2ff; }
+        .advanced-settings {
+            display: none; margin-top: 15px; padding: 20px;
+            background: #f8f9fa; border-radius: 12px; border: 1px solid #e9ecef;
+        }
+        .advanced-settings.show { display: block; }
+        .log-console {
+            background: #1e1e1e; color: #d4d4d4; padding: 15px;
+            border-radius: 8px; font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.85rem; max-height: 200px; overflow-y: auto; margin-top: 15px;
+        }
+        .log-entry { margin-bottom: 5px; padding: 3px 0; border-bottom: 1px solid #333; }
+        .log-time { color: #858585; margin-right: 10px; }
+        .log-info { color: #4fc1ff; }
+        .log-success { color: #4ec9b0; }
+        .log-warning { color: #dcdcaa; }
+        .log-error { color: #f48771; }
+        .error-details {
+            background: #fff5f5; border: 1px solid #feb2b2;
+            border-radius: 8px; padding: 15px; margin-top: 10px;
+            color: #c53030; font-size: 0.9rem;
+        }
+        .error-details pre { white-space: pre-wrap; word-break: break-all; }
+    </style>
+<base target="_blank">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📄 PDF 压缩大师</h1>
+            <p>专业级 PDF 优化工具 - 智能压缩、批量处理、隐私安全</p>
+        </div>
+
+        <div class="main-card">
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-icon">📁</div>
+                <div class="upload-text">点击或拖拽 PDF 文件到此处</div>
+                <div class="upload-hint">支持多文件批量上传，单个文件最大 100MB</div>
+                <input type="file" id="fileInput" accept=".pdf" multiple>
+            </div>
+
+            <div class="file-list" id="fileList"></div>
+
+            <div class="settings-section">
+                <div class="section-title">
+                    <span>⚙️</span>
+                    <span>压缩设置</span>
+                </div>
+
+                <div class="settings-grid">
+                    <div class="setting-card">
+                        <label class="setting-label">压缩质量</label>
+                        <div class="setting-desc">调整图像压缩质量，越低压缩率越高</div>
+                        <div class="range-container">
+                            <input type="range" id="qualityRange" min="1" max="100" value="60">
+                            <span class="range-value" id="qualityValue">60%</span>
+                        </div>
+                    </div>
+
+                    <div class="setting-card">
+                        <label class="setting-label">图像分辨率 (DPI)</label>
+                        <div class="setting-desc">降低分辨率可显著减小文件大小</div>
+                        <select id="dpiSelect">
+                            <option value="72">72 DPI (网页质量)</option>
+                            <option value="96">96 DPI (标准屏幕)</option>
+                            <option value="150" selected>150 DPI (打印质量)</option>
+                            <option value="200">200 DPI (高质量)</option>
+                            <option value="300">300 DPI (专业印刷)</option>
+                        </select>
+                    </div>
+
+                    <div class="setting-card">
+                        <label class="setting-label">压缩模式</label>
+                        <div class="setting-desc">选择适合您需求的压缩策略</div>
+                        <select id="modeSelect">
+                            <option value="balanced" selected>平衡模式 (推荐)</option>
+                            <option value="maximum">最大压缩 (最小文件)</option>
+                            <option value="quality">保留质量 (轻度压缩)</option>
+                            <option value="custom">自定义设置</option>
+                        </select>
+                    </div>
+
+                    <div class="setting-card">
+                        <label class="setting-label">图像格式转换</label>
+                        <div class="setting-desc">将所有图像转换为更高效格式</div>
+                        <select id="imageFormat">
+                            <option value="jpeg" selected>JPEG (高压缩)</option>
+                            <option value="png">PNG (无损)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="advanced-toggle" id="advancedToggle">
+                    <span>🔧</span>
+                    <span>高级设置</span>
+                    <span style="margin-left:auto">▼</span>
+                </div>
+
+                <div class="advanced-settings" id="advancedSettings">
+                    <div class="settings-grid">
+                        <div class="setting-card">
+                            <label class="setting-label">页面范围</label>
+                            <div class="setting-desc">仅压缩指定页面，留空表示全部</div>
+                            <input type="text" id="pageRange" placeholder="例如: 1-5, 8, 10-12">
+                        </div>
+
+                        <div class="setting-card">
+                            <label class="setting-label">颜色模式</label>
+                            <div class="setting-desc">转换为灰度可大幅减小文件</div>
+                            <select id="colorMode">
+                                <option value="color" selected>保留彩色</option>
+                                <option value="grayscale">转换为灰度</option>
+                                <option value="bw">黑白 (1-bit)</option>
+                            </select>
+                        </div>
+
+                        <div class="setting-card">
+                            <label class="setting-label">优化选项</label>
+                            <div class="checkbox-group">
+                                <label class="checkbox-item">
+                                    <input type="checkbox" id="removeMetadata" checked>
+                                    <span>移除元数据 (作者、创建日期等)</span>
+                                </label>
+                                <label class="checkbox-item">
+                                    <input type="checkbox" id="removeBookmarks" checked>
+                                    <span>移除书签和导航</span>
+                                </label>
+                                <label class="checkbox-item">
+                                    <input type="checkbox" id="removeAnnotations">
+                                    <span>移除注释和标记</span>
+                                </label>
+                                <label class="checkbox-item">
+                                    <input type="checkbox" id="flattenForms" checked>
+                                    <span>扁平化表单字段</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="setting-card">
+                            <label class="setting-label">输出设置</label>
+                            <div class="checkbox-group">
+                                <label class="checkbox-item">
+                                    <input type="checkbox" id="mergeOutput">
+                                    <span>合并为一个 PDF</span>
+                                </label>
+                                <label class="checkbox-item">
+                                    <input type="checkbox" id="addSuffix" checked>
+                                    <span>添加 "_compressed" 后缀</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="action-buttons">
+                <button class="btn btn-secondary" id="clearBtn">
+                    <span>🗑️</span> 清空列表
+                </button>
+                <button class="btn btn-primary" id="compressBtn" disabled>
+                    <span>🚀</span> 开始压缩
+                </button>
+                <button class="btn btn-success" id="downloadAllBtn" style="display:none;">
+                    <span>📦</span> 打包下载
+                </button>
+            </div>
+
+            <div class="progress-section" id="progressSection">
+                <div class="progress-bar-container">
+                    <div class="progress-bar" id="progressBar" style="width: 0%">0%</div>
+                </div>
+                <div class="progress-text" id="progressText">准备中...</div>
+            </div>
+
+            <div class="log-console" id="logConsole" style="display:none;">
+                <div class="log-entry"><span class="log-time">[系统]</span>等待操作...</div>
+            </div>
+
+            <div id="errorContainer"></div>
+
+            <div class="results-section" id="resultsSection">
+                <div class="section-title">
+                    <span>📊</span>
+                    <span>压缩结果</span>
+                </div>
+                <div class="stats-cards" id="statsCards"></div>
+                <table class="results-table">
+                    <thead>
+                        <tr>
+                            <th>文件名</th>
+                            <th>原始大小</th>
+                            <th>压缩后</th>
+                            <th>节省空间</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resultsTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // 配置 PDF.js worker
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+        // DOM 元素
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const fileList = document.getElementById('fileList');
+        const compressBtn = document.getElementById('compressBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const downloadAllBtn = document.getElementById('downloadAllBtn');
+        const progressSection = document.getElementById('progressSection');
+        const progressBar = document.getElementById('progressBar');
+        const progressText = document.getElementById('progressText');
+        const resultsSection = document.getElementById('resultsSection');
+        const statsCards = document.getElementById('statsCards');
+        const resultsTableBody = document.getElementById('resultsTableBody');
+        const logConsole = document.getElementById('logConsole');
+        const toast = document.getElementById('toast');
+        const advancedToggle = document.getElementById('advancedToggle');
+        const advancedSettings = document.getElementById('advancedSettings');
+        const errorContainer = document.getElementById('errorContainer');
+
+        let files = [];
+        let compressedFiles = [];
+
+        // 日志功能
+        function addLog(message, type = 'info') {
+            const time = new Date().toLocaleTimeString();
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.innerHTML = `<span class="log-time">[${time}]</span><span class="log-${type}">${message}</span>`;
+            logConsole.appendChild(entry);
+            logConsole.scrollTop = logConsole.scrollHeight;
+            logConsole.style.display = 'block';
+        }
+
+        // Toast 提示
+        function showToast(message, type = 'info') {
+            toast.textContent = message;
+            toast.className = 'toast show ' + type;
+            setTimeout(() => { toast.classList.remove('show'); }, 3000);
+        }
+
+        // 文件大小格式化
+        function formatSize(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // 上传区域事件
+        uploadArea.addEventListener('click', () => fileInput.click());
+        uploadArea.addEventListener('dragover', (e) => { e.preventDefault(); uploadArea.classList.add('dragover'); });
+        uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('dragover'));
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            handleFiles(e.dataTransfer.files);
+        });
+        fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
+
+        function handleFiles(fileList) {
+            for (let file of fileList) {
+                if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+                    showToast(`跳过非 PDF 文件: ${file.name}`, 'error');
+                    continue;
+                }
+                if (file.size > 100 * 1024 * 1024) {
+                    showToast(`文件过大: ${file.name}`, 'error');
+                    continue;
+                }
+                files.push({ file: file, id: Date.now() + Math.random(), status: 'pending' });
+            }
+            renderFileList();
+            compressBtn.disabled = files.length === 0;
+        }
+
+        function renderFileList() {
+            fileList.innerHTML = '';
+            files.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = 'file-item';
+                div.innerHTML = `
+                    <span class="file-icon">📄</span>
+                    <div class="file-info">
+                        <div class="file-name">${item.file.name}</div>
+                        <div class="file-size">${formatSize(item.file.size)}</div>
+                    </div>
+                    <span class="file-status status-${item.status}">${getStatusText(item.status)}</span>
+                    <button class="remove-btn" onclick="removeFile(${index})">✕</button>
+                `;
+                fileList.appendChild(div);
+            });
+        }
+
+        function getStatusText(status) {
+            const map = { 'pending': '待处理', 'processing': '处理中...', 'done': '已完成', 'error': '失败' };
+            return map[status] || status;
+        }
+
+        window.removeFile = function(index) {
+            files.splice(index, 1);
+            renderFileList();
+            compressBtn.disabled = files.length === 0;
+        };
+
+        clearBtn.addEventListener('click', () => {
+            files = [];
+            compressedFiles = [];
+            renderFileList();
+            compressBtn.disabled = true;
+            downloadAllBtn.style.display = 'none';
+            resultsSection.style.display = 'none';
+            progressSection.style.display = 'none';
+            logConsole.style.display = 'none';
+            logConsole.innerHTML = '';
+            errorContainer.innerHTML = '';
+            showToast('已清空所有文件', 'info');
+        });
+
+        // 质量滑块
+        const qualityRange = document.getElementById('qualityRange');
+        const qualityValue = document.getElementById('qualityValue');
+        qualityRange.addEventListener('input', (e) => { qualityValue.textContent = e.target.value + '%'; });
+
+        // 模式选择联动
+        const modeSelect = document.getElementById('modeSelect');
+        modeSelect.addEventListener('change', (e) => {
+            const mode = e.target.value;
+            if (mode === 'maximum') {
+                qualityRange.value = 30; qualityValue.textContent = '30%';
+                document.getElementById('dpiSelect').value = '72';
+                document.getElementById('colorMode').value = 'grayscale';
+            } else if (mode === 'quality') {
+                qualityRange.value = 85; qualityValue.textContent = '85%';
+                document.getElementById('dpiSelect').value = '300';
+                document.getElementById('colorMode').value = 'color';
+            } else if (mode === 'balanced') {
+                qualityRange.value = 60; qualityValue.textContent = '60%';
+                document.getElementById('dpiSelect').value = '150';
+                document.getElementById('colorMode').value = 'color';
+            }
+        });
+
+        // 高级设置切换
+        advancedToggle.addEventListener('click', () => {
+            advancedSettings.classList.toggle('show');
+            const arrow = advancedToggle.querySelector('span:last-child');
+            arrow.textContent = advancedSettings.classList.contains('show') ? '▲' : '▼';
+        });
+
+        // 压缩主逻辑
+        compressBtn.addEventListener('click', async () => {
+            if (files.length === 0) return;
+
+            compressedFiles = [];
+            compressBtn.disabled = true;
+            progressSection.style.display = 'block';
+            resultsSection.style.display = 'none';
+            downloadAllBtn.style.display = 'none';
+            errorContainer.innerHTML = '';
+
+            const settings = {
+                quality: parseInt(qualityRange.value) / 100,
+                dpi: parseInt(document.getElementById('dpiSelect').value),
+                imageFormat: document.getElementById('imageFormat').value,
+                colorMode: document.getElementById('colorMode').value,
+                removeMetadata: document.getElementById('removeMetadata').checked,
+                removeBookmarks: document.getElementById('removeBookmarks').checked,
+                removeAnnotations: document.getElementById('removeAnnotations').checked,
+                flattenForms: document.getElementById('flattenForms').checked,
+                pageRange: document.getElementById('pageRange').value,
+                mergeOutput: document.getElementById('mergeOutput').checked,
+                addSuffix: document.getElementById('addSuffix').checked
+            };
+
+            addLog('开始压缩任务，共 ' + files.length + ' 个文件', 'info');
+
+            for (let i = 0; i < files.length; i++) {
+                files[i].status = 'processing';
+                renderFileList();
+
+                updateProgress((i / files.length) * 100, `正在处理: ${files[i].file.name}`);
+                addLog(`开始处理: ${files[i].file.name}`, 'info');
+
+                try {
+                    const result = await compressPDF(files[i].file, settings);
+                    compressedFiles.push(result);
+                    files[i].status = 'done';
+                    addLog(`完成: ${files[i].file.name} - 节省 ${result.savingsPercent}%`, 'success');
+                } catch (error) {
+                    files[i].status = 'error';
+                    addLog(`错误: ${files[i].file.name} - ${error.message}`, 'error');
+                    showToast(`压缩失败: ${files[i].file.name}`, 'error');
+                    console.error('压缩错误:', error);
+
+                    // 显示错误详情
+                    const errorDiv = document.createElement('div');
+                    errorDiv.className = 'error-details';
+                    errorDiv.innerHTML = `<strong>错误详情 (${files[i].file.name}):</strong><pre>${error.stack || error.message}</pre>`;
+                    errorContainer.appendChild(errorDiv);
+                }
+                renderFileList();
+            }
+
+            updateProgress(100, '压缩完成！');
+            compressBtn.disabled = false;
+
+            if (compressedFiles.length > 0) {
+                showResults();
+                if (compressedFiles.length > 1) {
+                    downloadAllBtn.style.display = 'flex';
+                }
+                showToast(`成功压缩 ${compressedFiles.length} 个文件！`, 'success');
+            }
+        });
+
+        function updateProgress(percent, text) {
+            progressBar.style.width = percent + '%';
+            progressBar.textContent = Math.round(percent) + '%';
+            progressText.textContent = text;
+        }
+
+        async function compressPDF(file, settings) {
+            const arrayBuffer = await file.arrayBuffer();
+            const originalSize = file.size;
+
+            addLog(`读取文件: ${file.name} (${formatSize(originalSize)})`, 'info');
+
+            // 使用 pdf-lib 处理
+            const pdfDoc = await PDFLib.PDFDocument.load(arrayBuffer, { updateMetadata: false });
+            addLog('PDF 文档加载成功', 'success');
+
+            // 移除元数据
+            if (settings.removeMetadata) {
+                try {
+                    pdfDoc.setTitle('');
+                    pdfDoc.setAuthor('');
+                    pdfDoc.setSubject('');
+                    pdfDoc.setKeywords([]);
+                    pdfDoc.setProducer('');
+                    pdfDoc.setCreator('PDF Compressor');
+                    addLog('已清理元数据', 'info');
+                } catch (e) {
+                    addLog('清理元数据时出错: ' + e.message, 'warning');
+                }
+            }
+
+            // 获取页面
+            const pages = pdfDoc.getPages();
+            addLog(`文档共 ${pages.length} 页`, 'info');
+
+            const pageRange = parsePageRange(settings.pageRange, pages.length);
+            if (pageRange) {
+                addLog(`仅处理页面: ${pageRange.join(', ')}`, 'info');
+            }
+
+            // 创建新的 PDF 文档用于输出
+            const newPdfDoc = await PDFLib.PDFDocument.create();
+
+            // 复制页面（先复制所有页面结构）
+            const pageIndices = [];
+            for (let i = 0; i < pages.length; i++) {
+                if (!pageRange || pageRange.includes(i + 1)) {
+                    pageIndices.push(i);
+                }
+            }
+
+            if (pageIndices.length === 0) {
+                throw new Error('没有要处理的页面');
+            }
+
+            // 使用 PDF.js 渲染页面
+            const pdfDocument = await pdfjsLib.getDocument({ data: arrayBuffer.slice(0) }).promise;
+            addLog('PDF.js 渲染器初始化成功', 'info');
+
+            for (let idx = 0; idx < pageIndices.length; idx++) {
+                const pageIndex = pageIndices[idx];
+                const pageNum = pageIndex + 1;
+
+                addLog(`处理第 ${pageNum} 页...`, 'info');
+
+                try {
+                    const pdfPage = await pdfDocument.getPage(pageNum);
+                    const viewport = pdfPage.getViewport({ scale: settings.dpi / 72 });
+
+                    const canvas = document.createElement('canvas');
+                    const context = canvas.getContext('2d');
+                    canvas.width = viewport.width;
+                    canvas.height = viewport.height;
+
+                    await pdfPage.render({ canvasContext: context, viewport: viewport }).promise;
+                    addLog(`第 ${pageNum} 页渲染完成 (${canvas.width}x${canvas.height})`, 'info');
+
+                    // 颜色模式处理
+                    if (settings.colorMode === 'grayscale') {
+                        const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+                        const data = imageData.data;
+                        for (let j = 0; j < data.length; j += 4) {
+                            const gray = 0.299 * data[j] + 0.587 * data[j + 1] + 0.114 * data[j + 2];
+                            data[j] = gray; data[j + 1] = gray; data[j + 2] = gray;
+                        }
+                        context.putImageData(imageData, 0, 0);
+                        addLog(`第 ${pageNum} 页已转换为灰度`, 'info');
+                    } else if (settings.colorMode === 'bw') {
+                        const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+                        const data = imageData.data;
+                        for (let j = 0; j < data.length; j += 4) {
+                            const gray = 0.299 * data[j] + 0.587 * data[j + 1] + 0.114 * data[j + 2];
+                            const bw = gray > 128 ? 255 : 0;
+                            data[j] = bw; data[j + 1] = bw; data[j + 2] = bw;
+                        }
+                        context.putImageData(imageData, 0, 0);
+                        addLog(`第 ${pageNum} 页已转换为黑白`, 'info');
+                    }
+
+                    // 转换为图像数据
+                    let imageDataUrl;
+                    if (settings.imageFormat === 'jpeg') {
+                        imageDataUrl = canvas.toDataURL('image/jpeg', settings.quality);
+                    } else {
+                        imageDataUrl = canvas.toDataURL('image/png');
+                    }
+
+                    // 嵌入图像到新 PDF
+                    const imageBytes = await fetch(imageDataUrl).then(r => r.arrayBuffer());
+                    let embeddedImage;
+                    if (settings.imageFormat === 'jpeg') {
+                        embeddedImage = await newPdfDoc.embedJpg(imageBytes);
+                    } else {
+                        embeddedImage = await newPdfDoc.embedPng(imageBytes);
+                    }
+
+                    // 创建新页面并添加图像
+                    const newPage = newPdfDoc.addPage([viewport.width, viewport.height]);
+                    newPage.drawImage(embeddedImage, {
+                        x: 0, y: 0, width: viewport.width, height: viewport.height
+                    });
+
+                    pdfPage.cleanup();
+                    addLog(`第 ${pageNum} 页处理完成`, 'success');
+
+                } catch (pageError) {
+                    addLog(`第 ${pageNum} 页处理失败: ${pageError.message}`, 'error');
+                    throw pageError;
+                }
+            }
+
+            // 保存
+            addLog('正在保存压缩后的文档...', 'info');
+            const compressedBytes = await newPdfDoc.save({
+                useObjectStreams: true,
+                addDefaultPage: false
+            });
+
+            const compressedBlob = new Blob([compressedBytes], { type: 'application/pdf' });
+            const compressedSize = compressedBlob.size;
+            const savings = originalSize - compressedSize;
+            const savingsPercent = savings > 0 ? ((savings / originalSize) * 100).toFixed(1) : '0.0';
+
+            let fileName = file.name;
+            if (settings.addSuffix) {
+                const extIndex = fileName.lastIndexOf('.');
+                if (extIndex > 0) {
+                    fileName = fileName.substring(0, extIndex) + '_compressed' + fileName.substring(extIndex);
+                } else {
+                    fileName = fileName + '_compressed.pdf';
+                }
+            }
+
+            addLog(`压缩完成: ${formatSize(originalSize)} → ${formatSize(compressedSize)} (节省 ${savingsPercent}%)`, 'success');
+
+            return {
+                originalName: file.name,
+                fileName: fileName,
+                originalSize: originalSize,
+                compressedSize: compressedSize,
+                savings: savings,
+                savingsPercent: savingsPercent,
+                blob: compressedBlob
+            };
+        }
+
+        function parsePageRange(rangeStr, totalPages) {
+            if (!rangeStr || !rangeStr.trim()) return null;
+            const pages = new Set();
+            const parts = rangeStr.split(',');
+
+            for (let part of parts) {
+                part = part.trim();
+                if (part.includes('-')) {
+                    const [start, end] = part.split('-').map(Number);
+                    if (!isNaN(start) && !isNaN(end)) {
+                        for (let i = Math.max(1, start); i <= Math.min(end, totalPages); i++) {
+                            pages.add(i);
+                        }
+                    }
+                } else {
+                    const num = Number(part);
+                    if (!isNaN(num) && num > 0 && num <= totalPages) pages.add(num);
+                }
+            }
+            return Array.from(pages).sort((a, b) => a - b);
+        }
+
+        function showResults() {
+            resultsSection.style.display = 'block';
+
+            const totalOriginal = compressedFiles.reduce((sum, f) => sum + f.originalSize, 0);
+            const totalCompressed = compressedFiles.reduce((sum, f) => sum + f.compressedSize, 0);
+            const totalSavings = totalOriginal - totalCompressed;
+            const avgSavings = totalOriginal > 0 ? ((totalSavings / totalOriginal) * 100).toFixed(1) : '0.0';
+
+            statsCards.innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-value">${compressedFiles.length}</div>
+                    <div class="stat-label">处理文件数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${formatSize(totalOriginal)}</div>
+                    <div class="stat-label">原始总大小</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${formatSize(totalCompressed)}</div>
+                    <div class="stat-label">压缩后总大小</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${avgSavings}%</div>
+                    <div class="stat-label">平均节省</div>
+                </div>
+            `;
+
+            resultsTableBody.innerHTML = '';
+            compressedFiles.forEach((file, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${file.originalName}</td>
+                    <td class="size-before">${formatSize(file.originalSize)}</td>
+                    <td class="size-after">${formatSize(file.compressedSize)}</td>
+                    <td>
+                        <div class="size-comparison">
+                            <span class="savings-badge">-${file.savingsPercent}%</span>
+                            <span style="color:#888;font-size:0.85rem">${formatSize(file.savings)}</span>
+                        </div>
+                    </td>
+                    <td>
+                        <button class="download-btn" onclick="downloadFile(${index})">下载</button>
+                    </td>
+                `;
+                resultsTableBody.appendChild(row);
+            });
+        }
+
+        window.downloadFile = function(index) {
+            const file = compressedFiles[index];
+            const url = URL.createObjectURL(file.blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = file.fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast(`已下载: ${file.fileName}`, 'success');
+        };
+
+        downloadAllBtn.addEventListener('click', async () => {
+            if (compressedFiles.length === 1) {
+                downloadFile(0);
+                return;
+            }
+
+            const mergeOutput = document.getElementById('mergeOutput').checked;
+
+            if (mergeOutput) {
+                try {
+                    addLog('正在合并所有 PDF...', 'info');
+                    const mergedPdf = await PDFLib.PDFDocument.create();
+                    for (const file of compressedFiles) {
+                        const pdf = await PDFLib.PDFDocument.load(await file.blob.arrayBuffer());
+                        const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
+                        copiedPages.forEach(page => mergedPdf.addPage(page));
+                    }
+                    const mergedBytes = await mergedPdf.save();
+                    const mergedBlob = new Blob([mergedBytes], { type: 'application/pdf' });
+                    const url = URL.createObjectURL(mergedBlob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'merged_compressed.pdf';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    showToast('已下载合并后的 PDF', 'success');
+                } catch (e) {
+                    addLog('合并失败: ' + e.message, 'error');
+                    showToast('合并失败，将分别下载', 'error');
+                    downloadAllAsZip();
+                }
+            } else {
+                downloadAllAsZip();
+            }
+        });
+
+        async function downloadAllAsZip() {
+            addLog('正在打包为 ZIP...', 'info');
+            const zip = new JSZip();
+            compressedFiles.forEach(file => { zip.file(file.fileName, file.blob); });
+
+            const content = await zip.generateAsync({ type: 'blob' });
+            const url = URL.createObjectURL(content);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'compressed_pdfs.zip';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast('已打包下载所有文件', 'success');
+        }
+
+        // 初始化
+        addLog('PDF 压缩大师已就绪', 'info');
+        addLog('请上传 PDF 文件开始压缩', 'info');
+    </script>
+</body>
+</html>

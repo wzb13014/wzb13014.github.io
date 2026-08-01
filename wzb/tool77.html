@@ -1,0 +1,2079 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>全能翻译工具</title>
+<style>
+:root {
+  --primary: #4f46e5;
+  --primary-hover: #4338ca;
+  --bg: #f8fafc;
+  --surface: #ffffff;
+  --text: #1e293b;
+  --text-secondary: #64748b;
+  --border: #e2e8f0;
+  --accent: #0ea5e9;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --radius: 12px;
+  --radius-sm: 8px;
+  --transition: all 0.2s ease;
+}
+
+[data-theme="dark"] {
+  --primary: #6366f1;
+  --primary-hover: #818cf8;
+  --bg: #0f172a;
+  --surface: #1e293b;
+  --text: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --border: #334155;
+  --accent: #38bdf8;
+  --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.3);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.3);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  height: 100vh;
+  overflow: hidden;
+  transition: var(--transition);
+}
+
+.app-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+/* Header */
+.header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: var(--shadow);
+  z-index: 100;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.logo-icon {
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 18px;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.icon-btn {
+  width: 38px;
+  height: 38px;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  transition: var(--transition);
+  font-size: 18px;
+}
+
+.icon-btn:hover {
+  background: var(--bg);
+  color: var(--text);
+}
+
+.icon-btn.active {
+  color: var(--primary);
+  background: rgba(79, 70, 229, 0.1);
+}
+
+/* Main Layout */
+.main-content {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Sidebar */
+.sidebar {
+  width: 300px;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  transition: var(--transition);
+}
+
+.sidebar.collapsed {
+  width: 0;
+  border-right: none;
+  overflow: hidden;
+}
+
+.sidebar-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+}
+
+.sidebar-tab {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: var(--transition);
+  border-bottom: 2px solid transparent;
+}
+
+.sidebar-tab.active {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+}
+
+.sidebar-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+}
+
+.history-item, .favorite-item {
+  background: var(--bg);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: var(--transition);
+  border: 1px solid transparent;
+}
+
+.history-item:hover, .favorite-item:hover {
+  border-color: var(--primary);
+  transform: translateY(-1px);
+}
+
+.history-text {
+  font-size: 13px;
+  color: var(--text);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+
+.history-meta {
+  font-size: 11px;
+  color: var(--text-secondary);
+  display: flex;
+  justify-content: space-between;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.empty-state-icon {
+  font-size: 48px;
+  margin-bottom: 12px;
+  opacity: 0.5;
+}
+
+/* Translator Area */
+.translator-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  overflow: auto;
+}
+
+.language-bar {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow);
+}
+
+.lang-select-wrapper {
+  flex: 1;
+  position: relative;
+}
+
+.lang-select {
+  width: 100%;
+  padding: 10px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  appearance: none;
+  transition: var(--transition);
+}
+
+.lang-select:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+.swap-btn {
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--bg);
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.swap-btn:hover {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+  transform: rotate(180deg);
+}
+
+/* Translation Panels */
+.translation-panels {
+  flex: 1;
+  display: flex;
+  gap: 16px;
+  min-height: 0;
+}
+
+.panel {
+  flex: 1;
+  background: var(--surface);
+  border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.panel-header {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--bg);
+}
+
+.panel-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.panel-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.panel-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+textarea {
+  flex: 1;
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font-size: 16px;
+  line-height: 1.6;
+  padding: 16px;
+  resize: none;
+  font-family: inherit;
+  transition: var(--transition);
+}
+
+textarea:focus {
+  outline: none;
+}
+
+textarea::placeholder {
+  color: var(--text-secondary);
+}
+
+.translation-output {
+  flex: 1;
+  padding: 16px;
+  font-size: 16px;
+  line-height: 1.6;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.panel-footer {
+  padding: 8px 16px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: var(--text-secondary);
+  background: var(--bg);
+}
+
+.char-count {
+  display: flex;
+  gap: 12px;
+}
+
+/* Translate Button */
+.translate-btn-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 16px;
+  gap: 12px;
+}
+
+.btn-primary {
+  padding: 12px 32px;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-secondary {
+  padding: 12px 24px;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-secondary:hover {
+  background: var(--bg);
+  border-color: var(--primary);
+}
+
+/* Loading Overlay */
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0 0 var(--radius) var(--radius);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+[data-theme="dark"] .loading-overlay {
+  background: rgba(30, 41, 59, 0.8);
+}
+
+.loading-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--border);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Toast */
+.toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.toast {
+  padding: 12px 20px;
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  animation: slideIn 0.3s ease;
+  border-left: 4px solid var(--success);
+}
+
+.toast.error {
+  border-left-color: var(--danger);
+}
+
+.toast.warning {
+  border-left-color: var(--warning);
+}
+
+.toast.info {
+  border-left-color: var(--accent);
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 500;
+}
+
+.modal-overlay.active {
+  display: flex;
+}
+
+.modal {
+  background: var(--surface);
+  border-radius: var(--radius);
+  width: 90%;
+  max-width: 500px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: modalIn 0.3s ease;
+}
+
+@keyframes modalIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.modal-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-title {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.modal-body {
+  padding: 20px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.modal-footer {
+  padding: 12px 20px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.settings-group {
+  margin-bottom: 20px;
+}
+
+.settings-label {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--text);
+}
+
+.settings-desc {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+.select-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+}
+
+.shortcut-list {
+  list-style: none;
+}
+
+.shortcut-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+}
+
+.shortcut-item:last-child {
+  border-bottom: none;
+}
+
+.shortcut-keys {
+  display: flex;
+  gap: 4px;
+}
+
+.key-badge {
+  padding: 4px 8px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 12px;
+  font-family: monospace;
+  font-weight: 600;
+}
+
+/* File Drop Zone */
+.drop-zone {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius-sm);
+  padding: 30px;
+  text-align: center;
+  cursor: pointer;
+  transition: var(--transition);
+  margin-bottom: 16px;
+}
+
+.drop-zone:hover, .drop-zone.dragover {
+  border-color: var(--primary);
+  background: rgba(79, 70, 229, 0.05);
+}
+
+.drop-zone-icon {
+  font-size: 36px;
+  margin-bottom: 8px;
+}
+
+.drop-zone-text {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+/* Detected Lang Badge */
+.detected-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--success);
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .translation-panels {
+    flex-direction: column;
+  }
+  
+  .sidebar {
+    position: absolute;
+    left: 0;
+    top: 63px;
+    bottom: 0;
+    z-index: 50;
+    width: 280px;
+    transform: translateX(-100%);
+  }
+  
+  .sidebar.open {
+    transform: translateX(0);
+  }
+}
+
+@media (max-width: 600px) {
+  .header {
+    padding: 10px 16px;
+  }
+  
+  .translator-area {
+    padding: 12px;
+  }
+  
+  .language-bar {
+    flex-wrap: wrap;
+    padding: 12px;
+  }
+  
+  .lang-select-wrapper {
+    flex-basis: calc(50% - 30px);
+  }
+  
+  .swap-btn {
+    order: 3;
+    width: 100%;
+    border-radius: var(--radius-sm);
+    height: 38px;
+  }
+  
+  .swap-btn:hover {
+    transform: none;
+  }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}
+</style>
+</head>
+<body>
+<div class="app-container">
+  <!-- Header -->
+  <header class="header">
+    <div class="logo">
+      <div class="logo-icon">🌐</div>
+      <span>全能翻译</span>
+    </div>
+    <div class="header-actions">
+      <button class="icon-btn" id="toggleSidebar" title="历史记录 (Ctrl+H)">📋</button>
+      <button class="icon-btn" id="importFile" title="导入文件 (Ctrl+O)">📂</button>
+      <button class="icon-btn" id="exportFile" title="导出译文 (Ctrl+S)">💾</button>
+      <button class="icon-btn" id="themeToggle" title="切换主题 (Ctrl+T)">🌙</button>
+      <button class="icon-btn" id="settingsBtn" title="设置 (Ctrl+,)">⚙️</button>
+      <button class="icon-btn" id="helpBtn" title="帮助 (?)" title="帮助">❓</button>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-tabs">
+        <button class="sidebar-tab active" data-tab="history">⏱️ 历史记录</button>
+        <button class="sidebar-tab" data-tab="favorites">⭐ 收藏</button>
+      </div>
+      <div class="sidebar-content" id="historyContent">
+        <div class="empty-state">
+          <div class="empty-state-icon">📝</div>
+          <div>暂无翻译历史</div>
+        </div>
+      </div>
+      <div style="padding: 8px 12px; border-top: 1px solid var(--border);">
+        <button class="btn-secondary" style="width: 100%; justify-content: center; padding: 8px;" id="clearHistory">
+          🗑️ 清空历史
+        </button>
+      </div>
+    </aside>
+
+    <!-- Translator Area -->
+    <main class="translator-area">
+      <!-- Language Selection Bar -->
+      <div class="language-bar">
+        <div class="lang-select-wrapper">
+          <select class="lang-select" id="sourceLang">
+            <option value="auto">🔍 自动检测语言</option>
+          </select>
+        </div>
+        <button class="swap-btn" id="swapLang" title="互换语言">⇄</button>
+        <div class="lang-select-wrapper">
+          <select class="lang-select" id="targetLang">
+          </select>
+        </div>
+      </div>
+
+      <!-- Translation Panels -->
+      <div class="translation-panels">
+        <!-- Source Panel -->
+        <div class="panel">
+          <div class="panel-header">
+            <span class="panel-title" id="sourcePanelTitle">源文本</span>
+            <div class="panel-actions">
+              <button class="icon-btn" id="speakSource" title="朗读">🔊</button>
+              <button class="icon-btn" id="copySource" title="复制">📋</button>
+              <button class="icon-btn" id="clearSource" title="清空">🗑️</button>
+            </div>
+          </div>
+          <div class="panel-body">
+            <textarea id="sourceText" placeholder="请输入要翻译的文本，或直接粘贴内容...&#10;&#10;支持：文字翻译、文件导入、语音朗读、历史记录..." maxlength="5000"></textarea>
+          </div>
+          <div class="panel-footer">
+            <div class="char-count">
+              <span id="sourceCharCount">0 / 5000</span>
+              <span id="detectedLang"></span>
+            </div>
+            <span id="wordCount">0 词</span>
+          </div>
+        </div>
+
+        <!-- Target Panel -->
+        <div class="panel">
+          <div class="panel-header">
+            <span class="panel-title">翻译结果</span>
+            <div class="panel-actions">
+              <button class="icon-btn" id="favoriteBtn" title="收藏">☆</button>
+              <button class="icon-btn" id="speakTarget" title="朗读">🔊</button>
+              <button class="icon-btn" id="copyTarget" title="复制">📋</button>
+            </div>
+          </div>
+          <div class="panel-body">
+            <div class="translation-output" id="targetText">翻译结果将显示在这里...</div>
+            <div class="loading-overlay" id="loadingOverlay">
+              <div class="spinner"></div>
+            </div>
+          </div>
+          <div class="panel-footer">
+            <span id="targetCharCount">0 字符</span>
+            <span id="translationApi">翻译引擎</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Translate Button -->
+      <div class="translate-btn-container">
+        <button class="btn-secondary" id="clearAllBtn">🔄 清空全部</button>
+        <button class="btn-primary" id="translateBtn">
+          <span>🌐</span>
+          <span>翻 译</span>
+        </button>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- Settings Modal -->
+<div class="modal-overlay" id="settingsModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">⚙️ 设置</span>
+      <button class="icon-btn" id="closeSettings">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="settings-group">
+        <div class="settings-label">翻译引擎</div>
+        <div class="settings-desc">选择使用的翻译服务API</div>
+        <select class="select-input" id="apiSelect">
+          <option value="mymemory">MyMemory (免费，推荐)</option>
+          <option value="google">Google Translate (镜像)</option>
+          <option value="deepl">DeepL (需API Key)</option>
+        </select>
+      </div>
+      
+      <div class="settings-group">
+        <div class="settings-label">DeepL API Key</div>
+        <div class="settings-desc">如果选择DeepL翻译，请输入API Key</div>
+        <input type="password" class="select-input" id="deeplApiKey" placeholder="输入DeepL API Key...">
+      </div>
+
+      <div class="settings-group">
+        <div class="settings-label">自动翻译</div>
+        <div class="settings-desc">输入文本后自动翻译（有延迟）</div>
+        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+          <input type="checkbox" id="autoTranslate" style="width: 18px; height: 18px;">
+          <span>启用自动翻译</span>
+        </label>
+      </div>
+
+      <div class="settings-group">
+        <div class="settings-label">语音朗读声音</div>
+        <div class="settings-desc">选择朗读使用的语音（取决于浏览器支持）</div>
+        <select class="select-input" id="speechVoice">
+          <option value="default">默认语音</option>
+        </select>
+      </div>
+
+      <div class="settings-group">
+        <div class="settings-label">语音朗读速度</div>
+        <div class="settings-desc">调整文本转语音的语速</div>
+        <input type="range" id="speechRate" min="0.5" max="2" step="0.1" value="1" style="width: 100%;">
+        <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--text-secondary); margin-top: 4px;">
+          <span>慢</span>
+          <span id="speechRateValue">1.0x</span>
+          <span>快</span>
+        </div>
+      </div>
+
+      <div class="settings-group">
+        <div class="settings-label">语音朗读音调</div>
+        <div class="settings-desc">调整语音的音调高低</div>
+        <input type="range" id="speechPitch" min="0.5" max="2" step="0.1" value="1" style="width: 100%;">
+        <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--text-secondary); margin-top: 4px;">
+          <span>低</span>
+          <span id="speechPitchValue">1.0x</span>
+          <span>高</span>
+        </div>
+      </div>
+
+      <div class="settings-group">
+        <div class="settings-label">历史记录数量</div>
+        <div class="settings-desc">最多保存的历史记录条数</div>
+        <select class="select-input" id="historyLimit">
+          <option value="20">20 条</option>
+          <option value="50" selected>50 条</option>
+          <option value="100">100 条</option>
+          <option value="200">200 条</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" id="resetSettings">恢复默认</button>
+      <button class="btn-primary" id="saveSettings">保存设置</button>
+    </div>
+  </div>
+</div>
+
+<!-- Help Modal -->
+<div class="modal-overlay" id="helpModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">❓ 帮助 & 快捷键</span>
+      <button class="icon-btn" id="closeHelp">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="settings-group">
+        <div class="settings-label">快捷键</div>
+        <ul class="shortcut-list">
+          <li class="shortcut-item">
+            <span>翻译文本</span>
+            <div class="shortcut-keys">
+              <span class="key-badge">Ctrl</span>
+              <span class="key-badge">Enter</span>
+            </div>
+          </li>
+          <li class="shortcut-item">
+            <span>互换语言</span>
+            <div class="shortcut-keys">
+              <span class="key-badge">Ctrl</span>
+              <span class="key-badge">Shift</span>
+              <span class="key-badge">S</span>
+            </div>
+          </li>
+          <li class="shortcut-item">
+            <span>切换侧栏</span>
+            <div class="shortcut-keys">
+              <span class="key-badge">Ctrl</span>
+              <span class="key-badge">H</span>
+            </div>
+          </li>
+          <li class="shortcut-item">
+            <span>导入文件</span>
+            <div class="shortcut-keys">
+              <span class="key-badge">Ctrl</span>
+              <span class="key-badge">O</span>
+            </div>
+          </li>
+          <li class="shortcut-item">
+            <span>导出译文</span>
+            <div class="shortcut-keys">
+              <span class="key-badge">Ctrl</span>
+              <span class="key-badge">S</span>
+            </div>
+          </li>
+          <li class="shortcut-item">
+            <span>切换主题</span>
+            <div class="shortcut-keys">
+              <span class="key-badge">Ctrl</span>
+              <span class="key-badge">T</span>
+            </div>
+          </li>
+          <li class="shortcut-item">
+            <span>打开设置</span>
+            <div class="shortcut-keys">
+              <span class="key-badge">Ctrl</span>
+              <span class="key-badge">,</span>
+            </div>
+          </li>
+          <li class="shortcut-item">
+            <span>清空全部</span>
+            <div class="shortcut-keys">
+              <span class="key-badge">Ctrl</span>
+              <span class="key-badge">Shift</span>
+              <span class="key-badge">Delete</span>
+            </div>
+          </li>
+          <li class="shortcut-item">
+            <span>复制译文</span>
+            <div class="shortcut-keys">
+              <span class="key-badge">Ctrl</span>
+              <span class="key-badge">Shift</span>
+              <span class="key-badge">C</span>
+            </div>
+          </li>
+        </ul>
+      </div>
+      
+      <div class="settings-group">
+        <div class="settings-label">使用说明</div>
+        <div style="font-size: 14px; line-height: 1.8; color: var(--text-secondary);">
+          <p>• 在左侧输入框中输入或粘贴要翻译的文本</p>
+          <p>• 选择源语言和目标语言（支持自动检测）</p>
+          <p>• 点击"翻译"按钮或按 Ctrl+Enter 进行翻译</p>
+          <p>• 支持导入 .txt 文件进行翻译</p>
+          <p>• 翻译结果可导出为文本文件</p>
+          <p>• 点击⭐可收藏常用翻译</p>
+          <p>• 历史记录自动保存在本地</p>
+        </div>
+      </div>
+
+      <div class="settings-group">
+        <div class="settings-label">支持的语言</div>
+        <div style="font-size: 13px; color: var(--text-secondary); line-height: 1.8;">
+          中文、英语、日语、韩语、法语、德语、西班牙语、俄语、葡萄牙语、意大利语、阿拉伯语、印地语、泰语、越南语、荷兰语、波兰语、瑞典语、土耳其语、希腊语、捷克语、丹麦语、芬兰语、匈牙利语、印尼语、马来语、挪威语、罗马尼亚语、斯洛伐克语...
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-primary" id="closeHelpBtn">知道了</button>
+    </div>
+  </div>
+</div>
+
+<!-- File Input -->
+<input type="file" id="fileInput" accept=".txt,.html,.json,.srt,.vtt" style="display: none;">
+
+<script>
+// ========== 语言数据 ==========
+const languages = [
+  { code: 'auto', name: '自动检测', native: 'Auto Detect' },
+  { code: 'zh-CN', name: '中文(简体)', native: '简体中文' },
+  { code: 'zh-TW', name: '中文(繁体)', native: '繁體中文' },
+  { code: 'en', name: '英语', native: 'English' },
+  { code: 'ja', name: '日语', native: '日本語' },
+  { code: 'ko', name: '韩语', native: '한국어' },
+  { code: 'fr', name: '法语', native: 'Français' },
+  { code: 'de', name: '德语', native: 'Deutsch' },
+  { code: 'es', name: '西班牙语', native: 'Español' },
+  { code: 'ru', name: '俄语', native: 'Русский' },
+  { code: 'pt', name: '葡萄牙语', native: 'Português' },
+  { code: 'it', name: '意大利语', native: 'Italiano' },
+  { code: 'ar', name: '阿拉伯语', native: 'العربية' },
+  { code: 'hi', name: '印地语', native: 'हिन्दी' },
+  { code: 'th', name: '泰语', native: 'ไทย' },
+  { code: 'vi', name: '越南语', native: 'Tiếng Việt' },
+  { code: 'nl', name: '荷兰语', native: 'Nederlands' },
+  { code: 'pl', name: '波兰语', native: 'Polski' },
+  { code: 'sv', name: '瑞典语', native: 'Svenska' },
+  { code: 'tr', name: '土耳其语', native: 'Türkçe' },
+  { code: 'el', name: '希腊语', native: 'Ελληνικά' },
+  { code: 'cs', name: '捷克语', native: 'Čeština' },
+  { code: 'da', name: '丹麦语', native: 'Dansk' },
+  { code: 'fi', name: '芬兰语', native: 'Suomi' },
+  { code: 'hu', name: '匈牙利语', native: 'Magyar' },
+  { code: 'id', name: '印尼语', native: 'Bahasa Indonesia' },
+  { code: 'ms', name: '马来语', native: 'Bahasa Melayu' },
+  { code: 'no', name: '挪威语', native: 'Norsk' },
+  { code: 'ro', name: '罗马尼亚语', native: 'Română' },
+  { code: 'sk', name: '斯洛伐克语', native: 'Slovenčina' },
+  { code: 'uk', name: '乌克兰语', native: 'Українська' },
+  { code: 'he', name: '希伯来语', native: 'עברית' },
+  { code: 'bn', name: '孟加拉语', native: 'বাংলা' },
+  { code: 'ta', name: '泰米尔语', native: 'தமிழ்' },
+  { code: 'ur', name: '乌尔都语', native: 'اردو' },
+  { code: 'bg', name: '保加利亚语', native: 'Български' },
+  { code: 'hr', name: '克罗地亚语', native: 'Hrvatski' },
+  { code: 'sr', name: '塞尔维亚语', native: 'Српски' },
+  { code: 'lt', name: '立陶宛语', native: 'Lietuvių' },
+  { code: 'lv', name: '拉脱维亚语', native: 'Latviešu' },
+  { code: 'et', name: '爱沙尼亚语', native: 'Eesti' },
+  { code: 'sl', name: '斯洛文尼亚语', native: 'Slovenščina' },
+  { code: 'ca', name: '加泰罗尼亚语', native: 'Català' },
+  { code: 'gl', name: '加利西亚语', native: 'Galego' },
+  { code: 'eu', name: '巴斯克语', native: 'Euskara' },
+  { code: 'is', name: '冰岛语', native: 'Íslenska' },
+  { code: 'ga', name: '爱尔兰语', native: 'Gaeilge' },
+  { code: 'cy', name: '威尔士语', native: 'Cymraeg' },
+  { code: 'sw', name: '斯瓦希里语', native: 'Kiswahili' },
+  { code: 'af', name: '南非荷兰语', native: 'Afrikaans' },
+  { code: 'la', name: '拉丁语', native: 'Latina' },
+  { code: 'eo', name: '世界语', native: 'Esperanto' }
+];
+
+// ========== 状态管理 ==========
+const state = {
+  settings: JSON.parse(localStorage.getItem('translator_settings') || JSON.stringify({
+    api: 'mymemory',
+    deeplApiKey: '',
+    autoTranslate: false,
+    speechRate: 1,
+    speechPitch: 1,
+    speechVoice: 'default',
+    historyLimit: 50,
+    theme: 'light'
+  })),
+  history: JSON.parse(localStorage.getItem('translator_history') || '[]'),
+  favorites: JSON.parse(localStorage.getItem('translator_favorites') || '[]'),
+  currentTab: 'history',
+  isSidebarOpen: true,
+  autoTranslateTimer: null,
+  currentTranslation: null
+};
+
+// ========== DOM 元素 ==========
+const elements = {
+  sourceLang: document.getElementById('sourceLang'),
+  targetLang: document.getElementById('targetLang'),
+  swapLang: document.getElementById('swapLang'),
+  sourceText: document.getElementById('sourceText'),
+  targetText: document.getElementById('targetText'),
+  translateBtn: document.getElementById('translateBtn'),
+  clearAllBtn: document.getElementById('clearAllBtn'),
+  clearSource: document.getElementById('clearSource'),
+  copySource: document.getElementById('copySource'),
+  copyTarget: document.getElementById('copyTarget'),
+  speakSource: document.getElementById('speakSource'),
+  speakTarget: document.getElementById('speakTarget'),
+  favoriteBtn: document.getElementById('favoriteBtn'),
+  loadingOverlay: document.getElementById('loadingOverlay'),
+  sourceCharCount: document.getElementById('sourceCharCount'),
+  targetCharCount: document.getElementById('targetCharCount'),
+  wordCount: document.getElementById('wordCount'),
+  detectedLang: document.getElementById('detectedLang'),
+  translationApi: document.getElementById('translationApi'),
+  sidebar: document.getElementById('sidebar'),
+  toggleSidebar: document.getElementById('toggleSidebar'),
+  historyContent: document.getElementById('historyContent'),
+  clearHistory: document.getElementById('clearHistory'),
+  themeToggle: document.getElementById('themeToggle'),
+  settingsBtn: document.getElementById('settingsBtn'),
+  settingsModal: document.getElementById('settingsModal'),
+  closeSettings: document.getElementById('closeSettings'),
+  saveSettings: document.getElementById('saveSettings'),
+  resetSettings: document.getElementById('resetSettings'),
+  apiSelect: document.getElementById('apiSelect'),
+  deeplApiKey: document.getElementById('deeplApiKey'),
+  autoTranslate: document.getElementById('autoTranslate'),
+  speechRate: document.getElementById('speechRate'),
+  speechRateValue: document.getElementById('speechRateValue'),
+  speechPitch: document.getElementById('speechPitch'),
+  speechPitchValue: document.getElementById('speechPitchValue'),
+  speechVoice: document.getElementById('speechVoice'),
+  historyLimit: document.getElementById('historyLimit'),
+  helpBtn: document.getElementById('helpBtn'),
+  helpModal: document.getElementById('helpModal'),
+  closeHelp: document.getElementById('closeHelp'),
+  closeHelpBtn: document.getElementById('closeHelpBtn'),
+  importFile: document.getElementById('importFile'),
+  exportFile: document.getElementById('exportFile'),
+  fileInput: document.getElementById('fileInput'),
+  toastContainer: document.getElementById('toastContainer'),
+  sourcePanelTitle: document.getElementById('sourcePanelTitle')
+};
+
+// ========== 初始化语言选择器 ==========
+function initLanguageSelectors() {
+  languages.forEach(lang => {
+    if (lang.code !== 'auto') {
+      const option1 = document.createElement('option');
+      option1.value = lang.code;
+      option1.textContent = `${lang.native} - ${lang.name}`;
+      elements.targetLang.appendChild(option1);
+    }
+  });
+  
+  languages.forEach(lang => {
+    if (lang.code !== 'auto') {
+      const option = document.createElement('option');
+      option.value = lang.code;
+      option.textContent = `${lang.native} - ${lang.name}`;
+      elements.sourceLang.appendChild(option);
+    }
+  });
+  
+  elements.sourceLang.value = 'auto';
+  elements.targetLang.value = 'en';
+  
+  updateSourcePanelTitle();
+}
+
+function updateSourcePanelTitle() {
+  const sourceCode = elements.sourceLang.value;
+  if (sourceCode === 'auto') {
+    elements.sourcePanelTitle.textContent = '源文本 (自动检测)';
+  } else {
+    const lang = languages.find(l => l.code === sourceCode);
+    elements.sourcePanelTitle.textContent = lang ? `源文本 - ${lang.native}` : '源文本';
+  }
+}
+
+// ========== Toast 通知 ==========
+function showToast(message, type = 'success') {
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  
+  const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
+  toast.innerHTML = `<span>${icons[type] || '✅'}</span><span>${message}</span>`;
+  
+  elements.toastContainer.appendChild(toast);
+  
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateX(100%)';
+    toast.style.transition = 'all 0.3s ease';
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
+}
+
+// ========== 翻译功能 ==========
+async function translate() {
+  const text = elements.sourceText.value.trim();
+  if (!text) {
+    showToast('请输入要翻译的文本', 'warning');
+    return;
+  }
+  
+  const sourceLang = elements.sourceLang.value;
+  const targetLang = elements.targetLang.value;
+  
+  if (sourceLang !== 'auto' && sourceLang === targetLang) {
+    showToast('源语言和目标语言不能相同', 'warning');
+    return;
+  }
+  
+  showLoading(true);
+  
+  try {
+    let result;
+    const api = state.settings.api;
+    
+    switch (api) {
+      case 'mymemory':
+        result = await translateMyMemory(text, sourceLang, targetLang);
+        break;
+      case 'google':
+        result = await translateGoogleMirror(text, sourceLang, targetLang);
+        break;
+      case 'deepl':
+        result = await translateDeepL(text, sourceLang, targetLang);
+        break;
+      default:
+        result = await translateMyMemory(text, sourceLang, targetLang);
+    }
+    
+    elements.targetText.textContent = result.translatedText;
+    elements.targetCharCount.textContent = `${result.translatedText.length} 字符`;
+    
+    if (result.detectedLang) {
+      const detectedLangName = getLangName(result.detectedLang);
+      elements.detectedLang.innerHTML = `<span class="detected-badge">检测到: ${detectedLangName}</span>`;
+    }
+    
+    state.currentTranslation = {
+      id: Date.now(),
+      sourceText: text,
+      translatedText: result.translatedText,
+      sourceLang: sourceLang,
+      targetLang: targetLang,
+      detectedLang: result.detectedLang || null,
+      timestamp: new Date().toISOString()
+    };
+    
+    addToHistory(state.currentTranslation);
+    updateFavoriteButton();
+    
+    const apiNames = {
+      mymemory: 'MyMemory',
+      google: 'Google Translate',
+      deepl: 'DeepL'
+    };
+    elements.translationApi.textContent = `翻译引擎: ${apiNames[api] || api}`;
+    
+  } catch (error) {
+    console.error('Translation error:', error);
+    elements.targetText.textContent = '翻译失败，请稍后重试。\n\n可能的原因：\n• 网络连接问题\n• 翻译服务暂时不可用\n• 文本过长\n\n建议尝试其他翻译引擎（设置中切换）';
+    showToast('翻译失败: ' + error.message, 'error');
+  } finally {
+    showLoading(false);
+  }
+}
+
+// MyMemory API (免费)
+async function translateMyMemory(text, sourceLang, targetLang) {
+  const langpair = sourceLang === 'auto' 
+    ? `autodetect|${targetLang}` 
+    : `${sourceLang}|${targetLang}`;
+  
+  const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${encodeURIComponent(langpair)}`;
+  
+  const response = await fetch(url);
+  const data = await response.json();
+  
+  if (data.responseStatus !== 200 && !data.responseData) {
+    throw new Error(data.responseDetails || '翻译服务错误');
+  }
+  
+  return {
+    translatedText: data.responseData.translatedText,
+    detectedLang: data.responseData.detectedLanguage || null
+  };
+}
+
+// Google Translate Mirror
+async function translateGoogleMirror(text, sourceLang, targetLang) {
+  const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sourceLang === 'auto' ? 'auto' : sourceLang}&tl=${targetLang}&dt=t&q=${encodeURIComponent(text)}`;
+  
+  try {
+    const response = await fetch(url);
+    const data = await response.json();
+    
+    let translatedText = '';
+    if (data[0]) {
+      data[0].forEach(item => {
+        if (item[0]) translatedText += item[0];
+      });
+    }
+    
+    return {
+      translatedText: translatedText || '翻译失败',
+      detectedLang: data[2] || null
+    };
+  } catch (error) {
+    throw new Error('Google Translate 镜像不可用');
+  }
+}
+
+// DeepL API (需要API Key)
+async function translateDeepL(text, sourceLang, targetLang) {
+  const apiKey = state.settings.deeplApiKey;
+  if (!apiKey) {
+    throw new Error('请先在设置中配置DeepL API Key');
+  }
+  
+  const url = 'https://api-free.deepl.com/v2/translate';
+  
+  const params = new URLSearchParams();
+  params.append('text', text);
+  params.append('target_lang', targetLang.toUpperCase());
+  if (sourceLang !== 'auto') {
+    params.append('source_lang', sourceLang.toUpperCase());
+  }
+  
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Authorization': `DeepL-Auth-Key ${apiKey}`,
+      'Content-Type': 'application/x-www-form-urlencoded'
+    },
+    body: params
+  });
+  
+  if (!response.ok) {
+    throw new Error('DeepL API 请求失败');
+  }
+  
+  const data = await response.json();
+  return {
+    translatedText: data.translations[0]?.text || '',
+    detectedLang: data.translations[0]?.detected_source_language || null
+  };
+}
+
+// ========== 工具函数 ==========
+function showLoading(show) {
+  elements.loadingOverlay.classList.toggle('active', show);
+  elements.translateBtn.disabled = show;
+}
+
+function getLangName(code) {
+  const lang = languages.find(l => l.code === code || l.code.toLowerCase() === code.toLowerCase());
+  return lang ? lang.name : code;
+}
+
+function updateCharCount() {
+  const text = elements.sourceText.value;
+  elements.sourceCharCount.textContent = `${text.length} / 5000`;
+  
+  const wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
+  const chineseChars = (text.match(/[\u4e00-\u9fa5]/g) || []).length;
+  elements.wordCount.textContent = `${wordCount + chineseChars} 词/字`;
+}
+
+// ========== 历史记录与收藏 ==========
+function addToHistory(item) {
+  state.history.unshift(item);
+  const limit = parseInt(state.settings.historyLimit) || 50;
+  if (state.history.length > limit) {
+    state.history = state.history.slice(0, limit);
+  }
+  saveHistory();
+  renderHistory();
+}
+
+function saveHistory() {
+  localStorage.setItem('translator_history', JSON.stringify(state.history));
+}
+
+function renderHistory() {
+  if (state.currentTab !== 'history') return;
+  
+  if (state.history.length === 0) {
+    elements.historyContent.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-state-icon">📝</div>
+        <div>暂无翻译历史</div>
+      </div>
+    `;
+    return;
+  }
+  
+  elements.historyContent.innerHTML = state.history.map(item => `
+    <div class="history-item" data-id="${item.id}">
+      <div class="history-text">${escapeHtml(item.sourceText)}</div>
+      <div class="history-meta">
+        <span>${getLangName(item.sourceLang === 'auto' ? (item.detectedLang || 'auto') : item.sourceLang)} → ${getLangName(item.targetLang)}</span>
+        <span>${formatTime(item.timestamp)}</span>
+      </div>
+    </div>
+  `).join('');
+  
+  elements.historyContent.querySelectorAll('.history-item').forEach(el => {
+    el.addEventListener('click', () => {
+      const id = parseInt(el.dataset.id);
+      const item = state.history.find(h => h.id === id);
+      if (item) loadTranslation(item);
+    });
+  });
+}
+
+function renderFavorites() {
+  if (state.currentTab !== 'favorites') return;
+  
+  if (state.favorites.length === 0) {
+    elements.historyContent.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-state-icon">⭐</div>
+        <div>暂无收藏内容</div>
+        <div style="font-size: 12px; margin-top: 8px;">点击译文上方的⭐收藏翻译</div>
+      </div>
+    `;
+    return;
+  }
+  
+  elements.historyContent.innerHTML = state.favorites.map(item => `
+    <div class="favorite-item" data-id="${item.id}">
+      <div class="history-text">${escapeHtml(item.sourceText)}</div>
+      <div style="font-size: 12px; color: var(--text-secondary); margin: 4px 0;">${escapeHtml(item.translatedText.substring(0, 100))}${item.translatedText.length > 100 ? '...' : ''}</div>
+      <div class="history-meta">
+        <span>${getLangName(item.sourceLang === 'auto' ? (item.detectedLang || 'auto') : item.sourceLang)} → ${getLangName(item.targetLang)}</span>
+        <span>${formatTime(item.timestamp)}</span>
+      </div>
+    </div>
+  `).join('');
+  
+  elements.historyContent.querySelectorAll('.favorite-item').forEach(el => {
+    el.addEventListener('click', () => {
+      const id = parseInt(el.dataset.id);
+      const item = state.favorites.find(f => f.id === id);
+      if (item) loadTranslation(item);
+    });
+  });
+}
+
+function loadTranslation(item) {
+  elements.sourceText.value = item.sourceText;
+  elements.targetText.textContent = item.translatedText;
+  elements.sourceLang.value = item.sourceLang;
+  elements.targetLang.value = item.targetLang;
+  state.currentTranslation = item;
+  updateCharCount();
+  updateSourcePanelTitle();
+  updateFavoriteButton();
+  elements.targetCharCount.textContent = `${item.translatedText.length} 字符`;
+  showToast('已加载翻译记录', 'info');
+}
+
+function formatTime(timestamp) {
+  const date = new Date(timestamp);
+  const now = new Date();
+  const diff = now - date;
+  
+  if (diff < 60000) return '刚刚';
+  if (diff < 3600000) return `${Math.floor(diff / 60000)}分钟前`;
+  if (diff < 86400000) return `${Math.floor(diff / 3600000)}小时前`;
+  if (diff < 604800000) return `${Math.floor(diff / 86400000)}天前`;
+  
+  return date.toLocaleDateString('zh-CN');
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// ========== 收藏功能 ==========
+function toggleFavorite() {
+  if (!state.currentTranslation) {
+    showToast('请先进行翻译', 'warning');
+    return;
+  }
+  
+  const favIndex = state.favorites.findIndex(f => f.id === state.currentTranslation.id);
+  
+  if (favIndex >= 0) {
+    state.favorites.splice(favIndex, 1);
+    showToast('已取消收藏', 'info');
+  } else {
+    state.favorites.unshift({ ...state.currentTranslation, favId: Date.now() });
+    showToast('已添加到收藏', 'success');
+  }
+  
+  localStorage.setItem('translator_favorites', JSON.stringify(state.favorites));
+  updateFavoriteButton();
+  renderFavorites();
+}
+
+function updateFavoriteButton() {
+  if (!state.currentTranslation) {
+    elements.favoriteBtn.textContent = '☆';
+    elements.favoriteBtn.classList.remove('active');
+    return;
+  }
+  
+  const isFav = state.favorites.some(f => f.id === state.currentTranslation.id);
+  elements.favoriteBtn.textContent = isFav ? '★' : '☆';
+  elements.favoriteBtn.classList.toggle('active', isFav);
+  if (isFav) {
+    elements.favoriteBtn.style.color = '#f59e0b';
+  } else {
+    elements.favoriteBtn.style.color = '';
+  }
+}
+
+// ========== 语音朗读 ==========
+let availableVoices = [];
+
+function loadVoices() {
+  if (!('speechSynthesis' in window)) return;
+  
+  availableVoices = window.speechSynthesis.getVoices();
+  
+  if (elements.speechVoice && availableVoices.length > 0) {
+    const currentValue = elements.speechVoice.value;
+    elements.speechVoice.innerHTML = '<option value="default">默认语音</option>';
+    
+    availableVoices.forEach((voice, index) => {
+      const option = document.createElement('option');
+      option.value = index.toString();
+      option.textContent = `${voice.name} (${voice.lang})${voice.default ? ' - 默认' : ''}`;
+      elements.speechVoice.appendChild(option);
+    });
+    
+    if (state.settings.speechVoice !== 'default') {
+      elements.speechVoice.value = state.settings.speechVoice;
+    }
+  }
+}
+
+function speak(text, lang) {
+  if (!text || text.trim() === '') {
+    showToast('没有可朗读的文本', 'warning');
+    return;
+  }
+  
+  if (!('speechSynthesis' in window)) {
+    showToast('您的浏览器不支持语音合成', 'error');
+    return;
+  }
+  
+  window.speechSynthesis.cancel();
+  
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = lang === 'auto' ? 'zh-CN' : lang;
+  utterance.rate = parseFloat(state.settings.speechRate) || 1;
+  utterance.pitch = parseFloat(state.settings.speechPitch) || 1;
+  utterance.volume = 1;
+  
+  if (state.settings.speechVoice !== 'default' && availableVoices.length > 0) {
+    const voiceIndex = parseInt(state.settings.speechVoice);
+    if (voiceIndex >= 0 && voiceIndex < availableVoices.length) {
+      utterance.voice = availableVoices[voiceIndex];
+      utterance.lang = availableVoices[voiceIndex].lang;
+    }
+  }
+  
+  utterance.onstart = () => showToast('开始朗读...', 'info');
+  utterance.onend = () => showToast('朗读完成', 'success');
+  utterance.onerror = (e) => showToast('朗读出错: ' + e.error, 'error');
+  
+  window.speechSynthesis.speak(utterance);
+}
+
+// ========== 复制功能 ==========
+async function copyToClipboard(text) {
+  if (!text || text.trim() === '') {
+    showToast('没有可复制的内容', 'warning');
+    return;
+  }
+  
+  try {
+    await navigator.clipboard.writeText(text);
+    showToast('已复制到剪贴板', 'success');
+  } catch (err) {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textarea);
+    showToast('已复制到剪贴板', 'success');
+  }
+}
+
+// ========== 文件导入导出 ==========
+function importFile() {
+  elements.fileInput.click();
+}
+
+function handleFileImport(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    let content = e.target.result;
+    
+    if (file.name.endsWith('.html')) {
+      const temp = document.createElement('div');
+      temp.innerHTML = content;
+      content = temp.textContent || temp.innerText;
+    }
+    
+    if (content.length > 5000) {
+      showToast('文件内容超过5000字符限制，已截取前5000字符', 'warning');
+      content = content.substring(0, 5000);
+    }
+    
+    elements.sourceText.value = content;
+    updateCharCount();
+    showToast(`已导入文件: ${file.name}`, 'success');
+    
+    if (state.settings.autoTranslate) {
+      scheduleAutoTranslate();
+    }
+  };
+  
+  reader.onerror = () => {
+    showToast('文件读取失败', 'error');
+  };
+  
+  reader.readAsText(file, 'UTF-8');
+  event.target.value = '';
+}
+
+function exportFile() {
+  const text = elements.targetText.textContent;
+  if (!text || text === '翻译结果将显示在这里...') {
+    showToast('没有可导出的翻译结果', 'warning');
+    return;
+  }
+  
+  const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `translation_${new Date().toISOString().slice(0, 10)}.txt`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('文件已导出', 'success');
+}
+
+// ========== 主题切换 ==========
+function toggleTheme() {
+  const currentTheme = document.documentElement.getAttribute('data-theme');
+  const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+  setTheme(newTheme);
+}
+
+function setTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  state.settings.theme = theme;
+  elements.themeToggle.textContent = theme === 'dark' ? '☀️' : '🌙';
+  localStorage.setItem('translator_settings', JSON.stringify(state.settings));
+}
+
+// ========== 设置功能 ==========
+function openSettings() {
+  elements.apiSelect.value = state.settings.api;
+  elements.deeplApiKey.value = state.settings.deeplApiKey;
+  elements.autoTranslate.checked = state.settings.autoTranslate;
+  elements.speechVoice.value = state.settings.speechVoice;
+  elements.speechRate.value = state.settings.speechRate;
+  elements.speechRateValue.textContent = state.settings.speechRate + 'x';
+  elements.speechPitch.value = state.settings.speechPitch;
+  elements.speechPitchValue.textContent = state.settings.speechPitch + 'x';
+  elements.historyLimit.value = state.settings.historyLimit;
+  elements.settingsModal.classList.add('active');
+}
+
+function closeSettings() {
+  elements.settingsModal.classList.remove('active');
+}
+
+function saveSettings() {
+  state.settings.api = elements.apiSelect.value;
+  state.settings.deeplApiKey = elements.deeplApiKey.value;
+  state.settings.autoTranslate = elements.autoTranslate.checked;
+  state.settings.speechVoice = elements.speechVoice.value;
+  state.settings.speechRate = parseFloat(elements.speechRate.value);
+  state.settings.speechPitch = parseFloat(elements.speechPitch.value);
+  state.settings.historyLimit = elements.historyLimit.value;
+  
+  localStorage.setItem('translator_settings', JSON.stringify(state.settings));
+  showToast('设置已保存', 'success');
+  closeSettings();
+}
+
+function resetSettings() {
+  state.settings = {
+    api: 'mymemory',
+    deeplApiKey: '',
+    autoTranslate: false,
+    speechVoice: 'default',
+    speechRate: 1,
+    speechPitch: 1,
+    historyLimit: 50,
+    theme: state.settings.theme
+  };
+  
+  elements.apiSelect.value = state.settings.api;
+  elements.deeplApiKey.value = state.settings.deeplApiKey;
+  elements.autoTranslate.checked = state.settings.autoTranslate;
+  elements.speechVoice.value = state.settings.speechVoice;
+  elements.speechRate.value = state.settings.speechRate;
+  elements.speechRateValue.textContent = state.settings.speechRate + 'x';
+  elements.speechPitch.value = state.settings.speechPitch;
+  elements.speechPitchValue.textContent = state.settings.speechPitch + 'x';
+  elements.historyLimit.value = state.settings.historyLimit;
+  
+  showToast('已恢复默认设置', 'info');
+}
+
+// ========== 自动翻译 ==========
+function scheduleAutoTranslate() {
+  if (!state.settings.autoTranslate) return;
+  
+  clearTimeout(state.autoTranslateTimer);
+  state.autoTranslateTimer = setTimeout(() => {
+    if (elements.sourceText.value.trim()) {
+      translate();
+    }
+  }, 1000);
+}
+
+// ========== 事件绑定 ==========
+function bindEvents() {
+  elements.translateBtn.addEventListener('click', translate);
+  
+  elements.swapLang.addEventListener('click', () => {
+    const sourceVal = elements.sourceLang.value;
+    const targetVal = elements.targetLang.value;
+    
+    if (sourceVal === 'auto') {
+      showToast('自动检测模式下无法互换', 'warning');
+      return;
+    }
+    
+    elements.sourceLang.value = targetVal;
+    elements.targetLang.value = sourceVal;
+    
+    const sourceText = elements.sourceText.value;
+    const targetText = elements.targetText.textContent;
+    
+    if (targetText && targetText !== '翻译结果将显示在这里...') {
+      elements.sourceText.value = targetText;
+      elements.targetText.textContent = sourceText;
+      updateCharCount();
+    }
+    
+    updateSourcePanelTitle();
+    showToast('语言已互换', 'info');
+  });
+  
+  elements.sourceLang.addEventListener('change', updateSourcePanelTitle);
+  
+  elements.sourceText.addEventListener('input', () => {
+    updateCharCount();
+    scheduleAutoTranslate();
+  });
+  
+  elements.clearSource.addEventListener('click', () => {
+    elements.sourceText.value = '';
+    updateCharCount();
+  });
+  
+  elements.clearAllBtn.addEventListener('click', () => {
+    elements.sourceText.value = '';
+    elements.targetText.textContent = '翻译结果将显示在这里...';
+    elements.sourceCharCount.textContent = '0 / 5000';
+    elements.targetCharCount.textContent = '0 字符';
+    elements.wordCount.textContent = '0 词';
+    elements.detectedLang.textContent = '';
+    state.currentTranslation = null;
+    updateFavoriteButton();
+    showToast('已清空全部', 'info');
+  });
+  
+  elements.copySource.addEventListener('click', () => copyToClipboard(elements.sourceText.value));
+  elements.copyTarget.addEventListener('click', () => copyToClipboard(elements.targetText.textContent));
+  
+  elements.speakSource.addEventListener('click', () => {
+    const lang = elements.sourceLang.value === 'auto' ? 'zh-CN' : elements.sourceLang.value;
+    speak(elements.sourceText.value, lang);
+  });
+  
+  elements.speakTarget.addEventListener('click', () => {
+    speak(elements.targetText.textContent, elements.targetLang.value);
+  });
+  
+  elements.favoriteBtn.addEventListener('click', toggleFavorite);
+  
+  elements.toggleSidebar.addEventListener('click', () => {
+    state.isSidebarOpen = !state.isSidebarOpen;
+    elements.sidebar.classList.toggle('open', state.isSidebarOpen);
+    elements.sidebar.classList.toggle('collapsed', !state.isSidebarOpen);
+    elements.toggleSidebar.classList.toggle('active', state.isSidebarOpen);
+  });
+  
+  document.querySelectorAll('.sidebar-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.sidebar-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      state.currentTab = tab.dataset.tab;
+      if (state.currentTab === 'history') {
+        renderHistory();
+      } else {
+        renderFavorites();
+      }
+    });
+  });
+  
+  elements.clearHistory.addEventListener('click', () => {
+    if (confirm('确定要清空所有' + (state.currentTab === 'history' ? '历史记录' : '收藏') + '吗？')) {
+      if (state.currentTab === 'history') {
+        state.history = [];
+        saveHistory();
+        renderHistory();
+      } else {
+        state.favorites = [];
+        localStorage.setItem('translator_favorites', '[]');
+        renderFavorites();
+      }
+      showToast('已清空', 'info');
+    }
+  });
+  
+  elements.themeToggle.addEventListener('click', toggleTheme);
+  
+  elements.settingsBtn.addEventListener('click', openSettings);
+  elements.closeSettings.addEventListener('click', closeSettings);
+  elements.saveSettings.addEventListener('click', saveSettings);
+  elements.resetSettings.addEventListener('click', resetSettings);
+  
+  elements.settingsModal.addEventListener('click', (e) => {
+    if (e.target === elements.settingsModal) closeSettings();
+  });
+  
+  elements.helpBtn.addEventListener('click', () => elements.helpModal.classList.add('active'));
+  elements.closeHelp.addEventListener('click', () => elements.helpModal.classList.remove('active'));
+  elements.closeHelpBtn.addEventListener('click', () => elements.helpModal.classList.remove('active'));
+  
+  elements.helpModal.addEventListener('click', (e) => {
+    if (e.target === elements.helpModal) elements.helpModal.classList.remove('active');
+  });
+  
+  elements.speechRate.addEventListener('input', () => {
+    elements.speechRateValue.textContent = elements.speechRate.value + 'x';
+  });
+  
+  elements.speechPitch.addEventListener('input', () => {
+    elements.speechPitchValue.textContent = elements.speechPitch.value + 'x';
+  });
+  
+  if ('speechSynthesis' in window) {
+    loadVoices();
+    window.speechSynthesis.onvoiceschanged = loadVoices;
+  }
+  
+  elements.importFile.addEventListener('click', importFile);
+  elements.fileInput.addEventListener('change', handleFileImport);
+  elements.exportFile.addEventListener('click', exportFile);
+  
+  document.addEventListener('keydown', (e) => {
+    if (e.ctrlKey || e.metaKey) {
+      switch (e.key.toLowerCase()) {
+        case 'enter':
+          e.preventDefault();
+          translate();
+          break;
+        case 'h':
+          e.preventDefault();
+          elements.toggleSidebar.click();
+          break;
+        case 'o':
+          e.preventDefault();
+          importFile();
+          break;
+        case 's':
+          e.preventDefault();
+          exportFile();
+          break;
+        case 't':
+          e.preventDefault();
+          toggleTheme();
+          break;
+        case ',':
+          e.preventDefault();
+          openSettings();
+          break;
+        case 'shift':
+          break;
+        default:
+          if (e.shiftKey) {
+            switch (e.key.toLowerCase()) {
+              case 's':
+                e.preventDefault();
+                elements.swapLang.click();
+                break;
+              case 'c':
+                e.preventDefault();
+                copyToClipboard(elements.targetText.textContent);
+                break;
+              case 'delete':
+                e.preventDefault();
+                elements.clearAllBtn.click();
+                break;
+            }
+          }
+      }
+    }
+    
+    if (e.key === '?' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      const tag = e.target.tagName;
+      if (tag !== 'INPUT' && tag !== 'TEXTAREA' && tag !== 'SELECT') {
+        e.preventDefault();
+        elements.helpModal.classList.add('active');
+      }
+    }
+    
+    if (e.key === 'Escape') {
+      if (elements.settingsModal.classList.contains('active')) closeSettings();
+      if (elements.helpModal.classList.contains('active')) elements.helpModal.classList.remove('active');
+    }
+  });
+  
+  let dropZone = null;
+  document.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    if (!dropZone) {
+      dropZone = document.createElement('div');
+      dropZone.className = 'drop-zone dragover';
+      dropZone.style.cssText = 'position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 1000; width: 300px; background: var(--surface);';
+      dropZone.innerHTML = '<div class="drop-zone-icon">📂</div><div class="drop-zone-text">释放文件以导入</div>';
+      document.body.appendChild(dropZone);
+    }
+  });
+  
+  document.addEventListener('dragleave', (e) => {
+    if (e.clientX === 0 && e.clientY === 0) {
+      if (dropZone) {
+        dropZone.remove();
+        dropZone = null;
+      }
+    }
+  });
+  
+  document.addEventListener('drop', (e) => {
+    e.preventDefault();
+    if (dropZone) {
+      dropZone.remove();
+      dropZone = null;
+    }
+    
+    const files = e.dataTransfer?.files;
+    if (files && files.length > 0) {
+      const file = files[0];
+      if (file.type.startsWith('text/') || /\.(txt|html|json|srt|vtt)$/i.test(file.name)) {
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          let content = ev.target.result;
+          if (content.length > 5000) {
+            content = content.substring(0, 5000);
+            showToast('内容超过限制，已截取前5000字符', 'warning');
+          }
+          elements.sourceText.value = content;
+          updateCharCount();
+          showToast(`已导入: ${file.name}`, 'success');
+        };
+        reader.readAsText(file, 'UTF-8');
+      } else {
+        showToast('不支持的文件类型', 'error');
+      }
+    }
+  });
+}
+
+// ========== 初始化 ==========
+function init() {
+  initLanguageSelectors();
+  bindEvents();
+  setTheme(state.settings.theme);
+  renderHistory();
+  updateCharCount();
+  
+  const apiNamesInit = {
+    mymemory: 'MyMemory',
+    google: 'Google Translate',
+    deepl: 'DeepL'
+  };
+  elements.translationApi.textContent = `翻译引擎: ${apiNamesInit[state.settings.api] || 'MyMemory'}`;
+  
+  console.log('%c🌐 全能翻译工具已就绪', 'color: #4f46e5; font-size: 16px; font-weight: bold;');
+  console.log('%c按 ? 键查看快捷键', 'color: #64748b; font-size: 12px;');
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>

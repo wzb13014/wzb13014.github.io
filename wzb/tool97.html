@@ -1,0 +1,4587 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>8D报告输出工具 - 专业质量问题解决报告生成器</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --primary-900: #1e3a8a;
+  --primary-800: #1e40af;
+  --primary-700: #1d4ed8;
+  --primary-600: #2563eb;
+  --primary-500: #3b82f6;
+  --primary-100: #dbeafe;
+  --primary-50: #eff6ff;
+  
+  --success-600: #059669;
+  --success-500: #10b981;
+  --success-100: #d1fae5;
+  
+  --warning-600: #d97706;
+  --warning-500: #f59e0b;
+  --warning-100: #fef3c7;
+  
+  --danger-600: #dc2626;
+  --danger-500: #ef4444;
+  --danger-100: #fee2e2;
+  
+  --gray-900: #0f172a;
+  --gray-800: #1e293b;
+  --gray-700: #334155;
+  --gray-600: #475569;
+  --gray-500: #64748b;
+  --gray-400: #94a3b8;
+  --gray-300: #cbd5e1;
+  --gray-200: #e2e8f0;
+  --gray-100: #f1f5f9;
+  --gray-50: #f8fafc;
+  --white: #ffffff;
+  
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  
+  --font-sans: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  
+  --transition-fast: 150ms ease;
+  --transition-normal: 250ms ease;
+  --transition-slow: 400ms ease;
+}
+
+/* Dark theme */
+body.dark-mode {
+  --primary-900: #60a5fa;
+  --primary-800: #93c5fd;
+  --primary-700: #3b82f6;
+  --primary-600: #2563eb;
+  --primary-500: #3b82f6;
+  --primary-100: #1e3a5f;
+  --primary-50: #1e293b;
+  
+  --success-600: #34d399;
+  --success-500: #10b981;
+  --success-100: #064e3b;
+  
+  --warning-600: #fbbf24;
+  --warning-500: #f59e0b;
+  --warning-100: #78350f;
+  
+  --danger-600: #f87171;
+  --danger-500: #ef4444;
+  --danger-100: #7f1d1d;
+  
+  --gray-900: #f1f5f9;
+  --gray-800: #e2e8f0;
+  --gray-700: #cbd5e1;
+  --gray-600: #94a3b8;
+  --gray-500: #64748b;
+  --gray-400: #475569;
+  --gray-300: #334155;
+  --gray-200: #1e293b;
+  --gray-100: #0f172a;
+  --gray-50: #020617;
+  --white: #1e293b;
+  
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.3);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.4), 0 4px 6px -4px rgb(0 0 0 / 0.3);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.4), 0 8px 10px -6px rgb(0 0 0 / 0.3);
+}
+
+body.dark-mode {
+  background: var(--gray-100);
+  color: var(--gray-800);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 14px;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--gray-100);
+  color: var(--gray-800);
+  line-height: 1.6;
+  overflow: hidden;
+  height: 100vh;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  outline: none;
+  background: none;
+  color: inherit;
+}
+
+input, textarea, select {
+  font-family: inherit;
+  font-size: inherit;
+  outline: none;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+/* Top toolbar */
+.toolbar {
+  background: linear-gradient(135deg, var(--primary-900) 0%, var(--primary-700) 100%);
+  color: var(--white);
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: var(--shadow-md);
+  z-index: 100;
+  flex-shrink: 0;
+}
+
+.toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logo-icon {
+  width: 36px;
+  height: 36px;
+  background: var(--white);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: var(--primary-700);
+  font-size: 18px;
+}
+
+.logo-text {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.logo-sub {
+  font-size: 11px;
+  opacity: 0.7;
+  font-weight: 400;
+}
+
+.toolbar-divider {
+  width: 1px;
+  height: 28px;
+  background: rgba(255,255,255,0.2);
+}
+
+.toolbar-center {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.toolbar-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 500;
+  transition: all var(--transition-fast);
+  color: rgba(255,255,255,0.9);
+  position: relative;
+}
+
+.toolbar-btn:hover {
+  background: rgba(255,255,255,0.2);
+  color: var(--white);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.toolbar-btn:active {
+  transform: scale(0.97);
+}
+
+.toolbar-btn.primary {
+  background: var(--white);
+  color: var(--primary-700);
+}
+
+.toolbar-btn.primary:hover {
+  background: var(--primary-50);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.toolbar-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.status-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 20px;
+  font-size: 12px;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--success-500);
+  animation: pulse 2s infinite;
+}
+
+/* Theme toggle */
+.theme-toggle .icon-sun {
+  display: none;
+}
+
+.theme-toggle .icon-moon {
+  display: block;
+}
+
+body.dark-mode .theme-toggle .icon-sun {
+  display: block;
+}
+
+body.dark-mode .theme-toggle .icon-moon {
+  display: none;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Dark mode specific overrides */
+body.dark-mode .toolbar {
+  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+}
+
+body.dark-mode .logo-text,
+body.dark-mode .logo-sub {
+  color: #e2e8f0;
+}
+
+body.dark-mode .toolbar-divider {
+  background: rgba(255,255,255,0.1);
+}
+
+body.dark-mode .card {
+  background: var(--white);
+  border-color: var(--gray-300);
+}
+
+body.dark-mode .card-header {
+  border-bottom-color: var(--gray-300);
+}
+
+body.dark-mode .form-input,
+body.dark-mode .form-textarea,
+body.dark-mode .form-select {
+  background: var(--gray-50);
+  border-color: var(--gray-300);
+  color: var(--gray-800);
+}
+
+body.dark-mode .form-input:focus,
+body.dark-mode .form-textarea:focus,
+body.dark-mode .form-select:focus {
+  border-color: var(--primary-500);
+  background: var(--gray-50);
+}
+
+body.dark-mode .rte-content {
+  background: var(--gray-50);
+  border-color: var(--gray-300);
+  color: var(--gray-800);
+}
+
+body.dark-mode .rte-toolbar {
+  background: var(--gray-200);
+  border-color: var(--gray-300);
+}
+
+body.dark-mode .rte-btn {
+  color: var(--gray-600);
+}
+
+body.dark-mode .rte-btn:hover {
+  background: var(--gray-300);
+  color: var(--gray-800);
+}
+
+body.dark-mode .report-page {
+  background: #ffffff;
+  color: #1e293b;
+}
+
+body.dark-mode .report-section-title {
+  color: #ffffff;
+}
+
+body.dark-mode .modal-overlay {
+  background: rgba(0,0,0,0.7);
+}
+
+body.dark-mode .modal {
+  background: var(--white);
+  color: var(--gray-800);
+}
+
+body.dark-mode .modal-header {
+  border-bottom-color: var(--gray-300);
+}
+
+body.dark-mode .dropdown-menu {
+  background: var(--white);
+  border-color: var(--gray-400);
+  box-shadow: var(--shadow-lg);
+}
+
+body.dark-mode .dropdown-item {
+  color: var(--gray-700);
+}
+
+body.dark-mode .dropdown-item:hover {
+  background: var(--primary-600);
+  color: #ffffff;
+}
+
+body.dark-mode .nav-item:hover {
+  background: var(--gray-300);
+  color: var(--gray-900);
+  border-left: 3px solid var(--primary-500);
+  padding-left: calc(12px - 3px);
+}
+
+body.dark-mode .nav-item.active {
+  background: var(--primary-50);
+  color: var(--primary-700);
+}
+
+body.dark-mode .sidebar-header {
+  border-bottom-color: var(--gray-300);
+}
+
+body.dark-mode .preview-header {
+  background: var(--white);
+  border-bottom-color: var(--gray-300);
+}
+
+body.dark-mode .section-header .section-badge {
+  background: var(--primary-100);
+  color: var(--primary-700);
+}
+
+body.dark-mode .nav-number {
+  background: var(--gray-300);
+  color: var(--gray-700);
+}
+
+body.dark-mode .nav-item.active .nav-number {
+  background: var(--primary-600);
+  color: #ffffff;
+}
+
+body.dark-mode .nav-item.completed .nav-number {
+  background: var(--success-500);
+  color: #ffffff;
+}
+
+body.dark-mode .btn-primary:hover {
+  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.4);
+}
+
+body.dark-mode .btn-secondary:hover {
+  background: var(--gray-300);
+  color: var(--gray-900);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Main content */
+.main {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Sidebar */
+.sidebar {
+  width: 240px;
+  background: var(--white);
+  border-right: 1px solid var(--gray-200);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  transition: width var(--transition-normal);
+  overflow: hidden;
+}
+
+.sidebar.collapsed {
+  width: 64px;
+}
+
+.sidebar-toggle {
+  position: absolute;
+  right: 8px;
+  top: 8px;
+  width: 28px;
+  height: 28px;
+  background: var(--gray-50);
+  border: 1px solid var(--gray-200);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 20;
+  transition: all var(--transition-fast);
+  color: var(--gray-500);
+}
+
+.sidebar-toggle:hover {
+  background: var(--primary-50);
+  color: var(--primary-600);
+  border-color: var(--primary-200);
+}
+
+.sidebar-toggle svg {
+  width: 16px;
+  height: 16px;
+  transition: transform var(--transition-normal);
+}
+
+.sidebar.collapsed .sidebar-toggle {
+  right: auto;
+  left: 50%;
+  top: 8px;
+  margin-left: -16px;
+  width: 32px;
+  height: 32px;
+}
+
+.sidebar.collapsed .sidebar-toggle svg {
+  transform: rotate(180deg);
+}
+
+.sidebar.collapsed .sidebar-header {
+  padding: 16px 8px;
+}
+
+.sidebar.collapsed .sidebar-title,
+.sidebar.collapsed .progress-text,
+.sidebar.collapsed .nav-text,
+.sidebar.collapsed .nav-group-title,
+.sidebar.collapsed .nav-check {
+  display: none;
+}
+
+.sidebar.collapsed .nav-item {
+  justify-content: center;
+  padding: 10px 8px;
+}
+
+.sidebar.collapsed .nav-item.active::before {
+  display: none;
+}
+
+.sidebar-header {
+  padding: 16px;
+  border-bottom: 1px solid var(--gray-200);
+  position: relative;
+}
+
+.sidebar-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gray-500);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 12px;
+}
+
+.progress-bar-wrap {
+  height: 8px;
+  background: var(--gray-100);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary-500), var(--success-500));
+  border-radius: 4px;
+  transition: width var(--transition-normal);
+  width: 0%;
+}
+
+.progress-text {
+  font-size: 12px;
+  color: var(--gray-500);
+}
+
+.sidebar-nav {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.nav-group {
+  margin-bottom: 4px;
+}
+
+.nav-group-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--gray-400);
+  padding: 12px 12px 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  position: relative;
+  margin-bottom: 2px;
+}
+
+.nav-item:hover {
+  background: var(--gray-100);
+  color: var(--gray-900);
+  border-left: 3px solid var(--primary-500);
+  padding-left: calc(12px - 3px);
+}
+
+.nav-item.active {
+  background: var(--primary-50);
+  color: var(--primary-700);
+}
+
+.nav-item.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 60%;
+  background: var(--primary-600);
+  border-radius: 0 2px 2px 0;
+}
+
+.nav-number {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--gray-100);
+  color: var(--gray-600);
+  flex-shrink: 0;
+  transition: all var(--transition-fast);
+}
+
+.nav-item.active .nav-number {
+  background: var(--primary-600);
+  color: var(--white);
+}
+
+.nav-item.completed .nav-number {
+  background: var(--success-500);
+  color: var(--white);
+}
+
+.nav-text {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.nav-check {
+  width: 16px;
+  height: 16px;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.nav-item.completed .nav-check {
+  opacity: 1;
+  color: var(--success-500);
+}
+
+/* Editor area */
+.editor-area {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  background: var(--gray-100);
+  transition: padding var(--transition-normal);
+}
+
+.editor-container {
+  max-width: 800px;
+  margin: 0 auto;
+  transition: max-width var(--transition-normal);
+}
+
+/* 侧边栏折叠时，编辑区扩展 */
+body.sidebar-collapsed .editor-container {
+  max-width: 960px;
+}
+
+/* 预览区折叠时，编辑区进一步扩展 */
+body.preview-collapsed .editor-container {
+  max-width: 1000px;
+}
+
+body.sidebar-collapsed.preview-collapsed .editor-container {
+  max-width: 1100px;
+}
+
+.section {
+  display: none;
+  animation: fadeIn 0.3s ease;
+}
+
+.section.active {
+  display: block;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.section-header {
+  margin-bottom: 24px;
+}
+
+.section-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  background: var(--primary-100);
+  color: var(--primary-700);
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.section-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--gray-900);
+  margin-bottom: 8px;
+}
+
+.section-desc {
+  font-size: 14px;
+  color: var(--gray-500);
+}
+
+.card {
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--gray-200);
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+
+.card-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--gray-100);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.card-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--gray-800);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.card-title svg {
+  width: 18px;
+  height: 18px;
+  color: var(--primary-600);
+}
+
+.card-body {
+  padding: 20px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-group.full-width {
+  grid-column: 1 / -1;
+}
+
+.form-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--gray-700);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.form-label .required {
+  color: var(--danger-500);
+}
+
+.form-input,
+.form-select,
+.form-textarea {
+  padding: 10px 12px;
+  border: 1px solid var(--gray-300);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  transition: all var(--transition-fast);
+  background: var(--white);
+  color: var(--gray-800);
+}
+
+.form-input:hover,
+.form-select:hover,
+.form-textarea:hover {
+  border-color: var(--gray-400);
+}
+
+.form-input:focus,
+.form-select:focus,
+.form-textarea:focus {
+  border-color: var(--primary-500);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.form-textarea {
+  resize: vertical;
+  min-height: 100px;
+  font-family: inherit;
+}
+
+/* Rich text editor */
+.rte-wrap {
+  border: 1px solid var(--gray-300);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  transition: all var(--transition-fast);
+}
+
+.rte-wrap:focus-within {
+  border-color: var(--primary-500);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.rte-toolbar {
+  display: flex;
+  gap: 2px;
+  padding: 6px 8px;
+  background: var(--gray-50);
+  border-bottom: 1px solid var(--gray-200);
+  flex-wrap: wrap;
+}
+
+.rte-btn {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  color: var(--gray-600);
+  transition: all var(--transition-fast);
+}
+
+.rte-btn:hover {
+  background: var(--gray-200);
+  color: var(--gray-800);
+}
+
+.rte-btn.active {
+  background: var(--primary-100);
+  color: var(--primary-700);
+}
+
+.rte-btn svg {
+  width: 15px;
+  height: 15px;
+}
+
+.rte-divider {
+  width: 1px;
+  height: 20px;
+  background: var(--gray-300);
+  margin: 0 4px;
+  align-self: center;
+}
+
+.rte-content {
+  padding: 12px 14px;
+  min-height: 120px;
+  max-height: 400px;
+  overflow-y: auto;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--gray-800);
+  background: var(--white);
+}
+
+.rte-content:focus {
+  outline: none;
+}
+
+.rte-content ul,
+.rte-content ol {
+  padding-left: 24px;
+  margin: 8px 0;
+}
+
+.rte-content p {
+  margin: 4px 0;
+}
+
+.rte-content h3 {
+  font-size: 16px;
+  margin: 12px 0 8px;
+}
+
+/* Image upload */
+.image-upload-area {
+  border: 2px dashed var(--gray-300);
+  border-radius: var(--radius-md);
+  padding: 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  background: var(--gray-50);
+}
+
+.image-upload-area:hover {
+  border-color: var(--primary-500);
+  background: var(--primary-50);
+}
+
+.image-upload-area.drag-over {
+  border-color: var(--primary-500);
+  background: var(--primary-50);
+  transform: scale(1.01);
+}
+
+.image-upload-icon {
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 12px;
+  color: var(--gray-400);
+}
+
+.image-upload-text {
+  font-size: 14px;
+  color: var(--gray-600);
+  margin-bottom: 4px;
+}
+
+.image-upload-hint {
+  font-size: 12px;
+  color: var(--gray-400);
+}
+
+.images-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.image-item {
+  position: relative;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  border: 1px solid var(--gray-200);
+  aspect-ratio: 1;
+}
+
+.image-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.image-remove {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.6);
+  color: var(--white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+  font-size: 14px;
+}
+
+.image-item:hover .image-remove {
+  opacity: 1;
+}
+
+/* Table */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.data-table th {
+  background: var(--gray-50);
+  padding: 10px 12px;
+  text-align: left;
+  font-weight: 600;
+  color: var(--gray-700);
+  border-bottom: 2px solid var(--gray-200);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.data-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--gray-100);
+  vertical-align: top;
+}
+
+.data-table tr:hover {
+  background: var(--gray-50);
+}
+
+.table-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.icon-btn {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+  color: var(--gray-500);
+}
+
+.icon-btn:hover {
+  background: var(--gray-100);
+  color: var(--gray-700);
+}
+
+.icon-btn.danger:hover {
+  background: var(--danger-100);
+  color: var(--danger-600);
+}
+
+.icon-btn svg {
+  width: 15px;
+  height: 15px;
+}
+
+.add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: var(--primary-50);
+  color: var(--primary-700);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 500;
+  transition: all var(--transition-fast);
+  margin-top: 12px;
+}
+
+.add-btn:hover {
+  background: var(--primary-100);
+}
+
+.add-btn svg {
+  width: 15px;
+  height: 15px;
+}
+
+/* Status badges */
+.status-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.status-tag.pending {
+  background: var(--warning-100);
+  color: var(--warning-600);
+}
+
+.status-tag.progress {
+  background: var(--primary-100);
+  color: var(--primary-700);
+}
+
+.status-tag.completed {
+  background: var(--success-100);
+  color: var(--success-600);
+}
+
+/* 5Why */
+.why-list {
+  position: relative;
+  padding-left: 24px;
+}
+
+.why-list::before {
+  content: '';
+  position: absolute;
+  left: 11px;
+  top: 20px;
+  bottom: 20px;
+  width: 2px;
+  background: var(--gray-200);
+}
+
+.why-item {
+  position: relative;
+  margin-bottom: 12px;
+}
+
+.why-item::before {
+  content: '';
+  position: absolute;
+  left: -17px;
+  top: 14px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--primary-500);
+  border: 2px solid var(--white);
+  box-shadow: 0 0 0 2px var(--primary-500);
+  z-index: 1;
+}
+
+.why-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--primary-600);
+  margin-bottom: 4px;
+}
+
+.why-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--gray-300);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  min-height: 42px;
+  resize: vertical;
+  transition: all var(--transition-fast);
+}
+
+.why-input:focus {
+  border-color: var(--primary-500);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.why-arrow {
+  text-align: center;
+  color: var(--gray-400);
+  margin: 4px 0;
+  margin-left: -24px;
+}
+
+/* Fishbone */
+.fishbone-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.fishbone-item {
+  background: var(--gray-50);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  border: 1px solid var(--gray-200);
+}
+
+.fishbone-item-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--gray-800);
+}
+
+.fishbone-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--primary-100);
+  color: var(--primary-700);
+  font-size: 14px;
+}
+
+.fishbone-item textarea {
+  width: 100%;
+  min-height: 70px;
+  padding: 8px 10px;
+  border: 1px solid var(--gray-300);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  resize: vertical;
+  font-family: inherit;
+  transition: all var(--transition-fast);
+}
+
+.fishbone-item textarea:focus {
+  border-color: var(--primary-500);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+/* 5W2H */
+.fivew-twoh-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.fivew-twoh-item {
+  background: var(--gray-50);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  border: 1px solid var(--gray-200);
+}
+
+.fivew-twoh-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--primary-600);
+  margin-bottom: 4px;
+}
+
+.fivew-twoh-item input,
+.fivew-twoh-item textarea {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--gray-300);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-family: inherit;
+  transition: all var(--transition-fast);
+}
+
+.fivew-twoh-item input:focus,
+.fivew-twoh-item textarea:focus {
+  border-color: var(--primary-500);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+/* Preview area */
+.preview-area {
+  width: 480px;
+  background: var(--gray-200);
+  border-left: 1px solid var(--gray-300);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  transition: width var(--transition-normal);
+  position: relative;
+  overflow: visible;
+}
+
+.preview-area.collapsed {
+  width: 32px;
+  background: var(--gray-100);
+}
+
+.preview-toggle {
+  position: absolute;
+  left: -12px;
+  top: 20px;
+  width: 24px;
+  height: 24px;
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10;
+  transition: all var(--transition-fast);
+  color: var(--gray-500);
+  box-shadow: var(--shadow-sm);
+}
+
+.preview-toggle:hover {
+  background: var(--primary-50);
+  color: var(--primary-600);
+}
+
+.preview-toggle svg {
+  width: 14px;
+  height: 14px;
+  transition: transform var(--transition-normal);
+}
+
+.preview-area.collapsed .preview-toggle {
+  left: 4px;
+}
+
+.preview-area.collapsed .preview-toggle svg {
+  transform: rotate(180deg);
+}
+
+.preview-area.collapsed .preview-header,
+.preview-area.collapsed .preview-content {
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity var(--transition-fast);
+}
+
+.preview-header {
+  padding: 12px 16px;
+  background: var(--white);
+  border-bottom: 1px solid var(--gray-200);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.preview-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--gray-800);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.preview-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.preview-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  background: var(--gray-300);
+}
+
+.report-page {
+  background: var(--white);
+  min-height: 1000px;
+  padding: 40px;
+  box-shadow: var(--shadow-lg);
+  margin: 0 auto;
+  max-width: 100%;
+  font-size: 12px;
+  color: var(--gray-800);
+  line-height: 1.6;
+}
+
+.report-page h1 {
+  font-size: 22px;
+  text-align: center;
+  color: var(--gray-900);
+  margin-bottom: 4px;
+  font-weight: 700;
+}
+
+.report-subtitle {
+  text-align: center;
+  color: var(--gray-500);
+  font-size: 12px;
+  margin-bottom: 20px;
+}
+
+.report-info-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 20px;
+  font-size: 11px;
+}
+
+.report-info-table td {
+  border: 1px solid var(--gray-300);
+  padding: 8px 10px;
+}
+
+.report-info-table td:first-child {
+  background: var(--gray-50);
+  font-weight: 600;
+  width: 20%;
+  color: var(--gray-700);
+}
+
+.report-section {
+  margin-bottom: 16px;
+}
+
+.report-section-title {
+  background: var(--primary-700);
+  color: var(--white);
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 4px 4px 0 0;
+  margin-bottom: 0;
+}
+
+.report-section-content {
+  border: 1px solid var(--gray-300);
+  border-top: none;
+  padding: 12px;
+  font-size: 11px;
+}
+
+.report-section-content ul,
+.report-section-content ol {
+  padding-left: 20px;
+  margin: 6px 0;
+}
+
+.report-section-content img {
+  max-width: 100%;
+  height: auto;
+  margin: 6px 0;
+  border: 1px solid var(--gray-200);
+  border-radius: 2px;
+}
+
+.report-small-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+  margin: 8px 0;
+}
+
+.report-small-table th {
+  background: var(--gray-100);
+  border: 1px solid var(--gray-300);
+  padding: 6px 8px;
+  text-align: left;
+  font-weight: 600;
+}
+
+.report-small-table td {
+  border: 1px solid var(--gray-300);
+  padding: 6px 8px;
+}
+
+.team-member-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 6px 0;
+}
+
+.team-member-tag {
+  background: var(--gray-100);
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+}
+
+.team-member-tag strong {
+  color: var(--primary-700);
+}
+
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  opacity: 0;
+  transition: opacity var(--transition-normal);
+}
+
+.modal-overlay.show {
+  display: flex;
+  opacity: 1;
+}
+
+.modal {
+  background: var(--white);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-xl);
+  max-width: 90vw;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transform: translateY(20px);
+  transition: transform var(--transition-normal);
+}
+
+.modal-overlay.show .modal {
+  transform: translateY(0);
+}
+
+.modal-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--gray-200);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.modal-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--gray-900);
+}
+
+.modal-close {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  color: var(--gray-500);
+  transition: all var(--transition-fast);
+}
+
+.modal-close:hover {
+  background: var(--gray-100);
+  color: var(--gray-700);
+}
+
+.modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+}
+
+.modal-footer {
+  padding: 16px 24px;
+  border-top: 1px solid var(--gray-200);
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 500;
+  transition: all var(--transition-fast);
+}
+
+.btn-primary {
+  background: var(--primary-600);
+  color: var(--white);
+}
+
+.btn-primary:hover {
+  background: var(--primary-700);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+.btn-secondary {
+  background: var(--gray-100);
+  color: var(--gray-700);
+}
+
+.btn-secondary:hover {
+  background: var(--gray-200);
+  color: var(--gray-900);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.btn svg {
+  width: 15px;
+  height: 15px;
+}
+
+/* Full preview modal */
+.modal.full-preview {
+  width: 96vw;
+  max-width: 96vw;
+  height: 92vh;
+  max-height: 92vh;
+}
+
+.full-preview .modal-body {
+  padding: 0;
+  background: var(--gray-200);
+}
+
+.preview-toolbar {
+  background: var(--white);
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--gray-200);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.preview-view {
+  padding: 30px;
+  overflow-y: auto;
+  height: calc(100% - 56px);
+}
+
+.preview-view .report-page {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+/* Template grid */
+.template-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.template-card {
+  border: 2px solid var(--gray-200);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.template-card:hover {
+  border-color: var(--primary-500);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.template-icon {
+  width: 48px;
+  height: 48px;
+  background: var(--primary-100);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+  color: var(--primary-600);
+}
+
+.template-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--gray-800);
+  margin-bottom: 4px;
+}
+
+.template-desc {
+  font-size: 12px;
+  color: var(--gray-500);
+}
+
+/* Toast */
+.toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.toast {
+  background: var(--white);
+  padding: 12px 20px;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 280px;
+  animation: slideIn 0.3s ease;
+  border-left: 4px solid var(--success-500);
+}
+
+.toast.error {
+  border-left-color: var(--danger-500);
+}
+
+.toast.warning {
+  border-left-color: var(--warning-500);
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.toast-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.toast.success .toast-icon {
+  color: var(--success-500);
+}
+
+.toast.error .toast-icon {
+  color: var(--danger-500);
+}
+
+.toast.warning .toast-icon {
+  color: var(--warning-500);
+}
+
+.toast-message {
+  flex: 1;
+  font-size: 13px;
+  color: var(--gray-700);
+}
+
+/* Dropdown */
+.dropdown {
+  position: relative;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  background: var(--white);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--gray-200);
+  min-width: 180px;
+  display: none;
+  z-index: 100;
+  overflow: hidden;
+}
+
+.dropdown-menu.show {
+  display: block;
+}
+
+.dropdown-item {
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--gray-700);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all var(--transition-fast);
+}
+
+.dropdown-item:hover {
+  background: var(--gray-100);
+  color: var(--gray-900);
+}
+
+.dropdown-item svg {
+  width: 15px;
+  height: 15px;
+  color: var(--gray-500);
+}
+
+.dropdown-divider {
+  height: 1px;
+  background: var(--gray-200);
+  margin: 4px 0;
+}
+
+/* Print styles */
+@media print {
+  @page {
+    size: A4;
+    margin: 15mm 10mm;
+  }
+  
+  /* 强制打印时使用亮色模式，无论当前主题 */
+  body {
+    --primary-900: #1e3a8a !important;
+    --primary-800: #1e40af !important;
+    --primary-700: #1d4ed8 !important;
+    --primary-600: #2563eb !important;
+    --primary-500: #3b82f6 !important;
+    --primary-100: #dbeafe !important;
+    --primary-50: #eff6ff !important;
+    --success-600: #059669 !important;
+    --success-500: #10b981 !important;
+    --success-100: #d1fae5 !important;
+    --warning-600: #d97706 !important;
+    --warning-500: #f59e0b !important;
+    --warning-100: #fef3c7 !important;
+    --danger-600: #dc2626 !important;
+    --danger-500: #ef4444 !important;
+    --danger-100: #fee2e2 !important;
+    --gray-900: #0f172a !important;
+    --gray-800: #1e293b !important;
+    --gray-700: #334155 !important;
+    --gray-600: #475569 !important;
+    --gray-500: #64748b !important;
+    --gray-400: #94a3b8 !important;
+    --gray-300: #cbd5e1 !important;
+    --gray-200: #e2e8f0 !important;
+    --gray-100: #f1f5f9 !important;
+    --gray-50: #f8fafc !important;
+    --white: #ffffff !important;
+    background: white !important;
+    color: #1e293b !important;
+  }
+  
+  html, body {
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+    background: white !important;
+  }
+  
+  .app,
+  .toolbar,
+  .sidebar,
+  .editor-area,
+  .preview-area,
+  .modal-overlay,
+  .toast-container,
+  .no-print {
+    display: none !important;
+  }
+  
+  .print-container {
+    display: block !important;
+    position: static !important;
+    width: 100% !important;
+    height: auto !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: white !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  
+  .print-container .report-page {
+    box-shadow: none !important;
+    margin: 0 !important;
+    max-width: none !important;
+    width: 100% !important;
+    padding: 0 !important;
+    min-height: auto !important;
+    background: white !important;
+  }
+  
+  /* 分页控制 - 防止章节、表格、标题被切断 */
+  .report-section {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  
+  .report-section-title {
+    page-break-after: avoid;
+    break-after: avoid;
+  }
+  
+  .report-small-table {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  
+  .report-info-table {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  
+  table {
+    page-break-inside: auto;
+    break-inside: auto;
+  }
+  
+  tr {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  
+  h1, h2, h3 {
+    page-break-after: avoid;
+    break-after: avoid;
+  }
+  
+  p {
+    orphans: 3;
+    widows: 3;
+  }
+  
+  img {
+    page-break-inside: avoid;
+    break-inside: avoid;
+    max-width: 100% !important;
+  }
+  
+  .report-subtitle {
+    page-break-after: avoid;
+    break-after: avoid;
+  }
+}
+
+.print-container {
+  display: none;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--gray-100);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--gray-300);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--gray-400);
+}
+
+/* Mobile responsive */
+@media (max-width: 1200px) {
+  .preview-area {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    display: none;
+  }
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+  .fishbone-grid {
+    grid-template-columns: 1fr;
+  }
+  .fivew-twoh-grid {
+    grid-template-columns: 1fr;
+  }
+  .template-grid {
+    grid-template-columns: 1fr;
+  }
+  .toolbar {
+    padding: 10px 16px;
+  }
+  .logo-text {
+    font-size: 15px;
+  }
+  .editor-area {
+    padding: 16px;
+  }
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- Top Toolbar -->
+  <header class="toolbar">
+    <div class="toolbar-left">
+      <div class="logo">
+        <div class="logo-icon">8D</div>
+        <div>
+          <div class="logo-text">8D报告工具</div>
+          <div class="logo-sub">专业质量问题解决报告生成器</div>
+        </div>
+      </div>
+      <div class="toolbar-divider"></div>
+    </div>
+    
+    <div class="toolbar-center">
+      <button class="toolbar-btn" onclick="newReport()">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+        新建
+      </button>
+      <button class="toolbar-btn" onclick="saveReport()">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
+        保存
+      </button>
+      <div class="dropdown">
+        <button class="toolbar-btn" onclick="toggleDropdown('exportDropdown')">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+          导出
+          <svg style="width:12px;height:12px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+        </button>
+        <div class="dropdown-menu" id="exportDropdown">
+          <div class="dropdown-item" onclick="exportPDF()">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+            PDF / 打印
+          </div>
+          <div class="dropdown-item" onclick="exportWord()">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+            Word 文档
+          </div>
+          <div class="dropdown-item" onclick="exportJSON()">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
+            JSON 数据
+          </div>
+        </div>
+      </div>
+      <div class="dropdown">
+        <button class="toolbar-btn" onclick="toggleDropdown('importDropdown')">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+          导入
+          <svg style="width:12px;height:12px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+        </button>
+        <div class="dropdown-menu" id="importDropdown">
+          <div class="dropdown-item" onclick="importJSON()">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
+            从 JSON 导入
+          </div>
+          <div class="dropdown-divider"></div>
+          <div class="dropdown-item" onclick="loadFromStorage()">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"></path></svg>
+            读取本地草稿
+          </div>
+        </div>
+      </div>
+      <div class="toolbar-divider" style="background:rgba(255,255,255,0.2);"></div>
+      <button class="toolbar-btn primary" onclick="openFullPreview()">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+        预览报告
+      </button>
+    </div>
+    
+    <div class="toolbar-right">
+      <button class="toolbar-btn theme-toggle" onclick="toggleTheme()" title="切换日间/夜间模式" id="themeToggleBtn">
+        <svg class="icon-sun" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+        <svg class="icon-moon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+      </button>
+      <div class="status-badge">
+        <div class="status-dot"></div>
+        <span id="saveStatus">已自动保存</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <div class="main">
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <button class="sidebar-toggle" onclick="toggleSidebar()" title="折叠/展开侧边栏">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+        </button>
+        <div class="sidebar-title">完成进度</div>
+        <div class="progress-bar-wrap">
+          <div class="progress-bar" id="progressBar"></div>
+        </div>
+        <div class="progress-text" id="progressText">0% 完成</div>
+      </div>
+      
+      <nav class="sidebar-nav">
+        <div class="nav-group-title">基本信息</div>
+        <div class="nav-item active" data-section="info" onclick="switchSection('info')">
+          <div class="nav-number">📋</div>
+          <div class="nav-text">报告信息</div>
+          <svg class="nav-check" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+        </div>
+        
+        <div class="nav-group-title">8D 步骤</div>
+        <div class="nav-item" data-section="d1" onclick="switchSection('d1')">
+          <div class="nav-number">D1</div>
+          <div class="nav-text">团队组建</div>
+          <svg class="nav-check" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+        </div>
+        <div class="nav-item" data-section="d2" onclick="switchSection('d2')">
+          <div class="nav-number">D2</div>
+          <div class="nav-text">问题描述</div>
+          <svg class="nav-check" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+        </div>
+        <div class="nav-item" data-section="d3" onclick="switchSection('d3')">
+          <div class="nav-number">D3</div>
+          <div class="nav-text">临时遏制措施</div>
+          <svg class="nav-check" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+        </div>
+        <div class="nav-item" data-section="d4" onclick="switchSection('d4')">
+          <div class="nav-number">D4</div>
+          <div class="nav-text">根本原因分析</div>
+          <svg class="nav-check" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+        </div>
+        <div class="nav-item" data-section="d5" onclick="switchSection('d5')">
+          <div class="nav-number">D5</div>
+          <div class="nav-text">永久纠正措施</div>
+          <svg class="nav-check" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+        </div>
+        <div class="nav-item" data-section="d6" onclick="switchSection('d6')">
+          <div class="nav-number">D6</div>
+          <div class="nav-text">实施与验证</div>
+          <svg class="nav-check" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+        </div>
+        <div class="nav-item" data-section="d7" onclick="switchSection('d7')">
+          <div class="nav-number">D7</div>
+          <div class="nav-text">预防再发生</div>
+          <svg class="nav-check" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+        </div>
+        <div class="nav-item" data-section="d8" onclick="switchSection('d8')">
+          <div class="nav-number">D8</div>
+          <div class="nav-text">团队表彰</div>
+          <svg class="nav-check" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+        </div>
+      </nav>
+    </aside>
+
+    <!-- Editor Area -->
+    <main class="editor-area">
+      <div class="editor-container">
+        
+        <!-- Report Info Section -->
+        <section class="section active" id="section-info">
+          <div class="section-header">
+            <div class="section-badge">📋 基本信息</div>
+            <h1 class="section-title">报告信息</h1>
+            <p class="section-desc">填写8D报告的基本信息，包括报告编号、产品信息、客户信息等</p>
+          </div>
+          
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                基本信息
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="form-grid">
+                <div class="form-group">
+                  <label class="form-label">报告编号 <span class="required">*</span></label>
+                  <input type="text" class="form-input" id="reportNo" placeholder="例如：8D-2024-001">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">报告状态</label>
+                  <select class="form-select" id="status">
+                    <option value="草稿">草稿</option>
+                    <option value="进行中">进行中</option>
+                    <option value="已完成">已完成</option>
+                    <option value="已关闭">已关闭</option>
+                  </select>
+                </div>
+                <div class="form-group full-width">
+                  <label class="form-label">报告标题 <span class="required">*</span></label>
+                  <input type="text" class="form-input" id="title" placeholder="请输入问题简要描述">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">产品名称</label>
+                  <input type="text" class="form-input" id="productName" placeholder="产品名称">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">产品型号</label>
+                  <input type="text" class="form-input" id="productModel" placeholder="产品型号/规格">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">客户名称</label>
+                  <input type="text" class="form-input" id="customer" placeholder="客户名称">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">供应商</label>
+                  <input type="text" class="form-input" id="supplier" placeholder="供应商名称">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">责任部门</label>
+                  <input type="text" class="form-input" id="department" placeholder="责任部门">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">严重程度</label>
+                  <select class="form-select" id="severity">
+                    <option value="">请选择</option>
+                    <option value="轻微">轻微</option>
+                    <option value="一般">一般</option>
+                    <option value="严重">严重</option>
+                    <option value="重大">重大</option>
+                    <option value="致命">致命</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">报告日期</label>
+                  <input type="date" class="form-input" id="reportDate">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">问题发生日期</label>
+                  <input type="date" class="form-input" id="issueDate">
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- D1 Team Section -->
+        <section class="section" id="section-d1">
+          <div class="section-header">
+            <div class="section-badge">D1 / 第1步</div>
+            <h1 class="section-title">团队组建 (Team Formation)</h1>
+            <p class="section-desc">建立一个有知识、技能和权限的团队来解决问题并实施纠正措施</p>
+          </div>
+          
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                团队负责人
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="form-grid">
+                <div class="form-group">
+                  <label class="form-label">团队负责人</label>
+                  <input type="text" class="form-input" id="teamLeader" placeholder="负责人姓名">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">负责人部门</label>
+                  <input type="text" class="form-input" id="leaderDept" placeholder="所属部门">
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                团队成员
+              </div>
+            </div>
+            <div class="card-body">
+              <table class="data-table" id="teamTable">
+                <thead>
+                  <tr>
+                    <th style="width:25%">姓名</th>
+                    <th style="width:25%">角色</th>
+                    <th style="width:30%">部门</th>
+                    <th style="width:20%">操作</th>
+                  </tr>
+                </thead>
+                <tbody id="teamTableBody">
+                </tbody>
+              </table>
+              <button class="add-btn" onclick="addTeamMember()">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path></svg>
+                添加成员
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- D2 Problem Section -->
+        <section class="section" id="section-d2">
+          <div class="section-header">
+            <div class="section-badge">D2 / 第2步</div>
+            <h1 class="section-title">问题描述 (Problem Description)</h1>
+            <p class="section-desc">用量化的方式详细描述问题，包括什么、哪里、何时、程度等信息</p>
+          </div>
+          
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
+                问题描述
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="form-group full-width" style="margin-bottom:16px;">
+                <label class="form-label">详细描述 <span class="required">*</span></label>
+                <div class="rte-wrap" data-editor="problemDesc">
+                  <div class="rte-toolbar">
+                    <button type="button" class="rte-btn" onclick="execCmd('bold')" title="加粗"><strong>B</strong></button>
+                    <button type="button" class="rte-btn" onclick="execCmd('italic')" title="斜体"><em>I</em></button>
+                    <button type="button" class="rte-btn" onclick="execCmd('underline')" title="下划线"><u>U</u></button>
+                    <div class="rte-divider"></div>
+                    <button type="button" class="rte-btn" onclick="execCmd('insertUnorderedList')" title="无序列表">
+                      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
+                    </button>
+                    <button type="button" class="rte-btn" onclick="execCmd('insertOrderedList')" title="有序列表">
+                      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"></path></svg>
+                    </button>
+                    <div class="rte-divider"></div>
+                    <button type="button" class="rte-btn" onclick="execCmd('justifyLeft')" title="左对齐">
+                      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h10M4 18h16"></path></svg>
+                    </button>
+                    <button type="button" class="rte-btn" onclick="execCmd('justifyCenter')" title="居中">
+                      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M7 12h10M4 18h16"></path></svg>
+                    </button>
+                  </div>
+                  <div class="rte-content" contenteditable="true" id="problemDesc"></div>
+                </div>
+              </div>
+              
+              <div class="form-grid">
+                <div class="form-group">
+                  <label class="form-label">问题发生地点</label>
+                  <input type="text" class="form-input" id="problemLocation" placeholder="例如：产线A、客户现场">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">问题数量</label>
+                  <input type="text" class="form-input" id="problemQuantity" placeholder="例如：100pcs">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">批次号</label>
+                  <input type="text" class="form-input" id="batchNo" placeholder="相关批次号">
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                5W2H 分析
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="fivew-twoh-grid">
+                <div class="fivew-twoh-item">
+                  <div class="fivew-twoh-label">What (什么问题)</div>
+                  <input type="text" class="form-input" id="wWhat" placeholder="描述发生了什么问题">
+                </div>
+                <div class="fivew-twoh-item">
+                  <div class="fivew-twoh-label">Why (为什么发生)</div>
+                  <input type="text" class="form-input" id="wWhy" placeholder="为什么会出现这个问题">
+                </div>
+                <div class="fivew-twoh-item">
+                  <div class="fivew-twoh-label">Where (在哪里)</div>
+                  <input type="text" class="form-input" id="wWhere" placeholder="问题发生的地点">
+                </div>
+                <div class="fivew-twoh-item">
+                  <div class="fivew-twoh-label">When (何时发生)</div>
+                  <input type="text" class="form-input" id="wWhen" placeholder="问题发生的时间">
+                </div>
+                <div class="fivew-twoh-item">
+                  <div class="fivew-twoh-label">Who (谁发现/涉及)</div>
+                  <input type="text" class="form-input" id="wWho" placeholder="谁发现的或涉及谁">
+                </div>
+                <div class="fivew-twoh-item">
+                  <div class="fivew-twoh-label">How (如何发生)</div>
+                  <input type="text" class="form-input" id="wHow" placeholder="问题是如何发生的">
+                </div>
+                <div class="fivew-twoh-item" style="grid-column:1/-1;">
+                  <div class="fivew-twoh-label">How Many / How Much (程度/数量)</div>
+                  <input type="text" class="form-input" id="wHowMany" placeholder="问题的严重程度或数量">
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                问题图片
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="image-upload-area" id="d2ImageUpload" onclick="document.getElementById('d2ImageInput').click()">
+                <svg class="image-upload-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                <div class="image-upload-text">点击或拖拽图片到此处上传</div>
+                <div class="image-upload-hint">支持 JPG、PNG、GIF 格式</div>
+              </div>
+              <input type="file" id="d2ImageInput" accept="image/*" multiple style="display:none" onchange="handleImageUpload(event, 'd2')">
+              <div class="images-grid" id="d2ImagesGrid"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- D3 Containment Section -->
+        <section class="section" id="section-d3">
+          <div class="section-header">
+            <div class="section-badge">D3 / 第3步</div>
+            <h1 class="section-title">临时遏制措施 (Containment Actions)</h1>
+            <p class="section-desc">制定并实施临时遏制措施，防止问题扩大，保护客户免受影响</p>
+          </div>
+          
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+                临时遏制措施列表
+              </div>
+            </div>
+            <div class="card-body">
+              <table class="data-table" id="containmentTable">
+                <thead>
+                  <tr>
+                    <th style="width:30%">措施内容</th>
+                    <th style="width:15%">责任人</th>
+                    <th style="width:15%">截止日期</th>
+                    <th style="width:12%">状态</th>
+                    <th style="width:18%">验证结果</th>
+                    <th style="width:10%">操作</th>
+                  </tr>
+                </thead>
+                <tbody id="containmentTableBody">
+                </tbody>
+              </table>
+              <button class="add-btn" onclick="addContainmentMeasure()">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                添加措施
+              </button>
+            </div>
+          </div>
+          
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                遏制效果验证
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="form-group full-width">
+                <label class="form-label">验证结果描述</label>
+                <textarea class="form-textarea" id="containmentVerification" placeholder="描述临时遏制措施的效果验证情况，包括数据支撑、确认有效性等"></textarea>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- D4 Root Cause Section -->
+        <section class="section" id="section-d4">
+          <div class="section-header">
+            <div class="section-badge">D4 / 第4步</div>
+            <h1 class="section-title">根本原因分析 (Root Cause Analysis)</h1>
+            <p class="section-desc">通过各种分析工具，找出问题的根本原因，而不仅仅是表面原因</p>
+          </div>
+          
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
+                分析方法
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="form-grid">
+                <div class="form-group">
+                  <label class="form-label">主要分析方法</label>
+                  <select class="form-select" id="analysisMethod">
+                    <option value="">请选择</option>
+                    <option value="5Why">5Why 分析法</option>
+                    <option value="鱼骨图">鱼骨图 (因果图)</option>
+                    <option value="5Why+鱼骨图">5Why + 鱼骨图</option>
+                    <option value="FMEA">FMEA 失效模式分析</option>
+                    <option value="DOE">DOE 试验设计</option>
+                    <option value="其他">其他方法</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                5Why 分析
+              </div>
+            </div>
+            <div class="card-body">
+              <p style="font-size:13px;color:var(--gray-500);margin-bottom:16px;">通过连续追问5个"为什么"，逐层深入找到问题的根本原因</p>
+              <div class="why-list" id="whyList">
+              </div>
+              <button class="add-btn" onclick="addWhyLevel()">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                添加层级
+              </button>
+            </div>
+          </div>
+          
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"></path></svg>
+                鱼骨图分析 (5M1E)
+              </div>
+            </div>
+            <div class="card-body">
+              <p style="font-size:13px;color:var(--gray-500);margin-bottom:16px;">从人、机、料、法、测、环六个维度分析可能的原因</p>
+              <div class="fishbone-grid">
+                <div class="fishbone-item">
+                  <div class="fishbone-item-header">
+                    <div class="fishbone-icon">人</div>
+                    <span>人员 (Man)</span>
+                  </div>
+                  <textarea id="fishboneMan" placeholder="人员相关原因，如：技能不足、培训不到位、疲劳作业等"></textarea>
+                </div>
+                <div class="fishbone-item">
+                  <div class="fishbone-item-header">
+                    <div class="fishbone-icon">机</div>
+                    <span>机器 (Machine)</span>
+                  </div>
+                  <textarea id="fishboneMachine" placeholder="设备相关原因，如：设备故障、参数设置不当、维护不到位等"></textarea>
+                </div>
+                <div class="fishbone-item">
+                  <div class="fishbone-item-header">
+                    <div class="fishbone-icon">料</div>
+                    <span>物料 (Material)</span>
+                  </div>
+                  <textarea id="fishboneMaterial" placeholder="物料相关原因，如：来料不良、规格不符、批次差异等"></textarea>
+                </div>
+                <div class="fishbone-item">
+                  <div class="fishbone-item-header">
+                    <div class="fishbone-icon">法</div>
+                    <span>方法 (Method)</span>
+                  </div>
+                  <textarea id="fishboneMethod" placeholder="方法相关原因，如：工艺错误、作业指导书问题、流程不合理等"></textarea>
+                </div>
+                <div class="fishbone-item">
+                  <div class="fishbone-item-header">
+                    <div class="fishbone-icon">测</div>
+                    <span>测量 (Measurement)</span>
+                  </div>
+                  <textarea id="fishboneMeasurement" placeholder="测量相关原因，如：检测方法问题、量具不准、人员误判等"></textarea>
+                </div>
+                <div class="fishbone-item">
+                  <div class="fishbone-item-header">
+                    <div class="fishbone-icon">环</div>
+                    <span>环境 (Environment)</span>
+                  </div>
+                  <textarea id="fishboneEnvironment" placeholder="环境相关原因，如：温湿度、清洁度、光照、静电等"></textarea>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                确定的根本原因
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="form-group full-width" style="margin-bottom:16px;">
+                <label class="form-label">根本原因描述</label>
+                <textarea class="form-textarea" id="rootCause" placeholder="经过分析验证，确定的问题根本原因" style="min-height:80px;"></textarea>
+              </div>
+              <div class="form-group full-width">
+                <label class="form-label">根本原因验证</label>
+                <textarea class="form-textarea" id="rootCauseVerification" placeholder="如何验证这是根本原因？有什么数据或试验支撑？" style="min-height:80px;"></textarea>
+              </div>
+            </div>
+          </div>
+          
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                分析图片
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="image-upload-area" id="d4ImageUpload" onclick="document.getElementById('d4ImageInput').click()">
+                <svg class="image-upload-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                <div class="image-upload-text">点击或拖拽图片到此处上传</div>
+                <div class="image-upload-hint">支持上传分析图表、数据截图等</div>
+              </div>
+              <input type="file" id="d4ImageInput" accept="image/*" multiple style="display:none" onchange="handleImageUpload(event, 'd4')">
+              <div class="images-grid" id="d4ImagesGrid"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- D5 Corrective Section -->
+        <section class="section" id="section-d5">
+          <div class="section-header">
+            <div class="section-badge">D5 / 第5步</div>
+            <h1 class="section-title">永久纠正措施 (Corrective Actions)</h1>
+            <p class="section-desc">针对根本原因，制定并选择最佳的永久纠正措施</p>
+          </div>
+          
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+                永久纠正措施列表
+              </div>
+            </div>
+            <div class="card-body">
+              <table class="data-table" id="correctiveTable">
+                <thead>
+                  <tr>
+                    <th style="width:35%">措施内容</th>
+                    <th style="width:18%">责任人</th>
+                    <th style="width:18%">计划完成日期</th>
+                    <th style="width:15%">状态</th>
+                    <th style="width:14%">操作</th>
+                  </tr>
+                </thead>
+                <tbody id="correctiveTableBody">
+                </tbody>
+              </table>
+              <button class="add-btn" onclick="addCorrectiveMeasure()">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                添加措施
+              </button>
+            </div>
+          </div>
+          
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                风险评估
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="form-group full-width">
+                <label class="form-label">措施风险评估</label>
+                <textarea class="form-textarea" id="riskAssessment" placeholder="评估永久纠正措施可能带来的风险，以及应对方案"></textarea>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- D6 Implementation Section -->
+        <section class="section" id="section-d6">
+          <div class="section-header">
+            <div class="section-badge">D6 / 第6步</div>
+            <h1 class="section-title">实施与验证 (Implementation & Validation)</h1>
+            <p class="section-desc">实施永久纠正措施，并验证其有效性，确保问题不再发生</p>
+          </div>
+          
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
+                实施计划
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="form-group full-width">
+                <label class="form-label">详细实施计划</label>
+                <div class="rte-wrap" data-editor="implementationPlan">
+                  <div class="rte-toolbar">
+                    <button type="button" class="rte-btn" onclick="execCmd('bold')"><strong>B</strong></button>
+                    <button type="button" class="rte-btn" onclick="execCmd('italic')"><em>I</em></button>
+                    <button type="button" class="rte-btn" onclick="execCmd('underline')"><u>U</u></button>
+                    <div class="rte-divider"></div>
+                    <button type="button" class="rte-btn" onclick="execCmd('insertUnorderedList')">
+                      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
+                    </button>
+                    <button type="button" class="rte-btn" onclick="execCmd('insertOrderedList')">
+                      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"></path></svg>
+                    </button>
+                  </div>
+                  <div class="rte-content" contenteditable="true" id="implementationPlan"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                验证结果
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="form-group full-width" style="margin-bottom:16px;">
+                <label class="form-label">效果验证结果</label>
+                <textarea class="form-textarea" id="verificationResult" placeholder="描述纠正措施实施后的效果验证情况" style="min-height:100px;"></textarea>
+              </div>
+              <div class="form-group full-width">
+                <label class="form-label">有效性数据</label>
+                <textarea class="form-textarea" id="effectivenessData" placeholder="提供数据支撑，如：不良率从X%降至Y%，CPK从X提升到Y等" style="min-height:80px;"></textarea>
+              </div>
+            </div>
+          </div>
+          
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                验证图片
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="image-upload-area" id="d6ImageUpload" onclick="document.getElementById('d6ImageInput').click()">
+                <svg class="image-upload-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                <div class="image-upload-text">点击或拖拽图片到此处上传</div>
+                <div class="image-upload-hint">支持上传验证数据图表、改善前后对比等</div>
+              </div>
+              <input type="file" id="d6ImageInput" accept="image/*" multiple style="display:none" onchange="handleImageUpload(event, 'd6')">
+              <div class="images-grid" id="d6ImagesGrid"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- D7 Prevention Section -->
+        <section class="section" id="section-d7">
+          <div class="section-header">
+            <div class="section-badge">D7 / 第7步</div>
+            <h1 class="section-title">预防再发生 (Prevention of Recurrence)</h1>
+            <p class="section-desc">修改管理系统、操作系统、实践和程序，防止问题再次发生</p>
+          </div>
+          
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                预防措施列表
+              </div>
+            </div>
+            <div class="card-body">
+              <table class="data-table" id="preventionTable">
+                <thead>
+                  <tr>
+                    <th style="width:35%">措施内容</th>
+                    <th style="width:18%">责任人</th>
+                    <th style="width:18%">计划完成日期</th>
+                    <th style="width:15%">状态</th>
+                    <th style="width:14%">操作</th>
+                  </tr>
+                </thead>
+                <tbody id="preventionTableBody">
+                </tbody>
+              </table>
+              <button class="add-btn" onclick="addPreventionMeasure()">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                添加措施
+              </button>
+            </div>
+          </div>
+          
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+                体系/流程改进
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="form-group full-width">
+                <label class="form-label">系统性改进措施</label>
+                <textarea class="form-textarea" id="systemImprovement" placeholder="描述需要修改的管理系统、流程、程序文件等" style="min-height:100px;"></textarea>
+              </div>
+            </div>
+          </div>
+          
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+                经验教训
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="form-group full-width">
+                <label class="form-label">经验教训总结</label>
+                <textarea class="form-textarea" id="lessonsLearned" placeholder="从这次问题中得到的经验教训，可横向展开的内容" style="min-height:100px;"></textarea>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- D8 Recognition Section -->
+        <section class="section" id="section-d8">
+          <div class="section-header">
+            <div class="section-badge">D8 / 第8步</div>
+            <h1 class="section-title">团队表彰 (Team Recognition)</h1>
+            <p class="section-desc">表彰团队的努力和贡献，总结经验，庆祝成功</p>
+          </div>
+          
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                总结与表彰
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="form-group full-width" style="margin-bottom:16px;">
+                <label class="form-label">项目总结</label>
+                <textarea class="form-textarea" id="summary" placeholder="对整个8D项目的总结，包括成果、亮点等" style="min-height:100px;"></textarea>
+              </div>
+              <div class="form-group full-width" style="margin-bottom:16px;">
+                <label class="form-label">团队表彰内容</label>
+                <textarea class="form-textarea" id="recognition" placeholder="对团队成员的贡献予以肯定和表彰" style="min-height:100px;"></textarea>
+              </div>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label class="form-label">结案日期</label>
+                  <input type="date" class="form-input" id="closingDate">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">结案审批人</label>
+                  <input type="text" class="form-input" id="approver" placeholder="审批人姓名">
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </main>
+
+    <!-- Preview Area -->
+    <aside class="preview-area" id="previewArea">
+      <button class="preview-toggle" onclick="togglePreview()" title="折叠/展开预览">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+      </button>
+      <div class="preview-header">
+        <div class="preview-title">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:18px;height:18px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+          实时预览
+        </div>
+        <div class="preview-actions">
+          <button class="icon-btn" onclick="openFullPreview()" title="全屏预览">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path></svg>
+          </button>
+        </div>
+      </div>
+      <div class="preview-content" id="previewContent">
+        <div class="report-page" id="reportPage">
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<!-- Full Preview Modal -->
+<div class="modal-overlay" id="fullPreviewModal">
+  <div class="modal full-preview">
+    <div class="modal-header">
+      <div class="modal-title">报告预览</div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button class="btn btn-secondary" onclick="exportPDF()">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+          打印/PDF
+        </button>
+        <button class="btn btn-secondary" onclick="exportWord()">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+          Word
+        </button>
+        <button class="modal-close" onclick="closeModal('fullPreviewModal')">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:20px;height:20px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
+    </div>
+    <div class="modal-body">
+      <div class="preview-toolbar">
+        <div style="font-size:13px;color:var(--gray-500);">A4 纸预览</div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-secondary" style="padding:6px 12px;font-size:12px;" onclick="printReport()">直接打印</button>
+        </div>
+      </div>
+      <div class="preview-view" id="fullPreviewView">
+        <div class="report-page" id="fullReportPage"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Template Modal -->
+<div class="modal-overlay" id="templateModal">
+  <div class="modal" style="width:600px;">
+    <div class="modal-header">
+      <div class="modal-title">选择模板</div>
+      <button class="modal-close" onclick="closeModal('templateModal')">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:20px;height:20px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="template-grid">
+        <div class="template-card" onclick="useTemplate('blank')">
+          <div class="template-icon">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:24px;height:24px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+          </div>
+          <div class="template-name">空白模板</div>
+          <div class="template-desc">从零开始创建8D报告</div>
+        </div>
+        <div class="template-card" onclick="useTemplate('standard')">
+          <div class="template-icon">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:24px;height:24px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+          </div>
+          <div class="template-name">标准模板</div>
+          <div class="template-desc">完整的8D标准报告模板</div>
+        </div>
+        <div class="template-card" onclick="useTemplate('simple')">
+          <div class="template-icon">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:24px;height:24px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+          </div>
+          <div class="template-name">简易模板</div>
+          <div class="template-desc">快速填写的简化版本</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Hidden file input for JSON import -->
+<input type="file" id="jsonFileInput" accept=".json" style="display:none" onchange="handleJSONImport(event)">
+
+<!-- Print Container (hidden on screen, only for printing) -->
+<div class="print-container" id="printContainer"></div>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+// ==================== Data Model ====================
+let reportData = {
+  reportInfo: {
+    reportNo: '',
+    title: '',
+    productName: '',
+    productModel: '',
+    customer: '',
+    supplier: '',
+    reportDate: '',
+    issueDate: '',
+    severity: '',
+    status: '草稿',
+    department: '',
+  },
+  d1_team: {
+    leader: '',
+    leaderDept: '',
+    members: [],
+  },
+  d2_problem: {
+    description: '',
+    location: '',
+    quantity: '',
+    batchNo: '',
+    images: [],
+    what: '',
+    why: '',
+    where: '',
+    when: '',
+    who: '',
+    how: '',
+    how_many: '',
+  },
+  d3_containment: {
+    measures: [],
+    verification: '',
+  },
+  d4_rootCause: {
+    analysis_method: '',
+    why_analysis: [
+      { level: 1, content: '' },
+      { level: 2, content: '' },
+      { level: 3, content: '' },
+      { level: 4, content: '' },
+      { level: 5, content: '' },
+    ],
+    fishbone: {
+      man: '',
+      machine: '',
+      material: '',
+      method: '',
+      measurement: '',
+      environment: '',
+    },
+    root_cause: '',
+    verification: '',
+    images: [],
+  },
+  d5_corrective: {
+    measures: [],
+    risk_assessment: '',
+  },
+  d6_implementation: {
+    implementation_plan: '',
+    verification_result: '',
+    effectiveness_data: '',
+    images: [],
+  },
+  d7_prevention: {
+    measures: [],
+    system_improvement: '',
+    lessons_learned: '',
+  },
+  d8_recognition: {
+    summary: '',
+    recognition: '',
+    closing_date: '',
+    approver: '',
+  },
+};
+
+let currentSection = 'info';
+let saveTimeout = null;
+
+// ==================== Initialization ====================
+document.addEventListener('DOMContentLoaded', function() {
+  // Initialize theme
+  initTheme();
+  
+  // Set default date
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('reportDate').value = today;
+  reportData.reportInfo.reportDate = today;
+  
+  // Generate default report number
+  const defaultNo = '8D-' + new Date().getFullYear() + '-' + String(Math.floor(Math.random() * 900) + 100);
+  document.getElementById('reportNo').value = defaultNo;
+  reportData.reportInfo.reportNo = defaultNo;
+  
+  // Initialize 5Why
+  initWhyAnalysis();
+  
+  // Setup drag and drop for image upload areas
+  setupDragAndDrop();
+  
+  // Setup form listeners
+  setupFormListeners();
+  
+  // Load from local storage if exists
+  tryLoadFromStorage();
+  
+  // Initial render
+  renderPreview();
+  updateProgress();
+});
+
+// ==================== Navigation ====================
+function switchSection(sectionId) {
+  currentSection = sectionId;
+  
+  // Update nav items
+  document.querySelectorAll('.nav-item').forEach(item => {
+    item.classList.remove('active');
+    if (item.dataset.section === sectionId) {
+      item.classList.add('active');
+    }
+  });
+  
+  // Update sections
+  document.querySelectorAll('.section').forEach(section => {
+    section.classList.remove('active');
+  });
+  document.getElementById('section-' + sectionId).classList.add('active');
+  
+  // Scroll to top
+  document.querySelector('.editor-area').scrollTop = 0;
+}
+
+// ==================== Form Listeners ====================
+function setupFormListeners() {
+  // Report info
+  const infoFields = ['reportNo', 'title', 'productName', 'productModel', 'customer', 
+                      'supplier', 'department', 'severity', 'status', 'reportDate', 'issueDate'];
+  infoFields.forEach(field => {
+    const el = document.getElementById(field);
+    if (el) {
+      el.addEventListener('input', () => {
+        reportData.reportInfo[field] = el.value;
+        autoSave();
+        renderPreview();
+        updateProgress();
+      });
+    }
+  });
+  
+  // D1 team
+  document.getElementById('teamLeader').addEventListener('input', (e) => {
+    reportData.d1_team.leader = e.target.value;
+    autoSave();
+    renderPreview();
+    updateProgress();
+  });
+  document.getElementById('leaderDept').addEventListener('input', (e) => {
+    reportData.d1_team.leaderDept = e.target.value;
+    autoSave();
+    renderPreview();
+    updateProgress();
+  });
+  
+  // D2 problem fields
+  const d2Fields = ['problemLocation', 'problemQuantity', 'batchNo', 'wWhat', 'wWhy', 
+                    'wWhere', 'wWhen', 'wWho', 'wHow', 'wHowMany'];
+  const d2DataMap = {
+    problemLocation: 'location',
+    problemQuantity: 'quantity',
+    batchNo: 'batchNo',
+    wWhat: 'what',
+    wWhy: 'why',
+    wWhere: 'where',
+    wWhen: 'when',
+    wWho: 'who',
+    wHow: 'how',
+    wHowMany: 'how_many',
+  };
+  d2Fields.forEach(field => {
+    const el = document.getElementById(field);
+    if (el) {
+      el.addEventListener('input', () => {
+        reportData.d2_problem[d2DataMap[field]] = el.value;
+        autoSave();
+        renderPreview();
+        updateProgress();
+      });
+    }
+  });
+  
+  // Problem description RTE
+  const problemDesc = document.getElementById('problemDesc');
+  problemDesc.addEventListener('input', () => {
+    reportData.d2_problem.description = problemDesc.innerHTML;
+    autoSave();
+    renderPreview();
+    updateProgress();
+  });
+  
+  // D3 containment verification
+  document.getElementById('containmentVerification').addEventListener('input', (e) => {
+    reportData.d3_containment.verification = e.target.value;
+    autoSave();
+    renderPreview();
+    updateProgress();
+  });
+  
+  // D4 root cause
+  document.getElementById('analysisMethod').addEventListener('input', (e) => {
+    reportData.d4_rootCause.analysis_method = e.target.value;
+    autoSave();
+    renderPreview();
+    updateProgress();
+  });
+  
+  document.getElementById('rootCause').addEventListener('input', (e) => {
+    reportData.d4_rootCause.root_cause = e.target.value;
+    autoSave();
+    renderPreview();
+    updateProgress();
+  });
+  
+  document.getElementById('rootCauseVerification').addEventListener('input', (e) => {
+    reportData.d4_rootCause.verification = e.target.value;
+    autoSave();
+    renderPreview();
+    updateProgress();
+  });
+  
+  // Fishbone
+  const fishboneFields = ['fishboneMan', 'fishboneMachine', 'fishboneMaterial', 'fishboneMethod', 'fishboneMeasurement', 'fishboneEnvironment'];
+  const fishboneMap = {
+    fishboneMan: 'man',
+    fishboneMachine: 'machine',
+    fishboneMaterial: 'material',
+    fishboneMethod: 'method',
+    fishboneMeasurement: 'measurement',
+    fishboneEnvironment: 'environment',
+  };
+  fishboneFields.forEach(field => {
+    const el = document.getElementById(field);
+    if (el) {
+      el.addEventListener('input', () => {
+        reportData.d4_rootCause.fishbone[fishboneMap[field]] = el.value;
+        autoSave();
+        renderPreview();
+        updateProgress();
+      });
+    }
+  });
+  
+  // D5 risk assessment
+  document.getElementById('riskAssessment').addEventListener('input', (e) => {
+    reportData.d5_corrective.risk_assessment = e.target.value;
+    autoSave();
+    renderPreview();
+    updateProgress();
+  });
+  
+  // D6 implementation plan RTE
+  const implPlan = document.getElementById('implementationPlan');
+  implPlan.addEventListener('input', () => {
+    reportData.d6_implementation.implementation_plan = implPlan.innerHTML;
+    autoSave();
+    renderPreview();
+    updateProgress();
+  });
+  
+  document.getElementById('verificationResult').addEventListener('input', (e) => {
+    reportData.d6_implementation.verification_result = e.target.value;
+    autoSave();
+    renderPreview();
+    updateProgress();
+  });
+  
+  document.getElementById('effectivenessData').addEventListener('input', (e) => {
+    reportData.d6_implementation.effectiveness_data = e.target.value;
+    autoSave();
+    renderPreview();
+    updateProgress();
+  });
+  
+  // D7 prevention
+  document.getElementById('systemImprovement').addEventListener('input', (e) => {
+    reportData.d7_prevention.system_improvement = e.target.value;
+    autoSave();
+    renderPreview();
+    updateProgress();
+  });
+  
+  document.getElementById('lessonsLearned').addEventListener('input', (e) => {
+    reportData.d7_prevention.lessons_learned = e.target.value;
+    autoSave();
+    renderPreview();
+    updateProgress();
+  });
+  
+  // D8 recognition
+  document.getElementById('summary').addEventListener('input', (e) => {
+    reportData.d8_recognition.summary = e.target.value;
+    autoSave();
+    renderPreview();
+    updateProgress();
+  });
+  
+  document.getElementById('recognition').addEventListener('input', (e) => {
+    reportData.d8_recognition.recognition = e.target.value;
+    autoSave();
+    renderPreview();
+    updateProgress();
+  });
+  
+  document.getElementById('closingDate').addEventListener('input', (e) => {
+    reportData.d8_recognition.closing_date = e.target.value;
+    autoSave();
+    renderPreview();
+    updateProgress();
+  });
+  
+  document.getElementById('approver').addEventListener('input', (e) => {
+    reportData.d8_recognition.approver = e.target.value;
+    autoSave();
+    renderPreview();
+    updateProgress();
+  });
+}
+
+// ==================== Team Members ====================
+function addTeamMember() {
+  const member = {
+    id: genId(),
+    name: '',
+    role: '',
+    department: '',
+  };
+  reportData.d1_team.members.push(member);
+  renderTeamTable();
+  autoSave();
+  renderPreview();
+  updateProgress();
+}
+
+function renderTeamTable() {
+  const tbody = document.getElementById('teamTableBody');
+  tbody.innerHTML = '';
+  reportData.d1_team.members.forEach(member => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><input type="text" class="form-input" style="padding:6px 8px;" value="${escapeHtml(member.name)}" onchange="updateTeamMember('${member.id}', 'name', this.value)" placeholder="姓名"></td>
+      <td><input type="text" class="form-input" style="padding:6px 8px;" value="${escapeHtml(member.role)}" onchange="updateTeamMember('${member.id}', 'role', this.value)" placeholder="角色"></td>
+      <td><input type="text" class="form-input" style="padding:6px 8px;" value="${escapeHtml(member.department)}" onchange="updateTeamMember('${member.id}', 'department', this.value)" placeholder="部门"></td>
+      <td>
+        <div class="table-actions">
+          <button class="icon-btn danger" onclick="removeTeamMember('${member.id}')" title="删除">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+          </button>
+        </div>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function updateTeamMember(id, field, value) {
+  const member = reportData.d1_team.members.find(m => m.id === id);
+  if (member) {
+    member[field] = value;
+    autoSave();
+    renderPreview();
+    updateProgress();
+  }
+}
+
+function removeTeamMember(id) {
+  reportData.d1_team.members = reportData.d1_team.members.filter(m => m.id !== id);
+  renderTeamTable();
+  autoSave();
+  renderPreview();
+  updateProgress();
+}
+
+// ==================== Containment Measures ====================
+function addContainmentMeasure() {
+  const measure = {
+    id: genId(),
+    content: '',
+    owner: '',
+    deadline: '',
+    status: 'pending',
+    result: '',
+  };
+  reportData.d3_containment.measures.push(measure);
+  renderContainmentTable();
+  autoSave();
+  renderPreview();
+  updateProgress();
+}
+
+function renderContainmentTable() {
+  const tbody = document.getElementById('containmentTableBody');
+  tbody.innerHTML = '';
+  reportData.d3_containment.measures.forEach(m => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><textarea class="form-input" style="padding:6px 8px;min-height:40px;width:100%;" onchange="updateContainmentMeasure('${m.id}', 'content', this.value)" placeholder="措施内容">${escapeHtml(m.content)}</textarea></td>
+      <td><input type="text" class="form-input" style="padding:6px 8px;" value="${escapeHtml(m.owner)}" onchange="updateContainmentMeasure('${m.id}', 'owner', this.value)" placeholder="责任人"></td>
+      <td><input type="date" class="form-input" style="padding:6px 8px;" value="${m.deadline}" onchange="updateContainmentMeasure('${m.id}', 'deadline', this.value)"></td>
+      <td>
+        <select class="form-input" style="padding:6px 8px;" onchange="updateContainmentMeasure('${m.id}', 'status', this.value)">
+          <option value="pending" ${m.status === 'pending' ? 'selected' : ''}>待处理</option>
+          <option value="progress" ${m.status === 'progress' ? 'selected' : ''}>进行中</option>
+          <option value="completed" ${m.status === 'completed' ? 'selected' : ''}>已完成</option>
+        </select>
+      </td>
+      <td><input type="text" class="form-input" style="padding:6px 8px;" value="${escapeHtml(m.result)}" onchange="updateContainmentMeasure('${m.id}', 'result', this.value)" placeholder="验证结果"></td>
+      <td>
+        <div class="table-actions">
+          <button class="icon-btn danger" onclick="removeContainmentMeasure('${m.id}')" title="删除">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+          </button>
+        </div>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function updateContainmentMeasure(id, field, value) {
+  const m = reportData.d3_containment.measures.find(x => x.id === id);
+  if (m) {
+    m[field] = value;
+    autoSave();
+    renderPreview();
+    updateProgress();
+  }
+}
+
+function removeContainmentMeasure(id) {
+  reportData.d3_containment.measures = reportData.d3_containment.measures.filter(x => x.id !== id);
+  renderContainmentTable();
+  autoSave();
+  renderPreview();
+  updateProgress();
+}
+
+// ==================== 5Why Analysis ====================
+function initWhyAnalysis() {
+  renderWhyList();
+}
+
+function renderWhyList() {
+  const list = document.getElementById('whyList');
+  list.innerHTML = '';
+  reportData.d4_rootCause.why_analysis.forEach((item, index) => {
+    const div = document.createElement('div');
+    div.className = 'why-item';
+    div.innerHTML = `
+      <div class="why-label">第 ${item.level} 层 Why</div>
+      <textarea class="why-input" onchange="updateWhy(${index}, this.value)" placeholder="为什么会这样？">${escapeHtml(item.content)}</textarea>
+    `;
+    list.appendChild(div);
+    if (index < reportData.d4_rootCause.why_analysis.length - 1) {
+      const arrow = document.createElement('div');
+      arrow.className = 'why-arrow';
+      arrow.innerHTML = '↓';
+      list.appendChild(arrow);
+    }
+  });
+}
+
+function updateWhy(index, value) {
+  reportData.d4_rootCause.why_analysis[index].content = value;
+  autoSave();
+  renderPreview();
+  updateProgress();
+}
+
+function addWhyLevel() {
+  const nextLevel = reportData.d4_rootCause.why_analysis.length + 1;
+  reportData.d4_rootCause.why_analysis.push({ level: nextLevel, content: '' });
+  renderWhyList();
+  autoSave();
+  renderPreview();
+  updateProgress();
+}
+
+// ==================== Corrective Measures ====================
+function addCorrectiveMeasure() {
+  const measure = {
+    id: genId(),
+    content: '',
+    owner: '',
+    deadline: '',
+    status: 'pending',
+  };
+  reportData.d5_corrective.measures.push(measure);
+  renderCorrectiveTable();
+  autoSave();
+  renderPreview();
+  updateProgress();
+}
+
+function renderCorrectiveTable() {
+  const tbody = document.getElementById('correctiveTableBody');
+  tbody.innerHTML = '';
+  reportData.d5_corrective.measures.forEach(m => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><textarea class="form-input" style="padding:6px 8px;min-height:40px;width:100%;" onchange="updateCorrectiveMeasure('${m.id}', 'content', this.value)" placeholder="措施内容">${escapeHtml(m.content)}</textarea></td>
+      <td><input type="text" class="form-input" style="padding:6px 8px;" value="${escapeHtml(m.owner)}" onchange="updateCorrectiveMeasure('${m.id}', 'owner', this.value)" placeholder="责任人"></td>
+      <td><input type="date" class="form-input" style="padding:6px 8px;" value="${m.deadline}" onchange="updateCorrectiveMeasure('${m.id}', 'deadline', this.value)"></td>
+      <td>
+        <select class="form-input" style="padding:6px 8px;" onchange="updateCorrectiveMeasure('${m.id}', 'status', this.value)">
+          <option value="pending" ${m.status === 'pending' ? 'selected' : ''}>待处理</option>
+          <option value="progress" ${m.status === 'progress' ? 'selected' : ''}>进行中</option>
+          <option value="completed" ${m.status === 'completed' ? 'selected' : ''}>已完成</option>
+        </select>
+      </td>
+      <td>
+        <div class="table-actions">
+          <button class="icon-btn danger" onclick="removeCorrectiveMeasure('${m.id}')" title="删除">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+          </button>
+        </div>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function updateCorrectiveMeasure(id, field, value) {
+  const m = reportData.d5_corrective.measures.find(x => x.id === id);
+  if (m) {
+    m[field] = value;
+    autoSave();
+    renderPreview();
+    updateProgress();
+  }
+}
+
+function removeCorrectiveMeasure(id) {
+  reportData.d5_corrective.measures = reportData.d5_corrective.measures.filter(x => x.id !== id);
+  renderCorrectiveTable();
+  autoSave();
+  renderPreview();
+  updateProgress();
+}
+
+// ==================== Prevention Measures ====================
+function addPreventionMeasure() {
+  const measure = {
+    id: genId(),
+    content: '',
+    owner: '',
+    deadline: '',
+    status: 'pending',
+  };
+  reportData.d7_prevention.measures.push(measure);
+  renderPreventionTable();
+  autoSave();
+  renderPreview();
+  updateProgress();
+}
+
+function renderPreventionTable() {
+  const tbody = document.getElementById('preventionTableBody');
+  tbody.innerHTML = '';
+  reportData.d7_prevention.measures.forEach(m => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><textarea class="form-input" style="padding:6px 8px;min-height:40px;width:100%;" onchange="updatePreventionMeasure('${m.id}', 'content', this.value)" placeholder="措施内容">${escapeHtml(m.content)}</textarea></td>
+      <td><input type="text" class="form-input" style="padding:6px 8px;" value="${escapeHtml(m.owner)}" onchange="updatePreventionMeasure('${m.id}', 'owner', this.value)" placeholder="责任人"></td>
+      <td><input type="date" class="form-input" style="padding:6px 8px;" value="${m.deadline}" onchange="updatePreventionMeasure('${m.id}', 'deadline', this.value)"></td>
+      <td>
+        <select class="form-input" style="padding:6px 8px;" onchange="updatePreventionMeasure('${m.id}', 'status', this.value)">
+          <option value="pending" ${m.status === 'pending' ? 'selected' : ''}>待处理</option>
+          <option value="progress" ${m.status === 'progress' ? 'selected' : ''}>进行中</option>
+          <option value="completed" ${m.status === 'completed' ? 'selected' : ''}>已完成</option>
+        </select>
+      </td>
+      <td>
+        <div class="table-actions">
+          <button class="icon-btn danger" onclick="removePreventionMeasure('${m.id}')" title="删除">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+          </button>
+        </div>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function updatePreventionMeasure(id, field, value) {
+  const m = reportData.d7_prevention.measures.find(x => x.id === id);
+  if (m) {
+    m[field] = value;
+    autoSave();
+    renderPreview();
+    updateProgress();
+  }
+}
+
+function removePreventionMeasure(id) {
+  reportData.d7_prevention.measures = reportData.d7_prevention.measures.filter(x => x.id !== id);
+  renderPreventionTable();
+  autoSave();
+  renderPreview();
+  updateProgress();
+}
+
+// ==================== Image Upload ====================
+function setupDragAndDrop() {
+  const areas = ['d2ImageUpload', 'd4ImageUpload', 'd6ImageUpload'];
+  areas.forEach(areaId => {
+    const area = document.getElementById(areaId);
+    if (!area) return;
+    area.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      area.classList.add('drag-over');
+    });
+    area.addEventListener('dragleave', () => {
+      area.classList.remove('drag-over');
+    });
+    area.addEventListener('drop', (e) => {
+      e.preventDefault();
+      area.classList.remove('drag-over');
+      const section = areaId.replace('ImageUpload', '');
+      handleImageFiles(e.dataTransfer.files, section);
+    });
+  });
+}
+
+function handleImageUpload(event, section) {
+  handleImageFiles(event.target.files, section);
+}
+
+function handleImageFiles(files, section) {
+  Array.from(files).forEach(file => {
+    if (!file.type.startsWith('image/')) return;
+    
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const compressed = compressImage(e.target.result, 1200, 0.8);
+      compressed.then(base64 => {
+        if (section === 'd2') {
+          reportData.d2_problem.images.push(base64);
+          renderImages('d2');
+        } else if (section === 'd4') {
+          reportData.d4_rootCause.images.push(base64);
+          renderImages('d4');
+        } else if (section === 'd6') {
+          reportData.d6_implementation.images.push(base64);
+          renderImages('d6');
+        }
+        autoSave();
+        renderPreview();
+        updateProgress();
+      });
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function compressImage(base64, maxWidth, quality) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      if (img.width <= maxWidth) {
+        resolve(base64);
+        return;
+      }
+      const canvas = document.createElement('canvas');
+      const ratio = maxWidth / img.width;
+      canvas.width = maxWidth;
+      canvas.height = img.height * ratio;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.src = base64;
+  });
+}
+
+function renderImages(section) {
+  let images = [];
+  if (section === 'd2') images = reportData.d2_problem.images;
+  else if (section === 'd4') images = reportData.d4_rootCause.images;
+  else if (section === 'd6') images = reportData.d6_implementation.images;
+  
+  const grid = document.getElementById(section + 'ImagesGrid');
+  grid.innerHTML = '';
+  images.forEach((src, index) => {
+    const div = document.createElement('div');
+    div.className = 'image-item';
+    div.innerHTML = `
+      <img src="${src}" alt="图片${index + 1}">
+      <button class="image-remove" onclick="removeImage('${section}', ${index})">×</button>
+    `;
+    grid.appendChild(div);
+  });
+}
+
+function removeImage(section, index) {
+  if (section === 'd2') reportData.d2_problem.images.splice(index, 1);
+  else if (section === 'd4') reportData.d4_rootCause.images.splice(index, 1);
+  else if (section === 'd6') reportData.d6_implementation.images.splice(index, 1);
+  renderImages(section);
+  autoSave();
+  renderPreview();
+  updateProgress();
+}
+
+// ==================== Rich Text Editor ====================
+function execCmd(command) {
+  document.execCommand(command, false, null);
+  event.preventDefault();
+}
+
+// ==================== Preview Render ====================
+function renderPreview() {
+  const report = generateReportHTML();
+  document.getElementById('reportPage').innerHTML = report;
+  const fullPage = document.getElementById('fullReportPage');
+  if (fullPage) fullPage.innerHTML = report;
+}
+
+function generateReportHTML() {
+  const info = reportData.reportInfo;
+  const d1 = reportData.d1_team;
+  const d2 = reportData.d2_problem;
+  const d3 = reportData.d3_containment;
+  const d4 = reportData.d4_rootCause;
+  const d5 = reportData.d5_corrective;
+  const d6 = reportData.d6_implementation;
+  const d7 = reportData.d7_prevention;
+  const d8 = reportData.d8_recognition;
+  
+  let html = `
+    <h1>8D 问题解决报告</h1>
+    <div class="report-subtitle">8D Problem Solving Report</div>
+    
+    <table class="report-info-table">
+      <tr>
+        <td>报告编号</td><td>${escapeHtml(info.reportNo)}</td>
+        <td>报告状态</td><td>${escapeHtml(info.status)}</td>
+      </tr>
+      <tr>
+        <td>报告标题</td><td colspan="3">${escapeHtml(info.title)}</td>
+      </tr>
+      <tr>
+        <td>产品名称</td><td>${escapeHtml(info.productName)}</td>
+        <td>产品型号</td><td>${escapeHtml(info.productModel)}</td>
+      </tr>
+      <tr>
+        <td>客户名称</td><td>${escapeHtml(info.customer)}</td>
+        <td>供应商</td><td>${escapeHtml(info.supplier)}</td>
+      </tr>
+      <tr>
+        <td>责任部门</td><td>${escapeHtml(info.department)}</td>
+        <td>严重程度</td><td>${escapeHtml(info.severity)}</td>
+      </tr>
+      <tr>
+        <td>报告日期</td><td>${escapeHtml(info.reportDate)}</td>
+        <td>问题发生日期</td><td>${escapeHtml(info.issueDate)}</td>
+      </tr>
+    </table>
+  `;
+  
+  // D1
+  html += `
+    <div class="report-section">
+      <div class="report-section-title">D1 - 团队组建 (Team Formation)</div>
+      <div class="report-section-content">
+        <p><strong>团队负责人：</strong>${escapeHtml(d1.leader)}${d1.leaderDept ? ' (' + escapeHtml(d1.leaderDept) + ')' : ''}</p>
+        <p><strong>团队成员：</strong></p>
+  `;
+  if (d1.members.length > 0) {
+    html += '<table class="report-small-table"><tr><th>姓名</th><th>角色</th><th>部门</th></tr>';
+    d1.members.forEach(m => {
+      html += `<tr><td>${escapeHtml(m.name)}</td><td>${escapeHtml(m.role)}</td><td>${escapeHtml(m.department)}</td></tr>`;
+    });
+    html += '</table>';
+  } else {
+    html += '<p style="color:#999;">暂无成员</p>';
+  }
+  html += `</div></div>`;
+  
+  // D2
+  html += `
+    <div class="report-section">
+      <div class="report-section-title">D2 - 问题描述 (Problem Description)</div>
+      <div class="report-section-content">
+        <div>${d2.description || '<p style="color:#999;">暂无描述</p>'}</div>
+  `;
+  if (d2.location || d2.quantity || d2.batchNo) {
+    html += '<p style="margin-top:8px;">';
+    if (d2.location) html += `<strong>地点：</strong>${escapeHtml(d2.location)} &nbsp;&nbsp;`;
+    if (d2.quantity) html += `<strong>数量：</strong>${escapeHtml(d2.quantity)} &nbsp;&nbsp;`;
+    if (d2.batchNo) html += `<strong>批次：</strong>${escapeHtml(d2.batchNo)}`;
+    html += '</p>';
+  }
+  
+  // 5W2H
+  const has5W2H = d2.what || d2.why || d2.where || d2.when || d2.who || d2.how || d2.how_many;
+  if (has5W2H) {
+    html += `
+      <p style="margin-top:10px;"><strong>5W2H 分析：</strong></p>
+      <table class="report-small-table">
+        <tr><th style="width:15%;">What</th><td>${escapeHtml(d2.what)}</td></tr>
+        <tr><th>Why</th><td>${escapeHtml(d2.why)}</td></tr>
+        <tr><th>Where</th><td>${escapeHtml(d2.where)}</td></tr>
+        <tr><th>When</th><td>${escapeHtml(d2.when)}</td></tr>
+        <tr><th>Who</th><td>${escapeHtml(d2.who)}</td></tr>
+        <tr><th>How</th><td>${escapeHtml(d2.how)}</td></tr>
+        <tr><th>How Many</th><td>${escapeHtml(d2.how_many)}</td></tr>
+      </table>
+    `;
+  }
+  
+  if (d2.images.length > 0) {
+    html += '<p style="margin-top:10px;"><strong>问题图片：</strong></p>';
+    d2.images.forEach(src => {
+      html += `<img src="${src}" style="max-width:200px;max-height:150px;margin:4px;display:inline-block;">`;
+    });
+  }
+  html += `</div></div>`;
+  
+  // D3
+  html += `
+    <div class="report-section">
+      <div class="report-section-title">D3 - 临时遏制措施 (Containment Actions)</div>
+      <div class="report-section-content">
+  `;
+  if (d3.measures.length > 0) {
+    html += '<table class="report-small-table"><tr><th>措施内容</th><th>责任人</th><th>截止日期</th><th>状态</th><th>验证结果</th></tr>';
+    d3.measures.forEach(m => {
+      const statusText = {pending: '待处理', progress: '进行中', completed: '已完成'}[m.status] || m.status;
+      html += `<tr>
+        <td>${escapeHtml(m.content)}</td>
+        <td>${escapeHtml(m.owner)}</td>
+        <td>${escapeHtml(m.deadline)}</td>
+        <td>${statusText}</td>
+        <td>${escapeHtml(m.result)}</td>
+      </tr>`;
+    });
+    html += '</table>';
+  } else {
+    html += '<p style="color:#999;">暂无措施</p>';
+  }
+  if (d3.verification) {
+    html += `<p style="margin-top:10px;"><strong>遏制效果验证：</strong></p><p>${escapeHtml(d3.verification)}</p>`;
+  }
+  html += `</div></div>`;
+  
+  // D4
+  html += `
+    <div class="report-section">
+      <div class="report-section-title">D4 - 根本原因分析 (Root Cause Analysis)</div>
+      <div class="report-section-content">
+  `;
+  if (d4.analysis_method) {
+    html += `<p><strong>分析方法：</strong>${escapeHtml(d4.analysis_method)}</p>`;
+  }
+  
+  // 5Why
+  const hasWhy = d4.why_analysis.some(w => w.content);
+  if (hasWhy) {
+    html += '<p style="margin-top:8px;"><strong>5Why 分析：</strong></p>';
+    d4.why_analysis.forEach((w, i) => {
+      if (w.content) {
+        html += `<p><strong>Why ${i + 1}：</strong>${escapeHtml(w.content)}</p>`;
+      }
+    });
+  }
+  
+  // Fishbone
+  const hasFishbone = d4.fishbone.man || d4.fishbone.machine || d4.fishbone.material || d4.fishbone.method || d4.fishbone.measurement || d4.fishbone.environment;
+  if (hasFishbone) {
+    html += '<p style="margin-top:8px;"><strong>鱼骨图分析 (5M1E)：</strong></p>';
+    html += '<table class="report-small-table">';
+    if (d4.fishbone.man) html += `<tr><th style="width:15%;">人员 (Man)</th><td>${escapeHtml(d4.fishbone.man)}</td></tr>`;
+    if (d4.fishbone.machine) html += `<tr><th>机器 (Machine)</th><td>${escapeHtml(d4.fishbone.machine)}</td></tr>`;
+    if (d4.fishbone.material) html += `<tr><th>物料 (Material)</th><td>${escapeHtml(d4.fishbone.material)}</td></tr>`;
+    if (d4.fishbone.method) html += `<tr><th>方法 (Method)</th><td>${escapeHtml(d4.fishbone.method)}</td></tr>`;
+    if (d4.fishbone.measurement) html += `<tr><th>测量 (Measurement)</th><td>${escapeHtml(d4.fishbone.measurement)}</td></tr>`;
+    if (d4.fishbone.environment) html += `<tr><th>环境 (Environment)</th><td>${escapeHtml(d4.fishbone.environment)}</td></tr>`;
+    html += '</table>';
+  }
+  
+  if (d4.root_cause) {
+    html += `<p style="margin-top:10px;"><strong>根本原因：</strong>${escapeHtml(d4.root_cause)}</p>`;
+  }
+  if (d4.verification) {
+    html += `<p style="margin-top:6px;"><strong>根本原因验证：</strong>${escapeHtml(d4.verification)}</p>`;
+  }
+  
+  if (d4.images.length > 0) {
+    html += '<p style="margin-top:10px;"><strong>分析图片：</strong></p>';
+    d4.images.forEach(src => {
+      html += `<img src="${src}" style="max-width:200px;max-height:150px;margin:4px;display:inline-block;">`;
+    });
+  }
+  html += `</div></div>`;
+  
+  // D5
+  html += `
+    <div class="report-section">
+      <div class="report-section-title">D5 - 永久纠正措施 (Corrective Actions)</div>
+      <div class="report-section-content">
+  `;
+  if (d5.measures.length > 0) {
+    html += '<table class="report-small-table"><tr><th>措施内容</th><th>责任人</th><th>计划完成日期</th><th>状态</th></tr>';
+    d5.measures.forEach(m => {
+      const statusText = {pending: '待处理', progress: '进行中', completed: '已完成'}[m.status] || m.status;
+      html += `<tr>
+        <td>${escapeHtml(m.content)}</td>
+        <td>${escapeHtml(m.owner)}</td>
+        <td>${escapeHtml(m.deadline)}</td>
+        <td>${statusText}</td>
+      </tr>`;
+    });
+    html += '</table>';
+  } else {
+    html += '<p style="color:#999;">暂无措施</p>';
+  }
+  if (d5.risk_assessment) {
+    html += `<p style="margin-top:10px;"><strong>风险评估：</strong></p><p>${escapeHtml(d5.risk_assessment)}</p>`;
+  }
+  html += `</div></div>`;
+  
+  // D6
+  html += `
+    <div class="report-section">
+      <div class="report-section-title">D6 - 实施与验证 (Implementation & Validation)</div>
+      <div class="report-section-content">
+  `;
+  if (d6.implementation_plan) {
+    html += `<p><strong>实施计划：</strong></p><div>${d6.implementation_plan}</div>`;
+  }
+  if (d6.verification_result) {
+    html += `<p style="margin-top:10px;"><strong>效果验证结果：</strong></p><p>${escapeHtml(d6.verification_result)}</p>`;
+  }
+  if (d6.effectiveness_data) {
+    html += `<p style="margin-top:6px;"><strong>有效性数据：</strong></p><p>${escapeHtml(d6.effectiveness_data)}</p>`;
+  }
+  if (d6.images.length > 0) {
+    html += '<p style="margin-top:10px;"><strong>验证图片：</strong></p>';
+    d6.images.forEach(src => {
+      html += `<img src="${src}" style="max-width:200px;max-height:150px;margin:4px;display:inline-block;">`;
+    });
+  }
+  html += `</div></div>`;
+  
+  // D7
+  html += `
+    <div class="report-section">
+      <div class="report-section-title">D7 - 预防再发生 (Prevention of Recurrence)</div>
+      <div class="report-section-content">
+  `;
+  if (d7.measures.length > 0) {
+    html += '<table class="report-small-table"><tr><th>措施内容</th><th>责任人</th><th>计划完成日期</th><th>状态</th></tr>';
+    d7.measures.forEach(m => {
+      const statusText = {pending: '待处理', progress: '进行中', completed: '已完成'}[m.status] || m.status;
+      html += `<tr>
+        <td>${escapeHtml(m.content)}</td>
+        <td>${escapeHtml(m.owner)}</td>
+        <td>${escapeHtml(m.deadline)}</td>
+        <td>${statusText}</td>
+      </tr>`;
+    });
+    html += '</table>';
+  } else {
+    html += '<p style="color:#999;">暂无措施</p>';
+  }
+  if (d7.system_improvement) {
+    html += `<p style="margin-top:10px;"><strong>系统性改进：</strong></p><p>${escapeHtml(d7.system_improvement)}</p>`;
+  }
+  if (d7.lessons_learned) {
+    html += `<p style="margin-top:6px;"><strong>经验教训：</strong></p><p>${escapeHtml(d7.lessons_learned)}</p>`;
+  }
+  html += `</div></div>`;
+  
+  // D8
+  html += `
+    <div class="report-section">
+      <div class="report-section-title">D8 - 团队表彰 (Team Recognition)</div>
+      <div class="report-section-content">
+  `;
+  if (d8.summary) {
+    html += `<p><strong>项目总结：</strong></p><p>${escapeHtml(d8.summary)}</p>`;
+  }
+  if (d8.recognition) {
+    html += `<p style="margin-top:10px;"><strong>团队表彰：</strong></p><p>${escapeHtml(d8.recognition)}</p>`;
+  }
+  if (d8.closing_date || d8.approver) {
+    html += '<p style="margin-top:10px;">';
+    if (d8.closing_date) html += `<strong>结案日期：</strong>${escapeHtml(d8.closing_date)} &nbsp;&nbsp;`;
+    if (d8.approver) html += `<strong>审批人：</strong>${escapeHtml(d8.approver)}`;
+    html += '</p>';
+  }
+  html += `</div></div>`;
+  
+  return html;
+}
+
+// ==================== Progress ====================
+function updateProgress() {
+  const items = [
+    // Report info
+    { check: () => reportData.reportInfo.reportNo && reportData.reportInfo.title, section: 'info' },
+    // D1
+    { check: () => reportData.d1_team.leader && reportData.d1_team.members.length > 0, section: 'd1' },
+    // D2
+    { check: () => reportData.d2_problem.description && reportData.d2_problem.description.length > 10, section: 'd2' },
+    // D3
+    { check: () => reportData.d3_containment.measures.length > 0, section: 'd3' },
+    // D4
+    { check: () => reportData.d4_rootCause.root_cause && reportData.d4_rootCause.root_cause.length > 5, section: 'd4' },
+    // D5
+    { check: () => reportData.d5_corrective.measures.length > 0, section: 'd5' },
+    // D6
+    { check: () => reportData.d6_implementation.verification_result && reportData.d6_implementation.verification_result.length > 5, section: 'd6' },
+    // D7
+    { check: () => reportData.d7_prevention.measures.length > 0, section: 'd7' },
+    // D8
+    { check: () => reportData.d8_recognition.summary && reportData.d8_recognition.summary.length > 5, section: 'd8' },
+  ];
+  
+  let completed = 0;
+  const sectionCompleted = {};
+  
+  items.forEach(item => {
+    if (item.check()) {
+      completed++;
+      sectionCompleted[item.section] = true;
+    }
+  });
+  
+  const percent = Math.round((completed / items.length) * 100);
+  document.getElementById('progressBar').style.width = percent + '%';
+  document.getElementById('progressText').textContent = percent + '% 完成';
+  
+  // Update nav items
+  document.querySelectorAll('.nav-item').forEach(item => {
+    const section = item.dataset.section;
+    if (sectionCompleted[section]) {
+      item.classList.add('completed');
+    } else {
+      item.classList.remove('completed');
+    }
+  });
+}
+
+// ==================== Save / Load ====================
+function autoSave() {
+  document.getElementById('saveStatus').textContent = '正在保存...';
+  clearTimeout(saveTimeout);
+  saveTimeout = setTimeout(() => {
+    saveToStorage();
+    document.getElementById('saveStatus').textContent = '已自动保存';
+  }, 1000);
+}
+
+function saveToStorage() {
+  try {
+    localStorage.setItem('8d_report_draft', JSON.stringify(reportData));
+  } catch (e) {
+    console.error('保存失败:', e);
+  }
+}
+
+function tryLoadFromStorage() {
+  try {
+    const saved = localStorage.getItem('8d_report_draft');
+    if (saved) {
+      const data = JSON.parse(saved);
+      loadReportData(data);
+    }
+  } catch (e) {
+    console.error('加载失败:', e);
+  }
+}
+
+function loadFromStorage() {
+  try {
+    const saved = localStorage.getItem('8d_report_draft');
+    if (saved) {
+      const data = JSON.parse(saved);
+      loadReportData(data);
+      showToast('已加载本地草稿', 'success');
+      closeAllDropdowns();
+    } else {
+      showToast('没有找到本地草稿', 'warning');
+    }
+  } catch (e) {
+    showToast('加载失败', 'error');
+  }
+}
+
+function loadReportData(data) {
+  reportData = data;
+  
+  // Update form fields
+  document.getElementById('reportNo').value = data.reportInfo.reportNo || '';
+  document.getElementById('title').value = data.reportInfo.title || '';
+  document.getElementById('productName').value = data.reportInfo.productName || '';
+  document.getElementById('productModel').value = data.reportInfo.productModel || '';
+  document.getElementById('customer').value = data.reportInfo.customer || '';
+  document.getElementById('supplier').value = data.reportInfo.supplier || '';
+  document.getElementById('department').value = data.reportInfo.department || '';
+  document.getElementById('severity').value = data.reportInfo.severity || '';
+  document.getElementById('status').value = data.reportInfo.status || '草稿';
+  document.getElementById('reportDate').value = data.reportInfo.reportDate || '';
+  document.getElementById('issueDate').value = data.reportInfo.issueDate || '';
+  
+  // D1
+  document.getElementById('teamLeader').value = data.d1_team.leader || '';
+  document.getElementById('leaderDept').value = data.d1_team.leaderDept || '';
+  renderTeamTable();
+  
+  // D2
+  document.getElementById('problemDesc').innerHTML = data.d2_problem.description || '';
+  document.getElementById('problemLocation').value = data.d2_problem.location || '';
+  document.getElementById('problemQuantity').value = data.d2_problem.quantity || '';
+  document.getElementById('batchNo').value = data.d2_problem.batchNo || '';
+  document.getElementById('wWhat').value = data.d2_problem.what || '';
+  document.getElementById('wWhy').value = data.d2_problem.why || '';
+  document.getElementById('wWhere').value = data.d2_problem.where || '';
+  document.getElementById('wWhen').value = data.d2_problem.when || '';
+  document.getElementById('wWho').value = data.d2_problem.who || '';
+  document.getElementById('wHow').value = data.d2_problem.how || '';
+  document.getElementById('wHowMany').value = data.d2_problem.how_many || '';
+  renderImages('d2');
+  
+  // D3
+  document.getElementById('containmentVerification').value = data.d3_containment.verification || '';
+  renderContainmentTable();
+  
+  // D4
+  document.getElementById('analysisMethod').value = data.d4_rootCause.analysis_method || '';
+  document.getElementById('rootCause').value = data.d4_rootCause.root_cause || '';
+  document.getElementById('rootCauseVerification').value = data.d4_rootCause.verification || '';
+  document.getElementById('fishboneMan').value = data.d4_rootCause.fishbone.man || '';
+  document.getElementById('fishboneMachine').value = data.d4_rootCause.fishbone.machine || '';
+  document.getElementById('fishboneMaterial').value = data.d4_rootCause.fishbone.material || '';
+  document.getElementById('fishboneMethod').value = data.d4_rootCause.fishbone.method || '';
+  document.getElementById('fishboneMeasurement').value = data.d4_rootCause.fishbone.measurement || '';
+  document.getElementById('fishboneEnvironment').value = data.d4_rootCause.fishbone.environment || '';
+  renderWhyList();
+  renderImages('d4');
+  
+  // D5
+  document.getElementById('riskAssessment').value = data.d5_corrective.risk_assessment || '';
+  renderCorrectiveTable();
+  
+  // D6
+  document.getElementById('implementationPlan').innerHTML = data.d6_implementation.implementation_plan || '';
+  document.getElementById('verificationResult').value = data.d6_implementation.verification_result || '';
+  document.getElementById('effectivenessData').value = data.d6_implementation.effectiveness_data || '';
+  renderImages('d6');
+  
+  // D7
+  document.getElementById('systemImprovement').value = data.d7_prevention.system_improvement || '';
+  document.getElementById('lessonsLearned').value = data.d7_prevention.lessons_learned || '';
+  renderPreventionTable();
+  
+  // D8
+  document.getElementById('summary').value = data.d8_recognition.summary || '';
+  document.getElementById('recognition').value = data.d8_recognition.recognition || '';
+  document.getElementById('closingDate').value = data.d8_recognition.closing_date || '';
+  document.getElementById('approver').value = data.d8_recognition.approver || '';
+  
+  renderPreview();
+  updateProgress();
+}
+
+function newReport() {
+  if (!confirm('确定要新建报告吗？当前内容将被清空。')) return;
+  
+  const today = new Date().toISOString().split('T')[0];
+  const defaultNo = '8D-' + new Date().getFullYear() + '-' + String(Math.floor(Math.random() * 900) + 100);
+  
+  reportData = {
+    reportInfo: {
+      reportNo: defaultNo,
+      title: '',
+      productName: '',
+      productModel: '',
+      customer: '',
+      supplier: '',
+      reportDate: today,
+      issueDate: '',
+      severity: '',
+      status: '草稿',
+      department: '',
+    },
+    d1_team: {
+      leader: '',
+      leaderDept: '',
+      members: [],
+    },
+    d2_problem: {
+      description: '',
+      location: '',
+      quantity: '',
+      batchNo: '',
+      images: [],
+      what: '',
+      why: '',
+      where: '',
+      when: '',
+      who: '',
+      how: '',
+      how_many: '',
+    },
+    d3_containment: {
+      measures: [],
+      verification: '',
+    },
+    d4_rootCause: {
+      analysis_method: '',
+      why_analysis: [
+        { level: 1, content: '' },
+        { level: 2, content: '' },
+        { level: 3, content: '' },
+        { level: 4, content: '' },
+        { level: 5, content: '' },
+      ],
+      fishbone: {
+        man: '',
+        machine: '',
+        material: '',
+        method: '',
+        measurement: '',
+        environment: '',
+      },
+      root_cause: '',
+      verification: '',
+      images: [],
+    },
+    d5_corrective: {
+      measures: [],
+      risk_assessment: '',
+    },
+    d6_implementation: {
+      implementation_plan: '',
+      verification_result: '',
+      effectiveness_data: '',
+      images: [],
+    },
+    d7_prevention: {
+      measures: [],
+      system_improvement: '',
+      lessons_learned: '',
+    },
+    d8_recognition: {
+      summary: '',
+      recognition: '',
+      closing_date: '',
+      approver: '',
+    },
+  };
+  
+  loadReportData(reportData);
+  switchSection('info');
+  showToast('已创建新报告', 'success');
+}
+
+function saveReport() {
+  saveToStorage();
+  showToast('报告已保存到本地', 'success');
+}
+
+// ==================== Export ====================
+function exportPDF() {
+  closeAllDropdowns();
+  closeAllModals();
+  
+  // 准备打印内容
+  const printContainer = document.getElementById('printContainer');
+  printContainer.innerHTML = '<div class="report-page">' + generateReportHTML() + '</div>';
+  
+  setTimeout(() => {
+    window.print();
+  }, 200);
+}
+
+function printReport() {
+  const printContainer = document.getElementById('printContainer');
+  printContainer.innerHTML = '<div class="report-page">' + generateReportHTML() + '</div>';
+  
+  setTimeout(() => {
+    window.print();
+  }, 200);
+}
+
+function toggleSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  sidebar.classList.toggle('collapsed');
+  document.body.classList.toggle('sidebar-collapsed');
+}
+
+function toggleTheme() {
+  const body = document.body;
+  body.classList.toggle('dark-mode');
+  const isDark = body.classList.contains('dark-mode');
+  localStorage.setItem('theme', isDark ? 'dark' : 'light');
+}
+
+function initTheme() {
+  const savedTheme = localStorage.getItem('theme');
+  if (savedTheme === 'dark') {
+    document.body.classList.add('dark-mode');
+  }
+}
+
+function togglePreview() {
+  const previewArea = document.getElementById('previewArea');
+  previewArea.classList.toggle('collapsed');
+  document.body.classList.toggle('preview-collapsed');
+}
+
+function exportWord() {
+  closeAllDropdowns();
+  const content = generateReportHTML();
+  
+  // Word样式 - 使用Word兼容的CSS确保格式工整
+  const wordStyles = `
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        font-family: 'Microsoft YaHei', 'SimSun', sans-serif;
+        font-size: 10.5pt;
+        line-height: 1.5;
+        color: #1e293b;
+        margin: 0;
+        padding: 0;
+      }
+      div, p, span {
+        margin: 0;
+        padding: 0;
+        border: none;
+      }
+      h1 {
+        text-align: center;
+        font-size: 18pt;
+        font-weight: bold;
+        color: #0f172a;
+        margin: 0 0 4pt 0;
+        mso-bidi-font-weight: bold;
+        border: none;
+      }
+      .report-subtitle {
+        text-align: center;
+        color: #64748b;
+        font-size: 9pt;
+        margin-bottom: 16pt;
+        border: none;
+      }
+      /* 默认表格无边框，只有指定class的表格才有边框 */
+      table {
+        border-collapse: collapse;
+        border: none;
+        mso-table-lspace: 0pt;
+        mso-table-rspace: 0pt;
+      }
+      table td, table th {
+        border: none;
+        padding: 0;
+        vertical-align: top;
+      }
+      /* 信息表有边框 */
+      .report-info-table {
+        width: 100%;
+        table-layout: fixed;
+        margin-bottom: 10pt;
+        font-size: 10pt;
+      }
+      .report-info-table td, 
+      .report-info-table th {
+        border: 1px solid #94a3b8;
+        padding: 5pt 8pt;
+        mso-border-alt: 1px solid #94a3b8;
+      }
+      .report-info-table th {
+        background-color: #f1f5f9;
+        font-weight: bold;
+        text-align: left;
+        mso-shading: "f1f5f9";
+      }
+      .report-info-table td {
+        width: 25%;
+      }
+      .report-info-table td:first-child {
+        background-color: #f8fafc;
+        font-weight: bold;
+        width: 15%;
+        mso-shading: "f8fafc";
+      }
+      /* 小表格有边框 */
+      .report-small-table {
+        margin: 8pt 0;
+        width: 100%;
+        table-layout: auto;
+        margin-bottom: 10pt;
+        font-size: 10pt;
+      }
+      .report-small-table td,
+      .report-small-table th {
+        border: 1px solid #94a3b8;
+        padding: 5pt 8pt;
+        mso-border-alt: 1px solid #94a3b8;
+      }
+      .report-small-table th {
+        background-color: #f1f5f9;
+        font-weight: bold;
+        text-align: left;
+        mso-shading: "f1f5f9";
+      }
+      .report-section {
+        margin-bottom: 12pt;
+      }
+      .report-section-title {
+        background-color: #1e40af;
+        color: #ffffff;
+        padding: 6pt 10pt;
+        font-size: 11pt;
+        font-weight: bold;
+        border-radius: 3pt 3pt 0 0;
+        margin: 0;
+        mso-shading: "1e40af";
+        mso-bidi-font-weight: bold;
+      }
+      .report-section-content {
+        border: 1px solid #cbd5e1;
+        border-top: none;
+        padding: 10pt;
+        font-size: 10pt;
+      }
+      .report-section-content p {
+        margin: 3pt 0;
+        text-align: justify;
+      }
+      .report-section-content ul, 
+      .report-section-content ol {
+        margin: 6pt 0;
+        padding-left: 22pt;
+      }
+      .report-section-content li {
+        margin: 2pt 0;
+      }
+      .report-section-content img {
+        max-width: 100%;
+        height: auto;
+        margin: 6pt 4pt;
+        border: 1px solid #e2e8f0;
+      }
+      .report-section-content div {
+        border: none;
+        margin: 0;
+        padding: 0;
+      }
+      strong {
+        font-weight: bold;
+        mso-bidi-font-weight: bold;
+      }
+      br {
+        mso-data-placement: same-cell;
+      }
+    </style>
+  `;
+  
+  const fullHtml = `
+    <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+    <head>
+      <meta charset="utf-8">
+      <title>8D Report</title>
+      ${wordStyles}
+      <!--[if gte mso 9]>
+      <xml>
+        <w:WordDocument>
+          <w:View>Print</w:View>
+          <w:Zoom>100</w:Zoom>
+          <w:DoNotOptimizeForBrowser/>
+        </w:WordDocument>
+      </xml>
+      <![endif]-->
+    </head>
+    <body>
+    ${content}
+    </body></html>
+  `;
+  
+  const blob = new Blob(['\ufeff', fullHtml], { type: 'application/msword' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = (reportData.reportInfo.reportNo || '8D-Report') + '.doc';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  
+  showToast('Word文档已导出', 'success');
+}
+
+function exportJSON() {
+  closeAllDropdowns();
+  const json = JSON.stringify(reportData, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = (reportData.reportInfo.reportNo || '8D-Report') + '.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  
+  showToast('JSON数据已导出', 'success');
+}
+
+function importJSON() {
+  closeAllDropdowns();
+  document.getElementById('jsonFileInput').click();
+}
+
+function handleJSONImport(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (confirm('确定要导入此文件吗？当前内容将被覆盖。')) {
+        loadReportData(data);
+        showToast('导入成功', 'success');
+      }
+    } catch (err) {
+      showToast('文件格式错误', 'error');
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+// ==================== Templates ====================
+function useTemplate(type) {
+  if (type === 'blank') {
+    newReport();
+  } else if (type === 'standard') {
+    showToast('标准模板已加载', 'success');
+  } else if (type === 'simple') {
+    showToast('简易模板已加载', 'success');
+  }
+  closeModal('templateModal');
+}
+
+// ==================== Modal ====================
+function openFullPreview() {
+  document.getElementById('fullPreviewModal').classList.add('show');
+  renderPreview();
+}
+
+function closeModal(modalId) {
+  document.getElementById(modalId).classList.remove('show');
+}
+
+// Close modal on overlay click
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) {
+      overlay.classList.remove('show');
+    }
+  });
+});
+
+function closeAllModals() {
+  document.querySelectorAll('.modal-overlay').forEach(overlay => {
+    overlay.classList.remove('show');
+  });
+}
+
+// ==================== Dropdown ====================
+function toggleDropdown(id) {
+  const menu = document.getElementById(id);
+  const isOpen = menu.classList.contains('show');
+  closeAllDropdowns();
+  if (!isOpen) {
+    menu.classList.add('show');
+  }
+  event.stopPropagation();
+}
+
+function closeAllDropdowns() {
+  document.querySelectorAll('.dropdown-menu').forEach(menu => {
+    menu.classList.remove('show');
+  });
+}
+
+document.addEventListener('click', closeAllDropdowns);
+
+// ==================== Toast ====================
+function showToast(message, type = 'success') {
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = 'toast ' + type;
+  
+  const icons = {
+    success: '<svg class="toast-icon" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>',
+    error: '<svg class="toast-icon" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path></svg>',
+    warning: '<svg class="toast-icon" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>',
+  };
+  
+  toast.innerHTML = `
+    ${icons[type] || icons.success}
+    <div class="toast-message">${message}</div>
+  `;
+  
+  container.appendChild(toast);
+  
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateX(100%)';
+    toast.style.transition = 'all 0.3s ease';
+    setTimeout(() => {
+      toast.remove();
+    }, 300);
+  }, 3000);
+}
+
+// ==================== Utilities ====================
+function genId() {
+  return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+}
+
+function escapeHtml(text) {
+  if (!text) return '';
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+</script>
+
+</body>
+</html>

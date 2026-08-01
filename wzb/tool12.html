@@ -1,0 +1,1172 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>批量码生成器 - 二维码与条形码</title>
+    <!-- Tailwind CSS v3 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <!-- QRCode.js -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+    <!-- JsBarcode for barcode generation -->
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <!-- JSZip for batch download download -->
+    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+    <!-- html2canvas for QR code image conversion -->
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    
+    <!-- Tailwind Configuration -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1e40af',
+                        secondary: '#3b82f6',
+                        accent: '#60a5fa',
+                        neutral: '#f1f5f9',
+                        'neutral-dark': '#cbd5e1',
+                        success: '#10b981',
+                        warning: '#f59e0b',
+                        danger: '#ef4444',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        'card': '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                        'card-hover': '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .transition-all-300 {
+                transition: all 0.3s ease;
+            }
+            .glass-effect {
+                background: rgba(255, 255, 255, 0.7);
+                backdrop-filter: blur(10px);
+                -webkit-backdrop-filter: blur(10px);
+            }
+            .text-shadow {
+                text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            }
+            .gradient-bg {
+                background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+            }
+        }
+        
+        /* Custom Styles */
+        .qrcode-container {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .qrcode-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .qrcode-container:hover .qrcode-overlay {
+            opacity: 1;
+        }
+        
+        /* Animation for QR code generation */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .animate-fadeIn {
+            animation: fadeIn 0.5s ease forwards;
+        }
+        
+        /* Loading animation */
+        .loading-spinner {
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 3px solid #3b82f6;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        
+        /* Toggle switch */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+        
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+        
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .slider {
+            background-color: #3b82f6;
+        }
+        
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+        
+        /* Mode toggle */
+        .mode-toggle {
+            display: flex;
+            background-color: #f1f5f9;
+            border-radius: 8px;
+            padding: 4px;
+            width: fit-content;
+        }
+        
+        .mode-toggle button {
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            border: none;
+            background: transparent;
+            color: #64748b;
+        }
+        
+        .mode-toggle button.active {
+            background-color: white;
+            color: #1e40af;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <header class="gradient-bg text-white shadow-md">
+        <div class="container mx-auto px-4 py-6">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="flex items-center mb-4 md:mb-0">
+                    <i class="fa fa-qrcode text-3xl mr-3"></i>
+                    <h1 class="text-2xl md:text-3xl font-bold text-shadow">批量码生成器</h1>
+                </div>
+                <div class="text-sm md:text-base">
+                    <span class="hidden md:inline-block">二维码与条形码生成工具</span>
+                    <span class="md:hidden">高效便捷</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Input Section -->
+            <section class="bg-white rounded-xl shadow-card p-6 transition-all-300 hover:shadow-card-hover">
+                <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                    <i class="fa fa-pencil-square-o text-primary mr-2"></i>
+                    设备编号输入
+                </h2>
+                
+                <div class="space-y-4">
+                    <!-- Mode Toggle -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">生成模式</label>
+                        <div class="mode-toggle">
+                            <button id="qr-mode-btn" class="active">二维码</button>
+                            <button id="barcode-mode-btn">条形码</button>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label for="device-ids" class="block text-sm font-medium text-gray-700 mb-1">设备编号列表</label>
+                        <textarea 
+                            id="device-ids" 
+                            rows="8" 
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all-300 resize-none"
+                            placeholder="请输入或粘贴设备编号，每行一个编号
+例如：
+DEVICE-001
+DEVICE-002
+DEVICE-003"></textarea>
+                    </div>
+                    
+                    <!-- Auto Generate Device IDs -->
+                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                        <h3 class="text-sm font-medium text-gray-700 mb-3">自动生成设备编号</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label for="id-prefix" class="block text-sm font-medium text-gray-700 mb-1">编号前缀</label>
+                                <input type="text" id="id-prefix" placeholder="例如: DEVICE-" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all-300">
+                            </div>
+                            <div>
+                                <label for="id-start" class="block text-sm font-medium text-gray-700 mb-1">起始编号</label>
+                                <input type="number" id="id-start" value="1" min="1" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all-300">
+                            </div>
+                            <div>
+                                <label for="id-count" class="block text-sm font-medium text-gray-700 mb-1">生成数量</label>
+                                <input type="number" id="id-count" value="10" min="1" max="1000" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all-300">
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <label for="id-digits" class="block text-sm font-medium text-gray-700 mb-1">数字位数</label>
+                            <input type="number" id="id-digits" min="1" max="10" value="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all-300">
+                        </div>
+                        <div class="mt-3 flex justify-end">
+                            <button id="generate-ids-btn" class="flex items-center px-4 py-2 bg-accent hover:bg-accent/90 text-white rounded-lg transition-all-300 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2">
+                                <i class="fa fa-magic mr-2"></i>
+                                生成编号列表
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Code Customization -->
+                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                        <h3 class="text-sm font-medium text-gray-700 mb-3" id="code-customization-title">二维码自定义设置</h3>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <label for="foreground-color" class="block text-sm font-medium text-gray-700 mb-1">前景色</label>
+                                <div class="flex">
+                                    <!-- 增大颜色选择器按钮 -->
+                                    <input type="color" id="foreground-color" value="#1e40af" class="w-12 h-12 border border-gray-300 rounded-l-lg cursor-pointer">
+                                    <input type="text" id="foreground-color-text" value="#1e40af" class="flex-grow px-3 py-2 border border-gray-300 rounded-r-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all-300">
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label for="background-color" class="block text-sm font-medium text-gray-700 mb-1">背景色</label>
+                                <div class="flex">
+                                    <!-- 增大颜色选择器按钮 -->
+                                    <input type="color" id="background-color" value="#ffffff" class="w-12 h-12 border border-gray-300 rounded-l-lg cursor-pointer">
+                                    <input type="text" id="background-color-text" value="#ffffff" class="flex-grow px-3 py-2 border border-gray-300 rounded-r-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all-300">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- QR Code Size -->
+                        <div id="qr-size-section" class="mb-4">
+                            <label for="qrcode-size" class="block text-sm font-medium text-gray-700 mb-1">二维码尺寸</label>
+                            <div class="flex items-center space-x-4">
+                                <input type="range" id="qrcode-size" min="100" max="300" value="128" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                                <span id="qrcode-size-value" class="text-sm font-medium text-gray-700">128px</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Barcode Size -->
+                        <div id="barcode-size-section" class="mb-4 hidden">
+                            <label for="barcode-height" class="block text-sm font-medium text-gray-700 mb-1">条形码高度</label>
+                            <div class="flex items-center space-x-4">
+                                <input type="range" id="barcode-height" min="50" max="200" value="100" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                                <span id="barcode-height-value" class="text-sm font-medium text-gray-700">100px</span>
+                            </div>
+                        </div>
+                        
+                        <!-- 导出选项 -->
+                        <div class="flex items-center justify-between">
+                            <label for="show-number-label" class="text-sm font-medium text-gray-700">导出时显示设备编号</label>
+                            <label class="switch">
+                                <input type="checkbox" id="show-number-label" checked>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="flex flex-wrap gap-3">
+                        <button id="generate-btn" class="flex items-center px-6 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg transition-all-300 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">
+                            <i class="fa fa-magic mr-2"></i>
+                            生成
+                        </button>
+                        
+                        <button id="clear-btn" class="flex items-center px-6 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-all-300 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2">
+                            <i class="fa fa-trash mr-2"></i>
+                            清空输入
+                        </button>
+                        
+                        <button id="download-all-btn" class="flex items-center px-4 py-2 bg-secondary hover:bg-secondary/90 text-white rounded-lg transition-all-300 focus:outline-none text-sm">
+                            <i class="fa fa-file-image-o mr-1"></i>
+                            下载所有
+                        </button>
+                    </div>
+                    
+                    <div class="bg-blue-50 border-l-4 border-primary p-4 rounded-r-lg">
+                        <div class="flex">
+                            <div class="flex-shrink-0">
+                                <i class="fa fa-info-circle text-primary"></i>
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm text-gray-700">
+                                    支持批量输入设备编号，每行一个。生成二维码或条形码后可预览并下载，下载的图片将包含设备编号。
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Preview Section -->
+            <section class="bg-white rounded-xl shadow-card p-6 transition-all-300 hover:shadow-card-hover">
+                <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                    <i class="fa fa-eye text-primary mr-2"></i>
+                    <span id="preview-title">二维码预览</span>
+                </h2>
+                
+                <div id="preview-container" class="flex flex-col">
+                    <!-- Empty State -->
+                    <div id="empty-state" class="flex flex-col items-center justify-center flex-grow text-center p-6">
+                        <div class="bg-gray-100 p-4 rounded-full mb-4">
+                            <i class="fa fa-qrcode text-5xl text-gray-300"></i>
+                        </div>
+                        <h3 class="text-lg font-medium text-gray-500 mb-2">暂无码图</h3>
+                        <p class="text-sm text-gray-400">请在左侧输入设备编号并点击"生成"按钮</p>
+                    </div>
+                    
+                    <!-- Loading State -->
+                    <div id="loading-state" class="hidden flex items-center justify-center flex-grow">
+                        <div class="flex flex-col items-center">
+                            <div class="loading-spinner mb-3"></div>
+                            <p class="text-gray-500">正在生成...</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Codes Grid -->
+                    <div id="codes-grid" class="hidden grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 overflow-y-auto p-2">
+                        <!-- QR codes / barcodes will be inserted here dynamically -->
+                    </div>
+                </div>
+                
+                <!-- Export Button -->
+                <div id="export-section" class="mt-6 hidden">
+                    <!-- CSV export functionality removed -->
+                </div>
+            </section>
+        </div>
+        
+        <!-- Code Details Modal -->
+        <div id="code-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+            <div class="bg-white rounded-xl shadow-lg max-w-md w-full mx-4 overflow-hidden">
+                <div class="flex justify-between items-center p-4 border-b">
+                    <h3 class="text-lg font-bold text-gray-800" id="modal-title">二维码详情</h3>
+                    <button id="close-modal-btn" class="text-gray-400 hover:text-gray-600">
+                        <i class="fa fa-times"></i>
+                    </button>
+                </div>
+                <div class="p-6 flex flex-col items-center">
+                    <div id="modal-code" class="mb-4"></div>
+                    <p id="modal-device-id" class="text-center font-medium text-gray-700 mb-4"></p>
+                    <div class="flex gap-3">
+                        <button id="modal-download-btn" class="flex items-center px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg transition-all-300 focus:outline-none">
+                            <i class="fa fa-download mr-2"></i>
+                            下载
+                        </button>
+                        <button id="modal-copy-btn" class="flex items-center px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-all-300 focus:outline-none">
+                            <i class="fa fa-copy mr-2"></i>
+                            复制编号
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-6">
+        <div class="container mx-auto px-4">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="mb-4 md:mb-0">
+                    <p class="text-sm text-gray-400">© 2025 批量码生成器 - 二维码与条形码</p>
+                </div>
+                <div class="flex space-x-4">
+                    <a href="#" class="text-gray-400 hover:text-white transition-all-300">
+                        <i class="fa fa-question-circle"></i> 帮助
+                    </a>
+                    <a href="#" class="text-gray-400 hover:text-white transition-all-300">
+                        <i class="fa fa-info-circle"></i> 关于
+                    </a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script>
+        // DOM Elements
+        const deviceIdsTextarea = document.getElementById('device-ids');
+        const generateBtn = document.getElementById('generate-btn');
+        const clearBtn = document.getElementById('clear-btn');
+        const downloadAllBtn = document.getElementById('download-all-btn');
+        const emptyState = document.getElementById('empty-state');
+        const loadingState = document.getElementById('loading-state');
+        const codesGrid = document.getElementById('codes-grid');
+        const exportSection = document.getElementById('export-section');
+        const codeModal = document.getElementById('code-modal');
+        const closeModalBtn = document.getElementById('close-modal-btn');
+        const modalCode = document.getElementById('modal-code');
+        const modalDeviceId = document.getElementById('modal-device-id');
+        const modalDownloadBtn = document.getElementById('modal-download-btn');
+        const modalCopyBtn = document.getElementById('modal-copy-btn');
+        
+        // Code customization elements
+        const foregroundColorInput = document.getElementById('foreground-color');
+        const foregroundColorText = document.getElementById('foreground-color-text');
+        const backgroundColorInput = document.getElementById('background-color');
+        const backgroundColorText = document.getElementById('background-color-text');
+        
+        // Mode toggle elements
+        const qrModeBtn = document.getElementById('qr-mode-btn');
+        const barcodeModeBtn = document.getElementById('barcode-mode-btn');
+        const codeCustomizationTitle = document.getElementById('code-customization-title');
+        const qrSizeSection = document.getElementById('qr-size-section');
+        const barcodeSizeSection = document.getElementById('barcode-size-section');
+        const previewTitle = document.getElementById('preview-title');
+        const modalTitle = document.getElementById('modal-title');
+        
+        // Size elements
+        const qrcodeSizeInput = document.getElementById('qrcode-size');
+        const qrcodeSizeValue = document.getElementById('qrcode-size-value');
+        const barcodeHeightInput = document.getElementById('barcode-height');
+        const barcodeHeightValue = document.getElementById('barcode-height-value');
+        
+        // Other elements
+        const showNumberLabelInput = document.getElementById('show-number-label');
+        
+        // Auto generate device IDs elements
+        const idPrefixInput = document.getElementById('id-prefix');
+        const idStartInput = document.getElementById('id-start');
+        const idCountInput = document.getElementById('id-count');
+        const idDigitsInput = document.getElementById('id-digits');
+        const generateIdsBtn = document.getElementById('generate-ids-btn');
+        
+        // Global variable to store generated codes data
+        let codesData = [];
+        let currentMode = 'qr'; // 'qr' or 'barcode'
+        
+        // Event Listeners
+        generateBtn.addEventListener('click', generateCodes);
+        clearBtn.addEventListener('click', clearInput);
+        downloadAllBtn.addEventListener('click', downloadAllCodes);
+        closeModalBtn.addEventListener('click', closeModal);
+        modalDownloadBtn.addEventListener('click', downloadModalCode);
+        modalCopyBtn.addEventListener('click', copyModalDeviceId);
+        generateIdsBtn.addEventListener('click', generateDeviceIds);
+        
+        // Mode toggle event listeners
+        qrModeBtn.addEventListener('click', () => switchMode('qr'));
+        barcodeModeBtn.addEventListener('click', () => switchMode('barcode'));
+        
+        // Size event listeners
+        qrcodeSizeInput.addEventListener('input', updateQrcodeSize);
+        barcodeHeightInput.addEventListener('input', updateBarcodeHeight);
+        
+        // Color picker event listeners
+        foregroundColorInput.addEventListener('input', () => {
+            foregroundColorText.value = foregroundColorInput.value;
+        });
+        
+        foregroundColorText.addEventListener('input', () => {
+            // Validate hex color
+            if (/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(foregroundColorText.value)) {
+                foregroundColorInput.value = foregroundColorText.value;
+            }
+        });
+        
+        backgroundColorInput.addEventListener('input', () => {
+            backgroundColorText.value = backgroundColorInput.value;
+        });
+        
+        backgroundColorText.addEventListener('input', () => {
+            // Validate hex color
+            if (/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(backgroundColorText.value)) {
+                backgroundColorInput.value = backgroundColorText.value;
+            }
+        });
+        
+        // Switch between QR code and barcode modes
+        function switchMode(mode) {
+            currentMode = mode;
+            
+            // Update UI based on mode
+            if (mode === 'qr') {
+                qrModeBtn.classList.add('active');
+                barcodeModeBtn.classList.remove('active');
+                codeCustomizationTitle.textContent = '二维码自定义设置';
+                qrSizeSection.classList.remove('hidden');
+                barcodeSizeSection.classList.add('hidden');
+                previewTitle.textContent = '二维码预览';
+                modalTitle.textContent = '二维码详情';
+            } else {
+                qrModeBtn.classList.remove('active');
+                barcodeModeBtn.classList.add('active');
+                codeCustomizationTitle.textContent = '条形码自定义设置';
+                qrSizeSection.classList.add('hidden');
+                barcodeSizeSection.classList.remove('hidden');
+                previewTitle.textContent = '条形码预览';
+                modalTitle.textContent = '条形码详情';
+            }
+            
+            // Clear existing codes when switching mode
+            if (codesData.length > 0) {
+                codesData = [];
+                codesGrid.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                codesGrid.classList.add('hidden');
+                exportSection.classList.add('hidden');
+            }
+        }
+        
+        // Update QR code size display
+        function updateQrcodeSize() {
+            qrcodeSizeValue.textContent = `${qrcodeSizeInput.value}px`;
+        }
+        
+        // Update barcode height display
+        function updateBarcodeHeight() {
+            barcodeHeightValue.textContent = `${barcodeHeightInput.value}px`;
+        }
+        
+        // Clear input
+        function clearInput() {
+            deviceIdsTextarea.value = '';
+            deviceIdsTextarea.focus();
+        }
+        
+        // Generate device IDs based on prefix, start number, count and digits
+        function generateDeviceIds() {
+            const prefix = idPrefixInput.value.trim();
+            const start = parseInt(idStartInput.value) || 1;
+            const count = parseInt(idCountInput.value) || 10;
+            const digits = parseInt(idDigitsInput.value) || 3;
+            
+            // Validate inputs
+            if (count > 1000) {
+                showNotification('生成数量不能超过1000', 'warning');
+                return;
+            }
+            
+            // Generate device IDs
+            const deviceIds = [];
+            for (let i = 0; i < count; i++) {
+                const number = start + i;
+                const formattedNumber = number.toString().padStart(digits, '0');
+                const deviceId = prefix + formattedNumber;
+                deviceIds.push(deviceId);
+            }
+            
+            // Update textarea with generated IDs
+            deviceIdsTextarea.value = deviceIds.join('\n');
+            deviceIdsTextarea.focus();
+            
+            showNotification(`成功生成 ${count} 个设备编号`, 'success');
+        }
+        
+        // Generate codes (QR or barcode)
+        function generateCodes() {
+            // Get device IDs from textarea
+            const deviceIds = deviceIdsTextarea.value
+                .split('\n')
+                .map(id => id.trim())
+                .filter(id => id !== '');
+            
+            // Validate input
+            if (deviceIds.length === 0) {
+                showNotification('请输入至少一个设备编号', 'warning');
+                return;
+            }
+            
+            // Show loading state
+            emptyState.classList.add('hidden');
+            codesGrid.classList.add('hidden');
+            loadingState.classList.remove('hidden');
+            exportSection.classList.add('hidden');
+            
+            // Clear previous data
+            codesData = [];
+            codesGrid.innerHTML = '';
+            
+            // Generate codes with delay to avoid UI blocking
+            let index = 0;
+            const generateNextCode = () => {
+                if (index < deviceIds.length) {
+                    const deviceId = deviceIds[index];
+                    generateSingleCode(deviceId, index);
+                    index++;
+                    // Use setTimeout to allow UI to update
+                    setTimeout(generateNextCode, 100);
+                } else {
+                    // All codes generated
+                    loadingState.classList.add('hidden');
+                    codesGrid.classList.remove('hidden');
+                    exportSection.classList.remove('hidden');
+                    showNotification(`成功生成 ${deviceIds.length} 个${currentMode === 'qr' ? '二维码' : '条形码'}`, 'success');
+                }
+            };
+            
+            // Start generating codes
+            generateNextCode();
+        }
+        
+        // Generate single code (QR or barcode)
+        function generateSingleCode(deviceId, index) {
+            // Create code container
+            const codeContainer = document.createElement('div');
+            codeContainer.className = 'code-container bg-white p-4 rounded-lg shadow-sm border border-gray-100 animate-fadeIn';
+            codeContainer.style.animationDelay = `${index * 0.05}s`;
+            
+            // Create code element
+            const codeElement = document.createElement('div');
+            codeElement.id = `code-${index}`;
+            codeElement.className = 'code mx-auto mb-3 flex justify-center';
+            
+            // Create overlay for hover effect
+            const overlay = document.createElement('div');
+            overlay.className = 'qrcode-overlay';
+            overlay.innerHTML = '<i class="fa fa-search-plus text-primary text-xl"></i>';
+            overlay.addEventListener('click', () => openModal(deviceId, index));
+            
+            // Create device ID label
+            const deviceIdLabel = document.createElement('p');
+            deviceIdLabel.className = 'text-center text-sm font-medium text-gray-700 break-words';
+            deviceIdLabel.textContent = deviceId;
+            
+            // Assemble elements
+            codeContainer.appendChild(codeElement);
+            codeContainer.appendChild(overlay);
+            codeContainer.appendChild(deviceIdLabel);
+            codesGrid.appendChild(codeContainer);
+            
+            // Get code colors from inputs
+            const foregroundColor = foregroundColorInput.value;
+            const backgroundColor = backgroundColorInput.value;
+            
+            // Generate code based on current mode
+            if (currentMode === 'qr') {
+                // Generate QR code
+                const qrSize = parseInt(qrcodeSizeInput.value);
+                
+                QRCode.toDataURL(deviceId, {
+                    width: qrSize,
+                    margin: 1,
+                    color: {
+                        dark: foregroundColor,
+                        light: backgroundColor
+                    }
+                }, (error, url) => {
+                    if (error) {
+                        console.error(`Error generating QR code for ${deviceId}:`, error);
+                        codeElement.innerHTML = `<div class="flex items-center justify-center h-full text-red-500"><i class="fa fa-exclamation-triangle mr-2"></i> 生成失败</div>`;
+                        codeElement.innerHTML += `<div class="text-xs text-red-400 mt-2">错误: ${error.message}</div>`;
+                    } else {
+                        // Create image element for QR code
+                        const img = document.createElement('img');
+                        img.src = url;
+                        img.alt = `QR Code for ${deviceId}`;
+                        img.className = 'mx-auto';
+                        
+                        // Clear the container and append the image
+                        codeElement.innerHTML = '';
+                        codeElement.appendChild(img);
+                        
+                        // Store code data
+                        codesData.push({
+                            deviceId,
+                            codeDataUrl: url,
+                            type: 'qr'
+                        });
+                    }
+                });
+            } else {
+                // Generate barcode
+                const barcodeHeight = parseInt(barcodeHeightInput.value);
+                
+                try {
+                    // Create canvas for barcode
+                    const canvas = document.createElement('canvas');
+                    codeElement.appendChild(canvas);
+                    
+                    // Generate barcode
+                    JsBarcode(canvas, deviceId, {
+                        format: "CODE128",
+                        width: 2,
+                        height: barcodeHeight,
+                        displayValue: false,
+                        background: backgroundColor,
+                        lineColor: foregroundColor
+                    });
+                    
+                    // Convert canvas to data URL
+                    const dataUrl = canvas.toDataURL('image/png');
+                    
+                    // Store code data
+                    codesData.push({
+                        deviceId,
+                        codeDataUrl: dataUrl,
+                        type: 'barcode'
+                    });
+                } catch (error) {
+                    console.error(`Error generating barcode for ${deviceId}:`, error);
+                    codeElement.innerHTML = `<div class="flex items-center justify-center h-full text-red-500"><i class="fa fa-exclamation-triangle mr-2"></i> 生成失败</div>`;
+                    codeElement.innerHTML += `<div class="text-xs text-red-400 mt-2">错误: ${error.message}</div>`;
+                }
+            }
+        }
+        
+        // Open code details modal
+        function openModal(deviceId, index) {
+            // Set modal content
+            modalDeviceId.textContent = deviceId;
+            
+            // Clear previous code
+            modalCode.innerHTML = '';
+            
+            // Get code colors from inputs
+            const foregroundColor = foregroundColorInput.value;
+            const backgroundColor = backgroundColorInput.value;
+            
+            // Generate code for modal (larger size)
+            if (currentMode === 'qr') {
+                const qrSize = parseInt(qrcodeSizeInput.value);
+                
+                // Generate QR code for modal
+                QRCode.toDataURL(deviceId, {
+                    width: Math.min(qrSize * 2, 400),
+                    margin: 2,
+                    color: {
+                        dark: foregroundColor,
+                        light: backgroundColor
+                    }
+                }, (error, url) => {
+                    if (error) {
+                        console.error(`Error generating modal QR code for ${deviceId}:`, error);
+                        modalCode.innerHTML = `<div class="flex items-center justify-center h-full text-red-500"><i class="fa fa-exclamation-triangle mr-2"></i> 加载失败</div>`;
+                        modalCode.innerHTML += `<div class="text-xs text-red-400 mt-2">错误: ${error.message}</div>`;
+                    } else {
+                        // Create image element for modal QR code
+                        const img = document.createElement('img');
+                        img.src = url;
+                        img.alt = `QR Code for ${deviceId}`;
+                        
+                        // Clear the container and append the image
+                        modalCode.innerHTML = '';
+                        modalCode.appendChild(img);
+                    }
+                });
+            } else {
+                // Generate barcode for modal
+                const barcodeHeight = Math.min(parseInt(barcodeHeightInput.value) * 1.5, 250);
+                
+                try {
+                    // Create canvas for barcode
+                    const canvas = document.createElement('canvas');
+                    modalCode.appendChild(canvas);
+                    
+                    // Generate barcode
+                    JsBarcode(canvas, deviceId, {
+                        format: "CODE128",
+                        width: 2,
+                        height: barcodeHeight,
+                        displayValue: false,
+                        background: backgroundColor,
+                        lineColor: foregroundColor
+                    });
+                } catch (error) {
+                    console.error(`Error generating modal barcode for ${deviceId}:`, error);
+                    modalCode.innerHTML = `<div class="flex items-center justify-center h-full text-red-500"><i class="fa fa-exclamation-triangle mr-2"></i> 加载失败</div>`;
+                    modalCode.innerHTML += `<div class="text-xs text-red-400 mt-2">错误: ${error.message}</div>`;
+                }
+            }
+            
+            // Store current device ID in modal button dataset
+            modalDownloadBtn.dataset.deviceId = deviceId;
+            modalCopyBtn.dataset.deviceId = deviceId;
+            
+            // Show modal
+            codeModal.classList.remove('hidden');
+        }
+        
+        // Close modal
+        function closeModal() {
+            codeModal.classList.add('hidden');
+        }
+        
+        // Download code from modal
+        function downloadModalCode() {
+            const deviceId = modalDownloadBtn.dataset.deviceId;
+            const img = modalCode.querySelector('img');
+            const canvas = modalCode.querySelector('canvas');
+            
+            // Check if user wants to show device number
+            const showNumber = showNumberLabelInput.checked;
+            
+            // Create a container for code and text
+            const container = document.createElement('div');
+            container.style.display = 'flex';
+            container.style.flexDirection = 'column';
+            container.style.alignItems = 'center';
+            container.style.padding = '20px';
+            container.style.backgroundColor = backgroundColorInput.value;
+            
+            // Create image element
+            let codeElement;
+            if (currentMode === 'qr' && img) {
+                codeElement = document.createElement('img');
+                codeElement.src = img.src;
+                codeElement.alt = `QR Code for ${deviceId}`;
+            } else if (currentMode === 'barcode' && canvas) {
+                codeElement = document.createElement('img');
+                codeElement.src = canvas.toDataURL('image/png');
+                codeElement.alt = `Barcode for ${deviceId}`;
+            } else {
+                showNotification('无法获取码图', 'error');
+                return;
+            }
+            
+            // Create text element (only if showNumber is true)
+            let textElement = null;
+            if (showNumber) {
+                textElement = document.createElement('div');
+                textElement.style.marginTop = '15px';
+                textElement.style.fontFamily = 'Arial, sans-serif';
+                textElement.style.fontSize = '16px';
+                textElement.style.fontWeight = 'bold';
+                textElement.style.color = foregroundColorInput.value;
+                textElement.style.textAlign = 'center';
+                textElement.textContent = `编号：${deviceId}`;
+            }
+            
+            // Assemble container
+            container.appendChild(codeElement);
+            if (textElement) {
+                container.appendChild(textElement);
+            }
+            
+            // Add container to DOM temporarily
+            container.style.position = 'absolute';
+            container.style.left = '-9999px';
+            document.body.appendChild(container);
+            
+            // Use html2canvas to capture the container with timeout to ensure rendering
+            setTimeout(() => {
+                html2canvas(container).then(canvas => {
+                    // Remove container from DOM
+                    document.body.removeChild(container);
+                    
+                    // Create download link
+                    const link = document.createElement('a');
+                    link.href = canvas.toDataURL('image/png');
+                    link.download = `${deviceId}.png`;
+                    link.click();
+                    
+                    showNotification(`${currentMode === 'qr' ? '二维码' : '条形码'}已下载: ${deviceId}.png`, 'success');
+                }).catch(error => {
+                    console.error('Error generating code with text:', error);
+                    // Remove container from DOM
+                    if (container.parentNode) {
+                        document.body.removeChild(container);
+                    }
+                    // Fallback to downloading just the code
+                    const link = document.createElement('a');
+                    if (currentMode === 'qr' && img) {
+                        link.href = img.src;
+                    } else if (currentMode === 'barcode' && canvas) {
+                        link.href = canvas.toDataURL('image/png');
+                    }
+                    link.download = `${deviceId}.png`;
+                    link.click();
+                    
+                    showNotification(`${currentMode === 'qr' ? '二维码' : '条形码'}已下载: ${deviceId}.png`, 'success');
+                });
+            }, 100);
+        }
+        
+        // Copy device ID from modal
+        function copyModalDeviceId() {
+            const deviceId = modalCopyBtn.dataset.deviceId;
+            
+            navigator.clipboard.writeText(deviceId)
+                .then(() => {
+                    showNotification(`设备编号已复制: ${deviceId}`, 'success');
+                })
+                .catch(err => {
+                    console.error('Failed to copy device ID:', err);
+                    showNotification('复制失败，请手动复制', 'error');
+                });
+        }
+        
+        // Download all codes as ZIP
+        function downloadAllCodes() {
+            if (codesData.length === 0) {
+                showNotification('没有可下载的码图', 'warning');
+                return;
+            }
+            
+            // Check if JSZip is loaded
+            if (typeof JSZip === 'undefined') {
+                // Load JSZip dynamically
+                const script = document.createElement('script');
+                script.src = 'https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js';
+                script.onload = () => downloadAllCodesWithZip();
+                script.onerror = () => {
+                    console.error('Failed to load JSZip');
+                    showNotification('下载多个码图需要额外的库支持，请重试', 'error');
+                };
+                document.head.appendChild(script);
+            } else {
+                downloadAllCodesWithZip();
+            }
+        }
+        
+        // Download all codes using JSZip
+        function downloadAllCodesWithZip() {
+            if (typeof JSZip === 'undefined') {
+                showNotification('无法加载压缩功能，请重试', 'error');
+                return;
+            }
+            
+            // Show loading state
+            const originalButtonText = downloadAllBtn.innerHTML;
+            downloadAllBtn.innerHTML = '<div class="loading-spinner mr-2"></div> 正在准备...';
+            downloadAllBtn.disabled = true;
+            
+            // Create a new ZIP file
+            const zip = new JSZip();
+            
+            // Check if user wants to show device number
+            const showNumber = showNumberLabelInput.checked;
+            
+            // Add all codes to the ZIP
+            const promises = codesData.map((item, index) => {
+                return new Promise((resolve) => {
+                    // Create a container for code and text
+                    const container = document.createElement('div');
+                    container.style.display = 'flex';
+                    container.style.flexDirection = 'column';
+                    container.style.alignItems = 'center';
+                    container.style.padding = '20px';
+                    container.style.backgroundColor = backgroundColorInput.value;
+                    
+                    // Create image element
+                    const img = document.createElement('img');
+                    img.src = item.codeDataUrl;
+                    img.alt = `${currentMode === 'qr' ? 'QR Code' : 'Barcode'} for ${item.deviceId}`;
+                    
+                    // Create text element (only if showNumber is true)
+                    let textElement = null;
+                    if (showNumber) {
+                        textElement = document.createElement('div');
+                        textElement.style.marginTop = '15px';
+                        textElement.style.fontFamily = 'Arial, sans-serif';
+                        textElement.style.fontSize = '16px';
+                        textElement.style.fontWeight = 'bold';
+                        textElement.style.color = foregroundColorInput.value;
+                        textElement.style.textAlign = 'center';
+                        textElement.textContent = `编号：${item.deviceId}`;
+                    }
+                    
+                    // Assemble container
+                    container.appendChild(img);
+                    if (textElement) {
+                        container.appendChild(textElement);
+                    }
+                    
+                    // Add container to DOM temporarily
+                    container.style.position = 'absolute';
+                    container.style.left = '-9999px';
+                    document.body.appendChild(container);
+                    
+                    // Use html2canvas to capture the container
+                    html2canvas(container).then(canvas => {
+                        // Remove container from DOM
+                        document.body.removeChild(container);
+                        
+                        // Extract base64 data from canvas
+                        const base64Data = canvas.toDataURL('image/png').split(',')[1];
+                        
+                        // Add file to ZIP
+                        zip.file(`${item.deviceId}.png`, base64Data, {base64: true});
+                        
+                        resolve();
+                    }).catch(error => {
+                        console.error(`Error generating code with text for ${item.deviceId}:`, error);
+                        // Remove container from DOM
+                        if (container.parentNode) {
+                            document.body.removeChild(container);
+                        }
+                        // Fallback to adding just the code
+                        const base64Data = item.codeDataUrl.split(',')[1];
+                        zip.file(`${item.deviceId}.png`, base64Data, {base64: true});
+                        
+                        resolve();
+                    });
+                });
+            });
+            
+            // Wait for all codes to be added to ZIP
+            Promise.all(promises).then(() => {
+                // Generate ZIP file and trigger download
+                zip.generateAsync({type: 'blob'})
+                .then((content) => {
+                    // Create download link
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(content);
+                    link.download = `设备${currentMode === 'qr' ? '二维码' : '条形码'}批量下载.zip`;
+                    link.click();
+                    
+                    // Cleanup
+                    URL.revokeObjectURL(link.href);
+                    
+                    // Restore button state
+                    downloadAllBtn.innerHTML = originalButtonText;
+                    downloadAllBtn.disabled = false;
+                    
+                    showNotification(`成功下载 ${codesData.length} 个${currentMode === 'qr' ? '二维码' : '条形码'}到 ZIP 文件`, 'success');
+                })
+                .catch((error) => {
+                    console.error('Error generating ZIP file:', error);
+                    
+                    // Restore button state
+                    downloadAllBtn.innerHTML = originalButtonText;
+                    downloadAllBtn.disabled = false;
+                    
+                    showNotification('生成 ZIP 文件失败，请重试', 'error');
+                });
+            });
+        }
+        
+        // Show notification
+        function showNotification(message, type = 'info') {
+            // Create notification element
+            const notification = document.createElement('div');
+            
+            // Set classes based on type
+            let bgColor, icon;
+            switch (type) {
+                case 'success':
+                    bgColor = 'bg-success';
+                    icon = 'fa-check-circle';
+                    break;
+                case 'warning':
+                    bgColor = 'bg-warning';
+                    icon = 'fa-exclamation-triangle';
+                    break;
+                case 'error':
+                    bgColor = 'bg-danger';
+                    icon = 'fa-exclamation-circle';
+                    break;
+                default:
+                    bgColor = 'bg-primary';
+                    icon = 'fa-info-circle';
+            }
+            
+            // Set notification styles
+            notification.className = `${bgColor} text-white px-4 py-3 rounded-lg shadow-lg flex items-center fixed bottom-4 right-4 z-50 transform translate-y-0 opacity-0 transition-all duration-300`;
+            notification.innerHTML = `
+                <i class="fa ${icon} mr-2"></i>
+                <span>${message}</span>
+            `;
+            
+            // Add to DOM
+            document.body.appendChild(notification);
+            
+            // Show notification with animation
+            setTimeout(() => {
+                notification.classList.remove('translate-y-0', 'opacity-0');
+                notification.classList.add('translate-y-0', 'opacity-100');
+            }, 10);
+            
+            // Auto hide after 3 seconds
+            setTimeout(() => {
+                notification.classList.remove('opacity-100');
+                notification.classList.add('opacity-0', 'translate-y-4');
+                
+                // Remove from DOM after animation
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 3000);
+        }
+        
+        // Close modal when clicking outside
+        window.addEventListener('click', (event) => {
+            if (event.target === codeModal) {
+                closeModal();
+            }
+        });
+        
+        // Close modal when pressing Escape key
+        window.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' && !codeModal.classList.contains('hidden')) {
+                closeModal();
+            }
+        });
+        
+        // Focus textarea on page load
+        window.addEventListener('load', () => {
+            deviceIdsTextarea.focus();
+            updateQrcodeSize(); // Initialize QR code size display
+            updateBarcodeHeight(); // Initialize barcode height display
+        });
+    </script>
+</body>
+</html>
