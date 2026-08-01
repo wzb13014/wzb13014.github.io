@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>批量邀请函生成器</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+<style>
+  :root{
+    --bg:#0f1115; --panel:#171a21; --panel2:#1e222b; --line:#2a2f3a;
+    --text:#e6e9ef; --muted:#9aa3b2; --accent:#6aa9ff; --accent2:#7ee0c0;
+    --radius:10px; --danger:#ff6b6b;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif;
+    background:var(--bg);color:var(--text);font-size:14px;line-height:1.5;
+  }
+  header.topbar{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:12px 18px;background:linear-gradient(90deg,#1b2030,#141824);
+    border-bottom:1px solid var(--line);position:sticky;top:0;z-index:50;
+  }
+  header.topbar h1{font-size:17px;margin:0;font-weight:700;letter-spacing:.5px}
+  header.topbar .sub{color:var(--muted);font-size:12px;margin-left:10px}
+  .topbar .actions{display:flex;gap:8px;flex-wrap:wrap}
+  button,.btn{
+    background:var(--panel2);color:var(--text);border:1px solid var(--line);
+    padding:7px 12px;border-radius:8px;cursor:pointer;font-size:13px;transition:.15s;
+  }
+  button:hover{border-color:var(--accent);color:#fff}
+  button.primary{background:var(--accent);border-color:var(--accent);color:#06101f;font-weight:600}
+  button.primary:hover{filter:brightness(1.08)}
+  button.ghost{background:transparent}
+  button.danger:hover{border-color:var(--danger);color:var(--danger)}
+  input,textarea,select{
+    background:var(--panel);color:var(--text);border:1px solid var(--line);
+    border-radius:8px;padding:7px 9px;font-size:13px;font-family:inherit;width:100%;
+  }
+  input:focus,textarea:focus,select:focus{outline:none;border-color:var(--accent)}
+  label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px}
+  .layout{display:flex;height:calc(100vh - 55px)}
+  .sidebar{
+    width:430px;min-width:430px;overflow-y:auto;background:var(--panel);
+    border-right:1px solid var(--line);padding:14px 16px 60px;
+  }
+  .stage-wrap{flex:1;overflow:auto;background:#0b0d12;padding:24px;display:flex;flex-direction:column;align-items:center}
+  .section{background:var(--panel2);border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px;margin-bottom:14px}
+  .section h3{margin:0 0 8px;font-size:14px;display:flex;align-items:center;gap:8px}
+  .section h3 .tag{font-size:11px;color:var(--muted);font-weight:400}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+  .row{display:flex;gap:8px;align-items:center}
+  .row > *{flex:1}
+  .hint{font-size:11px;color:var(--muted);margin-top:4px}
+  .tpl-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .tpl{
+    border:2px solid var(--line);border-radius:8px;padding:8px;text-align:center;
+    cursor:pointer;font-size:12px;background:var(--panel);transition:.15s
+  }
+  .tpl.active{border-color:var(--accent);box-shadow:0 0 0 2px rgba(106,169,255,.25)}
+  .tpl .sw{height:34px;border-radius:6px;margin-bottom:6px}
+  .swatch{display:flex;align-items:center;gap:8px}
+  .swatch input[type=color]{width:42px;height:32px;padding:2px;flex:none}
+  table.guests{width:100%;border-collapse:collapse;font-size:12px}
+  table.guests th,table.guests td{border:1px solid var(--line);padding:5px;vertical-align:top}
+  table.guests th{background:var(--panel);position:sticky;top:0;z-index:2}
+  table.guests input{border:none;background:transparent;padding:3px}
+  table.guests input:focus{background:var(--panel2)}
+  .guest-scroll{max-height:280px;overflow:auto;border:1px solid var(--line);border-radius:8px}
+  .field-chip{display:inline-flex;align-items:center;gap:6px;background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:3px 10px;font-size:12px;margin:4px 4px 0 0}
+  .field-chip b{color:var(--accent2)}
+  .field-chip .x{cursor:pointer;color:var(--muted)}
+  .field-chip .x:hover{color:var(--danger)}
+  .preview-toolbar{display:flex;gap:8px;align-items:center;justify-content:center;margin-bottom:14px;flex-wrap:wrap}
+  .preview-toolbar .nav{font-size:13px;color:var(--muted)}
+  #previewStage{
+    width:794px;height:1123px;flex:none;
+    transform-origin:top center;
+  }
+  #cardHost{width:794px;height:1123px;position:relative}
+  /* 画廊样式已移除 */
+  #exportHolder{position:fixed;left:-100000px;top:0}
+  .preview-mode-toggle{display:flex;gap:6px}
+  .preview-mode-toggle button.active{background:var(--accent);color:#06101f;border-color:var(--accent)}
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#222a38;border:1px solid var(--accent);color:#fff;padding:10px 16px;border-radius:10px;z-index:200;box-shadow:0 8px 30px rgba(0,0,0,.5);font-size:13px;opacity:0;transition:.25s;pointer-events:none}
+  .toast.show{opacity:1}
+  .count-badge{background:var(--accent);color:#06101f;border-radius:20px;padding:1px 8px;font-size:11px;font-weight:700}
+  .libwarn{font-size:11px;color:#ffcf6b;margin-top:6px}
+  .qr-hint{font-size:12px;margin-top:6px;line-height:1.5;padding:6px 9px;border-radius:8px;display:none}
+  .qr-hint.warn{display:block;background:rgba(255,107,107,.12);border:1px solid rgba(255,107,107,.4);color:#ff9b9b}
+  .qr-hint.ok{display:block;background:rgba(126,224,192,.12);border:1px solid rgba(126,224,192,.4);color:#7ee0c0}
+  details summary{cursor:pointer;color:var(--muted);font-size:12px;margin-top:8px}
+  .kv-line{display:flex;gap:8px;font-size:12px;color:var(--muted);margin-top:6px;flex-wrap:wrap}
+  textarea{resize:vertical;min-height:60px}
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  .seg button{border:none;border-radius:0;background:var(--panel)}
+  .seg button.active{background:var(--accent);color:#06101f}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div style="display:flex;align-items:center">
+    <h1>📜 批量邀请函生成器</h1>
+    <span class="sub">家庭个人 · 现代风格 · 单文件运行</span>
+  </div>
+  <div class="actions">
+    <button class="ghost" id="btnSample">示例数据</button>
+    <button class="ghost" id="btnSaveProj">保存项目</button>
+    <button class="ghost" id="btnLoadProj">加载项目</button>
+    <button class="ghost" id="btnExportGuests">导出名单</button>
+    <button id="btnPdfAll">PDF全部</button>
+    <button id="btnZipAll">ZIP全部</button>
+  </div>
+</header>
+
+<div class="layout">
+  <!-- ============ 左侧配置 ============ -->
+  <div class="sidebar">
+
+    <div class="section">
+      <h3>① 活动信息 <span class="tag">支持占位符 {{字段}}</span></h3>
+      <div class="grid2">
+        <div><label>活动名称 / 主题</label><input id="eventName" placeholder="如：共赴一场盛典"></div>
+        <div><label>顶部小字（如：诚挚邀请）</label><input id="subtitle" placeholder="如：诚挚邀请"></div>
+      </div>
+      <div class="grid3">
+        <div><label>日期</label><input id="date" placeholder="如：2026年10月1日"></div>
+        <div><label>时间</label><input id="time" placeholder="如：18:30"></div>
+        <div><label>主办 / 主人</label><input id="host" placeholder="如：王小明 &amp; 李小红"></div>
+      </div>
+      <div><label>地点</label><input id="location" placeholder="如：星河宴会厅 · 3楼水晶厅"></div>
+      <div><label>地址</label><input id="address" placeholder="如：示范路 88 号"></div>
+      <div><label>宾客称呼行（每位个性化）</label><input id="salutation" placeholder="如：尊敬的 {{name}} 全家："></div>
+      <div><label>正文内容</label><textarea id="body" placeholder="可使用 {{eventName}} {{date}} {{time}} {{location}} {{address}} {{host}} 及自定义字段"></textarea></div>
+      <div><label>底部期待语</label><input id="footerNote" placeholder="如：期待与您相见"></div>
+      <div><label>底部副文</label><input id="subFooter" placeholder="如：凭此邀请函入场 · 欢迎携亲友共赴"></div>
+    </div>
+
+    <div class="section">
+      <h3>② 模板风格</h3>
+      <label>选择风格</label>
+      <div class="tpl-grid" id="tplGrid">
+        <div class="tpl active" data-tpl="purple"><div class="sw" style="background:linear-gradient(135deg,#3a2060,#0d0f1a)"></div>紫金盛典</div>
+        <div class="tpl" data-tpl="blue"><div class="sw" style="background:linear-gradient(135deg,#1a2a44,#080c16)"></div>星空蓝调</div>
+        <div class="tpl" data-tpl="warm"><div class="sw" style="background:linear-gradient(135deg,#5c2018,#1a0a05)"></div>暖橙温馨</div>
+        <div class="tpl" data-tpl="green"><div class="sw" style="background:linear-gradient(135deg,#1a3d2e,#0a140e)"></div>墨绿雅致</div>
+        <div class="tpl" data-tpl="rose"><div class="sw" style="background:linear-gradient(135deg,#4a1e33,#14080f)"></div>玫瑰浪漫</div>
+        <div class="tpl" data-tpl="mono"><div class="sw" style="background:linear-gradient(135deg,#222,#000)"></div>极简黑白</div>
+      </div>
+      <div class="grid2" style="margin-top:10px">
+        <div class="swatch"><label style="margin:0">标题/强调色</label><input type="color" id="themeColor" value="#d4a857"></div>
+        <div class="swatch"><label style="margin:0">正文色</label><input type="color" id="bodyColor" value="#f0ece4"></div>
+      </div>
+      <div style="margin-top:10px"><label>字体</label>
+        <select id="fontFamily">
+          <option value='"Microsoft YaHei","PingFang SC",sans-serif'>黑体（现代）</option>
+          <option value='"SimSun","Songti SC",serif'>宋体（传统）</option>
+          <option value='"KaiTi","Kaiti SC",serif'>楷体（雅致）</option>
+          <option value='"STXingkai","KaiTi",serif'>行楷（手写感）</option>
+          <option value='Georgia,"Times New Roman",serif'>衬线英文</option>
+        </select>
+      </div>
+      <div style="margin-top:10px"><label>背景图（可选，覆盖默认渐变）</label>
+        <input type="file" id="bgImage" accept="image/*">
+        <button class="ghost" id="clearBg" style="margin-top:6px;font-size:12px;padding:4px 10px">清除背景图</button>
+      </div>
+      <div class="kv-line">
+        <span>卡片比例：</span>
+        <div class="seg" id="ratioSeg">
+          <button data-ratio="a4" class="active">A4 竖版</button>
+          <button data-ratio="square">方形</button>
+          <button data-ratio="postcard">明信片</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>③ 二维码（可选）</h3>
+      <div class="row">
+        <div style="flex:2"><label>二维码内容</label><input id="qrContent" placeholder="请填写网址链接（微信仅支持识别链接类二维码）"></div>
+        <div style="flex:none"><label>尺寸</label><input type="number" id="qrSize" value="160" style="width:70px"></div>
+      </div>
+      <div class="qr-hint" id="qrHint"></div>
+      <div class="hint">微信扫码规则：仅能识别 <b>网址链接(http/https)</b>，如活动报名页、地图导航、电子相册等。纯文本（地址/说明/中文）会被微信拦截并提示「不支持展示二维码中的文本内容」。普通扫码软件（系统相机、支付宝等）仍可读取文本。</div>
+      <div class="kv-line"><label style="margin:0">显示开关</label>
+        <div class="seg" id="qrSeg">
+          <button data-qr="0" class="active">关闭</button>
+          <button data-qr="1">开启</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>④ 自定义字段 <span class="tag">用于占位符</span></h3>
+      <div class="row">
+        <input id="newField" placeholder="新增字段名（英文/拼音，如 seat）">
+        <button id="addField" style="flex:none">添加</button>
+      </div>
+      <div id="fieldChips" style="margin-top:6px"></div>
+      <div class="hint">字段名用于占位符，例如字段 <b>seat</b> 对应正文中的 <b>{{seat}}</b>。默认已含 name/title/relation。</div>
+    </div>
+
+    <div class="section">
+      <h3>⑤ 宾客名单 <span class="count-badge" id="guestCount">0</span></h3>
+      <div class="row" style="margin-bottom:8px">
+        <button id="addGuest">+ 添加宾客</button>
+        <button id="importExcel">导入Excel/CSV</button>
+        <input type="file" id="excelFile" accept=".xlsx,.xls,.csv" style="display:none">
+      </div>
+      <details>
+        <summary>批量粘贴（每行一位，字段按顺序用 Tab 或英文逗号分隔）</summary>
+        <textarea id="bulkText" placeholder="示例：&#10;张伟一家,叔叔,XX小区&#10;李娜,闺蜜,YY花园"></textarea>
+        <button id="applyBulk" style="margin-top:6px;font-size:12px">应用批量数据</button>
+      </details>
+      <div class="guest-scroll" style="margin-top:10px">
+        <table class="guests" id="guestTable">
+          <thead></thead><tbody></tbody>
+        </table>
+      </div>
+      <button class="danger ghost" id="clearGuests" style="margin-top:8px;font-size:12px">清空名单</button>
+    </div>
+
+    <div class="libwarn" id="libStatus" style="margin-top:10px"></div>
+
+  </div>
+
+  <!-- ============ 右侧预览 ============ -->
+  <div class="stage-wrap">
+    <div class="preview-toolbar" id="singleBar">
+      <button id="prevGuest">◀ 上一位</button>
+      <span class="nav" id="guestNav">— / —</span>
+      <button id="nextGuest">下一位 ▶</button>
+      <span style="width:14px"></span>
+      <button id="btnPdfOne">PDF当前</button>
+      <button id="btnPngOne">图片当前</button>
+    </div>
+    <div id="previewStage">
+      <div id="cardHost"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     卡片样式 —— 现代渐变风格（参照参考图设计）
+     所有模板共享同一布局结构，仅配色不同
+============================================================ -->
+<style id="cardStyles">
+
+  /* ====== 卡片基础布局 ====== */
+  .card{
+    position:relative;width:794px;height:1123px;overflow:hidden;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    padding:70px 72px;text-align:center;font-family:inherit;
+    box-sizing:border-box;
+  }
+
+  /* 背景图覆盖层 */
+  .card .bgimg{
+    position:absolute;inset:0;width:100%;height:100%;
+    object-fit:cover;z-index:0;
+  }
+
+  /* 装饰性大圆 */
+  .card .deco-circle{
+    position:absolute;border-radius:50%;z-index:1;pointer-events:none;
+  }
+  .card .deco-circle.tl{
+    top:-80px;left:-80px;width:320px;height:320px;
+    background:radial-gradient(circle,var(--dc-color,rgba(160,130,220,.22)),transparent 70%);
+  }
+  .card .deco-circle.br{
+    bottom:-120px;right:-120px;width:380px;height:380px;
+    background:radial-gradient(circle,var(--dc-color2,rgba(40,30,60,.35)),transparent 70%);
+  }
+
+  /* 内容层 */
+  .card .inner{
+    position:relative;z-index:3;width:100%;
+    display:flex;flex-direction:column;align-items:center;
+  }
+
+  /* 顶部小字：诚挚邀请 */
+  .card .top-label{
+    font-size:19px;letter-spacing:14px;text-indent:14px;
+    margin-bottom:22px;opacity:.92;font-weight:500;
+  }
+
+  /* 大标题：共赴一场盛典 */
+  .card .main-title{
+    font-size:58px;font-weight:900;line-height:1.2;
+    margin:4px 0 20px;letter-spacing:3px;
+  }
+
+  /* 分隔线 */
+  .card .divider{
+    width:140px;height:1.5px;margin:20px auto 28px;
+    opacity:.65;
+  }
+
+  /* 宾客称呼：尊敬的 XXX */
+  .card .guest-name{
+    font-size:38px;font-weight:700;line-height:1.4;
+    margin:0 0 10px;
+  }
+
+  /* 副说明文字 */
+  .card .sub-text{
+    font-size:18px;opacity:.68;line-height:1.6;
+    margin:0 0 32px;
+  }
+
+  /* 元信息区域（日期/地点/地址） */
+  .card .meta-info{
+    width:100%;text-align:left;font-size:21px;line-height:2.1;
+    display:flex;flex-direction:column;align-items:center;gap:2px;
+  }
+  .card .meta-row{
+    display:flex;align-items:baseline;gap:8px;justify-content:center;
+  }
+  .card .meta-row .lbl{opacity:.55;font-weight:400;white-space:nowrap}
+  .card .meta-row .val{font-weight:600}
+
+  /* 底部期待语 */
+  .card .closing{
+    font-size:30px;font-weight:800;letter-spacing:4px;
+    margin:34px 0 10px;
+  }
+
+  /* 底部副文 */
+  .card .bottom-sub{
+    font-size:16px;opacity:.6;letter-spacing:1px;
+    margin:0 0 8px;
+  }
+
+  /* 最底部标签 */
+  .card .tagline{
+    font-size:13px;opacity:.38;letter-spacing:2px;
+    margin-top:auto;padding-top:16px;
+  }
+
+  /* 二维码区域 */
+  .card .qrwrap{
+    margin-top:20px;display:flex;flex-direction:column;align-items:center;gap:6px;
+  }
+  .card .qrwrap .ql{font-size:13px;opacity:.55}
+  .card .qrplate{background:#fff;padding:14px;border-radius:10px;display:inline-block;line-height:0;box-shadow:0 2px 10px rgba(0,0,0,.35)}
+  .card .qrbox{background:#fff;line-height:0;border-radius:4px;display:inline-block}
+  .card .qrbox img,.card .qrbox canvas{display:block}
+
+  /* ====== 各配色方案 ======
+     共享同一布局，仅变背景渐变、装饰圆色、强调色、文字色 ====== */
+
+  /* --- 紫金盛典（默认，匹配参考图）--- */
+  .t-purple{
+    background:linear-gradient(145deg, #3a2060 0%, #1e1238 35%, #0d0f1a 100%);
+    color:#f0ece4;
+    --dc-color:rgba(160,130,220,.26);
+    --dc-color2:rgba(30,18,50,.45);
+  }
+  .t-purple .top-label{color:#d4a857}
+  .t-purple .main-title{color:#d4a857}
+  .t-purple .divider{background:linear-gradient(90deg,transparent,#d4a857,transparent)}
+  .t-purple .guest-name{color:#fff}
+  .t-purple .meta-row .val{color:#f0ece4}
+  .t-purple .closing{color:#d4a857}
+
+  /* --- 星空蓝调 --- */
+  .t-blue{
+    background:linear-gradient(145deg, #1a2a44 0%, #0f1829 35%, #080c16 100%);
+    color:#e8ecf4;
+    --dc-color:rgba(100,140,200,.2);
+    --dc-color2:rgba(15,24,42,.5);
+  }
+  .t-blue .top-label{color:#8eb4e8}
+  .t-blue .main-title{color:#8eb4e8}
+  .t-blue .divider{background:linear-gradient(90deg,transparent,#8eb4e8,transparent)}
+  .t-blue .guest-name{color:#fff}
+  .t-blue .meta-row .val{color:#e8ecf4}
+  .t-blue .closing{color:#8eb4e8}
+
+  /* --- 暖橙温馨 --- */
+  .t-warm{
+    background:linear-gradient(145deg, #5c2018 0%, #301008 35%, #1a0a05 100%);
+    color:#fef3e8;
+    --dc-color:rgba(220,150,100,.22);
+    --dc-color2:rgba(48,16,8,.45);
+  }
+  .t-warm .top-label{color:#e8a858}
+  .t-warm .main-title{color:#e8a858}
+  .t-warm .divider{background:linear-gradient(90deg,transparent,#e8a858,transparent)}
+  .t-warm .guest-name{color:#fff}
+  .t-warm .meta-row .val{color:#fef3e8}
+  .t-warm .closing{color:#e8a858}
+
+  /* --- 墨绿雅致 --- */
+  .t-green{
+    background:linear-gradient(145deg, #1a3d2e 0%, #0d2118 35%, #0a140e 100%);
+    color:#eaf4ee;
+    --dc-color:rgba(100,180,140,.2);
+    --dc-color2:rgba(13,33,24,.45);
+  }
+  .t-green .top-label{color:#8fcfa8}
+  .t-green .main-title{color:#8fcfa8}
+  .t-green .divider{background:linear-gradient(90deg,transparent,#8fcfa8,transparent)}
+  .t-green .guest-name{color:#fff}
+  .t-green .meta-row .val{color:#eaf4ee}
+  .t-green .closing{color:#8fcfa8}
+
+  /* --- 玫瑰浪漫 --- */
+  .t-rose{
+    background:linear-gradient(145deg, #4a1e33 0%, #260f1c 35%, #14080f 100%);
+    color:#fceef2;
+    --dc-color:rgba(200,120,160,.22);
+    --dc-color2:rgba(38,15,28,.45);
+  }
+  .t-rose .top-label{color:#e898b8}
+  .t-rose .main-title{color:#e898b8}
+  .t-rose .divider{background:linear-gradient(90deg,transparent,#e898b8,transparent)}
+  .t-rose .guest-name{color:#fff}
+  .t-rose .meta-row .val{color:#fceef2}
+  .t-rose .closing{color:#e898b8}
+
+  /* --- 极简黑白 --- */
+  .t-mono{
+    background:linear-gradient(145deg, #2a2a2a 0%, #141414 35%, #000 100%);
+    color:#ddd;
+    --dc-color:rgba(200,200,200,.1);
+    --dc-color2:rgba(0,0,0,.5);
+  }
+  .t-mono .top-label{color:#bbb}
+  .t-mono .main-title{color:#eee}
+  .t-mono .divider{background:linear-gradient(90deg,transparent,#888,transparent)}
+  .t-mono .guest-name{color:#fff}
+  .t-mono .meta-row .val{color:#ddd}
+  .t-mono .closing{color:#ccc}
+
+</style>
+
+<div id="exportHolder"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+  const $ = s=>document.querySelector(s);
+  const $$ = s=>Array.from(document.querySelectorAll(s));
+
+  // ============ 默认状态（家庭个人场景）============
+  const DEFAULTS = {
+    settings:{
+      eventName:"共赴一场盛典",
+      subtitle:"诚挚邀请",
+      date:"2026年10月1日",
+      time:"周四 · 18:30",
+      host:"王小明 & 李小红",
+      location:"星河宴会厅 · 3楼水晶厅",
+      address:"示范路 88 号",
+      salutation:"尊敬的 {{name}}{{relation}}：",
+      body:"我们诚挚地邀请您出席本次活动\n愿与您共享美好时光",
+      footerNote:"期待与您相见",
+      subFooter:"凭此邀请函入场 · 欢迎携亲友共赴",
+      tagline:"— 一份专属定制的电子邀请函 —",
+      template:"purple",
+      themeColor:"#d4a857",
+      bodyColor:"#f0ece4",
+      fontFamily:'"Microsoft YaHei","PingFang SC",sans-serif',
+      bgImage:"",
+      showQR:false,
+      qrContent:"",
+      qrSize:160,
+      ratio:"a4"
+    },
+    fields:["name","title","relation"],
+    guests:[
+      {name:"张伟",title:"",relation:"叔叔一家"},
+      {name:"李娜",title:"",relation:"闺蜜"},
+      {name:"王芳",title:"教授",relation:"老师"}
+    ]
+  };
+
+  let state = structuredClone(DEFAULTS);
+  let currentIndex = 0;
+
+  // ============ 持久化 ============
+  const LS_KEY = "invitation_gen_v2";
+  function saveLocal(){
+    try{ localStorage.setItem(LS_KEY, JSON.stringify(state)); }catch(e){}
+  }
+  function loadLocal(){
+    try{
+      const raw = localStorage.getItem(LS_KEY);
+      if(raw){ state = JSON.parse(raw); }
+    }catch(e){}
+  }
+
+  // ============ 工具 ============
+  function toast(msg){
+    const t=$("#toast"); t.textContent=msg; t.classList.add("show");
+    clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove("show"),2200);
+  }
+  function libOk(name){ return typeof window[name]!=="undefined"; }
+  function checkLibs(){
+    const need = {XLSX:"Excel导入导出",html2canvas:"图片/PDF导出",jspdf:"PDF导出",JSZip:"ZIP导出",QRCode:"二维码"};
+    const miss=[];
+    for(const k in need){ if(!libOk(k)) miss.push(need[k]); }
+    $("#libStatus").textContent = miss.length
+      ? "⚠ 部分库未加载："+miss.join("、")+"（联网后刷新恢复）"
+      : "✓ 全部扩展库已就绪";
+  }
+
+  // ============ 占位符替换 ============
+  function fill(text, guest){
+    if(text==null) return "";
+    const s=state.settings;
+    const tokens = Object.assign({}, guest, {
+      eventName:s.eventName, subtitle:s.subtitle, date:s.date, time:s.time,
+      host:s.host, location:s.location, address:s.address,
+      footerNote:s.footerNote, subFooter:s.subFooter, tagline:s.tagline,
+      title:guest.title||"", name:guest.name||"", relation:guest.relation||""
+    });
+    return String(text).replace(/\{\{\s*([\w\u4e00-\u9fa5]+)\s*\}\}/g,(m,k)=>{
+      return (tokens[k]!=null && tokens[k]!=="") ? tokens[k] : m;
+    });
+  }
+
+  function esc(t){
+    return String(t).replace(/[&<>"']/g,c=>{
+      return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];
+    });
+  }
+
+  // 二维码内容校验：微信仅识别网址链接，纯文本会被拦截
+  function isUrlLike(s){
+    s=(s||"").trim();
+    return /^https?:\/\//i.test(s) || /^www\./i.test(s) || /^[\w-]+(\.[\w-]+)+(\/|$)/i.test(s);
+  }
+  function updateQrHint(){
+    const el=$("#qrHint"); if(!el) return;
+    const v=($("#qrContent").value||"").trim();
+    if(!v){ el.className="qr-hint"; el.textContent=""; return; }
+    if(isUrlLike(v)){
+      el.className="qr-hint ok";
+      el.textContent="✓ 链接格式，微信可正常识别并跳转";
+    }else{
+      el.className="qr-hint warn";
+      el.textContent="⚠ 当前为纯文本，微信扫码会提示「不支持展示二维码中的文本内容」。微信仅支持识别网址链接，请填写 http(s) 链接（如活动报名页、地图导航、电子相册）。";
+    }
+  }
+
+  // ============ 卡片尺寸 ============
+  function ratioSize(){
+    const r=state.settings.ratio;
+    if(r==="square") return {w:1000,h:1000};
+    if(r==="postcard") return {w:1000,h:680};
+    return {w:794,h:1123}; // a4
+  }
+
+  // ============ 构建卡片 DOM（新布局）============
+  function buildCard(guest){
+    const s=state.settings;
+    const {w,h}=ratioSize();
+    const card=document.createElement("div");
+    card.className="card t-"+s.template;
+    card.style.width=w+"px"; card.style.height=h+"px";
+    card.style.fontFamily=s.fontFamily;
+
+    let html="";
+
+    // 背景图或保留CSS渐变
+    if(s.bgImage){
+      html+='<img class="bgimg" src="'+s.bgImage+'" alt="">';
+    }
+
+    // 装饰圆
+    html+='<div class="deco-circle tl"></div>';
+    html+='<div class="deco-circle br"></div>';
+
+    html+='<div class="inner">';
+
+    // 顶部小字
+    if(s.subtitle){
+      html+='<div class="top-label">'+esc(fill(s.subtitle,guest))+'</div>';
+    }
+
+    // 大标题
+    if(s.eventName){
+      html+='<div class="main-title">'+esc(fill(s.eventName,guest))+'</div>';
+    }
+
+    // 分隔线
+    html+='<div class="divider"></div>';
+
+    // 宾客称呼
+    if(s.salutation){
+      html+='<div class="guest-name">'+esc(fill(s.salutation,guest))+'</div>';
+    }
+
+    // 副说明
+    if(s.body){
+      html+='<div class="sub-text">'+esc(fill(s.body,guest)).replace(/\n/g,"<br>")+'</div>';
+    }
+
+    // 元信息
+    html+='<div class="meta-info">';
+    if(s.date || s.time){
+      html+='<div class="meta-row"><span class="lbl">日期：</span><span class="val">'+
+        esc(fill(s.date,guest))+(s.time?" "+esc(fill(s.time,guest)):"")+
+        '</span></div>';
+    }
+    if(s.location){
+      html+='<div class="meta-row"><span class="lbl">地点：</span><span class="val">'+
+        esc(fill(s.location,guest))+'</span></div>';
+    }
+    if(s.address){
+      html+='<div class="meta-row"><span class="lbl">地址：</span><span class="val">'+
+        esc(fill(s.address,guest))+'</span></div>';
+    }
+    if(s.host){
+      html+='<div class="meta-row"><span class="lbl">主办：</span><span class="val">'+
+        esc(fill(s.host,guest))+'</span></div>';
+    }
+    html+='</div>';
+
+    // 第二条分隔线
+    html+='<div class="divider"></div>';
+
+    // 期待语
+    if(s.footerNote){
+      html+='<div class="closing">'+esc(fill(s.footerNote,guest))+'</div>';
+    }
+
+    // 底部副文
+    if(s.subFooter){
+      html+='<div class="bottom-sub">'+esc(fill(s.subFooter,guest))+'</div>';
+    }
+
+    // 二维码（白底卡片 + 按比例静默区，便于微信等扫码识别）
+    if(s.showQR && s.qrContent){
+      const qz = Math.max(12, Math.round((s.qrSize||160)*0.12)); // 静默区约 4~5 个模块
+      html+='<div class="qrwrap"><div class="qrplate" style="padding:'+qz+'px"><div class="qrbox"></div></div><div class="ql">微信扫一扫，查看详情</div></div>';
+    }
+
+    // 最底部标签
+    if(s.tagline){
+      html+='<div class="tagline">'+esc(fill(s.tagline,guest))+'</div>';
+    }
+
+    html+='</div>'; // end inner
+    card.innerHTML=html;
+
+    // 用户自定义颜色注入
+    const accent=s.themeColor;
+    const bodyC=s.bodyColor;
+    const tl=card.querySelector(".top-label"); if(tl) tl.style.color=accent;
+    const mt=card.querySelector(".main-title"); if(mt) mt.style.color=accent;
+    const dv=card.querySelectorAll(".divider"); dv.forEach(d=>{ d.style.background="linear-gradient(90deg,transparent,"+accent+",transparent)"; });
+    const cl=card.querySelector(".closing"); if(cl) cl.style.color=accent;
+    card.style.color=bodyC;
+
+    // 二维码渲染（H 级纠错 + 黑码白底，最大化微信等扫码识别率）
+    if(s.showQR && s.qrContent){
+      const box=card.querySelector(".qrbox");
+      if(libOk("QRCode")){
+        try{
+          new QRCode(box,{text:s.qrContent,width:s.qrSize,height:s.qrSize,
+            colorDark:"#000000",colorLight:"#ffffff",correctLevel:QRCode.CorrectLevel.H});
+        }catch(e){ box.textContent="[二维码]"; }
+      }else{
+        box.textContent="[二维码]";
+      }
+      box.style.margin="0 auto";
+    }
+    return card;
+  }
+
+  // ============ 预览渲染 ============
+  function renderPreview(){
+    const host=$("#cardHost"); host.innerHTML="";
+    if(state.guests.length===0){
+      host.innerHTML='<div style="width:794px;height:1123px;display:flex;align-items:center;justify-content:center;color:#888;font-size:22px">请在左侧添加宾客名单</div>';
+      return;
+    }
+    currentIndex=Math.max(0,Math.min(currentIndex,state.guests.length-1));
+    const card=buildCard(state.guests[currentIndex]);
+    host.appendChild(card);
+    fitInner(card);
+    $("#guestNav").textContent=(currentIndex+1)+" / "+state.guests.length;
+    fitPreview();
+  }
+
+  function fitPreview(){
+    const stage=$("#previewStage");
+    const wrap=stage.parentElement;
+    const avail=wrap.clientWidth-48;
+    const {w}=ratioSize();
+    const scale=Math.min(1,avail/w);
+    stage.style.transform="scale("+scale+")";
+    stage.style.height=(ratioSize().h*scale)+"px";
+    stage.style.width=(w*scale)+"px";
+  }
+
+  // 当内容高度超出卡片时，等比缩小内容层，避免上下被裁切（尤其明信片/方形比例）
+  function fitInner(card){
+    const inner=card.querySelector(".inner");
+    if(!inner) return;
+    inner.style.transform=""; // 先复位再测量
+    const cs=getComputedStyle(card);
+    const padY=parseFloat(cs.paddingTop)+parseFloat(cs.paddingBottom);
+    const avail=card.clientHeight-padY;
+    const contentH=inner.offsetHeight;
+    if(contentH>avail && avail>0){
+      const sc=avail/contentH;
+      inner.style.transformOrigin="center center";
+      inner.style.transform="scale("+sc+")";
+    }
+  }
+
+  /* 画廊功能已移除 */
+
+  function renderAll(){
+    $("#singleBar").style.display="flex"; $("#previewStage").style.display="block";
+    renderPreview();
+  }
+
+  // ============ 宾客表格 ============
+  function renderGuestTable(){
+    const tbl=$("#guestTable");
+    const f=state.fields;
+    let thead="<tr>"+f.map(x=>"<th>"+esc(x)+"</th>").join("")+'<th>操作</th></tr>';
+    let tbody=state.guests.map((g,i)=>{
+      let cells=f.map(x=>'<td><input data-i="'+i+'" data-f="'+x+'" value="'+esc(g[x]||"")+'"></td>').join("");
+      return "<tr>"+cells+'<td><button class="danger ghost del" data-i="'+i+'" style="padding:2px 8px;font-size:12px">删除</button></td></tr>';
+    }).join("");
+    tbl.querySelector("thead").innerHTML=thead;
+    tbl.querySelector("tbody").innerHTML=tbody;
+    $("#guestCount").textContent=state.guests.length;
+  }
+
+  function renderFields(){
+    const c=$("#fieldChips"); c.innerHTML="";
+    state.fields.forEach(f=>{
+      const chip=document.createElement("span"); chip.className="field-chip";
+      chip.innerHTML='<b>{{'+esc(f)+'}}</b><span class="x" data-f="'+esc(f)+'">✕</span>';
+      c.appendChild(chip);
+    });
+  }
+
+  // ============ 同步表单 <-> state ============
+  const SET_INPUTS=["eventName","subtitle","date","time","host","location","address","salutation","body","footerNote","subFooter","tagline","themeColor","bodyColor","fontFamily","qrContent","qrSize"];
+  function syncFormToState(){
+    const s=state.settings;
+    SET_INPUTS.forEach(id=>{ if($("#"+id)) s[id]=$("#"+id).value; });
+    s.showQR = $("#qrSeg .active").dataset.qr==="1";
+    s.template = $("#tplGrid .tpl.active").dataset.tpl;
+    s.ratio = $("#ratioSeg .active").dataset.ratio;
+  }
+  function syncStateToForm(){
+    const s=state.settings;
+    SET_INPUTS.forEach(id=>{ if($("#"+id)) $("#"+id).value=s[id]; });
+    $$("#tplGrid .tpl").forEach(t=>t.classList.toggle("active",t.dataset.tpl===s.template));
+    $$("#ratioSeg button").forEach(b=>b.classList.toggle("active",b.dataset.ratio===s.ratio));
+    $$("#qrSeg button").forEach(b=>b.classList.toggle("active",(b.dataset.qr==="1")===s.showQR));
+  }
+
+  // ============ 导出 ============
+  function download(blob,name){
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(blob); a.download=name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href),3000);
+  }
+
+  async function cardToCanvas(guest,scale){
+    const holder=$("#exportHolder"); holder.innerHTML="";
+    const card=buildCard(guest); holder.appendChild(card);
+    fitInner(card);
+    if(!libOk("html2canvas")){ toast("html2canvas 未加载，无法导出图片"); return null; }
+    if(state.settings.showQR && state.settings.qrContent) await new Promise(r=>setTimeout(r,150));
+    const canvas=await html2canvas(card,{scale:scale||2,backgroundColor:"#0b0d12",useCORS:true,logging:false});
+    return canvas;
+  }
+
+  async function exportPngOne(){
+    const cv=await cardToCanvas(state.guests[currentIndex],2);
+    if(!cv) return;
+    cv.toBlob(b=>download(b,(state.guests[currentIndex].name||"invitation")+".png"));
+    toast("已导出当前图片");
+  }
+
+  /* pdfFit 已移除，PDF 直接铺满整页 */
+
+  async function exportPdfOne(){
+    if(!libOk("jspdf")){ toast("jsPDF 未加载"); return; }
+    const cv=await cardToCanvas(state.guests[currentIndex],2); if(!cv) return;
+    const {jsPDF}=window.jspdf;
+    const pdf=new jsPDF("p","mm","a4");
+    const pw=pdf.internal.pageSize.getWidth(), ph=pdf.internal.pageSize.getHeight();
+    pdf.addImage(cv.toDataURL("image/jpeg",0.95),"JPEG",0,0,pw,ph);
+    pdf.save((state.guests[currentIndex].name||"invitation")+".pdf");
+    toast("已导出当前 PDF");
+  }
+
+  async function exportPdfAll(){
+    if(!libOk("jspdf")){ toast("jsPDF 未加载"); return; }
+    if(state.guests.length===0){ toast("名单为空"); return; }
+    const {jsPDF}=window.jspdf;
+    const pdf=new jsPDF("p","mm","a4");
+    toast("正在生成 PDF（"+state.guests.length+" 份）…");
+    for(let i=0;i<state.guests.length;i++){
+      const cv=await cardToCanvas(state.guests[i],2);
+      if(!cv){ continue; }
+      if(i>0) pdf.addPage();
+      const pw=pdf.internal.pageSize.getWidth(), ph=pdf.internal.pageSize.getHeight();
+      pdf.addImage(cv.toDataURL("image/jpeg",0.95),"JPEG",0,0,pw,ph);
+    }
+    pdf.save("邀请函_全部_"+state.guests.length+"份.pdf");
+    toast("已导出全部 PDF");
+  }
+
+  async function exportZipAll(){
+    if(!libOk("JSZip")){ toast("JSZip 未加载"); return; }
+    if(state.guests.length===0){ toast("名单为空"); return; }
+    const zip=new JSZip();
+    toast("正在打包图片（"+state.guests.length+" 份）…");
+    for(let i=0;i<state.guests.length;i++){
+      const cv=await cardToCanvas(state.guests[i],2); if(!cv) continue;
+      const data=await new Promise(res=>cv.toBlob(res,"image/png"));
+      zip.file((i+1)+"_"+(state.guests[i].name||"guest")+".png",data);
+    }
+    const blob=await zip.generateAsync({type:"blob"});
+    download(blob,"邀请函_图片_"+state.guests.length+"份.zip");
+    toast("已导出 ZIP");
+  }
+
+  /* 打印功能已移除 */
+
+  // ============ Excel / CSV ============
+  function importExcelFile(file){
+    if(!libOk("XLSX")){ toast("XLSX 库未加载，无法导入"); return; }
+    const reader=new FileReader();
+    reader.onload=e=>{
+      try{
+        const wb=XLSX.read(e.target.result,{type:"array"});
+        const ws=wb.Sheets[wb.SheetNames[0]];
+        const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:""});
+        if(rows.length<1){ toast("文件为空"); return; }
+        const header=rows[0].map(x=>String(x).trim()).filter(x=>x);
+        state.fields=header;
+        state.guests=rows.slice(1).filter(r=>r.some(c=>String(c).trim()!=="")).map(r=>{
+          const o={}; header.forEach((h,i)=>o[h]=String(r[i]??"").trim()); return o;
+        });
+        syncStateToForm(); renderGuestTable(); renderFields(); renderAll(); saveLocal();
+        toast("已导入 "+state.guests.length+" 位宾客");
+      }catch(err){ toast("导入失败："+err.message); }
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  function exportGuests(){
+    if(state.guests.length===0){ toast("名单为空"); return; }
+    let csv=state.fields.join(",")+"\n";
+    state.guests.forEach(g=>{ csv+=state.fields.map(f=>'"'+(g[f]||"").replace(/"/g,'""')+'"').join(",")+"\n"; });
+    download(new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8"}),"宾客名单.csv");
+    toast("已导出名单 CSV");
+  }
+
+  // ============ 项目存读 ============
+  function saveProject(){
+    download(new Blob([JSON.stringify(state)],{type:"application/json"}),"邀请函项目.json");
+    toast("已保存项目文件");
+  }
+  function loadProjectFile(file){
+    const reader=new FileReader();
+    reader.onload=e=>{
+      try{
+        state=JSON.parse(e.target.result);
+        if(!state.settings) state.settings=DEFAULTS.settings;
+        if(!state.fields) state.fields=DEFAULTS.fields;
+        if(!state.guests) state.guests=[];
+        currentIndex=0;
+        syncStateToForm(); renderGuestTable(); renderFields(); renderAll(); saveLocal();
+        toast("已加载项目");
+      }catch(err){ toast("加载失败："+err.message); }
+    };
+    reader.readAsText(file);
+  }
+
+  // ============ 事件绑定 ============
+  function bind(){
+    // 表单输入实时同步
+    SET_INPUTS.forEach(id=>{
+      const el=$("#"+id);
+      if(el) el.addEventListener("input",()=>{ syncFormToState(); renderAll(); saveLocal(); });
+    });
+    $("#qrContent").addEventListener("input",updateQrHint);
+
+    // 模板切换
+    $$("#tplGrid .tpl").forEach(t=>t.addEventListener("click",()=>{
+      $$("#tplGrid .tpl").forEach(x=>x.classList.remove("active"));
+      t.classList.add("active"); syncFormToState(); renderAll(); saveLocal();
+    }));
+
+    // 比例切换
+    $$("#ratioSeg button").forEach(b=>b.addEventListener("click",()=>{
+      $$("#ratioSeg button").forEach(x=>x.classList.remove("active")); b.classList.add("active");
+      syncFormToState(); renderAll(); saveLocal();
+    }));
+
+    // 二维码开关
+    $$("#qrSeg button").forEach(b=>b.addEventListener("click",()=>{
+      $$("#qrSeg button").forEach(x=>x.classList.remove("active")); b.classList.add("active");
+      syncFormToState(); renderAll(); saveLocal();
+    }));
+
+    // 背景图
+    $("#bgImage").addEventListener("change",e=>{
+      const f=e.target.files[0]; if(!f) return;
+      const r=new FileReader();
+      r.onload=ev=>{ state.settings.bgImage=ev.target.result; syncFormToState(); renderAll(); saveLocal(); toast("背景图已设置"); };
+      r.readAsDataURL(f);
+    });
+    $("#clearBg").addEventListener("click",()=>{ state.settings.bgImage=""; $("#bgImage").value=""; renderAll(); saveLocal(); toast("已清除背景图"); });
+
+    // 自定义字段
+    $("#addField").addEventListener("click",()=>{
+      const v=$("#newField").value.trim(); if(!v) return;
+      if(state.fields.includes(v)){ toast("字段已存在"); return; }
+      state.fields.push(v); $("#newField").value="";
+      renderFields(); renderGuestTable(); renderAll(); saveLocal();
+    });
+    $("#fieldChips").addEventListener("click",e=>{
+      if(e.target.classList.contains("x")){
+        const f=e.target.dataset.f;
+        if(["name","title","relation"].includes(f)){ toast("默认字段不可删除"); return; }
+        state.fields=state.fields.filter(x=>x!==f);
+        state.guests.forEach(g=>delete g[f]);
+        renderFields(); renderGuestTable(); renderAll(); saveLocal();
+      }
+    });
+
+    // 宾客表格编辑
+    $("#guestTable").addEventListener("input",e=>{
+      const i=e.target.dataset.i, f=e.target.dataset.f;
+      if(i!=null && f){ state.guests[+i][f]=e.target.value; saveLocal(); renderPreview(); }
+    });
+    $("#guestTable").addEventListener("click",e=>{
+      if(e.target.classList.contains("del")){
+        state.guests.splice(+e.target.dataset.i,1);
+        renderGuestTable(); renderAll(); saveLocal();
+      }
+    });
+    $("#addGuest").addEventListener("click",()=>{
+      const o={}; state.fields.forEach(f=>o[f]=""); state.guests.push(o);
+      renderGuestTable(); renderAll(); saveLocal();
+    });
+    $("#clearGuests").addEventListener("click",()=>{
+      if(confirm("确定清空全部宾客名单？")){ state.guests=[]; renderGuestTable(); renderAll(); saveLocal(); }
+    });
+    $("#importExcel").addEventListener("click",()=>$("#excelFile").click());
+    $("#excelFile").addEventListener("change",e=>{ if(e.target.files[0]) importExcelFile(e.target.files[0]); e.target.value=""; });
+
+    // 批量粘贴
+    $("#applyBulk").addEventListener("click",()=>{
+      const txt=$("#bulkText").value.trim(); if(!txt){ toast("请先粘贴数据"); return; }
+      const lines=txt.split(/\r?\n/).filter(l=>l.trim());
+      const newGuests=[];
+      lines.forEach(line=>{
+        const parts=line.includes("\t")?line.split("\t"):line.split(/[,，]/);
+        const o={}; state.fields.forEach((f,i)=>o[f]=(parts[i]||"").trim());
+        newGuests.push(o);
+      });
+      state.guests=newGuests;
+      renderGuestTable(); renderAll(); saveLocal();
+      toast("已应用 "+newGuests.length+" 位宾客");
+    });
+
+    // 预览翻页
+    $("#prevGuest").addEventListener("click",()=>{ if(currentIndex>0){currentIndex--;renderPreview();} });
+    $("#nextGuest").addEventListener("click",()=>{ if(currentIndex<state.guests.length-1){currentIndex++;renderPreview();} });
+
+    /* 预览模式切换已移除 */
+
+    // 顶部操作按钮
+    $("#btnSample").addEventListener("click",()=>{
+      if(state.guests.length && !confirm("用示例数据覆盖当前名单？")) return;
+      state=structuredClone(DEFAULTS); currentIndex=0;
+      syncStateToForm(); renderGuestTable(); renderFields(); renderAll(); saveLocal();
+      toast("已载入示例数据");
+    });
+    $("#btnSaveProj").addEventListener("click",saveProject);
+    $("#btnLoadProj").addEventListener("click",()=>{
+      const inp=document.createElement("input"); inp.type="file"; inp.accept=".json";
+      inp.onchange=e=>{ if(e.target.files[0]) loadProjectFile(e.target.files[0]); };
+      inp.click();
+    });
+    $("#btnExportGuests").addEventListener("click",exportGuests);
+    $("#btnPdfAll").addEventListener("click",exportPdfAll);
+    $("#btnZipAll").addEventListener("click",exportZipAll);
+    $("#btnPdfOne").addEventListener("click",exportPdfOne);
+    $("#btnPngOne").addEventListener("click",exportPngOne);
+
+    // 自适应缩放
+    window.addEventListener("resize",()=>{ fitPreview(); });
+  }
+
+  // ============ 初始化 ============
+  function init(){
+    loadLocal();
+    syncStateToForm();
+    updateQrHint();
+    renderFields();
+    renderGuestTable();
+    renderAll();
+    bind();
+    checkLibs();
+  }
+  init();
+})();
+</script>
+</body>
+</html>

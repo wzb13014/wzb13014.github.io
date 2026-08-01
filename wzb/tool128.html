@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🐾 动物认知乐园 · 综合学习系统</title>
+<style>
+  :root{
+    --bg:#f4f7fb; --bg2:#e9eff8; --card:#ffffff; --card2:#f8fafc;
+    --text:#1f2a44; --muted:#6b7a99; --line:#e2e8f0;
+    --primary:#4f7cff; --primary-d:#3b63e0; --accent:#ff8fab; --accent2:#ffd166;
+    --ok:#2bb673; --bad:#ef5b6b; --shadow:0 8px 28px rgba(31,42,68,.10);
+    --radius:18px;
+  }
+  [data-theme="dark"]{
+    --bg:#11162a; --bg2:#0c1120; --card:#1b2238; --card2:#222b46;
+    --text:#eef2ff; --muted:#9aa6c7; --line:#2c3656;
+    --primary:#6e92ff; --primary-d:#5577f0; --accent:#ff9ec0; --accent2:#ffd87a;
+    --ok:#43d18a; --bad:#ff6b7d; --shadow:0 8px 28px rgba(0,0,0,.35);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  body{
+    font-family:"PingFang SC","Microsoft YaHei","Segoe UI",system-ui,sans-serif;
+    background:linear-gradient(160deg,var(--bg),var(--bg2));
+    color:var(--text);min-height:100vh;transition:background .4s,color .4s;
+    padding-bottom:90px;
+  }
+  /* Header */
+  header{
+    position:sticky;top:0;z-index:50;backdrop-filter:blur(12px);
+    background:color-mix(in srgb,var(--card) 82%,transparent);
+    border-bottom:1px solid var(--line);padding:12px 16px;
+  }
+  .topbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;max-width:1320px;margin:0 auto;}
+  .logo{font-size:22px;font-weight:800;display:flex;align-items:center;gap:8px;}
+  .logo .badge{font-size:13px;font-weight:600;color:var(--primary);
+    background:color-mix(in srgb,var(--primary) 14%,transparent);padding:3px 10px;border-radius:999px;}
+  .spacer{flex:1}
+  .iconbtn{
+    border:1px solid var(--line);background:var(--card);color:var(--text);
+    width:42px;height:42px;border-radius:12px;font-size:18px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;transition:.2s;
+  }
+  .iconbtn:hover{transform:translateY(-2px);border-color:var(--primary);}
+  .search{
+    flex:1;min-width:180px;display:flex;align-items:center;gap:8px;
+    background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:0 12px;height:42px;
+  }
+  .search input{border:none;background:transparent;outline:none;color:var(--text);flex:1;font-size:15px;}
+  /* Tabs */
+  nav.tabs{display:flex;gap:6px;overflow-x:auto;padding:10px 16px 4px;max-width:1320px;margin:0 auto;
+    scrollbar-width:none;-ms-overflow-style:none;}
+  nav.tabs::-webkit-scrollbar{display:none;}
+  .tab{
+    flex:0 0 auto;padding:9px 16px;border-radius:999px;font-size:14px;font-weight:600;cursor:pointer;
+    border:1px solid var(--line);background:var(--card);color:var(--muted);white-space:nowrap;transition:.2s;
+  }
+  .tab.active{background:var(--primary);color:#fff;border-color:var(--primary);box-shadow:0 6px 16px rgba(79,124,255,.35)}
+  /* Main */
+  main{max-width:1320px;margin:0 auto;padding:18px 16px;}
+  .section{display:none;animation:fade .35s ease;}
+  .section.active{display:block;}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  h2.sec-title{font-size:20px;margin-bottom:4px;display:flex;align-items:center;gap:8px;}
+  .sec-sub{color:var(--muted);font-size:14px;margin-bottom:16px;}
+  /* Filter chips */
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
+  .chip{
+    padding:7px 14px;border-radius:999px;font-size:13.5px;font-weight:600;cursor:pointer;
+    border:1px solid var(--line);background:var(--card);color:var(--muted);display:flex;align-items:center;gap:6px;transition:.2s;
+  }
+  .chip.active{background:var(--accent2);color:#5a3d00;border-color:var(--accent2);}
+  .chip:hover{transform:translateY(-2px);}
+  /* Grid */
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;}
+  .acard{
+    --c:210;--c2:200;
+    background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    padding:14px 12px;text-align:center;cursor:pointer;position:relative;transition:.22s;box-shadow:var(--shadow);
+    -webkit-transform:translateZ(0);transform:translateZ(0);backface-visibility:hidden;will-change:transform;
+  }
+  .acard:hover{transform:translateY(-5px) scale(1.02) translateZ(0);border-color:hsl(var(--c) 65% 55%);}
+  .acard .tile{
+    background:linear-gradient(140deg,hsl(var(--c) 78% 87%),hsl(var(--c2) 72% 79%));
+    border-radius:14px;padding:14px 0;margin-bottom:10px;position:relative;overflow:hidden;
+    -webkit-transform:translateZ(0);transform:translateZ(0);z-index:1;
+  }
+  [data-theme="dark"] .acard .tile{background:linear-gradient(140deg,hsl(var(--c) 52% 33%),hsl(var(--c2) 48% 26%));}
+  .acard .tile .emoji{position:relative;z-index:1;}
+  .pat{position:absolute;inset:0;width:100%;height:100%;opacity:.20;pointer-events:none;color:hsl(var(--c) 60% 38%);border-radius:14px;}
+  [data-theme="dark"] .pat{color:hsl(var(--c) 72% 72%);opacity:.22;}
+  .hero-pat{position:absolute;inset:0;z-index:0;opacity:.16;pointer-events:none;color:hsl(var(--c) 60% 32%);border-radius:22px 22px 0 0;overflow:hidden;}
+  [data-theme="dark"] .hero-pat{color:hsl(var(--c) 72% 76%);opacity:.20;}
+  .flash-pat{position:absolute;inset:0;z-index:0;opacity:.18;pointer-events:none;color:hsl(var(--c) 60% 35%);border-radius:18px;overflow:hidden;}
+  [data-theme="dark"] .flash-pat{color:hsl(var(--c) 72% 74%);opacity:.22;}
+  .modal .hero>*,.flash-front>*{position:relative;z-index:1;}
+  .acard .emoji{font-size:54px;line-height:1;}
+  .glyph-wrap{display:inline-flex;align-items:center;justify-content:center;line-height:1;}
+  .glyph-wrap svg{width:54px;height:54px;display:block;}
+  .acard .tile .glyph-wrap svg{width:58px;height:58px;}
+  .modal .hero .big .glyph-wrap svg{width:96px;height:96px;}
+  .flash-face .glyph-wrap svg{width:104px;height:104px;}
+  .q-emoji .glyph-wrap svg{width:96px;height:96px;}
+  .match-card .e .glyph-wrap svg{width:30px;height:30px;}
+  .acard .nm{font-weight:700;margin-top:2px;font-size:15px;}
+  .acard .en{color:var(--muted);font-size:12px;margin-top:2px;}
+  .acard .fav{
+    position:absolute;top:8px;right:8px;font-size:18px;cursor:pointer;background:var(--card2);
+    width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    border:1px solid var(--line);transition:.2s;z-index:2;
+  }
+  .acard .fav.on{color:var(--accent);background:color-mix(in srgb,var(--accent) 18%,transparent);border-color:var(--accent);}
+  .cat-tag{position:absolute;top:8px;left:8px;z-index:3;font-size:11px;padding:2px 8px;border-radius:999px;
+    background:color-mix(in srgb,var(--primary) 14%,transparent);color:var(--primary);font-weight:600;}
+  .empty{text-align:center;color:var(--muted);padding:50px 10px;font-size:15px;grid-column:1/-1;}
+  /* Modal */
+  .modal-bg{position:fixed;inset:0;background:rgba(10,15,30,.55);backdrop-filter:blur(4px);
+    display:none;align-items:center;justify-content:center;z-index:100;padding:16px;
+    scrollbar-width:none;}
+  .modal-bg::-webkit-scrollbar{display:none;}
+  .modal-bg.show{display:flex;}
+  .modal{max-width:560px;width:100%;max-height:90vh;overflow:auto;background:var(--card);
+    border-radius:22px;box-shadow:var(--shadow);padding:0;animation:pop .3s;scrollbar-width:none;}
+  .modal::-webkit-scrollbar{display:none;}
+  @keyframes pop{from{transform:scale(.92);opacity:0}to{transform:scale(1);opacity:1}}
+  .modal .hero{background:linear-gradient(135deg,hsl(var(--c,210) 70% 82%),hsl(var(--c2,200) 65% 74%));
+    padding:28px 20px;text-align:center;border-radius:22px 22px 0 0;position:relative;}
+  [data-theme="dark"] .modal .hero{background:linear-gradient(135deg,hsl(var(--c,210) 55% 35%),hsl(var(--c2,200) 50% 28%));}
+  .modal .hero .big{font-size:90px;line-height:1;filter:drop-shadow(0 8px 10px rgba(0,0,0,.18));}
+  .modal .hero .h-nm{font-size:24px;font-weight:800;margin-top:8px;}
+  .modal .hero .h-en{color:var(--muted);font-size:14px;}
+  .modal .hero .h-sci{color:var(--muted);font-size:12px;font-style:italic;margin-top:2px;}
+  .modal .close{position:absolute;top:12px;right:12px;background:var(--card);border:none;width:38px;height:38px;border-radius:50%;font-size:20px;cursor:pointer;box-shadow:var(--shadow);z-index:10;display:flex;align-items:center;justify-content:center;color:var(--text);}
+  .modal .close:hover{transform:scale(1.1);border:1px solid var(--bad);color:var(--bad);}
+  .modal .body{padding:20px;}
+  .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;}
+  .info-cell{background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:10px 12px;}
+  .info-cell .k{font-size:11px;color:var(--muted);font-weight:600;}
+  .info-cell .v{font-size:14px;font-weight:600;margin-top:2px;}
+  .facts{list-style:none;display:flex;flex-direction:column;gap:8px;}
+  .facts li{background:var(--card2);border-left:4px solid var(--accent2);padding:9px 12px;border-radius:8px;font-size:13.5px;line-height:1.5;}
+  .modal-actions{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;}
+  .btn{flex:1;min-width:120px;padding:11px;border-radius:12px;border:none;font-weight:700;font-size:14px;cursor:pointer;transition:.2s;display:flex;align-items:center;justify-content:center;gap:6px;}
+  .btn.primary{background:var(--primary);color:#fff;}
+  .btn.primary:hover{background:var(--primary-d);}
+  .btn.ghost{background:var(--card2);color:var(--text);border:1px solid var(--line);}
+  .btn.ghost:hover{border-color:var(--primary);}
+  .status-pill{display:inline-block;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:700;}
+  .st-LC{background:#dff5e6;color:#1d7a45;}
+  .st-NT{background:#fff3d6;color:#9a6b00;}
+  .st-VU{background:#ffe6d6;color:#bf5a1f;}
+  .st-EN{background:#ffd9dd;color:#b3323f;}
+  .st-CR{background:#ffccd2;color:#a30010;}
+  .st-DD{background:#e7e9ef;color:#555;}
+  /* Flashcard */
+  .flash-wrap{display:flex;flex-direction:column;align-items:center;gap:16px;margin-top:10px;}
+  .flash{width:min(440px,92vw);height:340px;perspective:1200px;cursor:pointer;}
+  .flash-inner{position:relative;width:100%;height:100%;transition:transform .6s;transform-style:preserve-3d;}
+  .flash.flip .flash-inner{transform:rotateY(180deg);}
+  .flash-face{position:absolute;inset:0;backface-visibility:hidden;border-radius:22px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;text-align:center;
+    box-shadow:var(--shadow);border:1px solid var(--line);}
+  .flash-front{background:linear-gradient(160deg,hsl(var(--c,210) 80% 88%),hsl(var(--c2,200) 75% 80%));}
+  [data-theme="dark"] .flash-front{background:linear-gradient(160deg,hsl(var(--c,210) 50% 30%),hsl(var(--c2,200) 45% 24%));}
+  .flash-front .e{font-size:120px;filter:drop-shadow(0 8px 12px rgba(0,0,0,.15));}
+  .flash-front .en{font-size:26px;font-weight:800;margin-top:10px;}
+  .flash-front .hint{color:var(--muted);font-size:13px;margin-top:14px;}
+  .flash-back{background:var(--card);transform:rotateY(180deg);}
+  .flash-back .nm{font-size:30px;font-weight:800;}
+  .flash-back .r{font-size:13px;color:var(--muted);margin:8px 0 14px;}
+  .flash-back .b{font-size:13.5px;line-height:1.55;max-width:330px;}
+  .flash-ctrls{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;}
+  .flash-meta{color:var(--muted);font-size:13px;}
+  /* Quiz */
+  .quiz-box{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:24px;box-shadow:var(--shadow);max-width:640px;margin:0 auto;}
+  .quiz-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;font-size:14px;color:var(--muted);}
+  .q-emoji{font-size:96px;text-align:center;filter:drop-shadow(0 8px 12px rgba(0,0,0,.15));}
+  .q-text{text-align:center;font-size:17px;font-weight:700;margin:14px 0 18px;}
+  .q-opts{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .q-opt{padding:14px;border:1px solid var(--line);border-radius:14px;background:var(--card2);cursor:pointer;font-size:15px;font-weight:600;transition:.2s;text-align:center;}
+  .q-opt:hover{transform:translateY(-2px);border-color:var(--primary);}
+  .q-opt.correct{background:color-mix(in srgb,var(--ok) 22%,transparent);border-color:var(--ok);color:var(--ok);}
+  .q-opt.wrong{background:color-mix(in srgb,var(--bad) 22%,transparent);border-color:var(--bad);color:var(--bad);}
+  .q-opt:disabled{cursor:default;}
+  .quiz-feedback{margin-top:16px;text-align:center;font-weight:700;min-height:24px;font-size:15px;}
+  .quiz-end{text-align:center;padding:20px;}
+  .quiz-end .score{font-size:54px;font-weight:900;color:var(--primary);}
+  /* Matching */
+  .match-area{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  .match-col{display:flex;flex-direction:column;gap:10px;}
+  .match-card{padding:14px;border-radius:14px;border:2px solid var(--line);background:var(--card);cursor:pointer;font-weight:700;font-size:15px;transition:.2s;text-align:center;display:flex;align-items:center;justify-content:center;gap:8px;min-height:60px;}
+  .match-card .e{font-size:30px;}
+  .match-card.sel{border-color:var(--primary);background:color-mix(in srgb,var(--primary) 12%,transparent);transform:scale(1.03);}
+  .match-card.ok{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 18%,transparent);color:var(--ok);}
+  .match-card.bad{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 18%,transparent);color:var(--bad);animation:shake .4s;}
+  @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+  .match-card.done{opacity:.45;pointer-events:none;}
+  @media(max-width:560px){.match-area{grid-template-columns:1fr;}}
+  /* Stats */
+  .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;}
+  .stat-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:20px;text-align:center;box-shadow:var(--shadow);}
+  .stat-card .n{font-size:38px;font-weight:900;color:var(--primary);}
+  .stat-card .l{color:var(--muted);font-size:13px;margin-top:4px;}
+  .ring-wrap{display:flex;align-items:center;gap:18px;flex-wrap:wrap;justify-content:center;margin-top:10px;}
+  .progress-list{margin-top:18px;display:flex;flex-direction:column;gap:10px;}
+  .pbar{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;}
+  .pbar .row{display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;}
+  .pbar .track{height:9px;background:var(--card2);border-radius:999px;overflow:hidden;}
+  .pbar .fill{height:100%;background:linear-gradient(90deg,var(--primary),var(--accent));border-radius:999px;transition:width .6s;}
+  /* Toast */
+  .toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--text);color:var(--bg);
+    padding:10px 20px;border-radius:999px;font-size:14px;font-weight:600;opacity:0;pointer-events:none;transition:.3s;z-index:200;}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  @media(max-width:680px){
+    .topbar .badge{display:none;}
+    .q-opts{grid-template-columns:1fr;}
+  }
+  .footer{text-align:center;color:var(--muted);font-size:12px;margin:30px 0 10px;}
+</style>
+</head>
+<body>
+<header>
+  <div class="topbar">
+    <div class="logo">🐾 动物认知乐园 <span class="badge">综合学习版</span></div>
+    <div class="search">
+      <span>🔍</span>
+      <input id="searchInput" type="text" placeholder="搜索动物名称 / 英文…" autocomplete="off">
+    </div>
+    <div class="spacer"></div>
+    <button class="iconbtn" id="soundBtn" title="发音开关">🔊</button>
+    <button class="iconbtn" id="langBtn" title="切换发音语言">中</button>
+    <button class="iconbtn" id="themeBtn" title="切换主题">🌙</button>
+  </div>
+</header>
+
+<nav class="tabs" id="tabs">
+  <div class="tab active" data-sec="browse">🌍 识动物</div>
+  <div class="tab" data-sec="flash">🃏 闪卡学习</div>
+  <div class="tab" data-sec="quiz">🎯 闯关答题</div>
+  <div class="tab" data-sec="match">🔗 配对游戏</div>
+  <div class="tab" data-sec="fav">❤️ 我的收藏</div>
+  <div class="tab" data-sec="wrong">📕 错题本</div>
+  <div class="tab" data-sec="stats">📊 学习统计</div>
+</nav>
+
+<main>
+  <!-- BROWSE -->
+  <section class="section active" id="sec-browse">
+    <h2 class="sec-title">🌍 认识动物</h2>
+    <p class="sec-sub">点击卡片查看详情，可朗读名称、收藏、了解栖息地/食性/趣闻。共 <b id="browseCount">0</b> 种动物。</p>
+    <div class="chips" id="catChips"></div>
+    <div class="grid" id="browseGrid"></div>
+  </section>
+
+  <!-- FLASH -->
+  <section class="section" id="sec-flash">
+    <h2 class="sec-title">🃏 闪卡学习</h2>
+    <p class="sec-sub">点击卡片翻面，正面看图片与英文名，背面看中文名与知识；背面可单独朗读中文 / 英文。</p>
+    <div class="flash-wrap">
+      <div class="flash" id="flashCard"><div class="flash-inner">
+        <div class="flash-face flash-front"><div class="flash-pat" id="flashPat"></div><div class="e" id="flashEmoji">🐶</div><div class="en" id="flashEn">Dog</div><div class="hint">👆 点击卡片翻面</div></div>
+        <div class="flash-face flash-back">
+          <div class="nm" id="flashNm">狗</div>
+          <div class="r" id="flashRole"></div>
+          <div class="b" id="flashBody"></div>
+          <div class="flash-ctrls" style="margin-top:16px;">
+            <button class="btn ghost" id="flashSpeakZh" style="min-width:120px;">🔊 读中文</button>
+            <button class="btn ghost" id="flashSpeakEn" style="min-width:120px;">🔊 Read EN</button>
+          </div>
+        </div>
+      </div></div>
+      <div class="flash-meta" id="flashMeta"></div>
+      <div class="flash-ctrls">
+        <button class="btn ghost" id="flashPrev">⬅️ 上一张</button>
+        <button class="btn ghost" id="flashFlip">🔄 翻面</button>
+        <button class="btn ghost" id="flashRand">🎲 随机</button>
+        <button class="btn ghost" id="flashNext">下一张 ➡️</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- QUIZ -->
+  <section class="section" id="sec-quiz">
+    <h2 class="sec-title">🎯 闯关答题</h2>
+    <p class="sec-sub">看图 / 读提示 / 听读音，选出正确答案。共 100 题，新增听音模式与错题本，记录连对与最佳成绩。</p>
+    <div class="chips" id="quizModes" style="margin-bottom:14px;">
+      <div class="chip active" data-mode="mix">🔀 混合</div>
+      <div class="chip" data-mode="pic">🖼️ 看图</div>
+      <div class="chip" data-mode="hint">💡 提示</div>
+      <div class="chip" data-mode="listen">🔊 听音</div>
+    </div>
+    <div class="quiz-box" id="quizBox"></div>
+  </section>
+
+  <!-- MATCH -->
+  <section class="section" id="sec-match">
+    <h2 class="sec-title">🔗 配对游戏</h2>
+    <p class="sec-sub">左边点动物，右边点对应中文名，全部配对成功即过关。</p>
+    <div style="margin-bottom:14px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+      <button class="btn ghost" id="matchNew" style="flex:0 0 auto;min-width:120px;">🎲 换一批</button>
+      <span class="flash-meta" id="matchInfo"></span>
+    </div>
+    <div class="match-area" id="matchArea"></div>
+  </section>
+
+  <!-- FAV -->
+  <section class="section" id="sec-fav">
+    <h2 class="sec-title">❤️ 我的收藏</h2>
+    <p class="sec-sub">你收藏的动物都在这里，方便复习巩固。</p>
+    <div class="grid" id="favGrid"></div>
+  </section>
+
+  <!-- WRONG -->
+  <section class="section" id="sec-wrong">
+    <h2 class="sec-title">📕 错题本</h2>
+    <p class="sec-sub">闯关中答错的动物会自动收集到这里，方便针对性复习巩固。</p>
+    <div style="margin-bottom:14px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+      <button class="btn ghost" id="wrongRedo" style="flex:0 0 auto;min-width:120px;">🔄 重做错题</button>
+      <span class="flash-meta" id="wrongInfo"></span>
+    </div>
+    <div class="grid" id="wrongGrid"></div>
+  </section>
+
+  <!-- STATS -->
+  <section class="section" id="sec-stats">
+    <h2 class="sec-title">📊 学习统计</h2>
+    <p class="sec-sub">记录你的学习足迹，坚持每天来认识新动物吧！</p>
+    <div class="stat-grid">
+      <div class="stat-card"><div class="n" id="stTotal">0</div><div class="l">动物总数</div></div>
+      <div class="stat-card"><div class="n" id="stLearned">0</div><div class="l">已学习</div></div>
+      <div class="stat-card"><div class="n" id="stFav">0</div><div class="l">收藏数</div></div>
+      <div class="stat-card"><div class="n" id="stBest">0</div><div class="l">答题最佳</div></div>
+      <div class="stat-card"><div class="n" id="stWrong">0</div><div class="l">错题库</div></div>
+      <div class="stat-card"><div class="n" id="stStreak">0</div><div class="l">连续打卡(天)</div></div>
+    </div>
+    <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+      <button class="btn primary" id="checkinBtn" style="flex:0 0 auto;min-width:140px;">📅 今日打卡</button>
+      <span class="flash-meta" id="checkinInfo"></span>
+    </div>
+    <div class="ring-wrap">
+      <svg width="160" height="160" viewBox="0 0 160 160">
+        <circle cx="80" cy="80" r="68" fill="none" stroke="var(--line)" stroke-width="16"/>
+        <circle id="ringLearn" cx="80" cy="80" r="68" fill="none" stroke="var(--primary)" stroke-width="16"
+                stroke-linecap="round" stroke-dasharray="427" stroke-dashoffset="427" transform="rotate(-90 80 80)"/>
+        <text id="ringText" x="80" y="86" text-anchor="middle" font-size="26" font-weight="800" fill="var(--text)">0%</text>
+      </svg>
+      <div class="progress-list" id="catProgress" style="flex:1;min-width:240px;"></div>
+    </div>
+    <div class="footer">🐾 数据保存在本机浏览器，不会上传。多多学习，成为动物小专家！</div>
+  </section>
+</main>
+
+<div class="modal-bg" id="modalBg">
+  <div class="modal" id="modal">
+      <div class="hero" id="modalHero">
+        <div class="hero-pat" id="modalHeroPat"></div>
+        <button class="close" id="modalClose" type="button" aria-label="关闭">✕</button>
+      <div class="big" id="mEmoji">🐶</div>
+      <div class="h-nm" id="mNm">狗</div>
+      <div class="h-en" id="mEn">Dog</div>
+      <div class="h-sci" id="mSci">Canis lupus familiaris</div>
+    </div>
+    <div class="body">
+      <div class="info-grid">
+        <div class="info-cell"><div class="k">类别</div><div class="v" id="mCat">哺乳动物</div></div>
+        <div class="info-cell"><div class="k">栖息地</div><div class="v" id="mHab">与人类同住</div></div>
+        <div class="info-cell"><div class="k">食性</div><div class="v" id="mDiet">杂食</div></div>
+        <div class="info-cell"><div class="k">寿命</div><div class="v" id="mLife">10-15 年</div></div>
+        <div class="info-cell"><div class="k">体型</div><div class="v" id="mSize">肩高 25-60cm</div></div>
+        <div class="info-cell"><div class="k">保护级别</div><div class="v"><span class="status-pill st-DD" id="mStatus">家养</span></div></div>
+      </div>
+      <div class="info-cell" style="margin-bottom:14px;"><div class="k">叫声特点</div><div class="v" id="mSound" style="font-weight:500;"></div></div>
+      <ul class="facts" id="mFacts"></ul>
+      <div class="modal-actions">
+        <button class="btn primary" id="mSpeak">🔊 朗读名称</button>
+        <button class="btn ghost" id="mFav">❤️ 收藏</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============== 动物数据库 ============== */
+const CATEGORIES = [
+  {key:"all",name:"全部",icon:"🌍"},
+  {key:"哺乳动物",name:"哺乳动物",icon:"🐾"},
+  {key:"鸟类",name:"鸟类",icon:"🐦"},
+  {key:"爬行动物",name:"爬行动物",icon:"🦎"},
+  {key:"两栖动物",name:"两栖动物",icon:"🐸"},
+  {key:"鱼类",name:"鱼类",icon:"🐟"},
+  {key:"昆虫",name:"昆虫",icon:"🐛"},
+  {key:"海洋生物",name:"海洋生物",icon:"🌊"},
+];
+
+const ANIMALS = [  {id:1,emoji:"🐶",name:"狗",en:"Dog",sci:"Canis lupus familiaris",cat:"哺乳动物",hab:"与人类同住",diet:"杂食",life:"10-15 年",size:"肩高 25-60cm",status:"DD",sound:"汪汪叫，高兴时吠叫、摇尾。",facts:["人类最忠诚的朋友，已驯化上万年。","嗅觉极其灵敏，可协助搜救、导盲。","品种超过 300 种，体型差异巨大。"]},
+  {id:2,emoji:"🐱",name:"猫",en:"Cat",sci:"Felis catus",cat:"哺乳动物",hab:"家庭 / 城市",diet:"肉食",life:"12-18 年",size:"体长约 40-50cm",status:"DD",sound:"喵喵叫，警惕时发出嘶嘶声。",facts:["夜行性猎手，听力是人的 3 倍。","用呼噜声表达满足，也有助于自愈。","肉垫能无声行走，是天生的捕猎者。"]},
+  {id:3,emoji:"🦁",name:"狮子",en:"Lion",sci:"Panthera leo",cat:"哺乳动物",hab:"非洲草原",diet:"肉食",life:"10-14 年",size:"体长 1.7-2.5m",status:"VU",sound:"吼声洪亮，可传数公里。",facts:["唯一群居的猫科动物，由母狮狩猎。","雄狮的鬃毛越深代表越强壮。","被称为草原之王。"]},
+  {id:4,emoji:"🐯",name:"老虎",en:"Tiger",sci:"Panthera tigris",cat:"哺乳动物",hab:"森林 / 丛林",diet:"肉食",life:"10-15 年",size:"体长 2-3m",status:"EN",sound:"低沉的吼叫与呼噜。",facts:["最大的猫科动物，独居猎手。","条纹像指纹，每只都独一无二。","擅长游泳，喜欢水。"]},
+  {id:5,emoji:"🐼",name:"大熊猫",en:"Giant Panda",sci:"Ailuropoda melanoleuca",cat:"哺乳动物",hab:"中国高山竹林",diet:"植食(竹)",life:"20-30 年",size:"体长 1.2-1.8m",status:"VU",sound:"咩咩似的叫声、喷鼻。",facts:["几乎只吃竹子，每天进食 12 小时以上。","是中国国宝，象征和平。","幼崽极小，仅约 100 克。"]},
+  {id:6,emoji:"🐘",name:"大象",en:"Elephant",sci:"Loxodonta africana",cat:"哺乳动物",hab:"草原 / 森林",diet:"植食",life:"60-70 年",size:"肩高 3-4m",status:"EN",sound:"低频次声波，远距交流。",facts:["陆地上最大的动物。","记忆力超强，能记住水源多年。","用长鼻子喝水、抓物、打招呼。"]},
+  {id:7,emoji:"🦒",name:"长颈鹿",en:"Giraffe",sci:"Giraffa camelopardalis",cat:"哺乳动物",hab:"非洲稀树草原",diet:"植食(叶)",life:"20-25 年",size:"身高 4-6m",status:"VU",sound:"很少叫，发出低频哼声。",facts:["世界上最高的陆地动物。","脖子虽长，颈椎却和人类一样只有 7 块。","舌头长达 50cm，呈蓝紫色防晒。"]},
+  {id:8,emoji:"🐵",name:"猴子",en:"Monkey",sci:"Cercopithecidae",cat:"哺乳动物",hab:"森林 / 热带",diet:"杂食",life:"15-30 年",size:"体长 30-70cm",status:"LC",sound:"叽叽喳喳的叫唤。",facts:["灵长类，双手灵活会使用工具。","多数群居，有复杂的社会关系。","与人类基因相似度很高。"]},
+  {id:9,emoji:"🐰",name:"兔子",en:"Rabbit",sci:"Oryctolagus cuniculus",cat:"哺乳动物",hab:"草地 / 洞穴",diet:"植食",life:"8-12 年",size:"体长 30-45cm",status:"LC",sound:"磨牙、轻轻哼叫。",facts:["门牙终生生长，需不断啃咬。","耳朵可灵活转动听声辨位。","后腿强健，逃跑极快。"]},
+  {id:10,emoji:"🦓",name:"斑马",en:"Zebra",sci:"Equus quagga",cat:"哺乳动物",hab:"非洲草原",diet:"植食",life:"25 年",size:"体长 2-2.5m",status:"NT",sound:"类似马的嘶鸣。",facts:["黑白条纹独一无二，像条形码。","条纹可干扰蚊虫与捕食者。","常与角马、羚羊混群迁徙。"]},
+  {id:11,emoji:"🦘",name:"袋鼠",en:"Kangaroo",sci:"Macropus",cat:"哺乳动物",hab:"澳大利亚草原",diet:"植食",life:"6-8 年",size:"身高 1-2m",status:"LC",sound:"低吼与咳嗽声。",facts:["有育儿袋哺育幼崽。","靠强壮后腿跳跃移动，速度极快。","不会倒退行走。"]},
+  {id:12,emoji:"🐻",name:"熊",en:"Bear",sci:"Ursus",cat:"哺乳动物",hab:"森林 / 山区",diet:"杂食",life:"20-30 年",size:"体长 1.5-2.8m",status:"VU",sound:"低吼、咆哮。",facts:["多数冬季冬眠。","嗅觉极为灵敏。","熊猫虽属熊科却主要吃竹子。"]},
+  {id:13,emoji:"🦊",name:"狐狸",en:"Fox",sci:"Vulpes vulpes",cat:"哺乳动物",hab:"森林 / 农田",diet:"杂食",life:"3-5 年",size:"体长 50-90cm",status:"LC",sound:"尖细的嗥叫。",facts:["机警聪明，传说中的狡猾代表。","听觉极佳，可听地下老鼠。","尾巴蓬松，用于保暖与平衡。"]},
+  {id:14,emoji:"🐺",name:"狼",en:"Wolf",sci:"Canis lupus",cat:"哺乳动物",hab:"森林 / 苔原",diet:"肉食",life:"8-13 年",size:"体长 1-1.6m",status:"LC",sound:"悠长的嗥叫。",facts:["群居，有严格的等级制度。","是狗的野生祖先。","团队合作围猎大型猎物。"]},
+  {id:15,emoji:"🐋",name:"蓝鲸",en:"Blue Whale",sci:"Balaenoptera musculus",cat:"海洋生物",hab:"深海",diet:"肉食(磷虾)",life:"80-90 年",size:"体长 25-30m",status:"EN",sound:"低频鲸歌，可传百公里。",facts:["地球上现存最大的动物。","心脏重如一辆小汽车。","主食 tiny 磷虾，一天吃数吨。"]},
+  {id:16,emoji:"🐬",name:"海豚",en:"Dolphin",sci:"Delphinus",cat:"海洋生物",hab:"海洋",diet:"肉食(鱼)",life:"25-50 年",size:"体长 2-4m",status:"LC",sound:"哨声与咔哒声交流。",facts:["智商极高，有自我意识。","用回声定位看世界。","喜欢跃出水面玩耍。"]},
+  {id:17,emoji:"🦅",name:"鹰",en:"Eagle",sci:"Accipitridae",cat:"鸟类",hab:"高山 / 悬崖",diet:"肉食",life:"20-30 年",size:"翼展 1.5-2.3m",status:"LC",sound:"尖锐的啼叫。",facts:["视力是人类的 4-8 倍。","俯冲捕猎速度极快。","许多国家的象征(如美国)。"]},
+  {id:18,emoji:"🦉",name:"猫头鹰",en:"Owl",sci:"Strigiformes",cat:"鸟类",hab:"森林 / 农田",diet:"肉食(鼠)",life:"10-15 年",size:"体长 20-70cm",status:"LC",sound:"咕咕、呜呜的夜啼。",facts:["夜间捕猎，飞行几乎无声。","脖子可旋转 270 度。","面盘像雷达收集声音。"]},
+  {id:19,emoji:"🐧",name:"企鹅",en:"Penguin",sci:"Spheniscidae",cat:"鸟类",hab:"南极 / 南半球",diet:"肉食(鱼)",life:"15-20 年",size:"身高 40-120cm",status:"NT",sound:"呱呱似的鸣叫。",facts:["不会飞，却是游泳高手。","靠厚脂肪与羽毛御寒。","帝企鹅由爸爸孵蛋。"]},
+  {id:20,emoji:"🦜",name:"鹦鹉",en:"Parrot",sci:"Psittaciformes",cat:"鸟类",hab:"热带雨林",diet:"植食(果)",life:"30-60 年",size:"体长 10-100cm",status:"VU",sound:"会模仿人说话。",facts:["许多种类能学舌模仿声音。","脚爪对握，善于攀援。","部分种类极其长寿。"]},
+  {id:21,emoji:"🦚",name:"孔雀",en:"Peacock",sci:"Pavo",cat:"鸟类",hab:"南亚森林",diet:"杂食",life:"15-20 年",size:"体长 1-2.3m(含尾)",status:"LC",sound:"响亮的嘎嘎叫声。",facts:["雄孔雀开屏求偶极美。","尾羽上的眼斑可吓退天敌。","会飞但不常飞。"]},
+  {id:22,emoji:"🐔",name:"鸡",en:"Chicken",sci:"Gallus gallus",cat:"鸟类",hab:"农场 / 村庄",diet:"杂食",life:"5-10 年",size:"体长 30-40cm",status:"DD",sound:"咯咯哒、喔喔啼。",facts:["由野生原鸡驯化而来。","蚯蚓等小虫是美味。","其实也会像鸟一样飞。"]},
+  {id:23,emoji:"🦆",name:"鸭",en:"Duck",sci:"Anatidae",cat:"鸟类",hab:"湖泊 / 河流",diet:"杂食",life:"5-10 年",size:"体长 40-60cm",status:"LC",sound:"嘎嘎叫。",facts:["脚有蹼，擅长游泳。","羽毛防水，常梳理上油。","候鸟会随季节迁徙。"]},
+  {id:24,emoji:"🐍",name:"蛇",en:"Snake",sci:"Serpentes",cat:"爬行动物",hab:"多样生境",diet:"肉食",life:"10-25 年",size:"体长 0.3-7m",status:"LC",sound:"吐信嘶嘶声。",facts:["无四肢，靠鳞片爬行。","多数无毒，靠吞食猎物。","会蜕皮生长。"]},
+  {id:25,emoji:"🐢",name:"乌龟",en:"Turtle",sci:"Testudines",cat:"爬行动物",hab:"陆地 / 淡水",diet:"杂食",life:"50-150 年",size:"龟壳 10-80cm",status:"VU",sound:"通常安静。",facts:["背甲是天然盾牌。","部分种类极长寿。","体温随环境变化。"]},
+  {id:26,emoji:"🐊",name:"鳄鱼",en:"Crocodile",sci:"Crocodylidae",cat:"爬行动物",hab:"河流 / 湿地",diet:"肉食",life:"40-70 年",size:"体长 2-6m",status:"VU",sound:"低沉的吼叫。",facts:["活化石，存在超 2 亿年。","咬合力惊人。","用嘴巴育幼极为温柔。"]},
+  {id:27,emoji:"🦎",name:"蜥蜴",en:"Lizard",sci:"Lacertilia",cat:"爬行动物",hab:"多样生境",diet:"杂食",life:"5-20 年",size:"体长 5-300cm",status:"LC",sound:"多数静默。",facts:["壁虎能断尾逃生。","变色龙可随情绪变色。","多数卵生。"]},
+  {id:28,emoji:"🐸",name:"青蛙",en:"Frog",sci:"Anura",cat:"两栖动物",hab:"水边 / 湿地",diet:"肉食(虫)",life:"2-15 年",size:"体长 2-30cm",status:"LC",sound:"呱呱鸣叫。",facts:["受精卵变蝌蚪再变青蛙(变态)。","皮肤可呼吸，需湿润。","捕食靠长舌头闪电出击。"]},
+  {id:29,emoji:"🐟",name:"鱼",en:"Fish",sci:"Pisces",cat:"鱼类",hab:"淡水 / 海水",diet:"杂食",life:"1-20 年",size:"体长 1cm-数米",status:"LC",sound:"通常无声音。",facts:["用鳃呼吸水中氧气。","多数有侧线感知水流。","种类比任何脊椎动物都多。"]},
+  {id:30,emoji:"🦈",name:"鲨鱼",en:"Shark",sci:"Selachimorpha",cat:"鱼类",hab:"海洋",diet:"肉食",life:"20-70 年",size:"体长 1-12m",status:"VU",sound:"通常静默。",facts:["软骨鱼，无硬骨。","牙齿不断更替。","有些种类需不停游动呼吸。"]},
+  {id:31,emoji:"🐠",name:"金鱼",en:"Goldfish",sci:"Carassius auratus",cat:"鱼类",hab:"淡水",diet:"杂食",life:"10-20 年",size:"30-60cm(观赏种较小)",status:"DD",sound:"无。",facts:["由鲫鱼驯化培育。","记忆力远不止 7 秒。","体型会随空间长大。"]},
+  {id:32,emoji:"🐡",name:"河豚",en:"Pufferfish",sci:"Tetraodontidae",cat:"鱼类",hab:"海洋 / 河口",diet:"杂食",life:"5-10 年",size:"体长 10-60cm",status:"LC",sound:"磨牙声。",facts:["受惊会鼓成球带刺。","部分含剧毒(河豚毒素)。","是日料名菜(需专业处理)。"]},
+  {id:33,emoji:"🐝",name:"蜜蜂",en:"Bee",sci:"Apis",cat:"昆虫",hab:"花丛 / 蜂巢",diet:"植食(花蜜)",life:"数周-数年(蜂后)",size:"体长 1-2cm",status:"NT",sound:"嗡嗡振翅声。",facts:["采集花粉并传播授粉。","蜂后专职产卵。","舞蹈能告知同伴花源方向。"]},
+  {id:34,emoji:"🦋",name:"蝴蝶",en:"Butterfly",sci:"Lepidoptera",cat:"昆虫",hab:"花丛 / 林间",diet:"植食(花蜜)",life:"数天-数月",size:"翅展 2-30cm",status:"LC",sound:"静默。",facts:["幼虫是毛毛虫，化蛹成蝶。","靠翅膀鳞片显色。","迁徙距离可超数千公里。"]},
+  {id:35,emoji:"🐜",name:"蚂蚁",en:"Ant",sci:"Formicidae",cat:"昆虫",hab:"地下 / 地表",diet:"杂食",life:"数周-数十年(蚁后)",size:"体长 1-3cm",status:"LC",sound:"静默(用信息素交流)。",facts:["社会性极强，分工明确。","能举起自身体重数十倍。","地下巢穴如城市般复杂。"]},
+  {id:36,emoji:"🐞",name:"瓢虫",en:"Ladybug",sci:"Coccinellidae",cat:"昆虫",hab:"植物上",diet:"肉食(蚜虫)",life:"1-2 年",size:"体长 0.5-1cm",status:"LC",sound:"静默。",facts:["是农民的好朋友，吃蚜虫。","受惊会分泌难闻液体。","斑点数量与种类有关。"]},
+  {id:37,emoji:"🕷️",name:"蜘蛛",en:"Spider",sci:"Araneae",cat:"昆虫",hab:"角落 / 网",diet:"肉食(虫)",life:"1-20 年",size:"体长 0.5-10cm",status:"LC",sound:"静默。",facts:["吐丝结网捕猎。","有 8 条腿(属蛛形纲)。","多数对人无害。"]},
+  {id:38,emoji:"🐙",name:"章鱼",en:"Octopus",sci:"Octopoda",cat:"海洋生物",hab:"海底礁石",diet:"肉食(蟹虾)",life:"1-5 年",size:"腕展 10-300cm",status:"LC",sound:"静默。",facts:["有 8 条腕与 3 个心脏。","极聪明，能开瓶盖逃脱。","可喷墨掩护逃跑。"]},
+  {id:39,emoji:"🦀",name:"螃蟹",en:"Crab",sci:"Brachyura",cat:"海洋生物",hab:"海滩 / 浅海",diet:"杂食",life:"3-30 年",size:"甲宽 1-40cm",status:"LC",sound:"吐泡泡声。",facts:["横着走路。","能再生断落的钳子。","许多种类味道鲜美。"]},
+  {id:40,emoji:"🐳",name:"鲸鱼",en:"Whale",sci:"Cetacea",cat:"海洋生物",hab:"海洋",diet:"杂食",life:"40-100 年",size:"体长 4-30m",status:"VU",sound:"鲸歌悠扬。",facts:["哺乳动物，用肺呼吸。","须鲸滤食、齿鲸捕食。","集体鲸落滋养深海生态。"]},
+  {id:41,emoji:"🐴",name:"马",en:"Horse",sci:"Equus ferus caballus",cat:"哺乳动物",hab:"草原 / 农场",diet:"草食",life:"25-30 年",size:"肩高 1.4-1.8m",status:"LC",sound:"咴咴嘶鸣。",facts:["人类重要的役用与伴侣动物。","奔跑速度快，曾是主要交通工具。","有出色的记忆和方向感。"]},
+  {id:42,emoji:"🐮",name:"牛",en:"Cattle",sci:"Bos taurus",cat:"哺乳动物",hab:"农场",diet:"草食",life:"15-20 年",size:"体重 300-800kg",status:"LC",sound:"哞哞叫。",facts:["反刍动物，有四个胃。","提供肉、奶、皮等。","耕牛曾是最重要的劳力。"]},
+  {id:43,emoji:"🐑",name:"绵羊",en:"Sheep",sci:"Ovis aries",cat:"哺乳动物",hab:"草原",diet:"草食",life:"10-12 年",size:"体重 40-100kg",status:"LC",sound:"咩咩叫。",facts:["羊毛可织衣，保暖性好。","群居，有跟随头羊的习性。","部分品种产羊毛量极高。"]},
+  {id:44,emoji:"🐐",name:"山羊",en:"Goat",sci:"Capra aegagrus",cat:"哺乳动物",hab:"山地 / 农场",diet:"草食",life:"12-15 年",size:"体重 20-140kg",status:"LC",sound:"咩咩叫。",facts:["攀爬能力强，爱吃杂草。","羊奶营养丰富。","性格好奇又倔强。"]},
+  {id:45,emoji:"🐷",name:"猪",en:"Pig",sci:"Sus scrofa",cat:"哺乳动物",hab:"农场",diet:"杂食",life:"12-18 年",size:"体重 50-300kg",status:"LC",sound:"哼哼声。",facts:["其实很爱干净、也很聪明。","嗅觉灵敏，能找松露。","仔猪出生时就有整齐牙齿。"]},
+  {id:46,emoji:"🦌",name:"鹿",en:"Deer",sci:"Cervidae",cat:"哺乳动物",hab:"森林 / 草原",diet:"草食",life:"8-15 年",size:"体长 1-2m",status:"LC",sound:"呦呦鸣叫。",facts:["雄鹿长角，每年脱落再生。","奔跑灵活，善跳跃。","鹿茸是名贵中药材。"]},
+  {id:47,emoji:"🐫",name:"骆驼",en:"Camel",sci:"Camelus",cat:"哺乳动物",hab:"沙漠",diet:"草食",life:"40-50 年",size:"身高 1.8-2.1m",status:"LC",sound:"咕噜声。",facts:["驼峰储存脂肪而非水。","可数日不饮水长途跋涉。","眼皮与长睫毛抵御风沙。"]},
+  {id:48,emoji:"🦔",name:"刺猬",en:"Hedgehog",sci:"Erinaceus",cat:"哺乳动物",hab:"灌丛 / 花园",diet:"杂食",life:"3-7 年",size:"体长 15-30cm",status:"LC",sound:"轻声吱吱。",facts:["受惊蜷成带刺小球。","夜行性，吃害虫。","冬季冬眠度过寒冷。"]},
+  {id:49,emoji:"🐿️",name:"松鼠",en:"Squirrel",sci:"Sciuridae",cat:"哺乳动物",hab:"森林",diet:"杂食(坚果)",life:"5-10 年",size:"体长 15-30cm",status:"LC",sound:"叽叽叫。",facts:["门牙不断生长，爱啃坚果。","用尾巴平衡与保暖。","会埋藏食物过冬。"]},
+  {id:50,emoji:"🐭",name:"老鼠",en:"Mouse",sci:"Mus musculus",cat:"哺乳动物",hab:"人居 / 田野",diet:"杂食",life:"1-3 年",size:"体长 5-10cm",status:"LC",sound:"吱吱叫。",facts:["繁殖力极强。","门牙终生生长。","嗅觉与触觉极灵敏。"]},
+  {id:51,emoji:"🐹",name:"仓鼠",en:"Hamster",sci:"Cricetinae",cat:"哺乳动物",hab:"干旱草原",diet:"杂食",life:"2-3 年",size:"体长 5-15cm",status:"LC",sound:"轻声。",facts:["颊囊可储存食物。","夜间活动。","是很受欢迎的宠物。"]},
+  {id:52,emoji:"🦨",name:"臭鼬",en:"Skunk",sci:"Mephitidae",cat:"哺乳动物",hab:"森林 / 郊区",diet:"杂食",life:"3-7 年",size:"体长 40-70cm",status:"LC",sound:"嘶嘶声。",facts:["遇险喷射恶臭液体。","黑白条纹是警告色。","视力差但嗅觉好。"]},
+  {id:53,emoji:"🦝",name:"浣熊",en:"Raccoon",sci:"Procyon lotor",cat:"哺乳动物",hab:"森林 / 城市",diet:"杂食",life:"2-5 年",size:"体长 40-70cm",status:"LC",sound:"咕噜声。",facts:["前爪灵活如手。","爱在水边洗食物。","适应城市生活能力强。"]},
+  {id:54,emoji:"🦦",name:"水獭",en:"Otter",sci:"Lutrinae",cat:"哺乳动物",hab:"河流 / 海岸",diet:"肉食(鱼)",life:"10-15 年",size:"体长 60-120cm",status:"LC",sound:"吱吱声。",facts:["游泳健将，趾间有蹼。","会用石头砸开贝壳。","常仰面浮在水面休息。"]},
+  {id:55,emoji:"🐗",name:"野猪",en:"Wild Boar",sci:"Sus scrofa",cat:"哺乳动物",hab:"森林",diet:"杂食",life:"10-14 年",size:"体长 1-1.8m",status:"LC",sound:"呼噜声。",facts:["家猪的野生祖先。","獠牙锋利，护仔凶猛。","嗅觉极好，拱土觅食。"]},
+  {id:56,emoji:"🐆",name:"豹",en:"Leopard",sci:"Panthera pardus",cat:"哺乳动物",hab:"森林 / 草原",diet:"肉食",life:"12-17 年",size:"体长 1-2m",status:"VU",sound:"低吼。",facts:["能叼猎物上树储存。","斑点如玫瑰花纹。","独居夜行的大猫。"]},
+  {id:59,emoji:"🐨",name:"考拉",en:"Koala",sci:"Phascolarctos cinereus",cat:"哺乳动物",hab:"桉树林",diet:"植食(桉叶)",life:"13-18 年",size:"体长 60-85cm",status:"VU",sound:"低沉咕噜。",facts:["几乎只吃桉树叶。","每天睡 18 小时以上。","育儿袋朝后开口。"]},
+  {id:60,emoji:"🦥",name:"树懒",en:"Sloth",sci:"Bradypus",cat:"哺乳动物",hab:"热带雨林",diet:"植食",life:"20-30 年",size:"体长 50-75cm",status:"LC",sound:"轻声。",facts:["行动极慢以节省能量。","毛发中长有藻类显绿。","倒挂树上睡觉。"]},
+  {id:61,emoji:"🦛",name:"河马",en:"Hippopotamus",sci:"Hippopotamus amphibius",cat:"哺乳动物",hab:"河流 / 湖泊",diet:"草食",life:"40-50 年",size:"体长 3-5m",status:"VU",sound:"哼吼。",facts:["白天泡水解暑。","皮肤分泌红色血汗防晒。","陆地上最危险的动物之一。"]},
+  {id:62,emoji:"🦏",name:"犀牛",en:"Rhinoceros",sci:"Rhinocerotidae",cat:"哺乳动物",hab:"草原 / 林地",diet:"草食",life:"35-50 年",size:"体长 2.5-4m",status:"CR",sound:"低吼。",facts:["角由角蛋白构成(同指甲)。","视力差但听觉嗅觉好。","因盗猎濒临灭绝。"]},
+  {id:63,emoji:"🐃",name:"水牛",en:"Buffalo",sci:"Bubalus",cat:"哺乳动物",hab:"草原",diet:"草食",life:"15-25 年",size:"体长 2-3m",status:"NT",sound:"哞叫。",facts:["力气大，曾用于耕田。","群居且有首领。","非洲水牛极凶猛。"]},
+  {id:64,emoji:"🐂",name:"牦牛",en:"Yak",sci:"Bos grunniens",cat:"哺乳动物",hab:"高原",diet:"草食",life:"20-25 年",size:"体长 2-3m",status:"LC",sound:"哞叫。",facts:["高原之舟，耐寒。","奶与毛都宝贵。","能适应缺氧环境。"]},
+  {id:66,emoji:"🦇",name:"蝙蝠",en:"Bat",sci:"Chiroptera",cat:"哺乳动物",hab:"洞穴 / 人居",diet:"肉食(虫)",life:"5-30 年",size:"翼展 15-70cm",status:"LC",sound:"超声波吱。",facts:["唯一会飞的哺乳动物。","用回声定位导航。","夜间捕食大量害虫。"]},
+  {id:67,emoji:"🦭",name:"海豹",en:"Seal",sci:"Phocidae",cat:"哺乳动物",hab:"海洋 / 海岸",diet:"肉食(鱼)",life:"20-35 年",size:"体长 1-4m",status:"LC",sound:"哇哇声。",facts:["后肢像尾鳍，陆上蠕动。","厚脂肪御寒。","在冰上繁殖哺乳。"]},
+  {id:69,emoji:"🦡",name:"蜜獾",en:"Honey Badger",sci:"Mellivora",cat:"哺乳动物",hab:"草原 / 林",diet:"杂食",life:"7-10 年",size:"体长 60-77cm",status:"LC",sound:"咆哮。",facts:["无所畏惧的平头哥。","皮厚抗咬。","敢挑战毒蛇与狮。"]},
+  {id:70,emoji:"🐇",name:"野兔",en:"Hare",sci:"Lepus",cat:"哺乳动物",hab:"草原",diet:"草食",life:"4-8 年",size:"体长 40-70cm",status:"LC",sound:"尖叫。",facts:["耳朵长，听觉极好。","后腿强健善奔跑。","幼崽生来睁眼有毛。"]},
+  {id:72,emoji:"🐏",name:"藏羚羊",en:"Tibetan Antelope",sci:"Pantholops",cat:"哺乳动物",hab:"高原",diet:"草食",life:"10-12 年",size:"体长 1-1.4m",status:"NT",sound:"咩叫。",facts:["雄性有细长黑角。","高原迁徙距离长。","曾因羊绒遭大量偷猎。"]},
+  {id:73,emoji:"🦫",name:"貘",en:"Tapir",sci:"Tapirus",cat:"哺乳动物",hab:"热带林",diet:"植食",life:"25-30 年",size:"体长 1.8-2.5m",status:"EN",sound:"哨声。",facts:["鼻子可伸缩似象鼻。","幼崽有保护色斑纹。","远古遗留的活化石。"]},
+  {id:79,emoji:"🐈",name:"貂",en:"Marten",sci:"Martes",cat:"哺乳动物",hab:"森林",diet:"肉食",life:"5-10 年",size:"体长 40-70cm",status:"LC",sound:"吱叫。",facts:["体态修长，行动敏捷。","皮毛珍贵。","树栖捕猎高手。"]},
+  {id:82,emoji:"🦩",name:"火烈鸟",en:"Flamingo",sci:"Phoenicopterus",cat:"鸟类",hab:"盐湖 / 潟湖",diet:"杂食(藻)",life:"20-30 年",size:"身高 1-1.5m",status:"LC",sound:"嘎嘎。",facts:["羽毛因吃藻而变粉红。","单腿站立睡觉。","滤食泥中的小生物。"]},
+  {id:85,emoji:"🐉",name:"龙",en:"Dragon",sci:"Draco",cat:"神话生物",hab:"神话 / 云海",diet:"传说肉食",life:"传说不朽",size:"体长 未知",status:"神话",sound:"咆哮 / 龙吟。",facts:["中国龙象征祥瑞与至高权力。","能腾云驾雾、呼风唤雨。","与凤并称，寓意龙凤呈祥。"]},
+  {id:86,emoji:"🕊️",name:"鸽子",en:"Pigeon",sci:"Columba",cat:"鸟类",hab:"城市 / 田野",diet:"杂食",life:"3-15 年",size:"体长 20-35cm",status:"LC",sound:"咕咕。",facts:["方向感极强，善归巢。","信鸽曾传递重要信件。","品种繁多。"]},
+  {id:87,emoji:"🐦‍⬛",name:"乌鸦",en:"Crow",sci:"Corvus",cat:"鸟类",hab:"广泛",diet:"杂食",life:"6-10 年",size:"体长 40-50cm",status:"LC",sound:"呱呱。",facts:["极聪明，会用工具。","记仇且能认人脸。","群体协作防御猛禽。"]},
+  {id:88,emoji:"🐤",name:"麻雀",en:"Sparrow",sci:"Passer",cat:"鸟类",hab:"人居",diet:"杂食",life:"2-5 年",size:"体长 12-16cm",status:"LC",sound:"啾啾。",facts:["最常见的小鸟之一。","蹦跳前进而非迈步。","群居，适应城市。"],svg:'<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><ellipse cx="50" cy="56" rx="25" ry="20" fill="#a9824f" stroke="#6e4f2a" stroke-width="2"/><path d="M48 42 q24 5 20 28 q-15 -3 -24 -13 z" fill="#8a6a3a" stroke="#6e4f2a" stroke-width="1.5"/><circle cx="33" cy="40" r="13" fill="#b8945c" stroke="#6e4f2a" stroke-width="2"/><circle cx="29" cy="44" r="5" fill="#d8c089"/><path d="M20 40 l-10 2 l10 4 z" fill="#e0a93b" stroke="#a47a1f" stroke-width="1.2"/><circle cx="30" cy="37" r="2.2" fill="#2a1d10"/><path d="M70 54 l24 9 l-24 7 z" fill="#8a6a3a" stroke="#6e4f2a" stroke-width="1.5"/><path d="M45 74 l-2 9 M54 74 l2 9" stroke="#e0a93b" stroke-width="2.5" fill="none"/></svg>'},
+  {id:89,emoji:"🐥",name:"啄木鸟",en:"Woodpecker",sci:"Picidae",cat:"鸟类",hab:"森林",diet:"肉食(虫)",life:"4-12 年",size:"体长 10-50cm",status:"LC",sound:"笃笃。",facts:["敲击树干找虫吃。","长舌带钩能探洞。","头部减震防脑震。"],svg:'<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><rect x="8" y="80" width="84" height="9" rx="4.5" fill="#8a5a2b" stroke="#5e3c18" stroke-width="1.5"/><path d="M62 58 l22 16 l-7 6 l-20 -15 z" fill="#c0392b" stroke="#7a1f15" stroke-width="1.5"/><ellipse cx="46" cy="54" rx="17" ry="22" fill="#2c3e50" stroke="#16222e" stroke-width="2"/><ellipse cx="42" cy="60" rx="9" ry="14" fill="#ecf0f1"/><circle cx="44" cy="30" r="13" fill="#2c3e50" stroke="#16222e" stroke-width="2"/><path d="M38 17 q5 -13 13 -9 q-2 9 -5 13 z" fill="#e74c3c" stroke="#a93226" stroke-width="1"/><path d="M31 29 l-15 3 l15 5 z" fill="#f1c40f" stroke="#b9960b" stroke-width="1.5"/><circle cx="42" cy="28" r="2.4" fill="#fff"/><circle cx="42" cy="28" r="1.2" fill="#000"/><path d="M44 76 l-3 7 M50 76 l2 7" stroke="#f1c40f" stroke-width="2.5" fill="none"/></svg>'},
+  {id:126,emoji:"🦟",name:"蚊子",en:"Mosquito",sci:"Culicidae",cat:"昆虫",hab:"人居 / 水边",diet:"吸血",life:"1-2 月",size:"体长 0.3-1cm",status:"LC",sound:"嗡嗡。",facts:["仅雌蚊吸血。","传播疟疾等疾病。","幼虫生活在水中。"]},
+  {id:127,emoji:"🪳",name:"蟑螂",en:"Cockroach",sci:"Blattodea",cat:"昆虫",hab:"人居",diet:"杂食",life:"数月-1 年",size:"体长 1-8cm",status:"LC",sound:"静默。",facts:["适应力极强的活化石。","能承受强辐射。","断头仍可活数日。"]},
+  {id:128,emoji:"🪲",name:"甲虫",en:"Beetle",sci:"Coleoptera",cat:"昆虫",hab:"森林 / 田野",diet:"杂食",life:"数周-数年",size:"体长 0.1-18cm",status:"LC",sound:"静默。",facts:["种类最多的动物类群。","外骨骼坚硬如盔甲。","独角仙是大型甲虫。"]},
+  {id:129,emoji:"🦗",name:"蟋蟀",en:"Cricket",sci:"Gryllidae",cat:"昆虫",hab:"草地",diet:"杂食",life:"数月",size:"体长 1-5cm",status:"LC",sound:"唧唧。",facts:["雄虫摩擦翅膀鸣叫。","好斗，常斗蟋蟀。","夜间鸣声清脆。"]},
+  {id:130,emoji:"🦂",name:"蝎子",en:"Scorpion",sci:"Scorpiones",cat:"昆虫",hab:"干旱",diet:"肉食",life:"3-8 年",size:"体长 1-20cm",status:"LC",sound:"静默。",facts:["尾部毒针御敌。","昼伏夜出。","幼蝎背在母背。"]},
+  {id:131,emoji:"🐌",name:"蜗牛",en:"Snail",sci:"Gastropoda",cat:"软体",hab:"潮湿",diet:"植食",life:"2-5 年",size:"体长 1-10cm",status:"LC",sound:"静默。",facts:["背负钙质螺旋壳。","分泌黏液滑行。","雨后活动频繁。"]},
+  {id:132,emoji:"🐛",name:"毛毛虫",en:"Caterpillar",sci:"Larva",cat:"昆虫",hab:"植物上",diet:"植食",life:"数周",size:"体长 1-10cm",status:"LC",sound:"静默。",facts:["蝴蝶或蛾的幼虫。","食量大，长得快。","有的带毒毛需远离。"]},
+  {id:133,emoji:"🪱",name:"蚯蚓",en:"Earthworm",sci:"Lumbricus",cat:"环节动物",hab:"土壤",diet:"腐食",life:"1-5 年",size:"体长 5-30cm",status:"LC",sound:"静默。",facts:["松土能手，益虫。","断体可再生。","呼吸靠湿润皮肤。"]},
+  {id:139,emoji:"🪼",name:"水母",en:"Jellyfish",sci:"Cnidaria",cat:"海洋生物",hab:"海洋",diet:"肉食(浮游)",life:"数小时-数十年",size:"伞径 1-200cm",status:"LC",sound:"静默。",facts:["身体 95% 是水。","触手带刺细胞蜇人。","幽浮般漂游海中。"]},
+  {id:140,emoji:"⭐",name:"海星",en:"Starfish",sci:"Asteroidea",cat:"海洋生物",hab:"海底",diet:"肉食",life:"5-35 年",size:"臂展 10-80cm",status:"LC",sound:"静默。",facts:["能再生断臂。","靠管足缓慢移动。","胃可翻出体外消化。"]}
+];
+
+/* ============== 状态 ============== */
+const $ = s=>document.querySelector(s);
+const LS = {
+  get(k,d){try{const v=localStorage.getItem("ac_"+k);return v?JSON.parse(v):d;}catch(e){return d;}},
+  set(k,v){localStorage.setItem("ac_"+k,JSON.stringify(v));}
+};
+let state = {
+  theme: LS.get("theme","light"),
+  sound: LS.get("sound",true),
+  lang: LS.get("lang","zh"),
+  fav: LS.get("fav",[]),
+  learned: LS.get("learned",[]),
+  best: LS.get("best",0),
+  wrong: LS.get("wrong",[]),
+  streak: LS.get("streak",0),
+  lastCheckin: LS.get("lastCheckin",""),
+  cat: "all",
+  search: "",
+};
+function save(){LS.set("theme",state.theme);LS.set("sound",state.sound);LS.set("lang",state.lang);
+  LS.set("fav",state.fav);LS.set("learned",state.learned);LS.set("best",state.best);
+  LS.set("wrong",state.wrong);LS.set("streak",state.streak);LS.set("lastCheckin",state.lastCheckin);}
+
+/* ============== 工具 ============== */
+function toast(msg){const t=$("#toast");t.textContent=msg;t.classList.add("show");clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove("show"),1600);}
+function cardHue(id){return Math.round((id*137.508)%360);}
+function shuffle(arr){const a=arr.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function quizSpeak(a){if(!a)return;speak(state.lang==="zh"?a.name:a.en,state.lang==="zh"?"zh-CN":"en-US");}
+const PAT=[
+ '<circle cx="11" cy="11" r="3.4" fill="currentColor"/>',
+ '<rect width="22" height="7" fill="currentColor"/>',
+ '<rect width="7" height="22" fill="currentColor"/>',
+ '<path d="M-3,25 L25,-3" stroke="currentColor" stroke-width="4"/>',
+ '<path d="M0,11 q5.5,-9 11,0 q5.5,9 11,0" stroke="currentColor" stroke-width="3" fill="none"/>',
+ '<path d="M0,17 L5.5,5 L11,17 L16.5,5 L22,17" stroke="currentColor" stroke-width="3" fill="none"/>',
+ '<path d="M0,0 H22 M0,11 H22 M0,22 H22 M0,0 V22 M11,0 V22 M22,0 V22" stroke="currentColor" stroke-width="1.5"/>',
+ '<circle cx="11" cy="11" r="7.5" fill="none" stroke="currentColor" stroke-width="2"/>',
+ '<path d="M11,2 L19,18 L3,18 Z" fill="currentColor"/>',
+ '<path d="M11,3 L13.3,8.2 L18.6,8.2 L14.3,11.4 L15.9,16.6 L11,13.4 L6.1,16.6 L7.7,11.4 L3.4,8.2 L8.7,8.2 Z" fill="currentColor"/>',
+ '<path d="M8,3 H14 V8 H19 V14 H14 V19 H8 V14 H3 V8 H8 Z" fill="currentColor"/>',
+ '<path d="M0,11 a11,11 0 0,0 22,0 M-11,22 a11,11 0 0,0 22,0 M11,22 a11,11 0 0,0 22,0" fill="none" stroke="currentColor" stroke-width="2"/>'
+];
+function patSVG(id){
+  const i=((id%12)+12)%12;
+  return '<svg class="pat" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><defs><pattern id="pk'+id+'" width="22" height="22" patternUnits="userSpaceOnUse">'+PAT[i]+'</pattern></defs><rect width="100" height="100" fill="url(#pk'+id+')"/></svg>';
+}
+function animalGlyph(a){
+  if(a&&a.svg) return '<span class="glyph-wrap">'+a.svg+'</span>';
+  return '<span class="emoji">'+(a?a.emoji:'')+'</span>';
+}
+let VOICES=[];
+if('speechSynthesis' in window){try{VOICES=speechSynthesis.getVoices()||[];}catch(e){}speechSynthesis.onvoiceschanged=()=>{try{VOICES=speechSynthesis.getVoices()||[];}catch(e){}};}
+function speak(text,lang){
+  if(!state.sound||!('speechSynthesis' in window)||!text)return;
+  try{
+    const useLang=lang||(state.lang==="zh"?"zh-CN":"en-US");
+    if(speechSynthesis.speaking||speechSynthesis.pending)speechSynthesis.cancel();
+    const u=new SpeechSynthesisUtterance(text);
+    u.lang=useLang;
+    const v=VOICES.find(x=>x.lang===useLang)||VOICES.find(x=>x.lang&&x.lang.toLowerCase().startsWith(useLang.slice(0,2).toLowerCase()));
+    if(v)u.voice=v;
+    speechSynthesis.speak(u);
+  }catch(e){}
+}
+function isFav(id){return state.fav.includes(id);}
+function toggleFav(id){
+  if(isFav(id)){state.fav=state.fav.filter(x=>x!==id);toast("已取消收藏");}
+  else{state.fav.push(id);toast("❤️ 已收藏");}
+  save();renderFav();updateStats();markFavButtons(id);
+}
+
+/* ============== 主题 / 顶栏 ============== */
+function applyTheme(){document.documentElement.setAttribute("data-theme",state.theme);
+  $("#themeBtn").textContent = state.theme==="dark"?"☀️":"🌙";}
+$("#themeBtn").onclick=()=>{state.theme=state.theme==="dark"?"light":"dark";applyTheme();save();};
+$("#soundBtn").onclick=()=>{state.sound=!state.sound;save();
+  $("#soundBtn").textContent=state.sound?"🔊":"🔇";toast(state.sound?"🔊 发音已开启":"🔇 发音已关闭");};
+$("#langBtn").onclick=()=>{state.lang=state.lang==="zh"?"en":"zh";save();
+  $("#langBtn").textContent=state.lang==="zh"?"中":"EN";toast(state.lang==="zh"?"朗读：中文":"朗读：English");};
+
+/* ============== Tabs ============== */
+$("#tabs").addEventListener("click",e=>{
+  const t=e.target.closest(".tab");if(!t)return;
+  document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+  t.classList.add("active");
+  const sec=t.dataset.sec;
+  document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
+  $("#sec-"+sec).classList.add("active");
+  if(sec==="flash") renderFlash();
+  if(sec==="quiz") startQuiz();
+  if(sec==="match") startMatch();
+  if(sec==="fav") renderFav();
+  if(sec==="wrong") renderWrong();
+  if(sec==="stats") updateStats();
+});
+
+/* ============== 分类 chips ============== */
+function renderChips(){
+  const box=$("#catChips");box.innerHTML="";
+  CATEGORIES.forEach(c=>{
+    const el=document.createElement("div");
+    el.className="chip"+(state.cat===c.key?" active":"");
+    el.innerHTML=`${c.icon} ${c.name}`;
+    el.onclick=()=>{state.cat=c.key;renderChips();renderBrowse();};
+    box.appendChild(el);
+  });
+}
+
+/* ============== 浏览 ============== */
+function filteredAnimals(){
+  let list=ANIMALS;
+  if(state.cat!=="all") list=list.filter(a=>a.cat===state.cat);
+  const q=state.search.trim().toLowerCase();
+  if(q) list=list.filter(a=>a.name.toLowerCase().includes(q)||a.en.toLowerCase().includes(q)||a.sci.toLowerCase().includes(q));
+  return list;
+}
+function renderBrowse(){
+  const grid=$("#browseGrid");const list=filteredAnimals();
+  $("#browseCount").textContent=ANIMALS.length;
+  if(!list.length){grid.innerHTML=`<div class="empty">😢 没有找到匹配的动物，换个关键词试试？</div>`;return;}
+  grid.innerHTML="";
+  list.forEach(a=>{
+    const card=document.createElement("div");
+    card.className="acard";
+    const hue=cardHue(a.id);
+    card.style.setProperty("--c",hue);
+    card.style.setProperty("--c2",(hue+28)%360);
+    card.innerHTML=`
+      <div class="cat-tag">${a.cat}</div>
+      <div class="fav ${isFav(a.id)?'on':''}" data-fav="${a.id}">${isFav(a.id)?'❤️':'🤍'}</div>
+      <div class="tile">${patSVG(a.id)}${animalGlyph(a)}</div>
+      <div class="nm">${a.name}</div>
+      <div class="en">${a.en}</div>`;
+    card.onclick=()=>openModal(a.id);
+    card.querySelector(".fav").onclick=(e)=>{e.stopPropagation();toggleFav(a.id);};
+    grid.appendChild(card);
+  });
+}
+$("#searchInput").addEventListener("input",e=>{state.search=e.target.value;renderBrowse();});
+
+/* ============== 详情弹窗 ============== */
+let currentAnimal=null;
+function openModal(id){
+  const a=ANIMALS.find(x=>x.id===id);currentAnimal=a;
+  if(!state.learned.includes(id)){state.learned.push(id);save();updateStats();}
+  const hue=cardHue(a.id);
+  $("#modalHero").style.setProperty("--c",hue);
+  $("#modalHero").style.setProperty("--c2",(hue+28)%360);
+  $("#modalHeroPat").innerHTML=patSVG(a.id);
+  $("#mEmoji").innerHTML=animalGlyph(a);
+  $("#mNm").textContent=a.name;$("#mEn").textContent=a.en;$("#mSci").textContent=a.sci;
+  $("#mCat").textContent=a.cat;$("#mHab").textContent=a.hab;$("#mDiet").textContent=a.diet;
+  $("#mLife").textContent=a.life;$("#mSize").textContent=a.size;$("#mSound").textContent=a.sound;
+  const sp=$("#mStatus");sp.textContent=a.status;sp.className="status-pill st-"+a.status;
+  const fl=$("#mFacts");fl.innerHTML="";a.facts.forEach(f=>{const li=document.createElement("li");li.textContent=f;fl.appendChild(li);});
+  markFavButtons(id);
+  $("#modalBg").classList.add("show");
+}
+function closeModal(){$("#modalBg").classList.remove("show");}
+function markFavButtons(id){
+  const on=isFav(id);
+  document.querySelectorAll(`[data-fav="${id}"]`).forEach(b=>{b.classList.toggle("on",on);b.textContent=on?'❤️':'🤍';});
+  if(currentAnimal&&currentAnimal.id===id){$("#mFav").textContent=on?'❤️ 已收藏':'🤍 收藏';}
+}
+$("#modalClose").addEventListener("click",e=>{e.stopPropagation();closeModal();});
+$("#modalBg").addEventListener("click",e=>{if(e.target===$("#modalBg"))closeModal();});
+$("#mSpeak").onclick=()=>{if(currentAnimal)speak(state.lang==="zh"?currentAnimal.name:currentAnimal.en,state.lang==="zh"?"zh-CN":"en-US");};
+$("#mFav").onclick=()=>{if(currentAnimal)toggleFav(currentAnimal.id);};
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closeModal();});
+
+/* ============== 闪卡 ============== */
+let flashIdx=0,flashList=[];
+function renderFlash(){
+  flashList=ANIMALS.slice();
+  if(flashIdx>=flashList.length)flashIdx=0;
+  showFlash();
+}
+function showFlash(){
+  const a=flashList[flashIdx];
+  const hue=cardHue(a.id);
+  $("#flashCard").style.setProperty("--c",hue);
+  $("#flashCard").style.setProperty("--c2",(hue+28)%360);
+  $("#flashPat").innerHTML=patSVG(a.id);
+  $("#flashEmoji").innerHTML=animalGlyph(a);
+  $("#flashEn").textContent=a.en;
+  $("#flashNm").textContent=a.name;
+  $("#flashRole").textContent=`${a.cat} · ${a.hab}`;
+  $("#flashBody").innerHTML=`🍽️ ${a.diet} ｜ ⏳ ${a.life}<br>✨ ${a.facts[0]}`;
+  $("#flashMeta").textContent=`第 ${flashIdx+1} / ${flashList.length} 张`;
+  $("#flashCard").classList.remove("flip");
+  if(!state.learned.includes(a.id)){state.learned.push(a.id);save();updateStats();}
+}
+$("#flashCard").addEventListener("click",()=>$("#flashCard").classList.toggle("flip"));
+$("#flashFlip").onclick=()=>$("#flashCard").classList.toggle("flip");
+$("#flashNext").onclick=()=>{flashIdx=(flashIdx+1)%flashList.length;$("#flashCard").classList.remove("flip");showFlash();};
+$("#flashPrev").onclick=()=>{flashIdx=(flashIdx-1+flashList.length)%flashList.length;$("#flashCard").classList.remove("flip");showFlash();};
+$("#flashRand").onclick=()=>{flashIdx=Math.floor(Math.random()*flashList.length);$("#flashCard").classList.remove("flip");showFlash();};
+$("#flashSpeakZh").addEventListener("click",e=>{e.stopPropagation();const a=flashList[flashIdx];if(a)speak(a.name,"zh-CN");});
+$("#flashSpeakEn").addEventListener("click",e=>{e.stopPropagation();const a=flashList[flashIdx];if(a)speak(a.en,"en-US");});
+
+/* ============== 答题 ============== */
+let quiz={};
+let quizMode="mix";
+function buildDeck(n){
+  let deck=shuffle(ANIMALS.slice());
+  while(deck.length<n) deck=deck.concat(shuffle(ANIMALS.slice()));
+  return deck.slice(0,n);
+}
+function startQuiz(){
+  quiz={items:buildDeck(100),idx:0,score:0,streak:0,answered:false,fromWrong:false};
+  renderQuiz();
+}
+function startWrongQuiz(){
+  if(!state.wrong.length){toast("🎉 没有错题啦，去闯关挑战吧！");return;}
+  const items=state.wrong.map(id=>ANIMALS.find(a=>a.id===id)).filter(Boolean);
+  quiz={items:items,idx:0,score:0,streak:0,answered:false,fromWrong:true};
+  renderQuiz();
+}
+function renderQuiz(){
+  const box=$("#quizBox");
+  if(quiz.idx>=quiz.items.length){renderQuizEnd();return;}
+  const a=quiz.items[quiz.idx];
+  let type = quizMode==="pic"?0 : quizMode==="hint"?1 : quizMode==="listen"?2 : Math.floor(Math.random()*3);
+  const opts=[a.name];
+  const others=shuffle(ANIMALS.filter(x=>x.id!==a.id).map(x=>x.name)).slice(0,3);
+  opts.push(...others);
+  const optsShuffled=shuffle(opts);
+  let qText,extra="";
+  if(type===0){qText="图上这是哪种动物？";extra=`<div class="q-emoji">${animalGlyph(a)}</div>`;}
+  else if(type===1){qText=`提示：${a.facts[0]}<br>它是什么动物？`;}
+  else{qText="🔊 听一听，这是哪种动物的名字？";extra=`<div style="text-align:center;margin:12px 0;"><button class="btn ghost" id="qPlay" style="min-width:180px;">🔊 点击 / 重听读音</button></div>`;}
+  box.innerHTML=`
+    <div class="quiz-top"><span>第 ${quiz.idx+1} / ${quiz.items.length} 题</span><span>得分 ${quiz.score} ｜ 连对 ${quiz.streak}</span></div>
+    ${extra}
+    <div class="q-text">${qText}</div>
+    <div class="q-opts">
+      ${optsShuffled.map(o=>`<div class="q-opt" data-opt="${o}">${o}</div>`).join("")}
+    </div>
+    <div class="quiz-feedback" id="qFeedback"></div>`;
+  if(type===2){
+    const play=()=>quizSpeak(a);
+    $("#qPlay").onclick=play;
+    if(state.sound) play();
+  }
+  quiz.answered=false;
+  box.querySelectorAll(".q-opt").forEach(opt=>{
+    opt.onclick=()=>{
+      if(quiz.answered)return;quiz.answered=true;
+      const chosen=opt.dataset.opt;
+      const correct = chosen===a.name;
+      box.querySelectorAll(".q-opt").forEach(o=>{
+        o.disabled=true;
+        if(o.dataset.opt===a.name)o.classList.add("correct");
+        if(o.dataset.opt===chosen&&!correct)o.classList.add("wrong");
+      });
+      const fb=$("#qFeedback");
+      if(correct){
+        quiz.score++;quiz.streak++;fb.textContent=`✅ 答对啦！+1 分`;fb.style.color="var(--ok)";quizSpeak(a);
+        state.wrong=state.wrong.filter(x=>x!==a.id);
+      }else{
+        quiz.streak=0;fb.innerHTML=`❌ 正确答案：<b>${a.name}</b> ${animalGlyph(a)}`;fb.style.color="var(--bad)";
+        if(!quiz.fromWrong && !state.wrong.includes(a.id)) state.wrong.push(a.id);
+      }
+      if(quiz.score>state.best) state.best=quiz.score;
+      save();
+      setTimeout(()=>{quiz.idx++;renderQuiz();},1300);
+    };
+  });
+}
+function renderQuizEnd(){
+  if(quiz.score>state.best) state.best=quiz.score;
+  save();
+  const total=quiz.items.length;
+  const msg = quiz.score>=90?"🏆 动物大师！":quiz.score>=75?"🌟 太棒了！":quiz.score>=50?"👍 继续加油":"💪 多看看动物卡片吧";
+  const wrongBtn = (state.wrong.length && !quiz.fromWrong) ? `<button class="btn ghost" id="quizRetryWrong" style="margin-top:10px;">📕 重做错题 (${state.wrong.length})</button>` : "";
+  $("#quizBox").innerHTML=`
+    <div class="quiz-end">
+      <div style="font-size:40px">${msg}</div>
+      <div class="score">${quiz.score} / ${total}</div>
+      <p style="color:var(--muted);margin:10px 0 4px">最佳成绩：${state.best} 分${state.wrong.length?" ｜ 错题库："+state.wrong.length+" 题":""}</p>
+      <button class="btn primary" id="quizAgain" style="margin-top:14px;">🔄 再来一局</button>
+      ${wrongBtn}
+    </div>`;
+  $("#quizAgain").onclick=startQuiz;
+  if($("#quizRetryWrong")) $("#quizRetryWrong").onclick=startWrongQuiz;
+}
+
+/* ============== 配对 ============== */
+let matchData={pairs:[],selA:null,selB:null,done:0};
+function startMatch(){
+  const pool=ANIMALS.slice();
+  for(let i=pool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];}
+  const picks=pool.slice(0,5);
+  matchData={pairs:picks.map(a=>({id:a.id,emoji:a.emoji,name:a.name,en:a.en,svg:a.svg})),selA:null,selB:null,done:0};
+  const animals=matchData.pairs.slice();
+  const names=matchData.pairs.map(p=>({id:p.id,name:p.name}));
+  for(let i=names.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[names[i],names[j]]=[names[j],names[i]];}
+  $("#matchArea").innerHTML=`
+    <div class="match-col" id="colA">
+      ${animals.map(a=>`<div class="match-card" data-aid="${a.id}">
+
+      <span class="e">${animalGlyph(a)}</span></div>`).join("")}
+    </div>
+    <div class="match-col" id="colB">
+      ${names.map(n=>{const p=matchData.pairs.find(x=>x.id===n.id);return `<div class="match-card" data-bid="${n.id}"><span class="e">${animalGlyph(p)}</span> ${n.name}</div>`;}).join("")}
+    </div>`;
+  $("#matchInfo").textContent="已配对 0 / 5";
+  $("#colA").querySelectorAll(".match-card").forEach(c=>c.onclick=()=>pickA(c));
+  $("#colB").querySelectorAll(".match-card").forEach(c=>c.onclick=()=>pickB(c));
+}
+function pickA(c){
+  if(c.classList.contains("done"))return;
+  $("#colA").querySelectorAll(".match-card").forEach(x=>x.classList.remove("sel"));
+  c.classList.add("sel");matchData.selA=+c.dataset.aid;
+  if(matchData.selA!==null&&matchData.selB!==null)checkMatch();
+}
+function pickB(c){
+  if(c.classList.contains("done"))return;
+  $("#colB").querySelectorAll(".match-card").forEach(x=>x.classList.remove("sel"));
+  c.classList.add("sel");matchData.selB=+c.dataset.bid;
+  if(matchData.selA!==null&&matchData.selB!==null)checkMatch();
+}
+function checkMatch(){
+  const a=matchData.selA,b=matchData.selB;
+  const ca=document.querySelector(`[data-aid="${a}"]`);
+  const cb=document.querySelector(`[data-bid="${b}"]`);
+  if(a===b){
+    ca.classList.add("ok","done");cb.classList.add("ok","done");
+    matchData.done++;$("#matchInfo").textContent=`已配对 ${matchData.done} / 5`;
+    const mp=matchData.pairs.find(p=>p.id===a);if(mp)quizSpeak(mp);
+    if(matchData.done===5){toast("🎉 全部配对成功！");}
+  }else{
+    ca.classList.add("bad");cb.classList.add("bad");
+    setTimeout(()=>{ca.classList.remove("bad","sel");cb.classList.remove("bad","sel");},450);
+  }
+  matchData.selA=null;matchData.selB=null;
+}
+$("#matchNew").onclick=startMatch;
+
+/* ============== 新功能绑定 ============== */
+$("#quizModes").addEventListener("click",e=>{
+  const c=e.target.closest(".chip");if(!c)return;
+  document.querySelectorAll("#quizModes .chip").forEach(x=>x.classList.remove("active"));
+  c.classList.add("active");
+  quizMode=c.dataset.mode;
+  startQuiz();
+});
+$("#wrongRedo").onclick=startWrongQuiz;
+$("#checkinBtn").onclick=checkin;
+
+/* ============== 收藏 ============== */
+function renderFav(){
+  const grid=$("#favGrid");
+  if(!state.fav.length){grid.innerHTML=`<div class="empty">❤️ 还没有收藏。在“识动物”里点击 🤍 收藏喜欢的动物吧！</div>`;return;}
+  grid.innerHTML="";
+  state.fav.forEach(id=>{
+    const a=ANIMALS.find(x=>x.id===id);if(!a)return;
+    const card=document.createElement("div");    card.className="acard";
+    const hue=cardHue(a.id);
+    card.style.setProperty("--c",hue);
+    card.style.setProperty("--c2",(hue+28)%360);
+    card.innerHTML=`<div class="cat-tag">${a.cat}</div>
+      <div class="fav on" data-fav="${a.id}">❤️</div>
+      <div class="tile">${patSVG(a.id)}${animalGlyph(a)}</div><div class="nm">${a.name}</div><div class="en">${a.en}</div>`;
+    card.onclick=()=>openModal(a.id);
+    card.querySelector(".fav").onclick=e=>{e.stopPropagation();toggleFav(a.id);};
+    grid.appendChild(card);
+  });
+}
+
+/* ============== 错题本 ============== */
+function renderWrong(){
+  const grid=$("#wrongGrid");
+  $("#wrongInfo").textContent = state.wrong.length? `共 ${state.wrong.length} 道待巩固` : "";
+  if(!state.wrong.length){grid.innerHTML=`<div class="empty">📕 太棒了，还没有错题！去「闯关答题」挑战一下吧。</div>`;return;}
+  grid.innerHTML="";
+  state.wrong.forEach(id=>{
+    const a=ANIMALS.find(x=>x.id===id);if(!a)return;
+    const card=document.createElement("div");card.className="acard";
+    const hue=cardHue(a.id);
+    card.style.setProperty("--c",hue);card.style.setProperty("--c2",(hue+28)%360);
+    card.innerHTML=`<div class="cat-tag">${a.cat}</div>
+      <div class="tile">${patSVG(a.id)}${animalGlyph(a)}</div><div class="nm">${a.name}</div><div class="en">${a.en}</div>`;
+    card.onclick=()=>openModal(a.id);
+    grid.appendChild(card);
+  });
+}
+/* ============== 打卡 ============== */
+function checkin(){
+  const today=new Date().toISOString().slice(0,10);
+  if(state.lastCheckin===today){toast("今天已经打卡啦 ✅");return;}
+  const yest=new Date(Date.now()-86400000).toISOString().slice(0,10);
+  state.streak = (state.lastCheckin===yest)? state.streak+1 : 1;
+  state.lastCheckin=today;save();updateStats();
+  toast("📅 打卡成功，连续 "+state.streak+" 天！");
+}
+
+/* ============== 统计 ============== */
+function updateStats(){
+  $("#stTotal").textContent=ANIMALS.length;
+  $("#stLearned").textContent=state.learned.length;
+  $("#stFav").textContent=state.fav.length;
+  $("#stBest").textContent=state.best;
+  $("#stWrong").textContent=state.wrong.length;
+  $("#stStreak").textContent=state.streak;
+  const pct=Math.round(state.learned.length/ANIMALS.length*100);
+  const ring=$("#ringLearn");const C=2*Math.PI*68;
+  ring.style.strokeDasharray=C;ring.style.strokeDashoffset=C*(1-pct/100);
+  $("#ringText").textContent=pct+"%";
+  const box=$("#catProgress");box.innerHTML="";
+  CATEGORIES.filter(c=>c.key!=="all").forEach(c=>{
+    const total=ANIMALS.filter(a=>a.cat===c.key).length;
+    const done=ANIMALS.filter(a=>a.cat===c.key&&state.learned.includes(a.id)).length;
+    const p=Math.round(done/total*100);
+    const row=document.createElement("div");row.className="pbar";
+    row.innerHTML=`<div class="row"><span>${c.icon} ${c.name}</span><span>${done}/${total}</span></div>
+      <div class="track"><div class="fill" style="width:${p}%"></div></div>`;
+    box.appendChild(row);
+  });
+}
+
+/* ============== 初始化 ============== */
+function init(){
+  applyTheme();
+  $("#soundBtn").textContent=state.sound?"🔊":"🔇";
+  $("#langBtn").textContent=state.lang==="zh"?"中":"EN";
+  renderChips();renderBrowse();updateStats();
+}
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>喜事随份子登记 · 礼金管理</title>
+<style>
+  :root{
+    --bg:#fdf6f0; --panel:#ffffff; --panel-2:#fff9f4;
+    --ink:#3a2a23; --ink-soft:#8a6f63; --line:#f0ddd0;
+    --brand:#c8202e; --brand-2:#e23b3b; --gold:#c79a3a; --gold-soft:#e8c878;
+    --ok:#2e9e6b; --warn:#e08a1e; --bad:#d23b3b;
+    --shadow:0 8px 28px rgba(180,60,40,.10);
+    --radius:16px;
+  }
+  html[data-theme="dark"]{
+    --bg:#1c1512; --panel:#281d18; --panel-2:#2f231d;
+    --ink:#f3e7df; --ink-soft:#bba193; --line:#3c2c24;
+    --brand:#e23b3b; --brand-2:#ff5a5a; --gold:#e0b75a; --gold-soft:#caa24a;
+    --ok:#3fce8c; --warn:#f0a73a; --bad:#ff6b6b;
+    --shadow:0 8px 28px rgba(0,0,0,.45);
+  }
+  html[data-theme="night"]{
+    --bg:#000000; --panel:#0d0d0f; --panel-2:#17171b;
+    --ink:#f5f5f7; --ink-soft:#9a9aa2; --line:#2a2a30;
+    --brand:#ff4d4f; --brand-2:#ff6b6b; --gold:#f0c453; --gold-soft:#caa24a;
+    --ok:#3fce8c; --warn:#f0a73a; --bad:#ff6b6b;
+    --shadow:0 8px 28px rgba(0,0,0,.6);
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; font-family:"PingFang SC","Microsoft YaHei",-apple-system,system-ui,sans-serif;
+    background:var(--bg); color:var(--ink); -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:none; width:100%; margin:0 auto; padding:18px 22px 60px;}
+  header.top{
+    display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+    background:linear-gradient(120deg,var(--brand),var(--brand-2));
+    color:#fff; border-radius:var(--radius); padding:16px 20px; box-shadow:var(--shadow);
+  }
+  header.top .logo{font-size:26px}
+  header.top h1{margin:0; font-size:20px; letter-spacing:1px}
+  header.top .sub{font-size:12px; opacity:.9; margin-top:2px}
+  header.top .spacer{flex:1}
+  .evsel{display:flex; align-items:center; gap:8px; flex-wrap:wrap}
+  select,input,textarea{
+    font:inherit; color:var(--ink); background:var(--panel);
+    border:1px solid var(--line); border-radius:10px; padding:8px 10px; outline:none;
+  }
+  select:focus,input:focus,textarea:focus{border-color:var(--brand)}
+  .btn{
+    border:none; cursor:pointer; border-radius:10px; padding:8px 14px; font-weight:600;
+    background:var(--panel); color:var(--ink); border:1px solid var(--line); transition:.15s;
+  }
+  .btn:hover{transform:translateY(-1px); box-shadow:var(--shadow)}
+  .btn.primary{background:var(--brand); color:#fff; border-color:transparent}
+  .btn.gold{background:var(--gold); color:#fff; border-color:transparent}
+  .btn.ghost{background:transparent}
+  .btn.sm{padding:5px 10px; font-size:13px}
+  .btn.danger{background:var(--bad); color:#fff; border-color:transparent}
+  .icon-btn{background:rgba(255,255,255,.18); color:#fff; border:1px solid rgba(255,255,255,.35)}
+  .icon-btn:hover{background:rgba(255,255,255,.3)}
+
+  .tabs{display:flex; gap:6px; margin:16px 0; flex-wrap:wrap; border-bottom:2px solid var(--line); padding-bottom:6px}
+  .tab{cursor:pointer; padding:9px 16px; border-radius:10px 10px 0 0; font-weight:600; color:var(--ink-soft); border:none; background:transparent}
+  .tab.active{color:var(--brand); background:var(--panel); box-shadow:var(--shadow)}
+
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:16px; box-shadow:var(--shadow)}
+  .grid{display:grid; gap:14px}
+  .kpis{grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); margin-bottom:16px}
+  .kpi{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:14px 16px; box-shadow:var(--shadow); position:relative; overflow:hidden}
+  .kpi::after{content:""; position:absolute; right:-14px; top:-14px; width:60px; height:60px; border-radius:50%; background:var(--gold-soft); opacity:.18}
+  .kpi .label{font-size:13px; color:var(--ink-soft)}
+  .kpi .val{font-size:24px; font-weight:800; margin-top:4px; letter-spacing:.5px}
+  .kpi .val.small{font-size:19px}
+
+  .toolbar{display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:12px}
+  .toolbar .grow{flex:1; min-width:160px}
+  .toolbar input,.toolbar select{padding:8px 10px}
+  .seg{display:inline-flex; border:1px solid var(--line); border-radius:10px; overflow:hidden}
+  .seg button{border:none; background:var(--panel); padding:8px 12px; cursor:pointer; color:var(--ink-soft); font-weight:600}
+  .seg button.on{background:var(--brand); color:#fff}
+
+  table{width:100%; border-collapse:collapse; font-size:14px}
+  th,td{padding:10px 10px; text-align:left; border-bottom:1px solid var(--line)}
+  th{color:var(--ink-soft); font-weight:700; cursor:pointer; user-select:none; white-space:nowrap}
+  th .arr{font-size:11px; opacity:.6}
+  tbody tr:hover{background:var(--panel-2)}
+  td.num{text-align:right; font-variant-numeric:tabular-nums; font-weight:700}
+  .tag{display:inline-block; padding:2px 9px; border-radius:999px; font-size:12px; font-weight:600}
+  .tag.rel{background:color-mix(in srgb,var(--gold) 18%,transparent); color:var(--gold)}
+  .tag.ok{background:color-mix(in srgb,var(--ok) 18%,transparent); color:var(--ok)}
+  .tag.no{background:color-mix(in srgb,var(--bad) 18%,transparent); color:var(--bad)}
+  .tag.att{background:color-mix(in srgb,var(--brand) 14%,transparent); color:var(--brand)}
+  .tag.abs{background:var(--line); color:var(--ink-soft)}
+  .row-actions{display:flex; gap:6px}
+  .row-actions .btn{padding:4px 9px; font-size:12px}
+
+  .empty{text-align:center; padding:50px 20px; color:var(--ink-soft)}
+  .empty .big{font-size:46px; margin-bottom:8px}
+  .empty .cta{margin-top:14px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap}
+
+  .modal-mask{position:fixed; inset:0; background:rgba(40,20,15,.5); display:none; align-items:center; justify-content:center; z-index:50; padding:18px}
+  .modal-mask.show{display:flex}
+  .modal{background:var(--panel); border-radius:var(--radius); width:min(560px,100%); max-height:90vh; overflow:auto; box-shadow:var(--shadow); border:1px solid var(--line)}
+  .modal h3{margin:0; padding:16px 18px; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:8px}
+  .modal .body{padding:18px; display:grid; gap:13px}
+  .modal .body.two{grid-template-columns:1fr 1fr}
+  .field{display:grid; gap:5px}
+  .field label{font-size:13px; color:var(--ink-soft); font-weight:600}
+  .field .req{color:var(--bad)}
+  .modal .foot{padding:14px 18px; border-top:1px solid var(--line); display:flex; gap:10px; justify-content:flex-end}
+  .hint{font-size:12px; color:var(--ink-soft); line-height:1.5}
+  .warnbox{background:color-mix(in srgb,var(--bad) 10%,transparent); border:1px solid color-mix(in srgb,var(--bad) 35%,transparent); color:var(--bad); padding:10px 12px; border-radius:10px; font-size:13px}
+
+  .charts{display:grid; grid-template-columns:1fr 1fr; gap:16px}
+  @media(max-width:760px){.charts{grid-template-columns:1fr}}
+  .chart-box{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:16px; box-shadow:var(--shadow)}
+  .chart-box h4{margin:0 0 10px; font-size:15px}
+  .chart-box.wide{grid-column:1/-1}
+  .bulkbar{display:none; align-items:center; gap:10px; padding:10px 12px; margin-bottom:10px; background:var(--panel-2); border:1px solid var(--line); border-radius:12px; font-size:13px; flex-wrap:wrap}
+  .bulkbar.show{display:flex}
+  th.col-sel,td.col-sel{width:36px; text-align:center}
+  canvas{max-width:100%}
+  .legend{display:flex; flex-wrap:wrap; gap:8px 14px; margin-top:10px; font-size:13px}
+  .legend span{display:inline-flex; align-items:center; gap:6px; color:var(--ink-soft)}
+  .legend i{width:11px; height:11px; border-radius:3px; display:inline-block}
+
+  .toast{position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px); background:var(--ink); color:var(--bg); padding:11px 18px; border-radius:12px; font-weight:600; opacity:0; transition:.25s; z-index:99; box-shadow:var(--shadow)}
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
+
+  .data-actions{display:grid; gap:12px}
+  .data-row{display:flex; gap:10px; flex-wrap:wrap; align-items:center; padding:12px; border:1px solid var(--line); border-radius:12px; background:var(--panel-2)}
+  .data-row .t{font-weight:700; min-width:130px}
+  .data-row .d{font-size:12px; color:var(--ink-soft); flex:1; min-width:160px}
+
+  /* 打印样式 */
+  @media print{
+    body{background:#fff; color:#000}
+    .no-print{display:none !important}
+    .wrap{max-width:none; padding:0}
+    .card,.chart-box,.kpi{box-shadow:none; border:1px solid #ccc}
+    table{border:1px solid #000}
+    th,td{border:1px solid #999; color:#000}
+    header.top{background:#fff !important; color:#000; border:2px solid #000}
+  }
+  .print-only{display:none}
+  @media print{.print-only{display:block; margin-bottom:10px}}
+</style>
+</head>
+<body data-theme="light">
+<div class="wrap">
+  <header class="top no-print">
+    <div class="logo">🎉</div>
+    <div>
+      <h1>喜事随份子登记</h1>
+      <div class="sub">多喜事 · 礼金 / 回礼 / 统计 一体化管理</div>
+    </div>
+    <div class="spacer"></div>
+    <div class="evsel no-print">
+      <select id="eventSelect" title="切换喜事"></select>
+      <button class="btn icon-btn" id="btnNewEvent" title="新建喜事">＋ 喜事</button>
+      <button class="btn icon-btn" id="btnEditEvent" title="编辑当前喜事">✎</button>
+      <button class="btn icon-btn" id="btnDelEvent" title="删除当前喜事">🗑</button>
+      <button class="btn icon-btn" id="btnTheme" title="切换主题">🌓</button>
+    </div>
+  </header>
+
+  <div class="tabs no-print">
+    <button class="tab active" data-tab="dash">📊 概览</button>
+    <button class="tab" data-tab="guests">📋 宾客登记</button>
+    <button class="tab" data-tab="returns">🎁 回礼记录</button>
+    <button class="tab" data-tab="stats">📈 统计分析</button>
+    <button class="tab" data-tab="data">💾 数据管理</button>
+  </div>
+
+  <!-- 概览 -->
+  <section id="tab-dash"></section>
+  <!-- 宾客 -->
+  <section id="tab-guests" hidden></section>
+  <!-- 回礼 -->
+  <section id="tab-returns" hidden></section>
+  <!-- 统计 -->
+  <section id="tab-stats" hidden></section>
+  <!-- 数据 -->
+  <section id="tab-data" hidden></section>
+</div>
+
+<!-- 喜事模态 -->
+<div class="modal-mask" id="eventMask">
+  <div class="modal">
+    <h3>📝 <span id="eventModalTitle">新建喜事</span></h3>
+    <div class="body two">
+      <div class="field"><label>喜事名称 <span class="req">*</span></label><input id="ev_name" placeholder="如：张三 & 李四 婚礼"></div>
+      <div class="field"><label>喜事类型</label>
+        <select id="ev_type">
+          <option>婚礼</option><option>满月酒</option><option>百日宴</option><option>周岁宴</option>
+          <option>寿宴</option><option>乔迁</option><option>升学宴</option><option>开业</option><option>其他</option>
+        </select>
+      </div>
+      <div class="field"><label>主角 / 新人</label><input id="ev_host" placeholder="如：张三、李四"></div>
+      <div class="field"><label>日期</label><input id="ev_date" type="date"></div>
+      <div class="field" style="grid-column:1/3"><label>地点</label><input id="ev_location" placeholder="如：XX酒店三楼宴会厅"></div>
+      <div class="field" style="grid-column:1/3"><label>备注</label><textarea id="ev_note" rows="2" placeholder="可选"></textarea></div>
+    </div>
+    <div class="foot">
+      <button class="btn ghost" data-close="eventMask">取消</button>
+      <button class="btn primary" id="btnSaveEvent">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 宾客模态 -->
+<div class="modal-mask" id="guestMask">
+  <div class="modal">
+    <h3>🧑 <span id="guestModalTitle">添加宾客</span></h3>
+    <div class="body two">
+      <div class="field"><label>姓名 <span class="req">*</span></label><input id="g_name" placeholder="宾客姓名"></div>
+      <div class="field"><label>电话</label><input id="g_phone" placeholder="可选"></div>
+      <div class="field"><label>与新人的关系</label>
+        <select id="g_relation">
+          <option>亲戚</option><option>朋友</option><option>同事</option><option>同学</option>
+          <option>领导</option><option>客户</option><option>邻居</option><option>同乡</option><option>其他</option>
+        </select>
+      </div>
+      <div class="field"><label>礼金金额(元) <span class="req">*</span></label><input id="g_amount" type="number" min="0" step="0.01" placeholder="0.00"></div>
+      <div class="field"><label>随礼方式</label>
+        <select id="g_method">
+          <option>现金</option><option>微信</option><option>支付宝</option><option>银行转账</option><option>其他</option>
+        </select>
+      </div>
+      <div class="field"><label>是否已收</label>
+        <select id="g_paid"><option value="1">已收</option><option value="0">未收/挂账</option></select>
+      </div>
+      <div class="field"><label>是否到场</label>
+        <select id="g_attended"><option value="1">到场</option><option value="0">未到场</option></select>
+      </div>
+      <div class="field"><label>登记日期</label><input id="g_regdate" type="date"></div>
+      <div class="field" style="grid-column:1/3"><label>备注</label><textarea id="g_note" rows="2" placeholder="如：带家属2人、伴手礼已给"></textarea></div>
+    </div>
+    <div class="foot">
+      <button class="btn ghost" data-close="guestMask">取消</button>
+      <button class="btn primary" id="btnSaveGuest">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 回礼模态 -->
+<div class="modal-mask" id="returnMask">
+  <div class="modal">
+    <h3>🎁 <span id="returnModalTitle">添加回礼</span></h3>
+    <div class="body two">
+      <div class="field"><label>对象/宾客</label><input id="r_name" placeholder="回礼给谁（可留空）"></div>
+      <div class="field"><label>回礼项目</label><input id="r_item" placeholder="如：喜糖、红包、伴手礼"></div>
+      <div class="field"><label>金额/价值(元)</label><input id="r_amount" type="number" min="0" step="0.01" placeholder="0.00"></div>
+      <div class="field"><label>日期</label><input id="r_date" type="date"></div>
+      <div class="field" style="grid-column:1/3"><label>备注</label><textarea id="r_note" rows="2" placeholder="可选"></textarea></div>
+    </div>
+    <div class="foot">
+      <button class="btn ghost" data-close="returnMask">取消</button>
+      <button class="btn primary" id="btnSaveReturn">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 通用确认 -->
+<div class="modal-mask" id="confirmMask">
+  <div class="modal" style="width:min(420px,100%)">
+    <h3>⚠️ 确认</h3>
+    <div class="body"><div id="confirmText" class="hint"></div></div>
+    <div class="foot">
+      <button class="btn ghost" data-close="confirmMask">取消</button>
+      <button class="btn danger" id="btnConfirmYes">确定</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+const STORE_KEY = "xishi_fenzi_v1";
+const $ = (s,r=document)=>r.querySelector(s);
+const $$ = (s,r=document)=>[...r.querySelectorAll(s)];
+
+/* ---------- 状态 ---------- */
+let state = { events:[], currentId:null, theme:"light" };
+let editingGuestId = null, editingReturnId = null, editingEventId = null;
+let confirmAction = null;
+let guestFilter = { q:"", relation:"", paid:"", attended:"", sort:"amount", dir:-1 };
+
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+function today(){ return new Date().toISOString().slice(0,10); }
+function nowStamp(){ const d=new Date(), p=n=>String(n).padStart(2,"0"); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}_${p(d.getHours())}-${p(d.getMinutes())}-${p(d.getSeconds())}`; }
+function fmt(n){ n = Number(n)||0; return "¥"+n.toLocaleString("zh-CN",{minimumFractionDigits:0,maximumFractionDigits:2}); }
+function fmt0(n){ n = Number(n)||0; return n.toLocaleString("zh-CN",{minimumFractionDigits:0,maximumFractionDigits:2}); }
+
+let storageAvailable = true;
+let lastSaveErr = 0;
+function testStorage(){
+  try{ const k="__xishi_test__"; localStorage.setItem(k,"1"); localStorage.removeItem(k); storageAvailable=true; }
+  catch(e){ storageAvailable=false; }
+}
+function load(){
+  testStorage();
+  try{
+    const raw = localStorage.getItem(STORE_KEY);
+    if(raw){ state = JSON.parse(raw); }
+  }catch(e){ console.warn("load fail",e); }
+  if(!state.events) state.events = [];
+  if(!state.theme) state.theme = "light";
+  try{ const t=localStorage.getItem("xishi_theme"); if(t) state.theme=t; }catch(e){}
+  applyTheme();
+  if(state.currentId && !state.events.find(e=>e.id===state.currentId)){
+    state.currentId = state.events[0] ? state.events[0].id : null;
+  }
+}
+function save(){
+  if(!storageAvailable) return false;
+  try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); return true; }
+  catch(e){
+    storageAvailable=false;
+    const quota = (e.name==="QuotaExceededError" || e.code===22 || e.code===1014);
+    const msg = quota
+      ? "本地存储空间已满，数据仅本次会话有效，请尽快在「数据管理」导出备份。"
+      : "本地存储不可用，数据仅本次会话有效，请尽快在「数据管理」导出备份。";
+    if(Date.now()-lastSaveErr>6000){ toast(msg); lastSaveErr=Date.now(); }
+    return false;
+  }
+}
+function saveTheme(){ if(!storageAvailable) return; try{ localStorage.setItem("xishi_theme", state.theme); }catch(e){} }
+function applyTheme(){
+  const t = state.theme || "light";
+  document.documentElement.setAttribute("data-theme", t);
+  const btn = $("#btnTheme");
+  if(btn) btn.textContent = t==="light" ? "🌞" : t==="dark" ? "🌙" : "🌑";
+}
+function cur(){ return state.events.find(e=>e.id===state.currentId) || null; }
+
+/* ---------- 工具 ---------- */
+function toast(msg){
+  const t=$("#toast"); t.textContent=msg; t.classList.add("show");
+  clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove("show"),2000);
+}
+function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c])); }
+function openMask(id){ $("#"+id).classList.add("show"); }
+function closeMask(id){ $("#"+id).classList.remove("show"); }
+function ask(text, fn){ confirmAction=fn; $("#confirmText").textContent=text; openMask("confirmMask"); }
+
+/* ---------- 喜事管理 ---------- */
+function renderEventSelect(){
+  const sel=$("#eventSelect");
+  sel.innerHTML = state.events.map(e=>`<option value="${e.id}">${esc(e.name)}（${esc(e.type)}）</option>`).join("");
+  sel.value = state.currentId || "";
+  if(!state.events.length) sel.innerHTML = `<option value="">（暂无喜事）</option>`;
+}
+function fillEventModal(ev){
+  editingEventId = ev?ev.id:null;
+  $("#eventModalTitle").textContent = ev?"编辑喜事":"新建喜事";
+  $("#ev_name").value = ev?ev.name:"";
+  $("#ev_type").value = ev?ev.type:"婚礼";
+  $("#ev_host").value = ev?ev.host||"":"";
+  $("#ev_date").value = ev?ev.date||"":today();
+  $("#ev_location").value = ev?ev.location||"":"";
+  $("#ev_note").value = ev?ev.note||"":"";
+}
+function saveEvent(){
+  const name=$("#ev_name").value.trim();
+  if(!name){ toast("请填写喜事名称"); return; }
+  const data={
+    name, type:$("#ev_type").value, host:$("#ev_host").value.trim(),
+    date:$("#ev_date").value, location:$("#ev_location").value.trim(), note:$("#ev_note").value.trim()
+  };
+  if(editingEventId){
+    const e=state.events.find(x=>x.id===editingEventId);
+    Object.assign(e,data); toast("已更新喜事");
+  }else{
+    const e=Object.assign({id:uid(),guests:[],returns:[]},data);
+    state.events.push(e); state.currentId=e.id; toast("已新建喜事");
+  }
+  save(); renderEventSelect(); closeMask("eventMask"); renderAll();
+}
+
+/* ---------- 宾客 ---------- */
+function openGuestModal(g){
+  editingGuestId = g?g.id:null;
+  $("#guestModalTitle").textContent = g?"编辑宾客":"添加宾客";
+  $("#g_name").value=g?g.name:"";
+  $("#g_phone").value=g?(g.phone||""):"";
+  $("#g_relation").value=g?g.relation:"亲戚";
+  $("#g_amount").value=g?(g.amount||""):"";
+  $("#g_method").value=g?g.method:"现金";
+  $("#g_paid").value=g?(g.paid?"1":"0"):"1";
+  $("#g_attended").value=g?(g.attended?"1":"0"):"1";
+  $("#g_regdate").value=g?g.regdate:today();
+  $("#g_note").value=g?(g.note||""):"";
+  openMask("guestMask");
+}
+function saveGuest(){
+  const ev=cur(); if(!ev){ toast("请先创建喜事"); return; }
+  const name=$("#g_name").value.trim();
+  const amount=parseFloat($("#g_amount").value);
+  if(!name){ toast("请填写宾客姓名"); return; }
+  if(isNaN(amount)||amount<0){ toast("请填写有效金额"); return; }
+  const data={
+    name, phone:$("#g_phone").value.trim(), relation:$("#g_relation").value,
+    amount, method:$("#g_method").value, paid:$("#g_paid").value==="1",
+    attended:$("#g_attended").value==="1", regdate:$("#g_regdate").value, note:$("#g_note").value.trim()
+  };
+  if(editingGuestId){
+    const g=ev.guests.find(x=>x.id===editingGuestId); Object.assign(g,data); toast("已更新");
+  }else{
+    ev.guests.push(Object.assign({id:uid()},data)); toast("已添加 "+name);
+  }
+  save(); closeMask("guestMask"); renderAll();
+}
+function delGuest(id){
+  const ev=cur(); if(!ev) return;
+  const g=ev.guests.find(x=>x.id===id); if(!g) return;
+  ask(`确定删除宾客「${g.name}」的登记记录吗？`, ()=>{
+    ev.guests = ev.guests.filter(x=>x.id!==id); save(); renderAll(); toast("已删除");
+  });
+}
+
+/* ---------- 回礼 ---------- */
+function openReturnModal(r){
+  editingReturnId = r?r.id:null;
+  $("#returnModalTitle").textContent = r?"编辑回礼":"添加回礼";
+  $("#r_name").value=r?(r.name||""):"";
+  $("#r_item").value=r?r.item:"";
+  $("#r_amount").value=r?(r.amount||""):"";
+  $("#r_date").value=r?r.date:today();
+  $("#r_note").value=r?(r.note||""):"";
+  openMask("returnMask");
+}
+function saveReturn(){
+  const ev=cur(); if(!ev){ toast("请先创建喜事"); return; }
+  const item=$("#r_item").value.trim();
+  const amount=parseFloat($("#r_amount").value);
+  if(!item){ toast("请填写回礼项目"); return; }
+  if(isNaN(amount)||amount<0){ toast("请填写有效金额"); return; }
+  const data={ name:$("#r_name").value.trim(), item, amount, date:$("#r_date").value, note:$("#r_note").value.trim() };
+  if(editingReturnId){
+    const r=ev.returns.find(x=>x.id===editingReturnId); Object.assign(r,data); toast("已更新");
+  }else{ ev.returns.push(Object.assign({id:uid()},data)); toast("已添加回礼"); }
+  save(); closeMask("returnMask"); renderAll();
+}
+function delReturn(id){
+  const ev=cur(); if(!ev) return;
+  ask("确定删除这条回礼记录吗？", ()=>{
+    ev.returns=ev.returns.filter(x=>x.id!==id); save(); renderAll(); toast("已删除");
+  });
+}
+
+/* ---------- 计算 ---------- */
+function stats(){
+  const ev=cur(); const g=ev?ev.guests:[];
+  const total=g.length;
+  const sum=g.reduce((a,b)=>a+Number(b.amount||0),0);
+  const paidSum=g.filter(x=>x.paid).reduce((a,b)=>a+Number(b.amount||0),0);
+  const unpaidSum=sum-paidSum;
+  const att=g.filter(x=>x.attended).length;
+  const avg=total?sum/total:0;
+  return {total,sum,paidSum,unpaidSum,att,avg,ret:ev?(ev.returns||[]):[]};
+}
+function relationMap(){
+  const ev=cur(); const m={};
+  (ev?ev.guests:[]).forEach(x=>{ m[x.relation]=(m[x.relation]||0)+Number(x.amount||0); });
+  return m;
+}
+function filteredGuests(){
+  const ev=cur(); if(!ev) return [];
+  let list=ev.guests.filter(x=>{
+    if(guestFilter.q){
+      const q=guestFilter.q.toLowerCase();
+      const hay=(x.name+" "+(x.phone||"")+" "+(x.note||"")+" "+(x.relation||"")).toLowerCase();
+      if(!hay.includes(q)) return false;
+    }
+    if(guestFilter.relation && x.relation!==guestFilter.relation) return false;
+    if(guestFilter.paid!=="" && String(x.paid)!==guestFilter.paid) return false;
+    if(guestFilter.attended!=="" && String(x.attended)!==guestFilter.attended) return false;
+    return true;
+  });
+  const k=guestFilter.sort, dir=guestFilter.dir;
+  list.sort((a,b)=>{
+    let va,vb;
+    if(k==="amount"){ va=Number(a.amount||0); vb=Number(b.amount||0); }
+    else if(k==="name"){ va=a.name; vb=b.name; return dir*va.localeCompare(vb,"zh"); }
+    else if(k==="regdate"){ va=a.regdate||""; vb=b.regdate||""; }
+    else { va=a.relation; vb=b.relation; return dir*String(va).localeCompare(String(vb),"zh"); }
+    return dir*(va-vb);
+  });
+  return list;
+}
+
+/* ---------- 渲染：概览 ---------- */
+function renderDash(){
+  const ev=cur(); const s=stats();
+  const box=$("#tab-dash");
+  if(!ev){
+    box.innerHTML = emptyState("还没有喜事","先创建一场喜事，开始登记份子钱吧");
+    return;
+  }
+  const retSum=s.ret.reduce((a,b)=>a+Number(b.amount||0),0);
+  const net = s.sum - retSum;
+  let allEv=0, allG=0, allSum=0;
+  state.events.forEach(e=>{ allEv++; allG+=e.guests.length; allSum+=e.guests.reduce((a,b)=>a+Number(b.amount||0),0); });
+  const recent=[...ev.guests].sort((a,b)=>String(b.regdate||"").localeCompare(String(a.regdate||""))).slice(0,5);
+  box.innerHTML = `
+    <div class="print-only"><h2>${esc(ev.name)} · 礼金概览</h2><div>类型：${esc(ev.type)} ｜ 日期：${esc(ev.date||"-")} ｜ 地点：${esc(ev.location||"-")}</div></div>
+    <div class="grid kpis">
+      <div class="kpi"><div class="label">宾客人数</div><div class="val">${s.total}</div></div>
+      <div class="kpi"><div class="label">礼金总额</div><div class="val" style="color:var(--brand)">${fmt(s.sum)}</div></div>
+      <div class="kpi"><div class="label">已收 / 未收</div><div class="val small">${fmt(s.paidSum)} <span style="font-size:13px;color:var(--ink-soft)">/ ${fmt(s.unpaidSum)}</span></div></div>
+      <div class="kpi"><div class="label">到场人数</div><div class="val">${s.att}<span style="font-size:13px;color:var(--ink-soft)"> / ${s.total}</span></div></div>
+      <div class="kpi"><div class="label">人均礼金</div><div class="val small">${fmt(s.avg)}</div></div>
+      <div class="kpi"><div class="label">回礼支出</div><div class="val small" style="color:var(--gold)">${fmt(retSum)}</div></div>
+      <div class="kpi"><div class="label">净收(礼金-回礼)</div><div class="val small" style="color:var(--ok)">${fmt(net)}</div></div>
+    </div>
+    <div class="card no-print" style="margin:0 0 16px;display:flex;gap:18px;flex-wrap:wrap;font-size:13px;color:var(--ink-soft)">
+      📚 全部喜事合计：<b style="color:var(--ink)">${allEv}</b> 场 ｜ 宾客 <b style="color:var(--ink)">${allG}</b> 人 ｜ 礼金 <b style="color:var(--brand)">${fmt(allSum)}</b>
+    </div>
+    <div class="charts">
+      <div class="chart-box"><h4>关系金额占比</h4><canvas id="pieRel" width="320" height="240"></canvas><div class="legend" id="pieRelLegend"></div></div>
+      <div class="chart-box"><h4>金额区间分布</h4><canvas id="barAmt" width="320" height="240"></canvas><div class="legend" id="barAmtLegend"></div></div>
+      <div class="chart-box wide"><h4>每日收款趋势</h4><canvas id="trend" width="680" height="220"></canvas><div class="legend" id="trendLegend"></div></div>
+      <div class="chart-box"><h4>收礼状态</h4><canvas id="donutPaid" width="320" height="240"></canvas><div class="legend" id="donutPaidLegend"></div></div>
+      <div class="chart-box"><h4>到场情况</h4><canvas id="donutAtt" width="320" height="240"></canvas><div class="legend" id="donutAttLegend"></div></div>
+      <div class="chart-box wide"><h4>礼金 Top10 宾客</h4><canvas id="top10" width="680" height="260"></canvas><div class="legend" id="top10Legend"></div></div>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <h4 style="margin:0 0 10px">🕒 最近登记</h4>
+      ${recent.length?`<div style="overflow:auto"><table><thead><tr><th>姓名</th><th>关系</th><th style="text-align:right">金额</th><th>登记日</th></tr></thead><tbody>${recent.map(g=>`<tr><td><b>${esc(g.name)}</b></td><td><span class="tag rel">${esc(g.relation)}</span></td><td class="num" style="color:var(--brand)">${fmt(g.amount)}</td><td>${esc(g.regdate||"-")}</td></tr>`).join("")}</tbody></table></div>`:`<div class="hint">暂无登记</div>`}
+    </div>
+    <div class="card" style="margin-top:16px">
+      <h4 style="margin:0 0 10px">📌 当前喜事信息</h4>
+      <div class="hint" style="line-height:1.9">
+        名称：<b>${esc(ev.name)}</b> ｜ 类型：${esc(ev.type)}<br>
+        主角：${esc(ev.host||"-")} ｜ 日期：${esc(ev.date||"-")}<br>
+        地点：${esc(ev.location||"-")}<br>
+        ${ev.note?("备注："+esc(ev.note)):"备注：—"}
+      </div>
+      <div style="margin-top:12px"><button class="btn primary no-print" onclick="switchTab('guests')">＋ 去登记宾客</button></div>
+    </div>`;
+  drawDashCharts();
+}
+
+/* ---------- 渲染：宾客 ---------- */
+function renderGuests(){
+  const ev=cur(); const box=$("#tab-guests");
+  if(!ev){ box.innerHTML = emptyState("还没有喜事","先创建一场喜事，开始登记份子钱吧"); return; }
+  const rels=[...new Set(ev.guests.map(g=>g.relation))];
+  const relOpts=`<option value="">全部关系</option>`+rels.map(r=>`<option ${guestFilter.relation===r?"selected":""} value="${esc(r)}">${esc(r)}</option>`).join("");
+  box.innerHTML = `
+    <div class="toolbar no-print">
+      <div class="grow"><input id="f_q" placeholder="🔍 搜索姓名 / 电话 / 备注" value="${esc(guestFilter.q)}" style="width:100%"></div>
+      <select id="f_rel">${relOpts}</select>
+      <select id="f_paid">
+        <option value="">收礼状态</option>
+        <option value="1" ${guestFilter.paid==="1"?"selected":""}>已收</option>
+        <option value="0" ${guestFilter.paid==="0"?"selected":""}>未收</option>
+      </select>
+      <select id="f_att">
+        <option value="">到场状态</option>
+        <option value="1" ${guestFilter.attended==="1"?"selected":""}>到场</option>
+        <option value="0" ${guestFilter.attended==="0"?"selected":""}>未到场</option>
+      </select>
+      <button class="btn" id="btnExpFiltered" title="导出当前筛选结果">⬇️ 导出筛选</button>
+      <button class="btn primary" id="btnAddGuest">＋ 添加宾客</button>
+    </div>
+    <div class="card" id="guestCard"></div>`;
+  $("#btnAddGuest").onclick=()=>openGuestModal(null);
+  $("#btnExpFiltered").onclick=()=>exportCsv(true);
+  $("#f_q").oninput=e=>{ guestFilter.q=e.target.value; renderGuestTable(); };
+  $("#f_rel").onchange=e=>{ guestFilter.relation=e.target.value; renderGuestTable(); };
+  $("#f_paid").onchange=e=>{ guestFilter.paid=e.target.value; renderGuestTable(); };
+  $("#f_att").onchange=e=>{ guestFilter.attended=e.target.value; renderGuestTable(); };
+  renderGuestTable();
+}
+function renderGuestTable(){
+  const card=$("#guestCard"); if(!card) return;
+  const list=filteredGuests();
+  const ev=cur();
+  const sum=list.reduce((a,b)=>a+Number(b.amount||0),0);
+  if(!ev.guests.length){
+    card.innerHTML = emptyState("还没有宾客登记","点击「＋ 添加宾客」记录第一份份子钱");
+    return;
+  }
+  const arrow=(k)=> guestFilter.sort===k ? `<span class="arr">${guestFilter.dir<0?"▼":"▲"}</span>` : "";
+  card.innerHTML = `
+    <div class="bulkbar no-print" id="bulkbar">
+      <span>已选 <b id="selCount">0</b> 项</span>
+      <button class="btn sm primary" id="bulkPaid">标记已收</button>
+      <button class="btn sm" id="bulkUnpaid">标记未收</button>
+      <button class="btn sm danger" id="bulkDel">删除选中</button>
+    </div>
+    <div style="margin-bottom:10px;font-size:13px;color:var(--ink-soft)">共 ${list.length} 条（筛选后）｜ 金额合计 <b style="color:var(--brand)">${fmt(sum)}</b></div>
+    <div style="overflow:auto">
+    <table>
+      <thead><tr>
+        <th class="col-sel"><input type="checkbox" id="selAll"></th>
+        <th data-s="name">姓名 ${arrow("name")}</th>
+        <th data-s="relation">关系 ${arrow("relation")}</th>
+        <th>电话</th>
+        <th data-s="amount" style="text-align:right">金额 ${arrow("amount")}</th>
+        <th>方式</th>
+        <th>状态</th>
+        <th>到场</th>
+        <th data-s="regdate">登记日 ${arrow("regdate")}</th>
+        <th>备注</th>
+        <th class="no-print">操作</th>
+      </tr></thead>
+      <tbody>
+        ${list.map(g=>`
+          <tr>
+            <td class="col-sel"><input type="checkbox" class="sel" data-id="${g.id}"></td>
+            <td><b>${esc(g.name)}</b></td>
+            <td><span class="tag rel">${esc(g.relation)}</span></td>
+            <td>${esc(g.phone||"-")}</td>
+            <td class="num" style="color:var(--brand)">${fmt(g.amount)}</td>
+            <td>${esc(g.method)}</td>
+            <td>${g.paid?'<span class="tag ok">已收</span>':'<span class="tag no">未收</span>'}</td>
+            <td>${g.attended?'<span class="tag att">到场</span>':'<span class="tag abs">未到</span>'}</td>
+            <td>${esc(g.regdate||"-")}</td>
+            <td style="max-width:160px;white-space:normal;color:var(--ink-soft)">${esc(g.note||"-")}</td>
+            <td class="no-print"><div class="row-actions">
+              <button class="btn sm" data-edit="${g.id}">编辑</button>
+              <button class="btn sm" data-copy="${g.id}">复制</button>
+              <button class="btn sm danger" data-del="${g.id}">删</button>
+            </div></td>
+          </tr>`).join("")}
+      </tbody>
+    </table></div>`;
+  $$("#guestCard th[data-s]").forEach(th=>th.onclick=()=>{
+    const k=th.dataset.s;
+    if(guestFilter.sort===k) guestFilter.dir*=-1; else { guestFilter.sort=k; guestFilter.dir = k==="name"||k==="relation"?1:-1; }
+    renderGuestTable();
+  });
+  $$("#guestCard [data-edit]").forEach(b=>b.onclick=()=>openGuestModal(ev.guests.find(x=>x.id===b.dataset.edit)));
+  $$("#guestCard [data-copy]").forEach(b=>b.onclick=()=>copyGuest(b.dataset.copy));
+  $$("#guestCard [data-del]").forEach(b=>b.onclick=()=>delGuest(b.dataset.del));
+  const selAll=$("#selAll"); if(selAll) selAll.onchange=e=>{ $$("#guestCard .sel").forEach(c=>c.checked=e.target.checked); updateBulk(); };
+  $$("#guestCard .sel").forEach(c=>c.onchange=updateBulk);
+  const bp=$("#bulkPaid"), bu=$("#bulkUnpaid"), bd=$("#bulkDel");
+  if(bp) bp.onclick=()=>bulkSetPaid(true);
+  if(bu) bu.onclick=()=>bulkSetPaid(false);
+  if(bd) bd.onclick=()=>bulkDelete();
+  updateBulk();
+}
+function getSelectedIds(){ return $$("#guestCard .sel").filter(c=>c.checked).map(c=>c.dataset.id); }
+function updateBulk(){
+  const bar=$("#bulkbar"); if(!bar) return;
+  const n=getSelectedIds().length;
+  const sc=$("#selCount"); if(sc) sc.textContent=n;
+  bar.classList.toggle("show", n>0);
+}
+function bulkSetPaid(paid){
+  const ids=new Set(getSelectedIds()); if(!ids.size){ toast("请先勾选宾客"); return; }
+  const ev=cur(); let c=0;
+  ev.guests.forEach(g=>{ if(ids.has(g.id)){ g.paid=paid; c++; } });
+  save(); renderAll(); toast(`已标记 ${c} 位为${paid?"已收":"未收"}`);
+}
+function bulkDelete(){
+  const ids=getSelectedIds(); if(!ids.length){ toast("请先勾选宾客"); return; }
+  ask(`确定删除选中的 ${ids.length} 位宾客记录吗？`, ()=>{
+    const ev=cur(); ev.guests=ev.guests.filter(g=>!ids.includes(g.id));
+    save(); renderAll(); toast("已删除选中宾客");
+  });
+}
+function copyGuest(id){
+  const ev=cur(); const g=ev.guests.find(x=>x.id===id); if(!g) return;
+  const c=Object.assign({},g); delete c.id;
+  openGuestModal(c);
+}
+
+/* ---------- 渲染：回礼 ---------- */
+function renderReturns(){
+  const ev=cur(); const box=$("#tab-returns");
+  if(!ev){ box.innerHTML = emptyState("还没有喜事","先创建一场喜事"); return; }
+  const rs=ev.returns||[];
+  const sum=rs.reduce((a,b)=>a+Number(b.amount||0),0);
+  box.innerHTML = `
+    <div class="toolbar no-print">
+      <div class="grow"></div>
+      <button class="btn gold" id="btnAddReturn">＋ 添加回礼</button>
+    </div>
+    <div class="card">
+      <div style="margin-bottom:10px;font-size:13px;color:var(--ink-soft)">共 ${rs.length} 条 ｜ 回礼总支出 <b style="color:var(--gold)">${fmt(sum)}</b></div>
+      ${rs.length?`
+      <div style="overflow:auto"><table>
+        <thead><tr><th>对象</th><th>项目</th><th style="text-align:right">金额</th><th>日期</th><th>备注</th><th class="no-print">操作</th></tr></thead>
+        <tbody>${rs.map(r=>`
+          <tr>
+            <td>${esc(r.name||"-")}</td>
+            <td>${esc(r.item)}</td>
+            <td class="num" style="color:var(--gold)">${fmt(r.amount)}</td>
+            <td>${esc(r.date||"-")}</td>
+            <td style="color:var(--ink-soft)">${esc(r.note||"-")}</td>
+            <td class="no-print"><div class="row-actions">
+              <button class="btn sm" data-e="${r.id}">编辑</button>
+              <button class="btn sm danger" data-d="${r.id}">删</button>
+            </div></td>
+          </tr>`).join("")}</tbody>
+      </table></div>`:emptyState("还没有回礼记录","点击「＋ 添加回礼」")}
+    </div>`;
+  $("#btnAddReturn").onclick=()=>openReturnModal(null);
+  $$("#tab-returns [data-e]").forEach(b=>b.onclick=()=>openReturnModal(ev.returns.find(x=>x.id===b.dataset.e)));
+  $$("#tab-returns [data-d]").forEach(b=>b.onclick=()=>delReturn(b.dataset.d));
+}
+
+/* ---------- 渲染：统计 ---------- */
+function renderStats(){
+  const ev=cur(); const box=$("#tab-stats");
+  if(!ev){ box.innerHTML = emptyState("还没有喜事","先创建一场喜事"); return; }
+  const s=stats(); const rm=relationMap();
+  const relRows=Object.entries(rm).sort((a,b)=>b[1]-a[1]);
+  const relTotal=s.sum||1;
+  const methodMap={}; ev.guests.forEach(g=>methodMap[g.method]=(methodMap[g.method]||0)+Number(g.amount||0));
+  const methodRows=Object.entries(methodMap).sort((a,b)=>b[1]-a[1]);
+  box.innerHTML = `
+    <div class="charts">
+      <div class="chart-box"><h4>关系金额占比</h4><canvas id="pieRel2" width="320" height="240"></canvas><div class="legend" id="pieRelLegend2"></div></div>
+      <div class="chart-box"><h4>金额区间分布</h4><canvas id="barAmt2" width="320" height="240"></canvas><div class="legend" id="barAmtLegend2"></div></div>
+      <div class="chart-box wide"><h4>每日收款趋势</h4><canvas id="trend2" width="680" height="220"></canvas><div class="legend" id="trendLegend2"></div></div>
+      <div class="chart-box"><h4>收礼状态</h4><canvas id="donutPaid2" width="320" height="240"></canvas><div class="legend" id="donutPaidLegend2"></div></div>
+      <div class="chart-box"><h4>到场情况</h4><canvas id="donutAtt2" width="320" height="240"></canvas><div class="legend" id="donutAttLegend2"></div></div>
+      <div class="chart-box wide"><h4>礼金 Top10 宾客</h4><canvas id="top102" width="680" height="260"></canvas><div class="legend" id="top10Legend2"></div></div>
+    </div>
+    <div class="grid" style="grid-template-columns:1fr 1fr; margin-top:16px">
+      <div class="card">
+        <h4 style="margin:0 0 10px">按关系统计</h4>
+        <table><thead><tr><th>关系</th><th style="text-align:right">人数</th><th style="text-align:right">金额</th><th style="text-align:right">占比</th></tr></thead>
+        <tbody>${relRows.map(([k,v])=>{
+          const cnt=ev.guests.filter(g=>g.relation===k).length;
+          return `<tr><td>${esc(k)}</td><td class="num">${cnt}</td><td class="num" style="color:var(--brand)">${fmt(v)}</td><td class="num">${(v/relTotal*100).toFixed(1)}%</td></tr>`;
+        }).join("")||`<tr><td colspan="4" style="color:var(--ink-soft)">暂无数据</td></tr>`}</tbody></table>
+      </div>
+      <div class="card">
+        <h4 style="margin:0 0 10px">按方式统计</h4>
+        <table><thead><tr><th>方式</th><th style="text-align:right">人数</th><th style="text-align:right">金额</th></tr></thead>
+        <tbody>${methodRows.map(([k,v])=>{
+          const cnt=ev.guests.filter(g=>g.method===k).length;
+          return `<tr><td>${esc(k)}</td><td class="num">${cnt}</td><td class="num" style="color:var(--brand)">${fmt(v)}</td></tr>`;
+        }).join("")||`<tr><td colspan="3" style="color:var(--ink-soft)">暂无数据</td></tr>`}</tbody></table>
+      </div>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <h4 style="margin:0 0 10px">收礼 / 回礼 汇总</h4>
+      <div class="hint" style="line-height:2">
+        礼金总额：<b style="color:var(--brand)">${fmt(s.sum)}</b> ｜
+        已收：<b style="color:var(--ok)">${fmt(s.paidSum)}</b>（${s.total?Math.round(s.paidSum/s.sum*100):0}%）｜
+        未收：<b style="color:var(--bad)">${fmt(s.unpaidSum)}</b><br>
+        回礼支出：<b style="color:var(--gold)">${fmt(s.ret.reduce((a,b)=>a+Number(b.amount||0),0))}</b> ｜
+        净收：<b style="color:var(--ok)">${fmt(s.sum - s.ret.reduce((a,b)=>a+Number(b.amount||0),0))}</b>
+      </div>
+      <div style="margin-top:12px"><button class="btn no-print" onclick="window.print()">🖨️ 打印礼簿</button></div>
+    </div>`;
+  drawStatsCharts();
+}
+
+/* ---------- 渲染：数据 ---------- */
+function renderData(){
+  const box=$("#tab-data");
+  box.innerHTML = `
+    <div class="data-actions">
+      <div class="data-row">
+        <div class="t">📤 导出 CSV</div>
+        <div class="d">导出当前喜事的宾客礼金明细，可用 Excel 打开</div>
+        <button class="btn primary" id="btnExpCsv">导出</button>
+      </div>
+      <div class="data-row">
+        <div class="t">📤 导出 JSON</div>
+        <div class="d">完整备份（含喜事、宾客、回礼），文件名带日期+时间，可再导入恢复</div>
+        <button class="btn primary" id="btnExpJson">导出</button>
+      </div>
+      <div class="data-row" style="flex-direction:column; align-items:stretch; gap:12px">
+        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center">
+          <div class="t">⏱️ 自动备份</div>
+          <div class="d">按设定时间间隔，自动导出带时间戳的 JSON 备份</div>
+          <label style="display:inline-flex; align-items:center; gap:6px; font-weight:700; cursor:pointer; margin-left:auto">
+            <input type="checkbox" id="autoOn"> 启用自动备份
+          </label>
+        </div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center">
+          <span class="hint">时间间隔</span>
+          <select id="autoInt">
+            <option value="1">1 分钟</option>
+            <option value="5" selected>5 分钟</option>
+            <option value="10">10 分钟</option>
+            <option value="30">30 分钟</option>
+            <option value="60">1 小时</option>
+            <option value="custom">自定义…</option>
+          </select>
+          <span id="autoCustomWrap" style="display:none">
+            <input type="number" id="autoCustom" min="1" max="1440" value="15" style="width:90px"> 分钟
+          </span>
+          <button class="btn" id="btnAutoNow">立即备份一次</button>
+        </div>
+        <div class="hint" id="autoStatus">未启用自动备份</div>
+      </div>
+      <div class="data-row">
+        <div class="t">📥 导入 JSON</div>
+        <div class="d">从备份文件恢复全部数据（将合并到现有数据）</div>
+        <input type="file" id="fileIn" accept="application/json,.json" style="flex:1;min-width:160px">
+        <button class="btn gold" id="btnImpJson">导入</button>
+      </div>
+      <div class="data-row">
+        <div class="t">🧪 示例数据</div>
+        <div class="d">载入一份演示数据，快速了解功能</div>
+        <button class="btn" id="btnSample">载入示例</button>
+      </div>
+      <div class="data-row">
+        <div class="t">🗑️ 清空数据</div>
+        <div class="d">删除全部喜事与登记记录（不可恢复）</div>
+        <button class="btn danger" id="btnClear">清空全部</button>
+      </div>
+    </div>`;
+  $("#btnExpCsv").onclick=exportCsv;
+  $("#btnExpJson").onclick=exportJson;
+  const autoOnEl=$("#autoOn"); if(autoOnEl) autoOnEl.onchange=()=>{ if(autoOnEl.checked) startAutoBackup(); else stopAutoBackup(); };
+  const autoIntEl=$("#autoInt");
+  if(autoIntEl){
+    autoIntEl.onchange=()=>{ const cw=$("#autoCustomWrap"); if(cw) cw.style.display=autoIntEl.value==="custom"?"inline":"none"; if(autoTimer) startAutoBackup(); };
+    const cw=$("#autoCustomWrap"); if(cw) cw.style.display=autoIntEl.value==="custom"?"inline":"none";
+  }
+  const autoCustomEl=$("#autoCustom"); if(autoCustomEl) autoCustomEl.oninput=()=>{ if(autoTimer) startAutoBackup(); };
+  const btnAutoNowEl=$("#btnAutoNow"); if(btnAutoNowEl) btnAutoNowEl.onclick=doAutoNow;
+  if(autoOnEl) autoOnEl.checked=!!autoTimer;
+  if(autoIntEl && autoTimer){ const opts=[...autoIntEl.options].map(o=>o.value); autoIntEl.value=opts.includes(String(autoRunningMin))?String(autoRunningMin):"custom"; if(autoIntEl.value==="custom"&&$("#autoCustom")) $("#autoCustom").value=autoRunningMin; }
+  updateAutoStatus();
+  $("#btnImpJson").onclick=()=>$("#fileIn").click();
+  $("#fileIn").onchange=importJson;
+  $("#btnSample").onclick=()=>ask("载入示例数据会新增一场示例喜事，确定吗？", loadSample);
+  $("#btnClear").onclick=()=>ask("将删除全部喜事和登记数据，且不可恢复。确定吗？", ()=>{
+    state={events:[],currentId:null,theme:state.theme}; save(); renderEventSelect(); renderAll(); toast("已清空");
+  });
+}
+
+/* ---------- 图表 ---------- */
+const PAL=["#c8202e","#e0b75a","#2e9e6b","#3a7bd5","#9b59b6","#e08a1e","#16a3a3","#d23b8a","#6c7a89","#c79a3a"];
+function drawPie(suffix=""){
+  const cv=$("#pieRel"+suffix); if(!cv) return;
+  const rm=relationMap(); const entries=Object.entries(rm).filter(e=>e[1]>0).sort((a,b)=>b[1]-a[1]);
+  const ctx=cv.getContext("2d"); const W=cv.width,H=cv.height;
+  ctx.clearRect(0,0,W,H);
+  if(!entries.length){ ctx.fillStyle="#bba193"; ctx.font="14px sans-serif"; ctx.textAlign="center"; ctx.fillText("暂无数据",W/2,H/2); $("#pieRelLegend"+suffix).innerHTML=""; return; }
+  const total=entries.reduce((a,b)=>a+b[1],0);
+  let ang=-Math.PI/2; const cx=W/2, cy=H/2, r=Math.min(W,H)/2-20;
+  entries.forEach((e,i)=>{
+    const slice=e[1]/total*Math.PI*2;
+    ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,r,ang,ang+slice); ctx.closePath();
+    ctx.fillStyle=PAL[i%PAL.length]; ctx.fill();
+    ang+=slice;
+  });
+  ctx.beginPath(); ctx.arc(cx,cy,r*0.55,0,Math.PI*2); ctx.fillStyle=getBg(); ctx.fill();
+  ctx.fillStyle=getInk(); ctx.font="bold 15px sans-serif"; ctx.textAlign="center"; ctx.textBaseline="middle";
+  ctx.fillText(fmt0(total),cx,cy);
+  $("#pieRelLegend"+suffix).innerHTML=entries.map((e,i)=>`<span><i style="background:${PAL[i%PAL.length]}"></i>${esc(e[0])} ${fmt(e[1])}</span>`).join("");
+}
+function drawBar(suffix=""){
+  const cv=$("#barAmt"+suffix); if(!cv) return;
+  const ev=cur(); const ctx=cv.getContext("2d"); const W=cv.width,H=cv.height;
+  ctx.clearRect(0,0,W,H);
+  if(!ev||!ev.guests.length){ ctx.fillStyle="#bba193"; ctx.font="14px sans-serif"; ctx.textAlign="center"; ctx.fillText("暂无数据",W/2,H/2); $("#barAmtLegend"+suffix).innerHTML=""; return; }
+  const bins=[[0,199],[200,499],[500,999],[1000,1999],[2000,4999],[5000,Infinity]];
+  const labels=["<200","200-499","500-999","1k-1.9k","2k-4.9k","≥5k"];
+  const counts=bins.map(([a,b])=>ev.guests.filter(g=>{const v=Number(g.amount||0);return v>=a&&v<=b;}).length);
+  const max=Math.max(...counts,1);
+  const padL=34,padB=28,padT=10,padR=10;
+  const cw=W-padL-padR, ch=H-padT-padB;
+  ctx.strokeStyle=getLine(); ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(padL,padT); ctx.lineTo(padL,padT+ch); ctx.lineTo(padL+cw,padT+ch); ctx.stroke();
+  ctx.fillStyle=getInk(); ctx.font="11px sans-serif"; ctx.textAlign="right"; ctx.textBaseline="middle";
+  for(let i=0;i<=max;i++){ const y=padT+ch-(i/max)*ch; ctx.fillText(i,padL-4,y); }
+  const bw=cw/counts.length;
+  counts.forEach((c,i)=>{
+    const h=(c/max)*ch; const x=padL+i*bw+4; const y=padT+ch-h;
+    ctx.fillStyle=PAL[i%PAL.length]; roundRect(ctx,x,y,bw-8,h,4); ctx.fill();
+    ctx.fillStyle=getInk(); ctx.textAlign="center"; ctx.textBaseline="top"; ctx.fillText(c,x+(bw-8)/2,padT+ch+4);
+  });
+  ctx.save(); ctx.fillStyle=getInk(); ctx.textAlign="center";
+  counts.forEach((c,i)=>{ const x=padL+i*bw+bw/2; });
+  ctx.restore();
+  $("#barAmtLegend"+suffix).innerHTML=labels.map((l,i)=>`<span><i style="background:${PAL[i%PAL.length]}"></i>${l}： ${counts[i]}人</span>`).join("");
+}
+function drawTrend(suffix=""){
+  const cv=$("#trend"+suffix); if(!cv) return;
+  const ev=cur(); const ctx=cv.getContext("2d"); const W=cv.width,H=cv.height;
+  ctx.clearRect(0,0,W,H);
+  if(!ev||!ev.guests.length){ ctx.fillStyle="#bba193"; ctx.font="14px sans-serif"; ctx.textAlign="center"; ctx.fillText("暂无数据",W/2,H/2); const lg=$("#trendLegend"+suffix); if(lg) lg.innerHTML=""; return; }
+  const map={}; ev.guests.forEach(g=>{ const d=g.regdate||"未知"; map[d]=(map[d]||0)+Number(g.amount||0); });
+  let days=Object.keys(map).filter(d=>d!=="未知").sort();
+  if(map["未知"]) days.push("未知");
+  if(!days.length){ ctx.fillText("暂无数据",W/2,H/2); return; }
+  const vals=days.map(d=>map[d]); const total=vals.reduce((a,b)=>a+b,0);
+  const max=Math.max(...vals,1);
+  const padL=46,padB=30,padT=14,padR=14;
+  const cw=W-padL-padR, ch=H-padT-padB;
+  ctx.strokeStyle=getLine(); ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(padL,padT); ctx.lineTo(padL,padT+ch); ctx.lineTo(padL+cw,padT+ch); ctx.stroke();
+  ctx.fillStyle=getInk(); ctx.font="11px sans-serif"; ctx.textAlign="right"; ctx.textBaseline="middle";
+  for(let i=0;i<=4;i++){ const y=padT+ch-(i/4)*ch; ctx.fillText(fmt0(max*i/4),padL-6,y); }
+  const step=days.length>1?cw/(days.length-1):0;
+  ctx.beginPath();
+  days.forEach((d,i)=>{ const x=padL+step*i; const y=padT+ch-(map[d]/max)*ch; if(i===0)ctx.moveTo(x,y); else ctx.lineTo(x,y); });
+  ctx.strokeStyle=PAL[0]; ctx.lineWidth=2.5; ctx.stroke();
+  ctx.lineTo(padL+step*(days.length-1),padT+ch); ctx.lineTo(padL,padT+ch); ctx.closePath();
+  ctx.fillStyle="rgba(200,32,46,.12)"; ctx.fill();
+  days.forEach((d,i)=>{ const x=padL+step*i; const y=padT+ch-(map[d]/max)*ch; ctx.beginPath(); ctx.arc(x,y,3,0,Math.PI*2); ctx.fillStyle=PAL[0]; ctx.fill(); });
+  ctx.fillStyle=getInk(); ctx.textAlign="center"; ctx.textBaseline="top"; ctx.font="10px sans-serif";
+  const thin=Math.ceil(days.length/8)||1;
+  days.forEach((d,i)=>{ if(i%thin===0||i===days.length-1){ const x=padL+step*i; ctx.fillText(d.length>5?d.slice(5):d,x,padT+ch+5); } });
+  const lg=$("#trendLegend"+suffix); if(lg) lg.innerHTML=`<span><i style="background:${PAL[0]}"></i>每日收款合计 ${fmt(total)}（${days.length} 天）</span>`;
+}
+function drawDonut(canvasId, legendId, segs, centerText){
+  const cv=$("#"+canvasId); if(!cv) return;
+  const ctx=cv.getContext("2d"); const W=cv.width,H=cv.height;
+  ctx.clearRect(0,0,W,H);
+  const total=segs.reduce((a,b)=>a+b.value,0);
+  if(total<=0){ ctx.fillStyle="#bba193"; ctx.font="14px sans-serif"; ctx.textAlign="center"; ctx.fillText("暂无数据",W/2,H/2); const lg=$("#"+legendId); if(lg) lg.innerHTML=""; return; }
+  let ang=-Math.PI/2; const cx=W/2, cy=H/2, r=Math.min(W,H)/2-16;
+  segs.forEach((s,i)=>{ const slice=s.value/total*Math.PI*2; ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,r,ang,ang+slice); ctx.closePath(); ctx.fillStyle=s.color; ctx.fill(); ang+=slice; });
+  ctx.beginPath(); ctx.arc(cx,cy,r*0.58,0,Math.PI*2); ctx.fillStyle=getBg(); ctx.fill();
+  ctx.fillStyle=getInk(); ctx.font="bold 16px sans-serif"; ctx.textAlign="center"; ctx.textBaseline="middle";
+  ctx.fillText(centerText||"",cx,cy);
+  const lg=$("#"+legendId); if(lg) lg.innerHTML=segs.map(s=>`<span><i style="background:${s.color}"></i>${esc(s.label)} ${fmt0(s.value)}（${(s.value/total*100).toFixed(0)}%）</span>`).join("");
+}
+function drawTop(suffix=""){
+  const cv=$("#top10"+suffix); if(!cv) return;
+  const ev=cur(); const ctx=cv.getContext("2d"); const W=cv.width,H=cv.height;
+  ctx.clearRect(0,0,W,H);
+  if(!ev||!ev.guests.length){ ctx.fillStyle="#bba193"; ctx.font="14px sans-serif"; ctx.textAlign="center"; ctx.fillText("暂无数据",W/2,H/2); const lg=$("#top10Legend"+suffix); if(lg) lg.innerHTML=""; return; }
+  const top=[...ev.guests].sort((a,b)=>Number(b.amount||0)-Number(a.amount||0)).slice(0,10);
+  const max=Math.max(...top.map(g=>Number(g.amount||0)),1);
+  const padL=84,padR=64,padT=10,padB=10;
+  const cw=W-padL-padR, ch=H-padT-padB;
+  const rowH=ch/top.length;
+  ctx.font="11px sans-serif";
+  top.forEach((g,i)=>{
+    const y=padT+i*rowH+rowH/2;
+    const bw=(Number(g.amount||0)/max)*cw;
+    ctx.fillStyle=PAL[i%PAL.length]; roundRect(ctx,padL,y-rowH/2+4,bw,rowH-8,4); ctx.fill();
+    ctx.fillStyle=getInk(); ctx.textAlign="right"; ctx.textBaseline="middle"; ctx.fillText(esc(g.name).slice(0,7), padL-6, y);
+    ctx.textAlign="left"; ctx.fillText(fmt(g.amount), padL+bw+6, y);
+  });
+  const lg=$("#top10Legend"+suffix); if(lg) lg.innerHTML=`<span>最高 ${fmt(top[0].amount)} ｜ 上榜门槛 ${fmt(top[top.length-1].amount)}</span>`;
+}
+function drawDashCharts(){
+  drawPie(); drawBar(); drawTrend();
+  const s=stats();
+  drawDonut("donutPaid","donutPaidLegend",[{label:"已收",value:s.paidSum,color:"#2e9e6b"},{label:"未收",value:s.unpaidSum,color:"#d23b3b"}], (s.sum?(s.paidSum/s.sum*100).toFixed(0):0)+"%");
+  drawDonut("donutAtt","donutAttLegend",[{label:"到场",value:s.att,color:"#c8202e"},{label:"未到场",value:(s.total-s.att),color:"#bba193"}], (s.total?(s.att/s.total*100).toFixed(0):0)+"%");
+  drawTop();
+}
+function drawStatsCharts(){
+  drawPie("2"); drawBar("2"); drawTrend("2");
+  const s=stats();
+  drawDonut("donutPaid2","donutPaidLegend2",[{label:"已收",value:s.paidSum,color:"#2e9e6b"},{label:"未收",value:s.unpaidSum,color:"#d23b3b"}], (s.sum?(s.paidSum/s.sum*100).toFixed(0):0)+"%");
+  drawDonut("donutAtt2","donutAttLegend2",[{label:"到场",value:s.att,color:"#c8202e"},{label:"未到场",value:(s.total-s.att),color:"#bba193"}], (s.total?(s.att/s.total*100).toFixed(0):0)+"%");
+  drawTop("2");
+}
+function roundRect(ctx,x,y,w,h,r){ if(h<0){y+=h;h=-h;} r=Math.min(r,w/2,h/2); ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+function getBg(){ return getComputedStyle(document.body).getPropertyValue("--panel").trim()||"#fff"; }
+function getInk(){ return getComputedStyle(document.body).getPropertyValue("--ink").trim()||"#333"; }
+function getLine(){ return getComputedStyle(document.body).getPropertyValue("--line").trim()||"#ddd"; }
+
+/* ---------- 导入导出 ---------- */
+function exportCsv(useFilter){
+  const ev=cur(); if(!ev){ toast("请先创建喜事"); return; }
+  const head=["姓名","关系","电话","金额","方式","是否已收","是否到场","登记日期","备注"];
+  const rows=(useFilter?filteredGuests():ev.guests).map(g=>[g.name,g.relation,g.phone||"",g.amount,g.method,g.paid?"已收":"未收",g.attended?"到场":"未到场",g.regdate||"",g.note||""]);
+  const csv="\ufeff"+[head,...rows].map(r=>r.map(c=>{
+    const s=String(c); return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;
+  }).join(",")).join("\n");
+  download((ev.name+(useFilter?"_筛选明细":"_礼金明细"))+".csv", csv, "text/csv;charset=utf-8");
+}
+function exportJson(quiet){
+  const data=JSON.stringify(state,null,2);
+  download("喜事份子数据备份_"+nowStamp()+".json", data, "application/json", quiet);
+}
+function download(name, content, type, quiet){
+  const blob=new Blob([content],{type}); const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob); a.download=name; a.click(); URL.revokeObjectURL(a.href);
+  if(!quiet) toast("已导出 "+name);
+}
+
+/* ---------- 自动备份 ---------- */
+let autoTimer=null, autoTick=null, autoNextAt=0, autoLastAt=0, autoRunningMin=5;
+function autoIntervalMin(){
+  const sel=$("#autoInt"); if(!sel) return autoRunningMin;
+  if(sel.value==="custom"){ const v=parseInt($("#autoCustom").value,10); return (v>=1&&v<=1440)?v:autoRunningMin; }
+  return parseInt(sel.value,10)||autoRunningMin;
+}
+function startAutoBackup(){
+  stopAutoBackup();
+  const min=autoIntervalMin(); autoRunningMin=min; const ms=min*60000;
+  autoNextAt=Date.now()+ms; autoTick=setInterval(updateAutoStatus,1000);
+  autoTimer=setInterval(()=>{ autoLastAt=Date.now(); exportJson(true); autoNextAt=Date.now()+ms; updateAutoStatus(); }, ms);
+  const on=$("#autoOn"); if(on) on.checked=true;
+  updateAutoStatus(); toast("已启用自动备份（每 "+min+" 分钟）");
+}
+function stopAutoBackup(){
+  if(autoTimer){ clearInterval(autoTimer); autoTimer=null; }
+  if(autoTick){ clearInterval(autoTick); autoTick=null; }
+  autoNextAt=0; const st=$("#autoStatus"); if(st) st.textContent="未启用自动备份";
+}
+function updateAutoStatus(){
+  const st=$("#autoStatus"); if(!st) return;
+  if(!autoTimer){ st.textContent="未启用自动备份"; return; }
+  const min=autoIntervalMin();
+  const fmtT=d=>{ const p=n=>String(n).padStart(2,"0"); return p(d.getHours())+":"+p(d.getMinutes())+":"+p(d.getSeconds()); };
+  const last=autoLastAt?fmtT(new Date(autoLastAt)):"—";
+  const left=Math.max(0,Math.ceil((autoNextAt-Date.now())/1000));
+  const mm=Math.floor(left/60), ss=String(left%60).padStart(2,"0");
+  st.innerHTML="✅ 已启用 · 每 <b>"+min+"</b> 分钟 · 上次：<b>"+last+"</b> · 下次约 <b>"+mm+"分"+ss+"秒</b>后";
+}
+function doAutoNow(){ exportJson(); toast("已立即备份一次"); }
+function importJson(e){
+  const f=e.target.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=()=>{
+    try{
+      const d=JSON.parse(r.result);
+      if(!d.events||!Array.isArray(d.events)) throw new Error("格式不正确");
+      d.events.forEach(ev=>{ if(!ev.id) ev.id=uid(); ev.guests=ev.guests||[]; ev.returns=ev.returns||[]; });
+      const exist=new Set(state.events.map(x=>x.id));
+      let added=0;
+      d.events.forEach(ev=>{ if(!exist.has(ev.id)){ state.events.push(ev); added++; } else { const old=state.events.find(x=>x.id===ev.id); old.guests=ev.guests; old.returns=ev.returns; old.name=ev.name; old.type=ev.type; old.host=ev.host; old.date=ev.date; old.location=ev.location; old.note=ev.note; } });
+      state.currentId=state.currentId||state.events[0].id;
+      save(); renderEventSelect(); renderAll(); toast("已导入，新增"+added+"场喜事");
+    }catch(err){ toast("导入失败："+err.message); }
+    e.target.value="";
+  };
+  r.readAsText(f);
+}
+function loadSample(){
+  const ev={id:uid(),name:"张三 & 李四 婚礼",type:"婚礼",host:"张三、李四",date:today(),location:"XX大酒店三楼宴会厅",
+    note:"示例数据，可随意修改或删除",guests:[],returns:[]};
+  const sample=[
+    ["王大明","亲戚","13800000001",1000,"现金",true,true,"某长辈，带家属"],
+    ["李雷","朋友","13800000002",600,"微信",true,true,"大学同学"],
+    ["韩梅梅","朋友","13800000003",800,"支付宝",true,true,"大学同学"],
+    ["张总","领导","13800000004",2000,"银行转账",true,false,"单位领导，未到场"],
+    ["赵敏","同事","13800000005",500,"微信",false,true,"部门同事"],
+    ["孙小美","同学","13800000006",300,"现金",true,true,"高中同学"],
+    ["周扒皮","客户","13800000007",1500,"银行转账",true,false,"合作方"],
+    ["刘姥姥","邻居","13800000008",200,"现金",true,true,"楼下邻居"]
+  ];
+  sample.forEach((r,i)=>ev.guests.push({id:uid(),name:r[0],relation:r[1],phone:r[2],amount:r[3],method:r[4],paid:r[5],attended:r[6],regdate:today(),note:r[7]}));
+  ev.returns=[{id:uid(),name:"全体宾客",item:"喜糖+伴手礼",amount:1200,date:today(),note:"人均约150元"}];
+  state.events.push(ev); state.currentId=ev.id; save(); renderEventSelect(); renderAll(); toast("已载入示例数据");
+}
+
+function emptyState(big,sub){
+  return `<div class="card empty"><div class="big">🎊</div><div style="font-size:16px;font-weight:700">${esc(big)}</div><div class="hint" style="margin-top:6px">${esc(sub)}</div>
+  <div class="cta no-print"><button class="btn primary" onclick="openEventModalNew()">＋ 新建喜事</button></div></div>`;
+}
+function openEventModalNew(){ fillEventModal(null); openMask("eventMask"); }
+
+/* ---------- Tab 切换 ---------- */
+function switchTab(tab){
+  $$(".tab").forEach(t=>t.classList.toggle("active",t.dataset.tab===tab));
+  ["dash","guests","returns","stats","data"].forEach(t=>{ $("#tab-"+t).hidden = t!==tab; });
+  if(tab==="dash") renderDash();
+  if(tab==="guests") renderGuests();
+  if(tab==="returns") renderReturns();
+  if(tab==="stats") renderStats();
+  if(tab==="data") renderData();
+}
+
+/* ---------- 渲染全部 ---------- */
+function renderAll(){
+  renderEventSelect();
+  const active=($(".tab.active")||{}).dataset?.tab || "dash";
+  if(active==="dash") renderDash();
+  else if(active==="guests") renderGuests();
+  else if(active==="returns") renderReturns();
+  else if(active==="stats") renderStats();
+  else if(active==="data") renderData();
+}
+
+/* ---------- 事件绑定 ---------- */
+function bind(){
+  $("#eventSelect").onchange=e=>{ state.currentId=e.target.value; save(); renderAll(); };
+  $("#btnNewEvent").onclick=()=>openEventModalNew();
+  $("#btnEditEvent").onclick=()=>{ const ev=cur(); if(!ev){ toast("请先创建喜事"); return; } fillEventModal(ev); openMask("eventMask"); };
+  $("#btnDelEvent").onclick=()=>{ const ev=cur(); if(!ev){ toast("请先创建喜事"); return; } ask(`确定删除喜事「${ev.name}」及其全部登记、回礼记录吗？此操作不可恢复。`, ()=>{ state.events=state.events.filter(x=>x.id!==ev.id); state.currentId=state.events[0]?state.events[0].id:null; save(); renderEventSelect(); renderAll(); toast("已删除喜事"); }); };
+  $("#btnSaveEvent").onclick=saveEvent;
+  $("#btnSaveGuest").onclick=saveGuest;
+  $("#btnSaveReturn").onclick=saveReturn;
+  $("#btnTheme").onclick=()=>{ const order=["light","dark","night"]; let i=order.indexOf(state.theme); if(i<0) i=0; state.theme=order[(i+1)%order.length]; applyTheme(); saveTheme(); renderAll(); };
+  $("#btnConfirmYes").onclick=()=>{ closeMask("confirmMask"); if(confirmAction){ const fn=confirmAction; confirmAction=null; fn(); } };
+  $$(".tab").forEach(t=>t.onclick=()=>switchTab(t.dataset.tab));
+  $$("[data-close]").forEach(b=>b.onclick=()=>closeMask(b.dataset.close));
+  $$(".modal-mask").forEach(m=>m.addEventListener("click",e=>{ if(e.target===m) m.classList.remove("show"); }));
+  document.addEventListener("keydown",e=>{ if(e.key==="Escape") $$(".modal-mask.show").forEach(m=>m.classList.remove("show")); });
+  window.addEventListener("resize",()=>{ const a=($(".tab.active")||{}).dataset?.tab; if(a==="dash") drawDashCharts(); else if(a==="stats") drawStatsCharts(); });
+}
+
+/* ---------- 启动 ---------- */
+load(); bind(); renderAll();
+if(!storageAvailable){ toast("提示：当前环境禁用了本地存储，数据仅本次会话有效，可到「数据管理」导出备份。"); }
+</script>
+</body>
+</html>

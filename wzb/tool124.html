@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>三十六计 · 智谋全书</title>
+<style>
+  :root{
+    --bg:#f4ece1; --bg2:#efe3d3; --card:#fffdf8; --ink:#2b2b28; --ink2:#6b635a;
+    --line:#d8c9b2; --accent:#8a2b1d; --accent2:#b8862f; --gold:#b8862f;
+    --shadow:rgba(80,55,30,.18); --chip:#ead9bf; --read:#3e7d4f;
+  }
+  [data-theme="dark"]{
+    --bg:#1a1714; --bg2:#221d18; --card:#2a241e; --ink:#ece3d4; --ink2:#a99c87;
+    --line:#3d342a; --accent:#d9785f; --accent2:#d9a94e; --gold:#d9a94e;
+    --shadow:rgba(0,0,0,.5); --chip:#3a322a; --read:#7ec98f;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{
+    font-family:"Noto Serif SC","Songti SC","STSong",serif;
+    background:linear-gradient(160deg,var(--bg),var(--bg2));
+    color:var(--ink); line-height:1.7; min-height:100vh; transition:background .4s,color .4s;
+  }
+  /* 顶部 */
+  header{position:sticky; top:0; z-index:50; backdrop-filter:blur(10px);
+    background:color-mix(in srgb, var(--bg) 82%, transparent);
+    border-bottom:1px solid var(--line); padding:10px 16px;}
+  .topbar{display:flex; align-items:center; gap:12px; max-width:1200px; margin:0 auto; flex-wrap:wrap}
+  .brand{display:flex; align-items:center; gap:10px; font-weight:700; font-size:20px; letter-spacing:2px}
+  .seal{width:34px; height:34px; border-radius:6px; background:var(--accent); color:#fff;
+    display:grid; place-items:center; font-size:18px; box-shadow:0 2px 6px var(--shadow)}
+  .brand small{font-weight:400; font-size:12px; color:var(--ink2); letter-spacing:1px; display:block; margin-top:-2px}
+  .spacer{flex:1}
+  .icon-btn{border:1px solid var(--line); background:var(--card); color:var(--ink);
+    width:38px; height:38px; border-radius:9px; font-size:18px; cursor:pointer;
+    display:grid; place-items:center; transition:.2s;}
+  .icon-btn:hover{border-color:var(--accent); color:var(--accent)}
+  .icon-btn.on{background:var(--accent); color:#fff; border-color:var(--accent)}
+  /* 工具栏 */
+  .toolbar{max-width:1200px; margin:14px auto 0; padding:0 16px; display:flex; gap:10px; flex-wrap:wrap; align-items:center}
+  .search{flex:1; min-width:200px; position:relative}
+  .search input{width:100%; padding:11px 14px 11px 38px; border:1px solid var(--line); border-radius:10px;
+    background:var(--card); color:var(--ink); font-size:15px; font-family:inherit; outline:none; transition:.2s}
+  .search input:focus{border-color:var(--accent)}
+  .search svg{position:absolute; left:12px; top:50%; transform:translateY(-50%); opacity:.5}
+  /* 分类标签 */
+  .cats{max-width:1200px; margin:14px auto 0; padding:0 16px; display:flex; gap:8px; flex-wrap:wrap}
+  .cat-pill{border:1px solid var(--line); background:var(--card); color:var(--ink2);
+    padding:7px 13px; border-radius:20px; cursor:pointer; font-size:13px; transition:.2s; font-family:inherit}
+  .cat-pill:hover{color:var(--accent)}
+  .cat-pill.active{background:var(--gold); color:#1a1714; border-color:var(--gold); font-weight:600}
+  /* 统计 + 进度 */
+  .stats{max-width:1200px; margin:12px auto 0; padding:0 16px; display:flex; gap:18px; flex-wrap:wrap; font-size:13px; color:var(--ink2)}
+  .stats b{color:var(--accent); font-size:15px}
+  .progress{max-width:1200px; margin:10px auto 0; padding:0 16px}
+  .progress-bar{height:7px; background:var(--chip); border-radius:6px; overflow:hidden}
+  .progress-fill{height:100%; width:0; background:linear-gradient(90deg,var(--accent),var(--gold)); transition:width .5s}
+  .progress-txt{font-size:12px; color:var(--ink2); margin-top:5px}
+  /* 网格 */
+  .grid{max-width:1200px; margin:18px auto 40px; padding:0 16px;
+    display:grid; gap:16px; grid-template-columns:repeat(auto-fill,minmax(270px,1fr))}
+  .card{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:18px;
+    cursor:pointer; position:relative; transition:.22s; box-shadow:0 2px 8px var(--shadow);
+    display:flex; flex-direction:column; gap:8px; min-height:130px}
+  .card:hover{transform:translateY(-4px); border-color:var(--accent); box-shadow:0 10px 24px var(--shadow)}
+  .card .no{position:absolute; top:12px; right:14px; font-size:30px; font-weight:700; color:var(--line); font-style:italic}
+  .card h3{font-size:21px; letter-spacing:2px; color:var(--ink)}
+  .card .py{font-size:12px; color:var(--accent2); letter-spacing:1px}
+  .card .cat-tag{font-size:12px; color:var(--ink2); background:var(--chip); padding:2px 9px; border-radius:12px; align-self:flex-start}
+  .card .orig{font-size:13px; color:var(--ink2); margin-top:2px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden}
+  .card .flags{position:absolute; bottom:12px; right:14px; display:flex; gap:6px; font-size:14px}
+  .flag-read{color:var(--read)} .flag-fav{color:var(--accent)}
+  .flag-note{color:var(--accent2)}
+  /* 每日/随机 横幅 */
+  .banner{max-width:1200px; margin:18px auto 0; padding:0 16px}
+  .feature{display:grid; grid-template-columns:1fr 1fr; gap:14px}
+  .feat-card{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:18px; cursor:pointer; transition:.22s;
+    box-shadow:0 2px 8px var(--shadow); position:relative; overflow:hidden}
+  .feat-card:hover{transform:translateY(-3px); border-color:var(--accent)}
+  .feat-card .ftag{font-size:12px; color:var(--accent2); letter-spacing:2px}
+  .feat-card h3{font-size:24px; letter-spacing:3px; margin:4px 0}
+  .feat-card p{font-size:13px; color:var(--ink2); display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden}
+  .feat-card .deco{position:absolute; right:-10px; bottom:-20px; font-size:80px; opacity:.06; font-weight:700}
+  /* 弹窗 */
+  .overlay{position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:100; display:none; align-items:flex-start; justify-content:center; padding:24px 16px; overflow:auto}
+  .overlay.show{display:flex; animation:fade .25s}
+  @keyframes fade{from{opacity:0}to{opacity:1}}
+  .modal{background:var(--card); border:1px solid var(--line); border-radius:16px; max-width:680px; width:100%;
+    box-shadow:0 20px 60px rgba(0,0,0,.4); overflow:hidden; animation:pop .3s;
+    max-height:92vh; display:flex; flex-direction:column;}
+  @keyframes pop{from{transform:translateY(20px) scale(.98); opacity:0}to{transform:none; opacity:1}}
+  .modal-head{background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#fff; padding:22px 56px 22px 24px; position:relative; flex:0 0 auto}
+  .modal-head .mno{font-size:13px; opacity:.85; letter-spacing:2px}
+  .modal-head h2{font-size:30px; letter-spacing:3px; margin:2px 0}
+  .modal-head .mpy{font-size:14px; opacity:.9}
+  .modal-head .mcat{display:inline-block; margin-top:8px; background:rgba(255,255,255,.2); padding:3px 12px; border-radius:14px; font-size:13px}
+  .modal-close{position:absolute; top:14px; right:14px; background:rgba(255,255,255,.22); border:none; color:#fff; width:36px; height:36px; border-radius:9px; font-size:19px; cursor:pointer; transition:.2s; z-index:2}
+  .modal-close:hover{background:rgba(255,255,255,.4); transform:rotate(90deg)}
+  .modal-body{padding:20px 24px 24px; overflow-y:auto; flex:1 1 auto}
+  .block{margin-bottom:18px}
+  .block h4{font-size:15px; color:var(--accent); letter-spacing:1px; margin-bottom:6px; display:flex; align-items:center; gap:7px}
+  .block h4::before{content:""; width:4px; height:16px; background:var(--accent); border-radius:2px}
+  .block p{font-size:15px; color:var(--ink)}
+  .orig-quote{background:var(--bg2); border-left:3px solid var(--gold); padding:12px 14px; border-radius:0 8px 8px 0; font-size:15px; color:var(--ink); font-style:italic}
+  .example-box{background:linear-gradient(135deg,var(--bg2),var(--chip)); border:1px solid var(--line); border-radius:10px; padding:13px 15px; font-size:14.5px; color:var(--ink)}
+  .example-box b{color:var(--accent)}
+  .note-area{width:100%; min-height:74px; border:1px solid var(--line); border-radius:10px; background:var(--bg2); color:var(--ink);
+    padding:11px 13px; font-family:inherit; font-size:14px; resize:vertical; outline:none; line-height:1.6}
+  .note-area:focus{border-color:var(--accent)}
+  .note-hint{font-size:12px; color:var(--ink2); margin-top:6px}
+  .modal-actions{display:flex; gap:10px; margin-top:8px; padding-top:16px; border-top:1px dashed var(--line)}
+  .modal-actions.nav{border-top:none; padding-top:0; margin-bottom:4px}
+  .btn{flex:1; padding:11px; border:1px solid var(--line); background:var(--bg2); color:var(--ink); border-radius:10px; cursor:pointer; font-family:inherit; font-size:14px; transition:.2s; display:flex; align-items:center; justify-content:center; gap:6px; min-width:0}
+  .btn:hover{border-color:var(--accent)}
+  .btn.fav.on{background:var(--accent); color:#fff; border-color:var(--accent)}
+  .btn.read.on{background:var(--read); color:#fff; border-color:var(--read)}
+  /* 测验 */
+  .quiz{max-width:680px; margin:18px auto 40px; padding:0 16px; display:none}
+  .quiz.show{display:block}
+  .q-box{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:24px; box-shadow:0 4px 14px var(--shadow)}
+  .q-progress{font-size:13px; color:var(--ink2); margin-bottom:12px; display:flex; justify-content:space-between}
+  .q-prompt{background:var(--bg2); border-left:3px solid var(--gold); padding:14px; border-radius:0 8px 8px 0; font-style:italic; margin-bottom:18px; font-size:16px}
+  .q-opts{display:grid; gap:10px}
+  .q-opt{padding:13px 16px; border:1px solid var(--line); border-radius:10px; background:var(--bg2); cursor:pointer; transition:.18s; font-size:15px; font-family:inherit; text-align:left; color:var(--ink)}
+  .q-opt:hover{border-color:var(--accent)}
+  .q-opt.correct{background:var(--read); color:#fff; border-color:var(--read)}
+  .q-opt.wrong{background:var(--accent); color:#fff; border-color:var(--accent)}
+  .q-opt:disabled{cursor:default}
+  .q-result{margin-top:16px; font-size:15px; min-height:24px}
+  .q-result .ok{color:var(--read); font-weight:600}
+  .q-result .no{color:var(--accent); font-weight:600}
+  .q-foot{display:flex; gap:10px; margin-top:18px}
+  footer{max-width:1200px; margin:0 auto; padding:24px 16px 40px; color:var(--ink2); font-size:13px; text-align:center; border-top:1px solid var(--line)}
+  .toast{position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px); background:var(--ink); color:var(--bg); padding:11px 20px; border-radius:10px; font-size:14px; opacity:0; pointer-events:none; transition:.3s; z-index:200}
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
+  .empty{text-align:center; color:var(--ink2); padding:50px 20px; grid-column:1/-1}
+  @media(max-width:560px){
+    .feature{grid-template-columns:1fr}
+    .brand{font-size:17px}
+    .modal-head h2{font-size:25px}
+    .btn{font-size:13px; padding:10px 6px}
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="topbar">
+    <div class="brand">
+      <div class="seal">计</div>
+      <div>三十六计<small>THIRTY-SIX STRATAGEMS · 智谋全书</small></div>
+    </div>
+    <div class="spacer"></div>
+    <button class="icon-btn" id="quizBtn" title="测验模式">🎯</button>
+    <button class="icon-btn" id="favFilterBtn" title="仅看收藏">⭐</button>
+    <button class="icon-btn" id="noteFilterBtn" title="仅看有笔记">📝</button>
+    <button class="icon-btn" id="themeBtn" title="切换主题">🌙</button>
+  </div>
+  <div class="toolbar">
+    <div class="search">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg>
+      <input id="searchInput" type="text" placeholder="搜索计名 / 拼音 / 原文关键词…">
+    </div>
+  </div>
+  <div class="cats" id="catPills"></div>
+  <div class="stats">
+    <span>共 <b id="stTotal">36</b> 计</span>
+    <span>已读 <b id="stRead">0</b></span>
+    <span>收藏 <b id="stFav">0</b></span>
+    <span>笔记 <b id="stNote">0</b></span>
+    <span>当前显示 <b id="stShow">36</b></span>
+  </div>
+  <div class="progress">
+    <div class="progress-bar"><div class="progress-fill" id="progFill"></div></div>
+    <div class="progress-txt" id="progTxt">学习进度 0%</div>
+  </div>
+</header>
+
+<div class="banner">
+  <div class="feature">
+    <div class="feat-card" id="dailyCard">
+      <div class="ftag">📅 每日一计</div>
+      <h3 id="dailyName">—</h3>
+      <p id="dailyDesc">根据今日日期为你选定的一计，温故而知新。</p>
+      <div class="deco" id="dailyDeco">计</div>
+    </div>
+    <div class="feat-card" id="randomCard">
+      <div class="ftag">🎲 随机一计</div>
+      <h3>随机参悟</h3>
+      <p>点击抽取一条计策，于不经意间领悟古人智慧。</p>
+      <div class="deco">谋</div>
+    </div>
+  </div>
+</div>
+
+<main class="grid" id="grid"></main>
+
+<section class="quiz" id="quiz">
+  <div class="q-box">
+    <div class="q-progress"><span id="qCount">第 1 / 10 题</span><span id="qScore">得分 0</span></div>
+    <div class="q-prompt" id="qPrompt">—</div>
+    <div class="q-opts" id="qOpts"></div>
+    <div class="q-result" id="qResult"></div>
+    <div class="q-foot">
+      <button class="btn" id="qNext">下一题 →</button>
+      <button class="btn" id="qRestart">重新开始</button>
+    </div>
+  </div>
+</section>
+
+<footer>
+  三十六计 · 源于南北朝、成于明清的兵法谋略奇书，分六套（胜战、敌战、攻战、混战、并战、败战）各六计。<br>
+  本页为学习演示用途，所有数据内置，无需联网。点击卡片查看原文、注释、解说、典故、故事举例，并可记笔记、朗读、收藏。
+</footer>
+
+<div class="overlay" id="overlay">
+  <div class="modal" id="modal">
+    <div class="modal-head">
+      <button class="modal-close" id="modalClose" aria-label="关闭">✕</button>
+      <div class="mno" id="mNo">第一计</div>
+      <h2 id="mName">—</h2>
+      <div class="mpy" id="mPy">—</div>
+      <span class="mcat" id="mCat">—</span>
+    </div>
+    <div class="modal-body">
+      <div class="modal-actions nav">
+        <button class="btn" id="mPrev">← 上一计</button>
+        <button class="btn" id="mNext">下一计 →</button>
+      </div>
+      <div class="block"><h4>原文</h4><div class="orig-quote" id="mOrig"></div></div>
+      <div class="block"><h4>注释解说</h4><p id="mInterpret"></p></div>
+      <div class="block"><h4>历史典故</h4><p id="mStory"></p></div>
+      <div class="block"><h4>📖 故事举例</h4><div class="example-box" id="mExample"></div></div>
+      <div class="block"><h4>现代启示</h4><p id="mModern"></p></div>
+      <div class="block"><h4>📝 我的笔记</h4>
+        <textarea class="note-area" id="mNote" placeholder="写下你对这一计的理解或应用心得…（自动保存到本地）"></textarea>
+        <div class="note-hint" id="mNoteHint">笔记将保存在本设备浏览器中</div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn read" id="mRead">✓ 标为已读</button>
+        <button class="btn fav" id="mFav">☆ 收藏</button>
+        <button class="btn" id="mSpeak">🔊 朗读</button>
+        <button class="btn" id="mCopy">📋 复制</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const CATS = ["胜战计","敌战计","攻战计","混战计","并战计","败战计"];
+const DATA = [
+{id:1,name:"瞒天过海",py:"mán tiān guò hǎi",cat:0,orig:"备周则意怠，常见则不疑。阴在阳之内，不在阳之对。太阳，太阴。",
+interpret:"防备过于周密，反而容易让人松懈大意；经常见到的事物，人便不再怀疑。秘密的计谋往往就隐藏在公开的事物之中，而非与公开事物相对立。当公开发展到极致（太阳），秘密（太阴）也就深藏其中。",
+story:"唐太宗御驾亲征高丽，行至海边惧水不敢渡。大将薛仁贵设计，将太宗引入一处看似寻常的民居，张灯结彩设宴，实则屋下已备舰队；酒过三巡，风声水声骤起，太宗惊觉已随船漂于海上。此即『瞒天过海』——习以为常中藏玄机。",
+example:"<b>二战诺曼底</b>：盟军以充气坦克、假无线电、虚构的『第一集团军』营造主力将在加莱登陆的假象，使希特勒坚信加莱为主攻方向，诺曼底得以奇袭成功——现代战争版的瞒天过海。",
+modern:"在商务谈判或日常管理中，最公开的安排里往往藏着真实意图。避免让对手对你『习以为常』而失去警惕，也谨防自己因熟悉而掉以轻心。"},
+{id:2,name:"围魏救赵",py:"wéi wèi jiù zhào",cat:0,orig:"共敌不如分敌，敌阳不如敌阴。",
+interpret:"与其正面强攻集中的敌人，不如设法分散其力量；与其进攻敌人正面坚实之处，不如攻击其空虚薄弱的后方。避实击虚，以迂为直。",
+story:"公元前354年，魏将庞涓围攻赵都邯郸。齐王命田忌、孙膑救赵。孙膑不直趋邯郸，而挥师直捣魏国都城大梁。庞涓被迫回师自救，齐军于桂陵设伏大败魏军，赵围自解。",
+example:"<b>桂陵之战</b>：齐军围魏都大梁，庞涓闻讯弃赵回援，孙膑于桂陵半路设伏，生擒庞涓。『围魏』是手段，『救赵』才是目的。",
+modern:"面对强势压力，正面硬碰往往两败俱伤。找准对方要害与软肋，攻其必救之处，问题便迎刃而解。"},
+{id:3,name:"借刀杀人",py:"jiè dāo shā rén",cat:0,orig:"敌已明，友未定，引友杀敌，不自出力，以《损》推演。",
+interpret:"敌人已经明确，盟友态度尚未确定。巧妙引导盟友去攻击敌人，自己不出力而坐收其利。源自《易经·损》卦『损下益上』之理。",
+story:"春秋时齐相管仲（一说子贡）游说各国，借他国之手削弱敌国。后世亦多以『借刀』喻利用第三方除掉对手，己方不沾血光。",
+example:"<b>子贡存鲁</b>：孔子弟子子贡游说齐、吴、越、晋四国，借吴伐齐、晋防吴、越趁吴空，一环扣一环，鲁国未发一兵而获保全，四国却互耗实力。",
+modern:"竞争之中，可借规则、舆论、第三方力量达成目标，避免亲自下场树敌。但须把握分寸，过则失义。"},
+{id:4,name:"以逸待劳",py:"yǐ yì dài láo",cat:0,orig:"困敌之势，不以战；损刚益柔。",
+interpret:"要使敌人陷于困顿，不必硬战；应消耗其锐气、积蓄己方力量，以静制动、以柔克刚。",
+story:"春秋曹刿论战，齐军三鼓而竭，曹刿待其士气衰竭方击鼓进攻，一鼓作气败齐。三国时陆逊于夷陵以逸待劳，拖垮刘备远征之师，火攻破蜀。",
+example:"<b>夷陵之战</b>：陆逊面对刘备连营七百里，坚守不出、避其锐气，待蜀军疲惫懈怠，一把火烧尽连营，以静制动大破远征之师。",
+modern:"工作或谈判中，先让对方耗尽精力与筹码，自己养精蓄锐、择机而动，常能以最小代价取胜。"},
+{id:5,name:"趁火打劫",py:"chèn huǒ dǎ jié",cat:0,orig:"敌之害大，就势取利，刚决柔也。",
+interpret:"当敌人遭遇重大危难，应乘势取利。如同刚强决断柔弱，抓住时机毫不迟疑。",
+story:"明崇祯末年，李自成攻入北京、明朝内乱，清军多尔衮乘中原大乱之机入关，逐鹿中原、问鼎天下，正是『趁火打劫』之大手笔。",
+example:"<b>清军入关</b>：李自成进京、明廷崩溃、天下大乱，多尔衮果断率清军入关，联明讨顺，顺势夺取全国政权。",
+modern:"危机中往往藏机遇。对手或市场出现动荡时，快速切入、抢占先机，是商业与人生的常见法则——但须分清『劫』与『趁势』的边界。"},
+{id:6,name:"声东击西",py:"shēng dōng jī xī",cat:0,orig:"敌志乱萃，不虞，坤下兑上之象，利其不自主而取之。",
+interpret:"敌人军心混乱、失去自主判断，如同《易经》萃卦之象（坤下兑上）。趁其不知所措，制造假象诱其误判，再攻其不备。",
+story:"东汉班超出使西域，兵力寡弱，乃扬言分兵多路，实则夜袭匈奴使者营，声东击西平定鄯善。韩信亦曾以木罂渡军、佯攻疑惑，奇袭成功。",
+example:"<b>班超定鄯善</b>：班超扬言分兵南北两路，诱使匈奴使者营放松警戒，当夜率三十六骑突袭，尽焚敌营，鄯善王震惧归汉。",
+modern:"分散对方注意力于虚假目标，真实行动悄然展开。营销造势、项目误导皆可为此计之变体。"},
+{id:7,name:"无中生有",py:"wú zhōng shēng yǒu",cat:1,orig:"诳也，非诳也，实其所诳也。少阴、太阴、太阳。",
+interpret:"用假象欺骗，但并非止于欺骗，而是要以假促真、由虚变实。先示之以虚（少阴），再藏大虚（太阴），终显其实（太阳）。",
+story:"唐将张巡守雍丘，以草人夜缒城外，诱敌放箭得箭数十万；后缒真人夜袭，大破令狐潮。由虚到实，化无为有。",
+example:"<b>张巡草人借箭</b>：张巡命士卒以草扎人、披黑衣，乘夜缒下城墙，叛军误以为偷袭狂射，唐军得箭数十万；后换真人缒下，敌不备而大破之。",
+modern:"创意与融资中，『无中生有』是点石成金的能力——把概念变成现实、把设想变成产品，关键在于最终要落到一个『实』字。"},
+{id:8,name:"暗度陈仓",py:"àn dù chén cāng",cat:1,orig:"示之以动，利其静而有主，『益动而巽』。",
+interpret:"公开示以行动以吸引敌人固守，暗中却另辟蹊径达成真实目的。出自《易经·益》卦『动而巽（顺）』之意。",
+story:"楚汉相争，韩信明修栈道、佯作修复入蜀旧道，暗地却率军从陈仓小道奇袭关中，一举平定三秦。",
+example:"<b>明修栈道，暗度陈仓</b>：刘邦烧栈道示无东归意，韩信表面修复褒斜栈道作佯动，主力却从陈仓道突入关中，一举平定三秦。",
+modern:"明线吸引注意、暗线推进要务，是项目管理与竞争中的常用手法。真正的突破往往发生在聚光灯之外。"},
+{id:9,name:"隔岸观火",py:"gé àn guān huǒ",cat:1,orig:"阳乖序乱，阴以待逆。暴戾恣睢，其势自毙。顺以动豫，豫顺以动。",
+interpret:"当敌方内部乖离、秩序混乱，我方静观其变、待其自溃。敌人残暴乖张，势必自取灭亡。顺应时势而动，方能安稳取胜。",
+story:"曹操与袁绍之子袁谭、袁尚相争，郭嘉献计『坐山观虎斗』，不急于出兵，待二袁内讧自相残杀、势力大损，曹操方一举平定河北。",
+example:"<b>郭嘉平河北</b>：曹操征袁氏，郭嘉劝其缓攻，坐视袁谭、袁尚兄弟争权相攻；待其两败俱伤，曹操出兵一举尽定河北。",
+modern:"多方混战、内部生乱时，急于介入反被缠身。静观其变、等对方消耗，再出手收拾局面，往往成本最低。"},
+{id:10,name:"笑里藏刀",py:"xiào lǐ cáng dāo",cat:1,orig:"信而安之，阴以图之；备而后动，勿使有变。刚中柔外也。",
+interpret:"使敌人信任而安于现状，暗中谋划图之；做好准备再行动，不使生变。外表温和、内藏锋芒，刚藏于柔。",
+story:"唐玄宗时李林甫为相，口蜜腹剑、面柔心狠，于谈笑间排挤陷害异己，史称『口有蜜，腹有剑』。战国公孙鞅亦以和谈掩袭魏军。",
+example:"<b>口蜜腹剑</b>：李林甫对人满面春风、言语甘美，背后却构陷排挤，凡忤其意者多遭贬黜，时人谓『口有蜜，腹有剑』。",
+modern:"最危险的对手往往笑容可掬。识人须听其言更观其行；同时警惕自己被表面和气麻痹。"},
+{id:11,name:"李代桃僵",py:"lǐ dài táo jiāng",cat:1,orig:"势必有损，损阴以益阳。",
+interpret:"局势发展必然有所损失时，宁可牺牲次要（阴）以保全主要（阳），以局部换全局。",
+story:"古乐府『桃生露井上，李树生桃傍；虫来啮桃根，李树代桃僵』喻兄弟相助。春秋程婴以己子替赵氏孤儿赴死，存赵家血脉，即舍小保大。",
+example:"<b>程婴救孤</b>：屠岸贾诛赵氏，程婴以亲生儿换下赵氏孤儿，携孤潜逃抚养成人，终报大仇，舍一子而存赵家一脉。",
+modern:"取舍是常态。当必须付出代价，优先舍弃可替代、低价值的，保住核心资源与关键目标。"},
+{id:12,name:"顺手牵羊",py:"shùn shǒu qiān yáng",cat:1,orig:"微隙在所必乘，微利在所必得。少阴，少阳。",
+interpret:"敌人再小的漏洞也要乘机利用，再小的利益也要顺手夺取。积小胜为大胜，由阴转阳。",
+story:"春秋郑国商人弦高赴周，路遇秦军偷袭郑国，急中生智以牛犒师、假传郑君之命，秦军疑郑有备而退。顺手化解国难，亦是一例。",
+example:"<b>弦高犒师</b>：郑商弦高途中遇秦军偷袭，急以十二牛假称郑君犒劳，秦帅孟明视以为郑已有备，遂灭滑而还，郑国得免。",
+modern:"机会稍纵即逝。在执行主任务时，顺带收割周边小利、补上细小漏洞，长期累积便是优势。"},
+{id:13,name:"打草惊蛇",py:"dǎ cǎo jīng shé",cat:2,orig:"疑以叩实，察而后动；复者，阴之媒也。",
+interpret:"心中存疑便去试探以探明实情，侦察清楚再行动。反复试探，是洞悉隐秘的媒介。",
+story:"南唐王鲁为当涂令，贪墨枉法。民诉主簿受贿，王鲁见状自惊，批曰『汝虽打草，吾已蛇惊』。后喻行动不慎反使对手警觉。亦可用作主动试探敌情。",
+example:"<b>汝虽打草，吾已蛇惊</b>：百姓告发主簿贪污，县令王鲁见状心虚，提笔批下此语——原指审案牵连出上司，后亦指试探动作惊动了暗藏之敌。",
+modern:"试探性动作可逼出对手底牌，但须防打草惊蛇、反令对方设防。侦察与保密，一体两面。"},
+{id:14,name:"借尸还魂",py:"jiè shī huán hún",cat:2,orig:"有用者，不可借；不能用者，求借。借不能用者而用之。匪我求童蒙，童蒙求我。",
+interpret:"凡是尚有作为的，难以被我利用；那些看似无用、僵死的，反而可借以复兴。如同《易经》蒙卦——不是我有求于懵懂者，而是懵懂者求助于我。",
+story:"刘备入川前势弱，借『扶助汉室』之名（已衰朽的汉献帝旗号）聚拢人心，终取益州、立蜀汉，即借死号令还自身之魂。立傀儡、借旧招牌亦属此计。",
+example:"<b>刘备借汉室旗号</b>：汉室名存实亡，刘备却以『兴复汉室、衣带诏』为号召聚拢人心、招揽英才，终据荆益、立蜀汉，旧招牌焕发新生。",
+modern:"旧品牌、老IP、既有平台皆可『借尸』为我所用。关键在于注入新内容，让旧壳焕发新生。"},
+{id:15,name:"调虎离山",py:"diào hǔ lí shān",cat:2,orig:"待天以困之，用人以诱之，往蹇来返。",
+interpret:"利用天时困住敌人，用人为诱饵将其调离有利之地。出自《易经》蹇卦——前往艰难，返回顺畅，喻使敌脱离险要。",
+story:"东汉虞诩守武都，羌人据险拦截。诩增灶示强、扬言另道，诱羌分兵守关，己则昼夜兼程突破。或诱敌出城、离开有利地形再歼之。",
+example:"<b>虞诩增灶</b>：虞诩赴武都，羌兵据险堵截，他令士卒每日增灶示强、扬言另取他道，羌人分兵守关，虞诩趁机昼夜疾进突破险阻。",
+modern:"对手占据资源优势时，用利益或假象将其引离舒适区，削弱其主场优势再图之。"},
+{id:16,name:"欲擒故纵",py:"yù qín gù zòng",cat:2,orig:"逼则反兵，走则减势。紧随勿迫，累其气力，消其斗志，散而后擒，兵不血刃。需，有孚，光。",
+interpret:"逼急了敌人会拼死反抗，放它走反而削弱其气势。紧紧跟随却不逼迫，耗其体力、消其斗志，待其涣散再擒，不战而胜。",
+story:"诸葛亮七擒七纵孟获，每擒必放，终使南蛮心服、边患永息。非力取，乃心取。",
+example:"<b>七擒孟获</b>：诸葛亮南征，六次擒孟获六次释放，使其从不服到心服，第七次后方不再纵，南方自此长久归附。",
+modern:"管理或谈判中，逼人太甚易生反弹。留出余地、让对方自行消耗，反而更易收服人心、达成长期服从。"},
+{id:17,name:"抛砖引玉",py:"pāo zhuān yǐn yù",cat:2,orig:"类以诱之，击蒙也。",
+interpret:"用类似的事物去引诱敌人，如同《易经》蒙卦『击蒙』——以浅易之砖引其显露深藏之玉。",
+story:"唐人赵嘏诗名远播，常建慕其才，于赵嘏必经寺壁先题二句，赵嘏见而补成完篇，时人谓『常建以劣句引赵嘏佳句』，即抛砖引玉。兵法中则以假象诱敌暴露主力。",
+example:"<b>常建邀诗</b>：常建慕赵嘏之才，于赵必经的寺壁先题二句残诗，赵嘏见而补成完篇，常建遂得佳句——以拙引巧，抛砖引玉。",
+modern:"先抛出不成熟方案或低价饵料，引出对方真实想法、优质资源或主力部署，再图后手。"},
+{id:18,name:"擒贼擒王",py:"qín zéi qín wáng",cat:2,orig:"摧其坚，夺其魁，以解其体。龙战于野，其道穷也。",
+interpret:"摧毁其主力、擒获其首领，敌之整体便瓦解。如同《易经》坤卦『龙战于野』——失却核心则走投无路。",
+story:"安史之乱中张巡守睢阳，敌将尹子奇屡攻不下，张巡以蒿箭诱敌显旗，射瞎尹子奇，军心大乱。杜甫诗『射人先射马，擒贼先擒王』即此理。",
+example:"<b>张巡射尹子奇</b>：张巡以蒿杆为箭射敌，中箭者不亡反喜、奔告主将显其旗号，张巡认出尹子奇一箭射瞎，叛军失指挥而溃。",
+modern:"解决问题抓关键人物、核心矛盾。砍断主干，枝节自落。资源有限时，集中火力于枢纽。"},
+{id:19,name:"釜底抽薪",py:"fǔ dǐ chōu xīn",cat:3,orig:"不敌其力，而消其势，兑下乾上之象。",
+interpret:"不与敌人硬拼力量，而是从根本上削弱其气势与来源。如同《易经》夬卦（兑下乾上）——决而能止，断其根本。",
+story:"官渡之战，曹操以寡敌众，亲率奇兵烧乌巢袁绍粮屯，断其军需根本，袁军遂溃。三国吴将亦以断粮道制胜。",
+example:"<b>乌巢烧粮</b>：官渡相持，曹操亲率精骑奔袭袁绍乌巢粮屯，尽焚其谷，袁军闻讯溃散，曹操以少胜多奠定统一北方之基。",
+modern:"对手来势汹汹时，不要正面纠缠，去切断其资金、供应链、流量等『薪火』，气势自消。"},
+{id:20,name:"混水摸鱼",py:"hùn shuǐ mō yú",cat:3,orig:"乘其阴乱，利其弱而无主。随，以向晦入宴息。",
+interpret:"趁敌人内部混乱、软弱无主，如同《易经》随卦——顺时而动，于昏昧中获取利益。",
+story:"赤壁之后，刘备趁荆州混乱、孙权与曹操相持，借机收取江南诸郡，于乱中壮大。亦指趁市场动荡低价吸纳。",
+example:"<b>刘备取荆南</b>：赤壁后荆州权力真空、群雄未定，刘备趁势收取江南四郡，于乱局中悄然壮大自身。",
+modern:"秩序崩坏、规则模糊之处往往有套利空间。但浑水之下亦藏风险，摸鱼须辨清真假混乱。"},
+{id:21,name:"金蝉脱壳",py:"jīn chán tuō qiào",cat:3,orig:"存其形，完其势；友不疑，敌不动。巽而止蛊。",
+interpret:"保留原有形态、维持原有阵势，使友军不疑、敌军不动，自己却暗中脱身。出自《易经》蛊卦——顺势止乱、悄然转移。",
+story:"南宋毕再遇抗金，夜悬羊于鼓、使其蹄动击鼓如常，金兵不疑；宋军悄然撤走。姜维亦曾以木像立于阵前掩护退兵。",
+example:"<b>悬羊击鼓</b>：毕再遇撤军，将山羊悬于鼓后、蹄踏鼓面如擂鼓，金兵闻鼓声不敢进；宋军从容退去，翌日方觉空营。",
+modern:"需要抽身时，先布置『还在』的假象稳住各方，再从容退出。交接、离职、退场皆可用。"},
+{id:22,name:"关门捉贼",py:"guān mén zhuō zéi",cat:3,orig:"小敌困之。剥，不利有攸往。",
+interpret:"对弱小之敌应包围困住、一举歼灭，不使其逃窜再患。出自《易经》剥卦——困而勿纵，否则反受其扰。",
+story:"战国赵括纸上谈兵，长平被秦军包围困死，四十万降卒遭坑杀，正合『关门』之意（反向示警：勿使自己被围）。历代剿匪多用此计聚而歼之。",
+example:"<b>长平之围</b>：白起切断赵军粮道、层层包围，赵括突围战死，四十万赵卒被俘坑杀——『关门』一旦成形，困兽难逃（亦警示勿自陷死地）。",
+modern:"对待小问题、小对手，与其放虎归山，不如在其羽翼未丰时彻底了结，避免反复生乱。"},
+{id:23,name:"远交近攻",py:"yuǎn jiāo jìn gōng",cat:3,orig:"形禁势格，利从近取，害以远隔。上火下泽。",
+interpret:"受地理形势所限，先交好远处的国家、攻击邻近的敌人最为有利；远交可免两线作战之害。出自《易经》睽卦（上火下泽）——异而相安。",
+story:"战国范雎献策秦昭王：『王不如远交而近攻』，结好齐楚等远国，蚕食三晋近邻，秦国遂稳步东进、终成一统。",
+example:"<b>范雎之策</b>：范雎见秦王，献『远交近攻』——结好远方的齐楚、专攻邻近的三晋，秦由此步步东进，终灭六国。",
+modern:"竞争中稳住远方的非直接对手，集中力量逐一吃掉身边的近敌，避免四面树敌、分散资源。"},
+{id:24,name:"假道伐虢",py:"jiǎ dào fá guó",cat:3,orig:"两大之间，敌胁以从，我假以势。困，有言不信。",
+interpret:"处于两强之间的小国，敌国以威胁使其顺从，我则借势假道过境。出自《易经》困卦——处于困局，空言难信，唯借力而行。",
+story:"春秋晋献公欲伐虢，向虞国借道；虞公贪贿允之。晋灭虢后回师顺手灭虞。『唇亡齿寒』即源于此警示。",
+example:"<b>假虞灭虢</b>：晋献公以璧马贿赂虞公，借道伐虢；灭虢回师，顺手灭虞。虞大夫宫之奇谏『唇亡齿寒』，虞公不听而亡。",
+modern:"借合作、借通道达成自己的真实目的，但须防『假道』者反客为主、顺手吞并。结盟前看清对方真正意图。"},
+{id:25,name:"偷梁换柱",py:"tōu liáng huàn zhù",cat:4,orig:"频更其阵，抽其劲旅，待其自败，而后乘之。曳其轮也。",
+interpret:"频繁调动敌人阵势，抽走其精锐主力，待其自行崩溃，再乘势取之。如同拖住车轮，使其寸步难行。",
+story:"赵高矫诏立胡亥、赐死扶苏，潜移秦朝根基，以奸佞替换忠良，终致秦亡，可谓乱政版『偷梁换柱』。兵法中指暗中置换关键要素。",
+example:"<b>赵高乱秦</b>：赵高矫诏赐死扶苏、陷害李斯，逐步以亲信替换朝中忠良，抽空秦室栋梁，终致二世而亡。",
+modern:"在组织或产品中，不动声色地替换核心人员、关键模块或条款，从而改变整体走向。亦提醒你防范关键要素被悄然替换。"},
+{id:26,name:"指桑骂槐",py:"zhǐ sāng mà huái",cat:4,orig:"大凌小者，警以诱之。刚中而应，行险而顺。",
+interpret:"上级慑服下属、强者警示弱者，不必直斥其人，而借题发挥、旁敲侧击以儆效尤。出自《易经》师卦——刚中而顺。",
+story:"孙武练兵，吴王宠姬不遵令，孙武请斩队长（吴王爱姬）以立威，吴王不许而孙武坚持，三令五申后军阵肃然。杀鸡儆猴即此计。",
+example:"<b>孙武斩美姬</b>：吴王令宫女受孙武操练，宠姬嬉笑违令，孙武立斩队长（宠姬）立威，余众肃然，军阵顷刻成伍。",
+modern:"团队管理中，借批评一件事或一个人，警示全体、确立规矩，比逐个说教更高效。"},
+{id:27,name:"假痴不癫",py:"jiǎ chī bù diān",cat:4,orig:"宁伪作不知不为，不伪作假知妄为。静不露机，云雷屯也。",
+interpret:"宁可装作不知而不妄动，也不可假装聪明而轻举妄为。静守不露机锋，如同《易经》屯卦——云雷蓄势，待时而发。",
+story:"三国司马懿面对曹爽专权，称病装傻、甚至尝粪以自污，终骗过对手，发动高平陵之变夺权。燕王朱棣亦曾装疯避祸。",
+example:"<b>司马懿装病</b>：曹爽专权，司马懿称病不出、甚至佯疯尝粪以自污，骗过对手；待曹爽松懈，突发动高平陵之变夺回大权。",
+modern:"身处劣势或险境，藏拙示弱、不露锋芒，等对手松懈再出手。真正的清醒，是懂得何时装糊涂。"},
+{id:28,name:"上屋抽梯",py:"shàng wū chōu tī",cat:4,orig:"假之以便，唆之使前，断其援应，陷之死地。遇毒，位不当也。",
+interpret:"给敌人以便利、诱其深入，再切断其退路援军，置之死地。出自《易经》噬嗑卦——处位不当而遇险。",
+story:"刘表之子刘琦惧后母陷害，登楼问计诸葛亮，诸葛亮教『申生在内而危，重耳在外而安』，刘琦遂请守江夏；临别抽梯逼亮明言。兵法中即诱敌入绝境。",
+example:"<b>刘琦抽梯</b>：刘琦登楼向诸葛亮问自全之计，亮未答，琦命撤梯逼问，亮乃教『外任避祸』，刘琦遂请守江夏得全。",
+modern:"谈判或博弈中，先予小利诱对方投入，再断其后路使其就范。反之，决策时警惕被人『抽梯』困局。"},
+{id:29,name:"树上开花",py:"shù shàng kāi huā",cat:4,orig:"借局布势，力小势大。鸿渐于陆，其羽可用为仪也。",
+interpret:"借助已有的格局布置声势，使力量虽小却显得强大。出自《易经》渐卦——鸿雁渐进于陆，羽毛足以成仪，喻虚张声势以慑人。",
+story:"张飞当阳桥横矛立马、令士卒马尾缚枝扬尘，曹军疑有伏兵不敢进；张飞大喝惊退曹军。以疑兵造大势，即树上开花。",
+example:"<b>张飞疑兵</b>：长坂桥，张飞独据桥、令士卒马尾缚枝扬尘，尘烟滚滚疑有伏兵，曹军不敢进；飞一声断喝，惊退追兵。",
+modern:"资源有限时，借平台、借背书、借声势放大自身影响力。『势』可以设计，不必全凭实力。"},
+{id:30,name:"反客为主",py:"fǎn kè wéi zhǔ",cat:4,orig:"乘隙插足，扼其主机，渐之进也。",
+interpret:"趁虚而入、插足其中，逐步掌握关键枢纽，由客位变为主位。循序渐进，终夺主导。",
+story:"李渊太原起兵，初附于突厥以求稳，渐握兵权、平定群雄，终代隋建唐，由客卿而成天下主。郭子仪亦于危局中逐步掌中枢。",
+example:"<b>李渊代隋</b>：李渊太原起兵初借突厥之力自保，渐握兵权、平群雄，终废隋建唐，由附庸之客而成天下之主。",
+modern:"进入新环境、新团队，先立足、再渗透要害，逐步从被动配合转为主导。组织政治中常见此道。"},
+{id:31,name:"美人计",py:"měi rén jì",cat:5,orig:"兵强者，攻其将；将智者，伐其情。将弱兵颓，其势自萎。利用御寇，顺相保也。",
+interpret:"敌军强大，便攻其将帅；将帅多智，便腐蚀其情志。主将意志消沉、士卒颓败，其势自衰。以柔克刚，顺势保全。",
+story:"越王勾践败于吴，献西施于夫差，夫差溺于美色、疏于国事，终被越国所灭。后世亦以『美人』喻以诱惑瓦解对手意志。",
+example:"<b>西施惑吴</b>：勾践献西施于夫差，夫差宠之怠政、疏远忠臣，越国休养生息终灭吴——以柔情蚀其志、溃其国。",
+modern:"用利益、诱惑、情感软化关键决策者的意志，使其松懈防线。亦警示自己：最大的漏洞常在『情』字。"},
+{id:32,name:"空城计",py:"kōng chéng jì",cat:5,orig:"虚者虚之，疑中生疑；刚柔之际，奇而复奇。",
+interpret:"本就空虚，索性示之以更空虚，使敌人疑上加疑不敢进。刚柔转换之间，奇中藏奇。",
+story:"诸葛亮兵驻西城、守备空虚，司马懿大军压境。亮大开城门、焚香抚琴、悠然自若。懿疑有伏兵，退军而去。此险计赖对敌方主帅心理的精准拿捏。",
+example:"<b>西城抚琴</b>：诸葛亮守西城、兵微将寡，司马懿大军压境；亮大开城门、焚香操琴、神态自若，懿疑有伏兵而退。",
+modern:"资源不足时，以镇定与透明制造『必有后手』的错觉，吓退对手。前提是吃准对方多疑的性格。"},
+{id:33,name:"反间计",py:"fǎn jiàn jì",cat:5,orig:"疑中之疑。比之自内，不自失也。",
+interpret:"在敌人的怀疑之中再布疑阵，使其中计自乱。出自《易经》比卦——内部亲比而外不失策。",
+story:"赤壁之战，蒋干过江说降周瑜，反被利用传递假降书，曹操中计斩杀水军良将蔡瑁、张允。皇太极亦用反间，借崇祯之手除袁崇焕。",
+example:"<b>蒋干盗书</b>：蒋干过江说降周瑜，反中圈套带回假降书，曹操疑而斩水军将蔡瑁、张允，赤壁水战自毁长城。",
+modern:"当对手怀疑内部有奸，你只需『助攻』其疑心，令其自断臂膀。信息战、舆论战的核心手段之一。"},
+{id:34,name:"苦肉计",py:"kǔ ròu jì",cat:5,orig:"人不自害，受害必信；假真真假，间以得行。童蒙之吉，顺以巽也。",
+interpret:"人不会自伤，一旦自伤必令人信。以真苦换假信，离间之计方得施行。出自《易经》蒙卦——顺而能入。",
+story:"赤壁战前，周瑜与黄盖定计，当众痛杖黄盖，黄盖诈降曹操；曹操信其怨而纳之，终遭火烧赤壁。苦肉换来的信任，最是致命。",
+example:"<b>周瑜打黄盖</b>：赤壁前周瑜当众杖责黄盖，黄盖愤而诈降曹操，操信其怨纳之，终引火船入江，赤壁大败。",
+modern:"以自我牺牲、自损形象换取对方信任，再行关键一步。代价高昂，非万不得已勿用，且须防被识破。"},
+{id:35,name:"连环计",py:"lián huán jì",cat:5,orig:"将多兵众，不可以敌，使其自累，以杀其势。在师中吉，承天宠也。",
+interpret:"敌将多兵众、难以力敌，便使其互相牵制、自相拖累，从而削弱其势。出自《易经》师卦——居中得吉，承天之宠。",
+story:"东汉末王允献连环计：先将貂蝉许婚吕布，再献董卓，使二人因貂蝉反目；终借吕布之手诛董卓。一计套一计，环环相扣。",
+example:"<b>王允连环</b>：王允先将貂蝉许吕布、再献董卓，使董吕因貂蝉反目，借吕布之手诛杀董卓——一计套一计，环环相扣。",
+modern:"面对强大复合对手，单一手段难奏效，便设计多重手段使其顾此失彼、内部互耗。组合拳胜单点突破。"},
+{id:36,name:"走为上",py:"zǒu wéi shàng",cat:5,orig:"全师避敌。左次无咎，未失常也。",
+interpret:"无力对抗时，保全实力、主动撤退为上策。出自《易经》师卦——退守左次并无过错，不失为常道。",
+story:"楚汉相争，刘邦屡败屡走、终积蓄力量垓下灭楚；凡善败者不乱，留得青山在。撤退非怯，乃战略转移。",
+example:"<b>刘邦善走</b>：楚汉相争刘邦屡战屡败、屡败屡走，彭城大败后全身而退，终积蓄力量于垓下灭楚——善败者不乱，留得青山。",
+modern:"当事不可为，及时止损、体面退场是最高明的选择。懂得『走』，才配谈『赢』。识时务者为俊杰。"},
+];
+
+// ---------- 状态 ----------
+const LS = { read:'sanshiliu_read', fav:'sanshiliu_fav', note:'sanshiliu_notes', theme:'sanshiliu_theme' };
+const getSet = k => { try{ return new Set(JSON.parse(localStorage.getItem(k)||'[]')); }catch(e){ return new Set(); } };
+const saveSet = (k,s) => localStorage.setItem(k, JSON.stringify([...s]));
+const getNotes = () => { try{ return JSON.parse(localStorage.getItem(LS.note)||'{}'); }catch(e){ return {}; } };
+const saveNotes = o => localStorage.setItem(LS.note, JSON.stringify(o));
+
+let readSet = getSet(LS.read);
+let favSet = getSet(LS.fav);
+let notesObj = getNotes();
+let activeCat = -1;
+let onlyFav = false;
+let onlyNote = false;
+let keyword = '';
+
+// ---------- 渲染分类 ----------
+const catPills = document.getElementById('catPills');
+function renderCats(){
+  const all = [{i:-1,t:'全部'}];
+  CATS.forEach((c,i)=>all.push({i,t:c}));
+  catPills.innerHTML = all.map(o=>
+    `<button class="cat-pill ${o.i===activeCat?'active':''}" data-cat="${o.i}">${o.t}</button>`).join('');
+  catPills.querySelectorAll('.cat-pill').forEach(b=>{
+    b.onclick=()=>{ activeCat=+b.dataset.cat; onlyFav=false; onlyNote=false; syncFilterBtns(); renderCats(); renderGrid(); };
+  });
+}
+
+// ---------- 渲染网格 ----------
+const grid = document.getElementById('grid');
+function getCurrentList(){
+  return DATA.filter(d=>{
+    if(onlyFav && !favSet.has(d.id)) return false;
+    if(onlyNote && !notesObj[d.id]) return false;
+    if(activeCat>=0 && d.cat!==activeCat) return false;
+    if(keyword){
+      const k=keyword.toLowerCase();
+      const hay=(d.name+d.py+d.orig+d.interpret+d.story+d.example+d.modern+CATS[d.cat]).toLowerCase();
+      if(!hay.includes(k)) return false;
+    }
+    return true;
+  });
+}
+function renderGrid(){
+  const list=getCurrentList();
+  document.getElementById('stShow').textContent=list.length;
+  if(list.length===0){
+    grid.innerHTML=`<div class="empty">未找到匹配的计策 🍃<br><small>试试更换关键词或清除筛选</small></div>`;
+    updateStats(); return;
+  }
+  grid.innerHTML=list.map(d=>{
+    const isRead=readSet.has(d.id), isFav=favSet.has(d.id), hasNote=!!notesObj[d.id];
+    return `<div class="card" data-id="${d.id}">
+      <div class="no">${String(d.id).padStart(2,'0')}</div>
+      <span class="cat-tag">${CATS[d.cat]}</span>
+      <h3>${d.name}</h3>
+      <div class="py">${d.py}</div>
+      <div class="orig">${d.orig}</div>
+      <div class="flags">
+        ${hasNote?'<span class="flag-note" title="有笔记">📝</span>':''}
+        ${isRead?'<span class="flag-read" title="已读">✓</span>':''}
+        ${isFav?'<span class="flag-fav" title="收藏">★</span>':''}
+      </div>
+    </div>`;
+  }).join('');
+  grid.querySelectorAll('.card').forEach(c=>c.onclick=()=>openModal(+c.dataset.id));
+  updateStats();
+}
+function updateStats(){
+  document.getElementById('stRead').textContent=readSet.size;
+  document.getElementById('stFav').textContent=favSet.size;
+  document.getElementById('stNote').textContent=Object.keys(notesObj).length;
+  const pct=Math.round(readSet.size/DATA.length*100);
+  document.getElementById('progFill').style.width=pct+'%';
+  document.getElementById('progTxt').textContent='学习进度 '+pct+'%（已读 '+readSet.size+'/'+DATA.length+'）';
+}
+
+// ---------- 弹窗 ----------
+const overlay=document.getElementById('overlay');
+let modalId=null;
+function openModal(id){
+  id=Math.max(1,Math.min(DATA.length,id));
+  const d=DATA.find(x=>x.id===id); if(!d) return;
+  modalId=id;
+  document.getElementById('mNo').textContent='第'+['一','二','三','四','五','六'][d.cat]+'套 · 第 '+id+' 计';
+  document.getElementById('mName').textContent=d.name;
+  document.getElementById('mPy').textContent=d.py;
+  document.getElementById('mCat').textContent=CATS[d.cat];
+  document.getElementById('mOrig').textContent=d.orig;
+  document.getElementById('mInterpret').textContent=d.interpret;
+  document.getElementById('mStory').textContent=d.story;
+  document.getElementById('mExample').innerHTML=d.example;
+  document.getElementById('mModern').textContent=d.modern;
+  // 笔记
+  const ta=document.getElementById('mNote');
+  ta.value=notesObj[id]||'';
+  document.getElementById('mNoteHint').textContent=notesObj[id]?'已保存 ✓':'笔记将保存在本设备浏览器中';
+  // 按钮状态
+  const rBtn=document.getElementById('mRead'), fBtn=document.getElementById('mFav');
+  rBtn.className='btn read'+(readSet.has(id)?' on':'');
+  rBtn.textContent=readSet.has(id)?'✓ 已读':'✓ 标为已读';
+  fBtn.className='btn fav'+(favSet.has(id)?' on':'');
+  fBtn.textContent=favSet.has(id)?'★ 已收藏':'☆ 收藏';
+  // 翻页边界
+  document.getElementById('mPrev').style.visibility = id>1?'visible':'hidden';
+  document.getElementById('mNext').style.visibility = id<DATA.length?'visible':'hidden';
+  overlay.classList.add('show');
+  stopSpeak();
+  // 自动标记已读
+  if(!readSet.has(id)){ readSet.add(id); saveSet(LS.read,readSet); }
+  updateStats(); renderGrid();
+}
+function closeModal(){ stopSpeak(); overlay.classList.remove('show'); modalId=null; }
+document.getElementById('modalClose').onclick=closeModal;
+overlay.onclick=e=>{ if(e.target===overlay) closeModal(); };
+document.addEventListener('keydown',e=>{
+  if(!overlay.classList.contains('show')) return;
+  if(e.key==='Escape') closeModal();
+  else if(e.key==='ArrowLeft' && modalId>1) openModal(modalId-1);
+  else if(e.key==='ArrowRight' && modalId<DATA.length) openModal(modalId+1);
+});
+document.getElementById('mPrev').onclick=()=>openModal(modalId-1);
+document.getElementById('mNext').onclick=()=>openModal(modalId+1);
+
+document.getElementById('mRead').onclick=function(){
+  if(readSet.has(modalId)) readSet.delete(modalId); else readSet.add(modalId);
+  saveSet(LS.read,readSet);
+  const on=readSet.has(modalId);
+  this.className='btn read'+(on?' on':''); this.textContent=on?'✓ 已读':'✓ 标为已读';
+  updateStats(); renderGrid(); toast(on?'标记为已读':'取消已读');
+};
+document.getElementById('mFav').onclick=function(){
+  if(favSet.has(modalId)) favSet.delete(modalId); else favSet.add(modalId);
+  saveSet(LS.fav,favSet);
+  const on=favSet.has(modalId);
+  this.className='btn fav'+(on?' on':''); this.textContent=on?'★ 已收藏':'☆ 收藏';
+  updateStats(); renderGrid(); toast(on?'已加入收藏':'取消收藏');
+};
+
+// 笔记（自动保存）
+const noteArea=document.getElementById('mNote');
+noteArea.addEventListener('input',()=>{
+  const v=noteArea.value.trim();
+  if(v){ notesObj[modalId]=v; } else { delete notesObj[modalId]; }
+  saveNotes(notesObj);
+  document.getElementById('mNoteHint').textContent=v?'已保存 ✓':'笔记将保存在本设备浏览器中';
+  updateStats(); renderGrid();
+});
+
+// 朗读（TTS）
+const speakBtn=document.getElementById('mSpeak');
+function stopSpeak(){
+  if('speechSynthesis' in window){ window.speechSynthesis.cancel(); }
+  speakBtn.textContent='🔊 朗读';
+}
+speakBtn.onclick=()=>{
+  if(!('speechSynthesis' in window)){ toast('当前浏览器不支持朗读'); return; }
+  if(window.speechSynthesis.speaking){ stopSpeak(); return; }
+  const d=DATA.find(x=>x.id===modalId);
+  const text=d.name+'。'+d.orig+' '+d.interpret;
+  const u=new SpeechSynthesisUtterance(text);
+  u.lang='zh-CN'; u.rate=0.92; u.pitch=1;
+  u.onend=()=>{ speakBtn.textContent='🔊 朗读'; };
+  u.onerror=()=>{ speakBtn.textContent='🔊 朗读'; };
+  window.speechSynthesis.speak(u);
+  speakBtn.textContent='⏹ 停止';
+};
+
+// 复制
+document.getElementById('mCopy').onclick=()=>{
+  const d=DATA.find(x=>x.id===modalId);
+  const text=`【三十六计·第${d.id}计 ${d.name}】\n拼音：${d.py}\n分类：${CATS[d.cat]}\n原文：${d.orig}\n注释解说：${d.interpret}\n历史典故：${d.story}\n故事举例：${d.example.replace(/<[^>]+>/g,'')}\n现代启示：${d.modern}`;
+  const done=()=>toast('已复制到剪贴板');
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(done).catch(()=>fallbackCopy(text,done));
+  } else fallbackCopy(text,done);
+};
+function fallbackCopy(text,cb){
+  const ta=document.createElement('textarea'); ta.value=text;
+  ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta);
+  ta.select(); try{ document.execCommand('copy'); cb(); }catch(e){ toast('复制失败'); }
+  document.body.removeChild(ta);
+}
+
+// ---------- 每日一计 ----------
+function dailyStratagem(){
+  const day=Math.floor((Date.now())/(1000*60*60*24));
+  return DATA[day % DATA.length];
+}
+function renderDaily(){
+  const d=dailyStratagem();
+  document.getElementById('dailyName').textContent=d.name;
+  document.getElementById('dailyDesc').textContent=d.orig;
+  document.getElementById('dailyDeco').textContent=d.name[0];
+}
+document.getElementById('dailyCard').onclick=()=>openModal(dailyStratagem().id);
+document.getElementById('randomCard').onclick=()=>openModal(DATA[Math.floor(Math.random()*DATA.length)].id);
+
+// ---------- 搜索 ----------
+document.getElementById('searchInput').oninput=e=>{ keyword=e.target.value.trim(); renderGrid(); };
+
+// ---------- 筛选按钮 ----------
+const favBtn=document.getElementById('favFilterBtn');
+const noteBtn=document.getElementById('noteFilterBtn');
+function syncFilterBtns(){
+  favBtn.classList.toggle('on',onlyFav);
+  noteBtn.classList.toggle('on',onlyNote);
+}
+favBtn.onclick=()=>{ onlyFav=!onlyFav; if(onlyFav) onlyNote=false; activeCat=-1; syncFilterBtns(); renderCats(); renderGrid(); toast(onlyFav?'仅显示收藏':'显示全部'); };
+noteBtn.onclick=()=>{ onlyNote=!onlyNote; if(onlyNote) onlyFav=false; activeCat=-1; syncFilterBtns(); renderCats(); renderGrid(); toast(onlyNote?'仅显示有笔记':'显示全部'); };
+
+// ---------- 主题 ----------
+const themeBtn=document.getElementById('themeBtn');
+function applyTheme(t){
+  document.documentElement.setAttribute('data-theme',t);
+  themeBtn.textContent=t==='dark'?'☀️':'🌙';
+  localStorage.setItem(LS.theme,t);
+}
+themeBtn.onclick=()=>{
+  const cur=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';
+  applyTheme(cur);
+};
+
+// ---------- 测验 ----------
+const quiz=document.getElementById('quiz');
+const gridEl=document.getElementById('grid');
+let qList=[], qIdx=0, qScore=0, qLocked=false;
+document.getElementById('quizBtn').onclick=()=>{
+  const showing=quiz.classList.contains('show');
+  if(showing){ quiz.classList.remove('show'); gridEl.style.display='grid'; }
+  else{ startQuiz(); quiz.classList.add('show'); gridEl.style.display='none'; window.scrollTo({top:0,behavior:'smooth'}); }
+};
+function startQuiz(){
+  qList=[...DATA].sort(()=>Math.random()-0.5).slice(0,10);
+  qIdx=0; qScore=0; nextQuestion();
+}
+function nextQuestion(){
+  qLocked=false;
+  document.getElementById('qResult').innerHTML='';
+  document.getElementById('qNext').style.visibility='hidden';
+  if(qIdx>=qList.length){ showQuizEnd(); return; }
+  const cur=qList[qIdx];
+  document.getElementById('qCount').textContent=`第 ${qIdx+1} / ${qList.length} 题`;
+  document.getElementById('qScore').textContent=`得分 ${qScore}`;
+  const mode=Math.random()<0.5?cur.orig:cur.interpret;
+  document.getElementById('qPrompt').textContent=mode;
+  const opts=new Set([cur.name]);
+  while(opts.size<4){ opts.add(DATA[Math.floor(Math.random()*DATA.length)].name); }
+  const optsArr=[...opts].sort(()=>Math.random()-0.5);
+  const wrap=document.getElementById('qOpts');
+  wrap.innerHTML=optsArr.map(o=>`<button class="q-opt" data-name="${o}">${o}</button>`).join('');
+  wrap.querySelectorAll('.q-opt').forEach(b=>{
+    b.onclick=()=>{
+      if(qLocked) return; qLocked=true;
+      const correct=b.dataset.name===cur.name;
+      if(correct){ b.classList.add('correct'); qScore++; document.getElementById('qScore').textContent=`得分 ${qScore}`;
+        document.getElementById('qResult').innerHTML='<span class="ok">✓ 答对了！</span> '+cur.name+'：'+cur.orig;
+      } else {
+        b.classList.add('wrong');
+        wrap.querySelector(`[data-name="${cur.name}"]`).classList.add('correct');
+        document.getElementById('qResult').innerHTML='<span class="no">✗ 答错了。</span> 正确答案：'+cur.name+'（'+cur.py+'）';
+      }
+      wrap.querySelectorAll('.q-opt').forEach(x=>x.disabled=true);
+      document.getElementById('qNext').style.visibility='visible';
+    };
+  });
+}
+document.getElementById('qNext').onclick=()=>{ qIdx++; nextQuestion(); };
+document.getElementById('qRestart').onclick=startQuiz;
+function showQuizEnd(){
+  document.getElementById('qPrompt').textContent='测验完成 🎉';
+  document.getElementById('qOpts').innerHTML=`<div style="text-align:center;padding:10px">你答对了 <b style="color:var(--read)">${qScore}</b> / ${qList.length} 题</div>`;
+  document.getElementById('qResult').innerHTML=qScore===qList.length?'完美！你已深谙三十六计。':'继续温习，智谋日进。';
+  document.getElementById('qNext').style.visibility='hidden';
+}
+
+// ---------- toast ----------
+let toastTimer=null;
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove('show'),1600);
+}
+
+// ---------- 初始化 ----------
+applyTheme(localStorage.getItem(LS.theme)||'light');
+renderCats();
+renderGrid();
+renderDaily();
+updateStats();
+syncFilterBtns();
+</script>
+</body>
+</html>

@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>全球首都工具 · World Capitals</title>
+<style>
+  :root{
+    --bg:#0b0f17; --bg2:#111826; --panel:#161e2e; --panel2:#1d2638;
+    --line:#283248; --text:#eaf0f7; --muted:#93a1b5;
+    --indigo:#7c83ff; --cyan:#34d3ee; --grad:linear-gradient(135deg,#7c83ff,#34d3ee);
+    --green:#54e3a6; --amber:#ffc46b; --red:#ff7a85; --gold:#ffd166;
+    --shadow:0 10px 30px rgba(0,0,0,.45); --shadow-s:0 4px 14px rgba(0,0,0,.3);
+    --radius:16px;
+  }
+  html[data-theme="light"]{
+    --bg:#eef2f8; --bg2:#ffffff; --panel:#ffffff; --panel2:#f4f7fb;
+    --line:#dde4ee; --text:#16202e; --muted:#5e6e82;
+    --indigo:#5b62e8; --cyan:#0fb6d6; --grad:linear-gradient(135deg,#5b62e8,#0fb6d6);
+    --green:#16a96a; --amber:#d98512; --red:#e0454d; --gold:#caa000;
+    --shadow:0 10px 30px rgba(40,70,120,.14); --shadow-s:0 4px 14px rgba(40,70,120,.10);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:"Inter","PingFang SC","Microsoft YaHei",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    background:
+      radial-gradient(900px 500px at 12% -8%, rgba(124,131,255,.16), transparent 60%),
+      radial-gradient(800px 480px at 92% 0%, rgba(52,211,238,.13), transparent 55%),
+      var(--bg);
+    background-attachment:fixed;
+    color:var(--text); line-height:1.55; -webkit-font-smoothing:antialiased; min-height:100vh;
+  }
+  a{color:var(--indigo)}
+  .wrap{max-width:1200px;margin:0 auto;padding:0 18px}
+  .topbar-line{height:3px;background:var(--grad)}
+  header.top{position:sticky;top:0;z-index:60;background:color-mix(in srgb,var(--bg) 82%,transparent);
+    backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+  .topbar{display:flex;align-items:center;gap:14px;padding:13px 18px;flex-wrap:wrap}
+  .logo{font-size:19px;font-weight:800;display:flex;align-items:center;gap:10px;letter-spacing:.3px}
+  .logo .dot{width:11px;height:11px;border-radius:50%;background:var(--grad);box-shadow:0 0 14px var(--indigo)}
+  .spacer{flex:1}
+  .btn{cursor:pointer;border:1px solid var(--line);background:var(--panel2);color:var(--text);
+    padding:8px 14px;border-radius:11px;font-size:13px;transition:.18s;user-select:none;display:inline-flex;align-items:center;gap:7px;font-weight:500}
+  .btn:hover{border-color:var(--indigo);color:var(--indigo);transform:translateY(-1px)}
+  .btn.primary{background:var(--grad);color:#06101f;border-color:transparent;font-weight:700;box-shadow:0 6px 18px rgba(124,131,255,.35)}
+  .btn.primary:hover{filter:brightness(1.07);color:#06101f}
+  nav.nav{display:flex;gap:6px;flex-wrap:wrap;padding:10px 18px 0}
+  nav.nav .tab{padding:9px 15px;cursor:pointer;font-size:14px;color:var(--muted);border-radius:11px 11px 0 0;
+    user-select:none;transition:.15s;font-weight:500;border:1px solid transparent;border-bottom:none}
+  nav.nav .tab:hover{color:var(--text);background:var(--panel2)}
+  nav.nav .tab.active{color:var(--indigo);background:var(--panel);border-color:var(--line);font-weight:700}
+  .view{display:none;padding:26px 0 70px;animation:fade .3s ease}
+  .view.active{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow-s)}
+  .toolbar{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:18px}
+  input[type=text],select,input[type=search]{background:var(--bg2);border:1px solid var(--line);color:var(--text);
+    padding:10px 13px;border-radius:11px;font-size:14px;outline:none;font-family:inherit;transition:.15s}
+  input[type=text]:focus,input[type=search]:focus,select:focus{border-color:var(--indigo);box-shadow:0 0 0 3px color-mix(in srgb,var(--indigo) 22%,transparent)}
+  .search{flex:1;min-width:230px;position:relative}
+  .search input{width:100%;padding-left:36px}
+  .search svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);opacity:.5}
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+  .chip{padding:7px 15px;border-radius:22px;border:1px solid var(--line);background:var(--panel2);
+    cursor:pointer;font-size:13px;color:var(--muted);user-select:none;transition:.15s;font-weight:500}
+  .chip:hover{color:var(--text);border-color:var(--indigo)}
+  .chip.active{background:var(--grad);color:#06101f;border-color:transparent;font-weight:700}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(232px,1fr));gap:15px}
+  .cap-card{padding:16px;cursor:pointer;transition:.18s;position:relative;overflow:hidden}
+  .cap-card::before{content:"";position:absolute;inset:0;background:var(--grad);opacity:0;transition:.2s}
+  .cap-card:hover{transform:translateY(-4px);border-color:var(--indigo);box-shadow:var(--shadow)}
+  .cap-card:hover::before{opacity:.06}
+  .cap-card .flag{font-size:32px;line-height:1;position:relative}
+  .cap-card h3{margin:9px 0 2px;font-size:16px;position:relative}
+  .cap-card .en{color:var(--muted);font-size:12px;margin-bottom:9px;position:relative}
+  .cap-card .meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px;position:relative}
+  .tag{font-size:11px;padding:3px 8px;border-radius:7px;background:var(--panel2);color:var(--muted);border:1px solid var(--line)}
+  .tag.cont{background:color-mix(in srgb,var(--indigo) 16%,transparent);color:var(--indigo);border-color:transparent;font-weight:600}
+  .star{position:absolute;top:11px;right:11px;font-size:19px;cursor:pointer;filter:grayscale(1) opacity(.45);transition:.15s;z-index:2}
+  .star.on{filter:none;color:var(--gold)}
+  .star:hover{transform:scale(1.2)}
+  .count{color:var(--muted);font-size:13px;margin-bottom:14px}
+  .modal-bg{position:fixed;inset:0;background:rgba(4,8,16,.66);display:none;align-items:center;justify-content:center;z-index:100;padding:20px;backdrop-filter:blur(3px)}
+  .modal-bg.show{display:flex;animation:fade .2s}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:20px;max-width:580px;width:100%;max-height:90vh;overflow:auto;box-shadow:var(--shadow)}
+  .modal-head{display:flex;gap:15px;align-items:center;padding:22px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--panel);border-radius:20px 20px 0 0}
+  .modal-head .flag{font-size:48px}
+  .modal-head h2{margin:0;font-size:23px}
+  .modal-head .sub{color:var(--muted);font-size:13px;margin-top:4px}
+  .modal-close{margin-left:auto;cursor:pointer;font-size:26px;color:var(--muted);background:none;border:none;line-height:1;transition:.15s}
+  .modal-close:hover{color:var(--red);transform:rotate(90deg)}
+  .modal-body{padding:20px 22px}
+  .kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:18px}
+  .kv .cell{background:var(--panel);padding:12px 14px}
+  .kv .k{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  .kv .v{font-size:15px;font-weight:600;margin-top:3px}
+  .map-mini{width:100%;height:230px;background:var(--bg2);border:1px solid var(--line);border-radius:12px;position:relative;overflow:hidden}
+  .map-mini svg .mapdot{cursor:pointer;transition:.15s}
+  .map-mini svg .mapdot:hover{r:6;filter:drop-shadow(0 0 6px var(--cyan))}
+  .section-title{font-size:15px;font-weight:700;margin:0 0 14px;display:flex;align-items:center;gap:8px}
+  .bar-row{display:flex;align-items:center;gap:12px;margin-bottom:10px;font-size:13px}
+  .bar-row .lab{width:110px;flex-shrink:0;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .bar-track{flex:1;background:var(--panel2);border-radius:7px;height:22px;overflow:hidden;border:1px solid var(--line)}
+  .bar-fill{height:100%;background:var(--grad);border-radius:7px;transition:width .7s cubic-bezier(.2,.8,.2,1)}
+  .bar-row .val{width:56px;text-align:right;color:var(--text);flex-shrink:0;font-weight:600}
+  .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:14px;margin-bottom:20px}
+  .stat{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;position:relative;overflow:hidden}
+  .stat .ic{font-size:22px}
+  .stat .n{font-size:28px;font-weight:800;background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;margin-top:4px}
+  .stat .l{font-size:12px;color:var(--muted);margin-top:2px}
+  .quiz-q{font-size:21px;font-weight:700;margin-bottom:18px;line-height:1.4}
+  .quiz-opts{display:grid;gap:11px}
+  .qopt{padding:14px 16px;border:1px solid var(--line);border-radius:12px;cursor:pointer;font-size:15px;background:var(--bg2);transition:.15s}
+  .qopt:hover{border-color:var(--indigo);background:var(--panel2);transform:translateX(3px)}
+  .qopt.correct{background:color-mix(in srgb,var(--green) 18%,transparent);border-color:var(--green);color:var(--green);font-weight:600}
+  .qopt.wrong{background:color-mix(in srgb,var(--red) 16%,transparent);border-color:var(--red);color:var(--red);font-weight:600}
+  .qopt.dim{opacity:.5}
+  .qbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;font-size:13px;color:var(--muted);flex-wrap:wrap;gap:10px}
+  .pill{background:var(--panel2);border:1px solid var(--line);padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600}
+  .prog-wrap{height:7px;background:var(--panel2);border-radius:6px;overflow:hidden;flex:1;min-width:120px;border:1px solid var(--line)}
+  .prog-fill{height:100%;background:var(--grad);width:0;transition:width .35s}
+  .compare-table{width:100%;border-collapse:collapse;font-size:14px}
+  .compare-table th,.compare-table td{padding:12px 15px;border-bottom:1px solid var(--line);text-align:left}
+  .compare-table thead th{background:var(--panel2);color:var(--text);font-weight:700;font-size:15px}
+  .compare-table tbody th{background:var(--panel2);color:var(--muted);font-weight:600;width:140px}
+  .compare-table td.better{color:var(--green);font-weight:700}
+  .compare-table td.worse{color:var(--red)}
+  .cmp-summary{margin-top:14px;padding:13px 16px;border-radius:12px;background:color-mix(in srgb,var(--indigo) 12%,transparent);border:1px solid color-mix(in srgb,var(--indigo) 35%,transparent);font-size:14px;line-height:1.7}
+  .cmp-summary b{color:var(--indigo)}
+  .empty{text-align:center;color:var(--muted);padding:54px 0}
+  .note{font-size:12.5px;color:var(--amber);background:color-mix(in srgb,var(--amber) 12%,transparent);border:1px solid color-mix(in srgb,var(--amber) 35%,transparent);padding:9px 12px;border-radius:10px;margin-bottom:15px;line-height:1.6}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .hero{padding:26px 24px;margin-bottom:22px;background:linear-gradient(135deg,color-mix(in srgb,var(--indigo) 22%,var(--panel)),color-mix(in srgb,var(--cyan) 14%,var(--panel)));border:1px solid var(--line);border-radius:20px;position:relative;overflow:hidden}
+  .hero h1{margin:0 0 6px;font-size:26px;letter-spacing:.3px}
+  .hero p{margin:0;color:var(--muted);font-size:14px}
+  .hero .hpills{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+  .hero .hp{background:var(--panel2);border:1px solid var(--line);padding:8px 14px;border-radius:12px;font-size:13px}
+  .hero .hp b{font-size:18px;background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  .clock-row{display:flex;align-items:center;gap:12px;padding:11px 14px;border-bottom:1px solid var(--line);font-size:14px}
+  .clock-row:last-child{border-bottom:none}
+  .clock-row .flag{font-size:24px}
+  .clock-row .nm{flex:1;min-width:0}
+  .clock-row .nm .c{font-weight:600}
+  .clock-row .nm .s{font-size:12px;color:var(--muted)}
+  .clock-row .time{text-align:right;font-variant-numeric:tabular-nums}
+  .clock-row .time .t{font-size:17px;font-weight:700;font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace}
+  .clock-row .time .d{font-size:11px;color:var(--muted)}
+  .clock-list{max-height:520px;overflow:auto}
+  .result-card{margin-top:16px;padding:18px;border-radius:14px;background:var(--panel2);border:1px solid var(--line)}
+  .result-card .big{font-size:30px;font-weight:800;background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  .result-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-top:14px}
+  .result-grid .rg{background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:12px}
+  .result-grid .rg .k{font-size:12px;color:var(--muted)}
+  .result-grid .rg .v{font-size:16px;font-weight:700;margin-top:3px}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:10px}
+  .legend i{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--cyan);margin-right:6px;vertical-align:middle;box-shadow:0 0 6px var(--cyan)}
+  footer{color:var(--muted);font-size:12px;text-align:center;padding:24px;border-top:1px solid var(--line);margin-top:20px}
+  .muted{color:var(--muted)}
+  .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--panel);
+    border:1px solid var(--indigo);color:var(--text);padding:12px 20px;border-radius:13px;box-shadow:var(--shadow);
+    opacity:0;transition:.25s;z-index:200;pointer-events:none;font-size:14px;font-weight:500}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  @media(max-width:640px){.row2{grid-template-columns:1fr}.bar-row .lab{width:84px}.hero h1{font-size:22px}}
+</style>
+</head>
+<body>
+
+<div class="topbar-line"></div>
+<header class="top">
+  <div class="topbar">
+    <div class="logo"><span class="dot"></span>全球首都工具</div>
+    <div class="spacer"></div>
+    <button class="btn" id="randomBtn">🎲 随机</button>
+    <button class="btn" id="themeBtn">🌓 主题</button>
+  </div>
+  <nav class="nav" id="nav">
+    <div class="tab active" data-view="browse">🔍 浏览</div>
+    <div class="tab" data-view="map">🌍 地图</div>
+    <div class="tab" data-view="quiz">🧠 测验</div>
+    <div class="tab" data-view="fav">⭐ 收藏</div>
+    <div class="tab" data-view="stats">📊 统计</div>
+    <div class="tab" data-view="compare">⚖️ 对照</div>
+    <div class="tab" data-view="clock">🕐 时钟</div>
+  </nav>
+</header>
+
+<div class="wrap">
+
+  <!-- 浏览 -->
+  <section class="view active" id="view-browse">
+    <div class="hero">
+      <h1>🌐 探索世界 197 个首都</h1>
+      <p>搜索、筛选、测验、收藏、对比——一站掌握全球首都的地理与人文数据。</p>
+      <div class="hpills">
+        <div class="hp"><b id="hpTotal">197</b><br>收录首都</div>
+        <div class="hp"><b>6</b><br>大洲</div>
+        <div class="hp"><b>🕐</b><br>实时时钟</div>
+        <div class="hp"><b>📏</b><br>距离/时差</div>
+      </div>
+    </div>
+    <div class="toolbar">
+      <div class="search">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+        <input type="search" id="searchInput" placeholder="搜索国家 / 首都（中英文均可）…">
+      </div>
+      <select id="sortSelect">
+        <option value="capCN">排序：首都名</option>
+        <option value="capPop">排序：首都人口</option>
+        <option value="ctryPop">排序：国家人口</option>
+        <option value="area">排序：国家面积</option>
+        <option value="cont">排序：大洲</option>
+      </select>
+    </div>
+    <div class="chips" id="contChips"></div>
+    <div class="count" id="browseCount"></div>
+    <div class="grid" id="browseGrid"></div>
+  </section>
+
+  <!-- 地图 -->
+  <section class="view" id="view-map">
+    <div class="card" style="padding:18px">
+      <div class="section-title">🌍 世界首都分布（等距圆柱投影）</div>
+      <div class="map-mini" id="mapBig"></div>
+      <div class="legend"><span><i></i>首都位置</span><span class="muted">悬停查看名称 · 点击查看详情</span></div>
+    </div>
+  </section>
+
+  <!-- 测验 -->
+  <section class="view" id="view-quiz">
+    <div class="card" style="padding:20px;margin-bottom:18px">
+      <div class="section-title">🧠 首都测验设置</div>
+      <div class="row2">
+        <div>
+          <div class="muted" style="font-size:13px;margin-bottom:7px">题型</div>
+          <select id="quizMode">
+            <option value="ctc">国家 → 首都</option>
+            <option value="ctc_rev">首都 → 国家</option>
+            <option value="cont">首都 → 所属大洲</option>
+          </select>
+        </div>
+        <div>
+          <div class="muted" style="font-size:13px;margin-bottom:7px">题量</div>
+          <select id="quizNum">
+            <option value="10">10 题</option>
+            <option value="20">20 题</option>
+            <option value="all">全部（197）</option>
+          </select>
+        </div>
+      </div>
+      <div style="margin-top:16px"><button class="btn primary" id="quizStart">开始测验 →</button></div>
+    </div>
+    <div class="card" id="quizBox" style="padding:22px;display:none">
+      <div class="qbar">
+        <span id="quizProg" class="pill">1 / 10</span>
+        <div class="prog-wrap"><div class="prog-fill" id="quizProgFill"></div></div>
+        <span id="quizScore" class="pill">得分 0</span>
+        <span id="quizTimer" class="pill">⏱ 0s</span>
+      </div>
+      <div class="quiz-q" id="quizQuestion"></div>
+      <div class="quiz-opts" id="quizOpts"></div>
+    </div>
+    <div class="card" id="quizResult" style="padding:26px;display:none;text-align:center">
+      <div style="font-size:46px;margin-bottom:10px" id="quizEmoji">🎉</div>
+      <h2 id="quizFinal" style="margin:0 0 6px"></h2>
+      <p class="muted" id="quizDetail"></p>
+      <div style="margin-top:18px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+        <button class="btn primary" id="quizAgain">再来一次</button>
+        <button class="btn" id="quizReview">回顾错题</button>
+      </div>
+      <div id="quizWrongList" style="margin-top:18px;text-align:left;display:none"></div>
+    </div>
+  </section>
+
+  <!-- 收藏 -->
+  <section class="view" id="view-fav">
+    <div class="count" id="favCount"></div>
+    <div class="grid" id="favGrid"></div>
+    <div class="empty" id="favEmpty" style="display:none">还没有收藏。在「浏览」或详情中点亮 ⭐ 即可收藏。</div>
+  </section>
+
+  <!-- 统计 -->
+  <section class="view" id="view-stats">
+    <div class="stat-grid" id="statGrid"></div>
+    <div class="card" style="padding:20px;margin-bottom:18px">
+      <div class="section-title">各大洲首都数量</div>
+      <div id="contBars"></div>
+    </div>
+    <div class="row2">
+      <div class="card" style="padding:20px">
+        <div class="section-title">首都人口 TOP 10</div>
+        <div id="popBars"></div>
+      </div>
+      <div class="card" style="padding:20px">
+        <div class="section-title">国家面积 TOP 10</div>
+        <div id="areaBars"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 对照 -->
+  <section class="view" id="view-compare">
+    <div class="card" style="padding:20px;margin-bottom:18px">
+      <div class="row2">
+        <div><div class="muted" style="font-size:13px;margin-bottom:7px">首都 A</div><select id="cmpA" style="width:100%"></select></div>
+        <div><div class="muted" style="font-size:13px;margin-bottom:7px">首都 B</div><select id="cmpB" style="width:100%"></select></div>
+      </div>
+    </div>
+    <div class="card" style="padding:10px 10px 14px;overflow:auto">
+      <table class="compare-table" id="cmpTable"></table>
+      <div class="cmp-summary" id="cmpSummary"></div>
+    </div>
+  </section>
+
+  <!-- 时钟 / 工具 -->
+  <section class="view" id="view-clock">
+    <div class="row2" style="margin-bottom:18px">
+      <div class="card" style="padding:20px">
+        <div class="section-title">🕐 实时世界时钟</div>
+        <div class="search" style="margin-bottom:12px">
+          <input type="search" id="clockSearch" placeholder="筛选首都…">
+        </div>
+        <div class="clock-list" id="clockList"></div>
+      </div>
+      <div class="card" style="padding:20px">
+        <div class="section-title">📏 距离 & 时差计算器</div>
+        <div style="margin-bottom:12px">
+          <div class="muted" style="font-size:13px;margin-bottom:6px">首都 A</div>
+          <select id="dstA" style="width:100%"></select>
+        </div>
+        <div style="margin-bottom:14px">
+          <div class="muted" style="font-size:13px;margin-bottom:6px">首都 B</div>
+          <select id="dstB" style="width:100%"></select>
+        </div>
+        <div class="result-card" id="dstResult">
+          <div class="muted" style="font-size:13px">选择两个首都后自动计算直线距离与当前时差。</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<footer>全球首都工具 · 单文件离线应用 · 数据约 197 个国家/地区（人口、面积为近似值，仅供学习参考）</footer>
+
+<div class="modal-bg" id="modalBg"><div class="modal" id="modal"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ===== 数据 [iso, 国(中), 国(英), 都(中), 都(英), 洲, 都人口(M), 国人口(M), 面积(km2), 货币, 语言, UTC, 纬度, 经度, 备注] ===== */
+const RAW = [
+["DZ","阿尔及利亚","Algeria","阿尔及尔","Algiers","Africa",2.6,44,2381741,"阿尔及利亚第纳尔","阿拉伯语",1,36.75,3.06],
+["AO","安哥拉","Angola","罗安达","Luanda","Africa",8.9,35,1246700,"宽扎","葡萄牙语",1,-8.84,13.23],
+["BJ","贝宁","Benin","波多诺伏","Porto-Novo","Africa",0.3,13,112622,"非洲金融共同体法郎","法语",1,6.48,2.60],
+["BW","博茨瓦纳","Botswana","哈博罗内","Gaborone","Africa",0.25,2.4,582000,"普拉","英语",2,-24.65,25.91],
+["BF","布基纳法索","Burkina Faso","瓦加杜古","Ouagadougou","Africa",2.2,22,274200,"非洲金融共同体法郎","法语",0,12.37,-1.53],
+["BI","布隆迪","Burundi","基特加","Gitega","Africa",0.13,13,27834,"布隆迪法郎","基隆迪语",2,-3.43,29.93],
+["CV","佛得角","Cabo Verde","普拉亚","Praia","Africa",0.15,0.6,4033,"佛得角埃斯库多","葡萄牙语",-1,14.92,-23.51],
+["CM","喀麦隆","Cameroon","雅温得","Yaounde","Africa",3.0,28,475442,"中非法郎","法语",1,3.85,11.50],
+["CF","中非","Central African Republic","班吉","Bangui","Africa",0.9,5,622984,"中非法郎","法语",1,4.39,18.55],
+["TD","乍得","Chad","恩贾梅纳","N'Djamena","Africa",1.3,17,1284000,"中非法郎","法语",1,12.13,15.06],
+["KM","科摩罗","Comoros","莫罗尼","Moroni","Africa",0.06,0.9,1862,"科摩罗法郎","科摩罗语",3,-11.71,43.25],
+["CG","刚果(布)","Congo","布拉柴维尔","Brazzaville","Africa",2.0,6,342000,"中非法郎","法语",1,-4.27,15.27],
+["CD","刚果(金)","DR Congo","金沙萨","Kinshasa","Africa",15,99,2344858,"刚果法郎","法语",1,-4.32,15.31],
+["CI","科特迪瓦","Cote d'Ivoire","亚穆苏克罗","Yamoussoukro","Africa",0.3,28,322463,"非洲金融共同体法郎","法语",0,6.82,-5.28],
+["DJ","吉布提","Djibouti","吉布提市","Djibouti","Africa",0.6,1.1,23200,"吉布提法郎","法语",3,11.59,43.15],
+["EG","埃及","Egypt","开罗","Cairo","Africa",21,109,1002450,"埃及镑","阿拉伯语",2,30.04,31.24],
+["GQ","赤道几内亚","Equatorial Guinea","马拉博","Malabo","Africa",0.3,1.6,28051,"中非法郎","西班牙语",1,3.75,8.78],
+["ER","厄立特里亚","Eritrea","阿斯马拉","Asmara","Africa",0.9,4,117600,"纳克法","提格雷语",3,15.18,38.93],
+["SZ","斯威士兰","Eswatini","姆巴巴内","Mbabane","Africa",0.09,1.2,17364,"里兰吉尼","英语",2,-26.30,31.14],
+["ET","埃塞俄比亚","Ethiopia","亚的斯亚贝巴","Addis Ababa","Africa",5.0,123,1104300,"比尔","阿姆哈拉语",3,9.03,38.74],
+["GA","加蓬","Gabon","利伯维尔","Libreville","Africa",0.8,2.4,267668,"中非法郎","法语",1,0.45,9.45],
+["GM","冈比亚","Gambia","班珠尔","Banjul","Africa",0.06,2.7,10689,"达拉西","英语",0,13.45,-16.58],
+["GH","加纳","Ghana","阿克拉","Accra","Africa",2.5,33,238533,"加纳塞地","英语",0,5.60,-0.19],
+["GN","几内亚","Guinea","科纳克里","Conakry","Africa",1.7,14,245857,"几内亚法郎","法语",0,9.54,-13.68],
+["GW","几内亚比绍","Guinea-Bissau","比绍","Bissau","Africa",0.4,2.1,36125,"非洲金融共同体法郎","葡萄牙语",0,11.86,-15.58],
+["KE","肯尼亚","Kenya","内罗毕","Nairobi","Africa",5.0,55,580367,"肯尼亚先令","斯瓦希里语",3,-1.29,36.82],
+["LS","莱索托","Lesotho","马塞卢","Maseru","Africa",0.33,2.3,30355,"洛蒂","英语",2,-29.32,27.49],
+["LR","利比里亚","Liberia","蒙罗维亚","Monrovia","Africa",1.5,5.4,111369,"利比里亚元","英语",0,6.30,-10.80],
+["LY","利比亚","Libya","的黎波里","Tripoli","Africa",1.2,7,1759540,"利比亚第纳尔","阿拉伯语",2,32.89,13.19],
+["MG","马达加斯加","Madagascar","塔那那利佛","Antananarivo","Africa",3.0,30,587041,"阿里亚里","马达加斯加语",3,-18.88,47.51],
+["MW","马拉维","Malawi","利隆圭","Lilongwe","Africa",1.1,20,118484,"马拉维克瓦查","英语",2,-13.96,33.78],
+["ML","马里","Mali","巴马科","Bamako","Africa",3.0,22,1240192,"非洲金融共同体法郎","法语",0,12.64,-8.00],
+["MR","毛里塔尼亚","Mauritania","努瓦克肖特","Nouakchott","Africa",1.4,5,1030700,"乌吉亚","阿拉伯语",0,18.09,-15.97],
+["MU","毛里求斯","Mauritius","路易港","Port Louis","Africa",0.15,1.3,2040,"毛里求斯卢比","英语",4,-20.16,57.50],
+["MA","摩洛哥","Morocco","拉巴特","Rabat","Africa",2.0,38,446550,"摩洛哥迪拉姆","阿拉伯语",1,34.02,-6.84],
+["MZ","莫桑比克","Mozambique","马普托","Maputo","Africa",1.8,33,801590,"梅蒂卡尔","葡萄牙语",2,-25.97,32.58],
+["NA","纳米比亚","Namibia","温得和克","Windhoek","Africa",0.5,2.6,825615,"纳米比亚元","英语",2,-22.56,17.08],
+["NE","尼日尔","Niger","尼亚美","Niamey","Africa",1.3,26,1267000,"非洲金融共同体法郎","法语",1,13.51,2.11],
+["NG","尼日利亚","Nigeria","阿布贾","Abuja","Africa",1.2,220,923768,"奈拉","英语",1,9.08,7.49],
+["RW","卢旺达","Rwanda","基加利","Kigali","Africa",1.1,14,26338,"卢旺达法郎","基尼亚卢旺达语",2,-1.95,30.06],
+["ST","圣多美和普林西比","Sao Tome and Principe","圣多美","Sao Tome","Africa",0.08,0.2,1001,"多布拉","葡萄牙语",0,0.34,6.66],
+["SN","塞内加尔","Senegal","达喀尔","Dakar","Africa",2.8,18,196722,"非洲金融共同体法郎","法语",0,14.72,-17.47],
+["SC","塞舌尔","Seychelles","维多利亚","Victoria","Africa",0.03,0.1,455,"塞舌尔卢比","英语",4,-4.62,55.45],
+["SL","塞拉利昂","Sierra Leone","弗里敦","Freetown","Africa",1.2,8.6,71740,"利昂","英语",0,8.48,-13.23],
+["SO","索马里","Somalia","摩加迪沙","Mogadishu","Africa",2.5,17,637657,"索马里先令","索马里语",3,2.04,45.32],
+["ZA","南非","South Africa","比勒陀利亚","Pretoria","Africa",2.5,60,1221037,"兰特","英语",2,-25.75,28.19,"行政首都；立法首都开普敦；司法首都布隆方丹"],
+["SS","南苏丹","South Sudan","朱巴","Juba","Africa",0.5,12,619745,"南苏丹镑","英语",2,4.85,31.58],
+["SD","苏丹","Sudan","喀土穆","Khartoum","Africa",5.8,47,1886068,"苏丹镑","阿拉伯语",2,15.50,32.56],
+["TZ","坦桑尼亚","Tanzania","多多马","Dodoma","Africa",0.4,65,945087,"坦桑尼亚先令","斯瓦希里语",3,-6.16,35.75],
+["TG","多哥","Togo","洛美","Lome","Africa",1.5,9,56785,"非洲金融共同体法郎","法语",0,6.13,1.21],
+["TN","突尼斯","Tunisia","突尼斯市","Tunis","Africa",2.4,12,163610,"突尼斯第纳尔","阿拉伯语",1,36.80,10.18],
+["UG","乌干达","Uganda","坎帕拉","Kampala","Africa",1.7,48,241038,"乌干达先令","斯瓦希里语",3,0.32,32.58],
+["ZM","赞比亚","Zambia","卢萨卡","Lusaka","Africa",3.0,20,752618,"克瓦查","英语",2,-15.39,28.32],
+["ZW","津巴布韦","Zimbabwe","哈拉雷","Harare","Africa",1.6,16,390757,"津巴布韦元","英语",2,-17.83,31.05],
+["EH","西撒哈拉","Western Sahara","阿尤恩","El Aaiun","Africa",0.2,0.6,266000,"摩洛哥迪拉姆","阿拉伯语",0,27.15,-13.20,"争议领土；摩洛哥实际管辖，首都（最大城市）阿尤恩；撒拉威阿拉伯民主共和国政府驻提法里蒂"],
+
+["AF","阿富汗","Afghanistan","喀布尔","Kabul","Asia",4.6,42,652230,"阿富汗尼","普什图语",4.5,34.53,69.17],
+["AM","亚美尼亚","Armenia","埃里温","Yerevan","Asia",1.1,3,29743,"德拉姆","亚美尼亚语",4,40.18,44.51],
+["AZ","阿塞拜疆","Azerbaijan","巴库","Baku","Asia",2.3,10,86600,"马纳特","阿塞拜疆语",4,40.41,49.87],
+["BH","巴林","Bahrain","麦纳麦","Manama","Asia",0.7,2,778,"巴林第纳尔","阿拉伯语",3,26.22,50.59],
+["BD","孟加拉国","Bangladesh","达卡","Dhaka","Asia",22,173,147570,"塔卡","孟加拉语",6,23.81,90.41],
+["BT","不丹","Bhutan","廷布","Thimphu","Asia",0.12,0.8,38394,"努扎姆","宗卡语",6,27.47,89.64],
+["BN","文莱","Brunei","斯里巴加湾市","Bandar Seri Begawan","Asia",0.1,0.45,5765,"文莱元","马来语",8,4.94,114.95],
+["KH","柬埔寨","Cambodia","金边","Phnom Penh","Asia",2.1,17,181035,"瑞尔","高棉语",7,11.56,104.92],
+["CN","中国","China","北京","Beijing","Asia",22,1412,9596961,"人民币","汉语",8,39.90,116.41],
+["CY","塞浦路斯","Cyprus","尼科西亚","Nicosia","Asia",0.33,0.9,9251,"欧元","希腊语",2,35.17,33.36,"实际分治，北部为北塞浦路斯控制"],
+["GE","格鲁吉亚","Georgia","第比利斯","Tbilisi","Asia",1.2,3.7,69700,"拉里","格鲁吉亚语",4,41.72,44.78],
+["IN","印度","India","新德里","New Delhi","Asia",32,1417,3287263,"卢比","印地语",5.5,28.61,77.21],
+["ID","印度尼西亚","Indonesia","雅加达","Jakarta","Asia",11,277,1904569,"印尼盾","印尼语",7,-6.21,106.85],
+["IR","伊朗","Iran","德黑兰","Tehran","Asia",9,89,1648195,"里亚尔","波斯语",3.5,35.69,51.39],
+["IQ","伊拉克","Iraq","巴格达","Baghdad","Asia",7,43,438317,"第纳尔","阿拉伯语",3,33.31,44.36],
+["IL","以色列","Israel","耶路撒冷","Jerusalem","Asia",1.0,9.7,20770,"新谢克尔","希伯来语",2,31.77,35.21],
+["JP","日本","Japan","东京","Tokyo","Asia",37,124,377975,"日元","日语",9,35.68,139.69],
+["JO","约旦","Jordan","安曼","Amman","Asia",4.0,11,89342,"第纳尔","阿拉伯语",3,31.95,35.93],
+["KZ","哈萨克斯坦","Kazakhstan","阿斯塔纳","Astana","Asia",1.3,19,2724900,"坚戈","哈萨克语",6,51.17,71.43],
+["KW","科威特","Kuwait","科威特城","Kuwait City","Asia",3.0,4.5,17818,"科威特第纳尔","阿拉伯语",3,29.38,47.99],
+["KG","吉尔吉斯斯坦","Kyrgyzstan","比什凯克","Bishkek","Asia",1.0,7,199951,"索姆","吉尔吉斯语",6,42.87,74.59],
+["LA","老挝","Laos","万象","Vientiane","Asia",0.9,7.6,236800,"基普","老挝语",7,17.97,102.61],
+["LB","黎巴嫩","Lebanon","贝鲁特","Beirut","Asia",2.4,5.5,10452,"黎巴嫩镑","阿拉伯语",2,33.89,35.50],
+["MY","马来西亚","Malaysia","吉隆坡","Kuala Lumpur","Asia",8,34,330803,"林吉特","马来语",8,3.14,101.69],
+["MN","蒙古","Mongolia","乌兰巴托","Ulaanbaatar","Asia",1.6,3.4,1564110,"图格里克","蒙古语",8,47.92,106.92],
+["MM","缅甸","Myanmar","内比都","Naypyidaw","Asia",1.0,55,676578,"缅元","缅甸语",6.5,19.82,96.13],
+["NP","尼泊尔","Nepal","加德满都","Kathmandu","Asia",1.5,31,147516,"卢比","尼泊尔语",5.75,27.72,85.32],
+["KP","朝鲜","North Korea","平壤","Pyongyang","Asia",3.0,26,120538,"朝鲜元","朝鲜语",9,39.04,125.76],
+["OM","阿曼","Oman","马斯喀特","Muscat","Asia",1.7,5.2,309500,"阿曼里亚尔","阿拉伯语",4,23.59,58.41],
+["PK","巴基斯坦","Pakistan","伊斯兰堡","Islamabad","Asia",1.1,240,881913,"卢比","乌尔都语",5,33.68,73.05],
+["PS","巴勒斯坦","Palestine","拉马拉","Ramallah","Asia",0.04,5.4,6220,"巴勒斯坦第纳尔","阿拉伯语",2,31.90,35.21,"有限承认；主张东耶路撒冷为首都，政府驻拉马拉"],
+["PH","菲律宾","Philippines","马尼拉","Manila","Asia",14,115,342353,"菲律宾比索","菲律宾语",8,14.60,120.98],
+["QA","卡塔尔","Qatar","多哈","Doha","Asia",2.4,3,11437,"卡塔尔里亚尔","阿拉伯语",3,25.29,51.53],
+["SA","沙特阿拉伯","Saudi Arabia","利雅得","Riyadh","Asia",7.7,37,2149690,"沙特里亚尔","阿拉伯语",3,24.71,46.68],
+["SG","新加坡","Singapore","新加坡","Singapore","Asia",5.9,5.9,728,"新加坡元","英语",8,1.35,103.82],
+["KR","韩国","South Korea","首尔","Seoul","Asia",10,52,100210,"韩元","韩语",9,37.57,126.98],
+["LK","斯里兰卡","Sri Lanka","科伦坡","Colombo","Asia",5.6,22,65610,"斯里兰卡卢比","僧伽罗语",5.5,6.93,79.85,"法定首都为斯里贾亚瓦德纳普拉科特，科伦坡为商业首都"],
+["SY","叙利亚","Syria","大马士革","Damascus","Asia",2.0,22,185180,"叙利亚镑","阿拉伯语",3,33.51,36.29],
+["TW","中国台湾","Taiwan","台北","Taipei","Asia",7,23,36193,"新台币","汉语",8,25.03,121.57],
+["TJ","塔吉克斯坦","Tajikistan","杜尚别","Dushanbe","Asia",0.9,10,143100,"索莫尼","塔吉克语",5,38.56,68.79],
+["TH","泰国","Thailand","曼谷","Bangkok","Asia",11,72,513120,"泰铢","泰语",7,13.76,100.50],
+["TL","东帝汶","Timor-Leste","帝力","Dili","Asia",0.28,1.4,14874,"美元","德顿语",9,-8.56,125.56],
+["TR","土耳其","Turkey","安卡拉","Ankara","Asia",5.7,86,783562,"里拉","土耳其语",3,39.93,32.85],
+["TM","土库曼斯坦","Turkmenistan","阿什哈巴德","Ashgabat","Asia",1.0,7,488100,"马纳特","土库曼语",5,37.95,58.38],
+["AE","阿联酋","United Arab Emirates","阿布扎比","Abu Dhabi","Asia",1.5,10,83600,"迪拉姆","阿拉伯语",4,24.45,54.38],
+["UZ","乌兹别克斯坦","Uzbekistan","塔什干","Tashkent","Asia",2.5,36,447400,"苏姆","乌兹别克语",5,41.31,69.24],
+["VN","越南","Vietnam","河内","Hanoi","Asia",8,98,331212,"越南盾","越南语",7,21.03,105.85],
+["YE","也门","Yemen","萨那","Sana'a","Asia",3.0,34,527968,"里亚尔","阿拉伯语",3,15.35,44.21],
+
+["AL","阿尔巴尼亚","Albania","地拉那","Tirana","Europe",0.8,2.8,28748,"列克","阿尔巴尼亚语",1,41.33,19.82],
+["AD","安道尔","Andorra","安道尔城","Andorra la Vella","Europe",0.07,0.08,468,"欧元","加泰罗尼亚语",1,42.51,1.52],
+["AT","奥地利","Austria","维也纳","Vienna","Europe",2.0,9,83879,"欧元","德语",1,48.21,16.37],
+["BY","白俄罗斯","Belarus","明斯克","Minsk","Europe",2.0,9.3,207600,"卢布","白俄罗斯语",3,53.90,27.57],
+["BE","比利时","Belgium","布鲁塞尔","Brussels","Europe",1.2,11.7,30528,"欧元","荷兰语",1,50.85,4.35],
+["BA","波黑","Bosnia and Herzegovina","萨拉热窝","Sarajevo","Europe",0.4,3.3,51209,"可兑换马克","波斯尼亚语",1,43.86,18.41],
+["BG","保加利亚","Bulgaria","索菲亚","Sofia","Europe",1.3,6.9,110879,"列弗","保加利亚语",2,42.70,23.32],
+["HR","克罗地亚","Croatia","萨格勒布","Zagreb","Europe",0.8,3.9,56594,"欧元","克罗地亚语",1,45.81,15.98],
+["CZ","捷克","Czech Republic","布拉格","Prague","Europe",1.3,10.5,78865,"捷克克朗","捷克语",1,50.08,14.44],
+["DK","丹麦","Denmark","哥本哈根","Copenhagen","Europe",1.4,6,42933,"丹麦克朗","丹麦语",1,55.68,12.57],
+["EE","爱沙尼亚","Estonia","塔林","Tallinn","Europe",0.45,1.3,45227,"欧元","爱沙尼亚语",2,59.44,24.75],
+["FI","芬兰","Finland","赫尔辛基","Helsinki","Europe",1.3,5.6,338424,"欧元","芬兰语",2,60.17,24.94],
+["FR","法国","France","巴黎","Paris","Europe",11,68,551695,"欧元","法语",1,48.86,2.35],
+["DE","德国","Germany","柏林","Berlin","Europe",3.6,84,357022,"欧元","德语",1,52.52,13.40],
+["GR","希腊","Greece","雅典","Athens","Europe",3.2,10.4,131957,"欧元","希腊语",2,37.98,23.73],
+["HU","匈牙利","Hungary","布达佩斯","Budapest","Europe",1.8,9.7,93028,"福林","匈牙利语",1,47.50,19.04],
+["IS","冰岛","Iceland","雷克雅未克","Reykjavik","Europe",0.13,0.37,100250,"冰岛克朗","冰岛语",0,64.13,-21.90],
+["IE","爱尔兰","Ireland","都柏林","Dublin","Europe",1.4,5.1,70273,"欧元","爱尔兰语",0,53.35,-6.26],
+["IT","意大利","Italy","罗马","Rome","Europe",4.3,58,301340,"欧元","意大利语",1,41.90,12.50],
+["XK","科索沃","Kosovo","普里什蒂纳","Pristina","Europe",0.2,1.8,10887,"欧元","阿尔巴尼亚语",1,42.66,21.17,"部分国家承认"],
+["LV","拉脱维亚","Latvia","里加","Riga","Europe",0.6,1.8,64589,"欧元","拉脱维亚语",2,56.95,24.11],
+["LI","列支敦士登","Liechtenstein","瓦杜兹","Vaduz","Europe",0.05,0.04,160,"瑞士法郎","德语",1,47.14,9.52],
+["LT","立陶宛","Lithuania","维尔纽斯","Vilnius","Europe",0.6,2.8,65300,"欧元","立陶宛语",2,54.69,25.28],
+["LU","卢森堡","Luxembourg","卢森堡市","Luxembourg","Europe",0.13,0.66,2586,"欧元","卢森堡语",1,49.61,6.13],
+["MT","马耳他","Malta","瓦莱塔","Valletta","Europe",0.06,0.53,316,"欧元","马耳他语",1,35.90,14.51],
+["MD","摩尔多瓦","Moldova","基希讷乌","Chisinau","Europe",0.7,2.6,33846,"列伊","摩尔多瓦语",2,47.01,28.86],
+["MC","摩纳哥","Monaco","摩纳哥城","Monaco","Europe",0.04,0.04,2,"欧元","法语",1,43.74,7.42],
+["ME","黑山","Montenegro","波德戈里察","Podgorica","Europe",0.15,0.62,13812,"欧元","黑山语",1,42.44,19.27],
+["NL","荷兰","Netherlands","阿姆斯特丹","Amsterdam","Europe",1.2,17.9,41543,"欧元","荷兰语",1,52.37,4.90],
+["MK","北马其顿","North Macedonia","斯科普里","Skopje","Europe",0.5,2.1,25713,"代纳尔","马其顿语",1,41.99,21.43],
+["NO","挪威","Norway","奥斯陆","Oslo","Europe",1.0,5.5,323802,"挪威克朗","挪威语",1,59.91,10.75],
+["PL","波兰","Poland","华沙","Warsaw","Europe",1.8,37.7,312679,"兹罗提","波兰语",1,52.23,21.01],
+["PT","葡萄牙","Portugal","里斯本","Lisbon","Europe",0.6,10.3,92212,"欧元","葡萄牙语",0,38.72,-9.14],
+["RO","罗马尼亚","Romania","布加勒斯特","Bucharest","Europe",2.1,19,238397,"列伊","罗马尼亚语",2,44.43,26.10],
+["RU","俄罗斯","Russia","莫斯科","Moscow","Europe",13,144,17098242,"卢布","俄语",3,55.75,37.62],
+["SM","圣马力诺","San Marino","圣马力诺市","San Marino","Europe",0.04,0.03,61,"欧元","意大利语",1,43.93,12.45],
+["RS","塞尔维亚","Serbia","贝尔格莱德","Belgrade","Europe",1.4,6.8,88361,"第纳尔","塞尔维亚语",1,44.79,20.45],
+["SK","斯洛伐克","Slovakia","布拉迪斯拉发","Bratislava","Europe",0.5,5.4,49035,"欧元","斯洛伐克语",1,48.15,17.12],
+["SI","斯洛文尼亚","Slovenia","卢布尔雅那","Ljubljana","Europe",0.3,2.1,20273,"欧元","斯洛文尼亚语",1,46.05,14.51],
+["ES","西班牙","Spain","马德里","Madrid","Europe",3.3,47,505992,"欧元","西班牙语",1,40.42,-3.70],
+["SE","瑞典","Sweden","斯德哥尔摩","Stockholm","Europe",1.0,10.5,450295,"瑞典克朗","瑞典语",1,59.33,18.07],
+["CH","瑞士","Switzerland","伯尔尼","Bern","Europe",0.4,8.9,41284,"瑞士法郎","德语",1,46.95,7.45],
+["UA","乌克兰","Ukraine","基辅","Kyiv","Europe",3.0,37,603628,"格里夫纳","乌克兰语",2,50.45,30.52],
+["GB","英国","United Kingdom","伦敦","London","Europe",9.5,67,242495,"英镑","英语",0,51.51,-0.13],
+["VA","梵蒂冈","Vatican City","梵蒂冈城","Vatican City","Europe",0.001,0.001,0.44,"欧元","意大利语",1,41.90,12.45],
+
+["AG","安提瓜和巴布达","Antigua and Barbuda","圣约翰","St. John's","N.America",0.02,0.1,442,"东加勒比元","英语",-4,17.12,-61.85],
+["BS","巴哈马","Bahamas","拿骚","Nassau","N.America",0.3,0.4,10010,"巴哈马元","英语",-5,25.05,-77.34],
+["BB","巴巴多斯","Barbados","布里奇敦","Bridgetown","N.America",0.1,0.29,430,"巴巴多斯元","英语",-4,13.19,-59.54],
+["BZ","伯利兹","Belize","贝尔莫潘","Belmopan","N.America",0.02,0.4,22966,"伯利兹元","英语",-6,17.25,-88.77],
+["CA","加拿大","Canada","渥太华","Ottawa","N.America",1.0,39,9984670,"加元","英语",-5,45.42,-75.70],
+["CR","哥斯达黎加","Costa Rica","圣何塞","San Jose","N.America",0.35,5.2,51060,"科朗","西班牙语",-6,9.93,-84.08],
+["CU","古巴","Cuba","哈瓦那","Havana","N.America",2.1,11,109884,"古巴比索","西班牙语",-5,23.11,-82.37],
+["DM","多米尼克","Dominica","罗索","Roseau","N.America",0.015,0.07,751,"东加勒比元","英语",-4,15.31,-61.39],
+["DO","多米尼加","Dominican Republic","圣多明各","Santo Domingo","N.America",3.0,11.4,48671,"多米尼加比索","西班牙语",-4,18.47,-69.90],
+["SV","萨尔瓦多","El Salvador","圣萨尔瓦多","San Salvador","N.America",1.8,6.5,21041,"美元","西班牙语",-6,13.69,-89.19],
+["GD","格林纳达","Grenada","圣乔治","St. George's","N.America",0.04,0.12,344,"东加勒比元","英语",-4,12.06,-61.75],
+["GT","危地马拉","Guatemala","危地马拉城","Guatemala City","N.America",3.0,18,108889,"格查尔","西班牙语",-6,14.60,-90.51],
+["HT","海地","Haiti","太子港","Port-au-Prince","N.America",2.6,11.8,27750,"古德","法语",-5,18.59,-72.31],
+["HN","洪都拉斯","Honduras","特古西加尔巴","Tegucigalpa","N.America",1.2,10.6,112492,"伦皮拉","西班牙语",-6,14.08,-87.21],
+["JM","牙买加","Jamaica","金斯敦","Kingston","N.America",0.7,2.9,10991,"牙买加元","英语",-5,17.99,-76.79],
+["MX","墨西哥","Mexico","墨西哥城","Mexico City","N.America",22,128,1964375,"墨西哥比索","西班牙语",-6,19.43,-99.13],
+["NI","尼加拉瓜","Nicaragua","马那瓜","Managua","N.America",1.5,7,130373,"科多巴","西班牙语",-6,12.13,-86.25],
+["PA","巴拿马","Panama","巴拿马城","Panama City","N.America",1.9,4.5,75417,"巴波亚","西班牙语",-5,8.98,-79.52],
+["KN","圣基茨和尼维斯","Saint Kitts and Nevis","巴斯特尔","Basseterre","N.America",0.013,0.05,261,"东加勒比元","英语",-4,17.29,-62.73],
+["LC","圣卢西亚","Saint Lucia","卡斯特里","Castries","N.America",0.02,0.18,616,"东加勒比元","英语",-4,14.01,-60.99],
+["VC","圣文森特和格林纳丁斯","Saint Vincent and the Grenadines","金斯敦","Kingstown","N.America",0.025,0.11,389,"东加勒比元","英语",-4,13.16,-61.22],
+["TT","特立尼达和多巴哥","Trinidad and Tobago","西班牙港","Port of Spain","N.America",0.55,1.5,5130,"特立尼达元","英语",-4,10.66,-61.52],
+["US","美国","United States","华盛顿哥伦比亚特区","Washington D.C.","N.America",0.7,333,9833517,"美元","英语",-5,38.91,-77.04],
+
+["AR","阿根廷","Argentina","布宜诺斯艾利斯","Buenos Aires","S.America",15,46,2780400,"阿根廷比索","西班牙语",-3,-34.60,-58.38],
+["BO","玻利维亚","Bolivia","苏克雷","Sucre","S.America",0.35,12,1098581,"玻利维亚诺","西班牙语",-4,-19.03,-65.26,"法定首都；行政首都为拉巴斯"],
+["BR","巴西","Brazil","巴西利亚","Brasilia","S.America",4.8,215,8515767,"雷亚尔","葡萄牙语",-3,-15.79,-47.88],
+["CL","智利","Chile","圣地亚哥","Santiago","S.America",6.8,19.6,756102,"智利比索","西班牙语",-4,-33.45,-70.67],
+["CO","哥伦比亚","Colombia","波哥大","Bogota","S.America",11,52,1141748,"哥伦比亚比索","西班牙语",-5,4.71,-74.07],
+["EC","厄瓜多尔","Ecuador","基多","Quito","S.America",2.0,18,276841,"美元","西班牙语",-5,-0.18,-78.47],
+["GY","圭亚那","Guyana","乔治敦","Georgetown","S.America",0.2,0.8,214969,"圭亚那元","英语",-4,6.80,-58.16],
+["PY","巴拉圭","Paraguay","亚松森","Asuncion","S.America",2.2,7,406752,"瓜拉尼","西班牙语",-4,-25.28,-57.63],
+["PE","秘鲁","Peru","利马","Lima","S.America",11,34,1285216,"索尔","西班牙语",-5,-12.05,-77.04],
+["SR","苏里南","Suriname","帕拉马里博","Paramaribo","S.America",0.25,0.6,163820,"苏里南元","荷兰语",-3,5.87,-55.20],
+["UY","乌拉圭","Uruguay","蒙得维的亚","Montevideo","S.America",1.8,3.5,181034,"乌拉圭比索","西班牙语",-3,-34.88,-56.17],
+["VE","委内瑞拉","Venezuela","加拉加斯","Caracas","S.America",3.0,29,916445,"玻利瓦尔","西班牙语",-4,10.48,-66.90],
+
+["AU","澳大利亚","Australia","堪培拉","Canberra","Oceania",0.46,26,7692024,"澳元","英语",10,-35.28,149.13],
+["FJ","斐济","Fiji","苏瓦","Suva","Oceania",0.09,0.9,18272,"斐济元","英语",12,-18.14,178.44],
+["KI","基里巴斯","Kiribati","南塔拉瓦","South Tarawa","Oceania",0.06,0.12,811,"澳元","英语",13,1.33,172.98,"跨国际日期变更线，时区为 +13/+14"],
+["MH","马绍尔群岛","Marshall Islands","马朱罗","Majuro","Oceania",0.03,0.06,181,"美元","英语",12,7.09,171.38],
+["FM","密克罗尼西亚","Micronesia","帕利基尔","Palikir","Oceania",0.07,0.11,702,"美元","英语",11,6.92,158.16],
+["NR","瑙鲁","Nauru","亚伦","Yaren","Oceania",0.007,0.01,21,"澳元","英语",12,-0.55,166.92,"无官方首都，政府驻亚伦"],
+["NZ","新西兰","New Zealand","惠灵顿","Wellington","Oceania",0.42,5.2,268838,"新西兰元","英语",12,-41.29,174.78],
+["PW","帕劳","Palau","恩吉鲁穆德","Ngerulmud","Oceania",0.04,0.02,459,"美元","英语",9,7.50,134.62],
+["PG","巴布亚新几内亚","Papua New Guinea","莫尔兹比港","Port Moresby","Oceania",0.4,10,462840,"基那","英语",10,-9.48,147.18],
+["WS","萨摩亚","Samoa","阿皮亚","Apia","Oceania",0.04,0.22,2842,"塔拉","萨摩亚语",13,-13.83,-171.77],
+["SB","所罗门群岛","Solomon Islands","霍尼亚拉","Honiara","Oceania",0.08,0.7,28896,"所罗门群岛元","英语",11,-9.43,159.96],
+["TO","汤加","Tonga","努库阿洛法","Nuku'alofa","Oceania",0.024,0.1,747,"潘加","汤加语",13,-21.14,-175.20],
+["TV","图瓦卢","Tuvalu","富纳富提","Funafuti","Oceania",0.006,0.01,26,"澳元","英语",12,-8.52,179.20],
+["VU","瓦努阿图","Vanuatu","维拉港","Port Vila","Oceania",0.05,0.32,12189,"瓦图","英语",11,-17.73,168.32]
+];
+
+const CONT_CN = {"Africa":"非洲","Europe":"欧洲","Asia":"亚洲","N.America":"北美洲","S.America":"南美洲","Oceania":"大洋洲"};
+const CONT_ORDER = ["Asia","Europe","Africa","N.America","S.America","Oceania"];
+
+const DATA = RAW.map(r=>({
+  iso:r[0], cCN:r[1], cEN:r[2], capCN:r[3], capEN:r[4], cont:r[5],
+  capPop:r[6], ctryPop:r[7], area:r[8], cur:r[9], lang:r[10], tz:r[11],
+  lat:r[12], lng:r[13], note:r[14]||""
+}));
+document.getElementById("hpTotal").textContent=DATA.length;
+
+function flagEmoji(iso){ return String.fromCodePoint(...[...iso].map(c=>0x1F1E6 + c.charCodeAt(0)-65)); }
+function fmtTz(tz){
+  if(tz===0) return "UTC±0";
+  const s = tz>0?"+":"−"; const v=Math.abs(tz);
+  return "UTC"+s+(Number.isInteger(v)?v:v.toFixed(2).replace(/0$/,""));
+}
+function fmtNum(n){ return Math.round(n).toLocaleString("en-US"); }
+function pad(n){ return String(n).padStart(2,"0"); }
+
+/* 地理工具 */
+function haversine(la1,lo1,la2,lo2){
+  const R=6371, r=d=>d*Math.PI/180;
+  const dLa=r(la2-la1), dLo=r(lo2-lo1);
+  const a=Math.sin(dLa/2)**2+Math.cos(r(la1))*Math.cos(r(la2))*Math.sin(dLo/2)**2;
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+function localNow(tz){
+  const now=new Date();
+  const utc=now.getTime()+now.getTimezoneOffset()*60000;
+  return new Date(utc+tz*3600*1000);
+}
+const WD=["日","一","二","三","四","五","六"];
+function clockText(tz){
+  const d=localNow(tz);
+  return {t:`${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`,
+    d:`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} 周${WD[d.getDay()]}`};
+}
+
+/* ===== 收藏 ===== */
+const FAV_KEY="cap_fav_v2";
+let favs=new Set(JSON.parse(localStorage.getItem(FAV_KEY)||"[]"));
+function saveFavs(){ localStorage.setItem(FAV_KEY,JSON.stringify([...favs])); }
+function isFav(iso){ return favs.has(iso); }
+function toggleFav(iso){ if(favs.has(iso))favs.delete(iso); else favs.add(iso); saveFavs(); }
+
+/* ===== 主题 ===== */
+const THEME_KEY="cap_theme_v2";
+function applyTheme(t){ document.documentElement.setAttribute("data-theme",t); }
+let theme=localStorage.getItem(THEME_KEY)||"dark"; applyTheme(theme);
+document.getElementById("themeBtn").onclick=()=>{
+  theme=theme==="dark"?"light":"dark"; localStorage.setItem(THEME_KEY,theme); applyTheme(theme);
+  if(document.getElementById("view-map").classList.contains("active")) renderMap();
+};
+
+/* ===== 导航 ===== */
+document.getElementById("nav").addEventListener("click",e=>{
+  const t=e.target.closest(".tab"); if(!t) return;
+  document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+  document.querySelectorAll(".view").forEach(x=>x.classList.remove("active"));
+  t.classList.add("active"); const v=t.dataset.view;
+  document.getElementById("view-"+v).classList.add("active");
+  if(v==="map") renderMap();
+  if(v==="fav") renderFav();
+  if(v==="stats") renderStats();
+  if(v==="compare") renderCompare();
+  if(v==="clock") renderClock();
+});
+
+/* ===== 浏览 ===== */
+let curCont="all", curSort="capCN";
+const chipLabels=[["all","全部"],...CONT_ORDER.map(c=>[c,CONT_CN[c]])];
+function renderChips(){
+  const box=document.getElementById("contChips");
+  box.innerHTML=chipLabels.map(([k,lab])=>`<div class="chip ${k===curCont?'active':''}" data-c="${k}">${lab}</div>`).join("");
+  box.querySelectorAll(".chip").forEach(ch=>ch.onclick=()=>{curCont=ch.dataset.c;renderChips();renderBrowse();});
+}
+function renderBrowse(){
+  const q=document.getElementById("searchInput").value.trim().toLowerCase();
+  let list=DATA.filter(d=>{
+    if(curCont!=="all"&&d.cont!==curCont) return false;
+    if(!q) return true;
+    return [d.cCN,d.cEN,d.capCN,d.capEN].join(" ").toLowerCase().includes(q);
+  });
+  const s=curSort;
+  list.sort((a,b)=>{
+    if(s==="capCN") return a.capCN.localeCompare(b.capCN,"zh");
+    if(s==="cont") return CONT_ORDER.indexOf(a.cont)-CONT_ORDER.indexOf(b.cont)||a.capCN.localeCompare(b.capCN,"zh");
+    return (b[s]||0)-(a[s]||0);
+  });
+  document.getElementById("browseCount").textContent=`共 ${list.length} 个首都`;
+  const grid=document.getElementById("browseGrid");
+  grid.innerHTML=list.map(d=>cardHTML(d)).join("");
+  grid.querySelectorAll(".cap-card").forEach(el=>{
+    el.querySelector(".star").onclick=e=>{e.stopPropagation();toggleFav(el.dataset.iso);renderBrowse();};
+    el.onclick=()=>openModal(el.dataset.iso);
+  });
+}
+function cardHTML(d){
+  return `<div class="card cap-card" data-iso="${d.iso}">
+    <div class="star ${isFav(d.iso)?'on':''}">${isFav(d.iso)?'★':'☆'}</div>
+    <div class="flag">${flagEmoji(d.iso)}</div>
+    <h3>${d.capCN}</h3>
+    <div class="en">${d.capEN}</div>
+    <div class="meta">
+      <span class="tag cont">${CONT_CN[d.cont]}</span>
+      <span class="tag">${d.cCN}</span>
+      <span class="tag">人口 ${d.capPop}M</span>
+    </div>
+  </div>`;
+}
+document.getElementById("searchInput").addEventListener("input",renderBrowse);
+document.getElementById("sortSelect").addEventListener("change",e=>{curSort=e.target.value;renderBrowse();});
+renderChips(); renderBrowse();
+
+/* ===== 详情弹窗 ===== */
+const modalBg=document.getElementById("modalBg"), modal=document.getElementById("modal");
+function openModal(iso){
+  const d=DATA.find(x=>x.iso===iso); if(!d) return;
+  modal.innerHTML=`
+    <div class="modal-head">
+      <div class="flag">${flagEmoji(d.iso)}</div>
+      <div>
+        <h2>${d.capCN} <span class="muted" style="font-weight:400;font-size:15px">${d.capEN}</span></h2>
+        <div class="sub">${d.cCN} · ${d.cEN} · <span class="tag cont">${CONT_CN[d.cont]}</span></div>
+      </div>
+      <button class="modal-close" id="mc">&times;</button>
+    </div>
+    <div class="modal-body">
+      ${d.note?`<div class="note">⚠ ${d.note}</div>`:""}
+      <div class="kv">
+        <div class="cell"><div class="k">所属国家</div><div class="v">${d.cCN}</div></div>
+        <div class="cell"><div class="k">大洲</div><div class="v">${CONT_CN[d.cont]}</div></div>
+        <div class="cell"><div class="k">首都人口</div><div class="v">${fmtNum(d.capPop*1e6)} 人</div></div>
+        <div class="cell"><div class="k">国家人口</div><div class="v">${fmtNum(d.ctryPop*1e6)} 人</div></div>
+        <div class="cell"><div class="k">国家面积</div><div class="v">${fmtNum(d.area)} km²</div></div>
+        <div class="cell"><div class="k">货币</div><div class="v">${d.cur}</div></div>
+        <div class="cell"><div class="k">主要语言</div><div class="v">${d.lang}</div></div>
+        <div class="cell"><div class="k">时区</div><div class="v">${fmtTz(d.tz)}</div></div>
+        <div class="cell"><div class="k">纬度</div><div class="v">${d.lat.toFixed(2)}°</div></div>
+        <div class="cell"><div class="k">经度</div><div class="v">${d.lng.toFixed(2)}°</div></div>
+      </div>
+      <div class="section-title">📍 地理位置</div>
+      <div class="map-mini" id="mapMini"></div>
+    </div>`;
+  modalBg.classList.add("show");
+  document.getElementById("mc").onclick=closeModal;
+  renderMiniMap(d);
+}
+function closeModal(){ modalBg.classList.remove("show"); }
+modalBg.addEventListener("click",e=>{ if(e.target===modalBg) closeModal(); });
+document.addEventListener("keydown",e=>{ if(e.key==="Escape") closeModal(); });
+
+function buildMapSVG(points,w,h){
+  let grid="";
+  for(let lat=-60;lat<=60;lat+=30){ const y=(90-lat)/180*h; grid+=`<line x1="0" y1="${y}" x2="${w}" y2="${y}" stroke="var(--line)" stroke-width="0.5"/>`;}
+  for(let lng=-150;lng<=150;lng+=30){ const x=(lng+180)/360*w; grid+=`<line x1="${x}" y1="0" x2="${x}" y2="${h}" stroke="var(--line)" stroke-width="0.5"/>`;}
+  const eqY=(90-0)/180*h, pmX=(0+180)/360*w;
+  grid+=`<line x1="0" y1="${eqY}" x2="${w}" y2="${eqY}" stroke="var(--muted)" stroke-width="0.8" stroke-dasharray="3 3"/>`;
+  grid+=`<line x1="${pmX}" y1="0" x2="${pmX}" y2="${h}" stroke="var(--muted)" stroke-width="0.8" stroke-dasharray="3 3"/>`;
+  let dots="";
+  points.forEach(p=>{ const x=(p.lng+180)/360*w, y=(90-p.lat)/180*h;
+    dots+=`<circle cx="${x}" cy="${y}" r="${p.r||3}" fill="${p.fill||'var(--cyan)'}" ${p.iso?`data-iso="${p.iso}" class="mapdot"`:''}><title>${p.title}</title></circle>`; });
+  return `<svg viewBox="0 0 ${w} ${h}" width="100%" height="100%" style="display:block">
+    <defs><radialGradient id="ocean" cx="50%" cy="40%" r="75%">
+      <stop offset="0%" stop-color="color-mix(in srgb,var(--cyan) 14%,var(--bg2))"/>
+      <stop offset="100%" stop-color="var(--bg2)"/></radialGradient></defs>
+    <rect x="0" y="0" width="${w}" height="${h}" fill="url(#ocean)"/>
+    ${grid}${dots}</svg>`;
+}
+function renderMiniMap(d){
+  const el=document.getElementById("mapMini"); if(!el) return;
+  el.innerHTML=buildMapSVG([{lat:d.lat,lng:d.lng,r:5,fill:'var(--gold)',title:`${d.capCN} (${d.lat.toFixed(2)}, ${d.lng.toFixed(2)})`}],360,180);
+}
+function renderMap(){
+  const el=document.getElementById("mapBig"); if(!el) return;
+  el.innerHTML=buildMapSVG(DATA.map(d=>({lat:d.lat,lng:d.lng,r:3,fill:'var(--cyan)',iso:d.iso,title:`${flagEmoji(d.iso)} ${d.capCN} · ${d.cCN}`})),360,180);
+  el.querySelectorAll(".mapdot").forEach(c=>{ c.addEventListener("click",()=>openModal(c.dataset.iso)); });
+}
+
+/* ===== 随机 ===== */
+document.getElementById("randomBtn").onclick=()=>{
+  const d=DATA[Math.floor(Math.random()*DATA.length)];
+  openModal(d.iso); toast(`🎲 ${d.capCN} · ${d.cCN}`);
+};
+
+/* ===== 收藏视图 ===== */
+function renderFav(){
+  const grid=document.getElementById("favGrid");
+  const list=DATA.filter(d=>isFav(d.iso));
+  document.getElementById("favCount").textContent=`已收藏 ${list.length} 个首都`;
+  document.getElementById("favEmpty").style.display=list.length?"none":"block";
+  grid.innerHTML=list.map(d=>cardHTML(d)).join("");
+  grid.querySelectorAll(".cap-card").forEach(el=>{
+    el.querySelector(".star").onclick=e=>{e.stopPropagation();toggleFav(el.dataset.iso);renderFav();};
+    el.onclick=()=>openModal(el.dataset.iso);
+  });
+}
+
+/* ===== 统计 ===== */
+function renderStats(){
+  document.getElementById("statGrid").innerHTML=`
+    <div class="stat"><div class="ic">🌐</div><div class="n">${DATA.length}</div><div class="l">收录首都</div></div>
+    <div class="stat"><div class="ic">🌍</div><div class="n">${CONT_ORDER.length}</div><div class="l">大洲覆盖</div></div>
+    <div class="stat"><div class="ic">👥</div><div class="n">${fmtNum(DATA.reduce((s,d)=>s+d.ctryPop,0))}M</div><div class="l">覆盖人口(约)</div></div>
+    <div class="stat"><div class="ic">📐</div><div class="n">${(DATA.reduce((s,d)=>s+d.area,0)/1e6).toFixed(0)}M</div><div class="l">覆盖面积(约 km²)</div></div>`;
+  const byCont=CONT_ORDER.map(c=>({c,n:DATA.filter(d=>d.cont===c).length}));
+  const maxC=Math.max(...byCont.map(x=>x.n));
+  document.getElementById("contBars").innerHTML=byCont.map(x=>`<div class="bar-row"><span class="lab">${CONT_CN[x.c]}</span><div class="bar-track"><div class="bar-fill" style="width:${x.n/maxC*100}%"></div></div><span class="val">${x.n}</span></div>`).join("");
+  const popTop=[...DATA].sort((a,b)=>b.capPop-a.capPop).slice(0,10);
+  const maxP=popTop[0].capPop;
+  document.getElementById("popBars").innerHTML=popTop.map(d=>`<div class="bar-row"><span class="lab">${d.capCN}</span><div class="bar-track"><div class="bar-fill" style="width:${d.capPop/maxP*100}%"></div></div><span class="val">${d.capPop}M</span></div>`).join("");
+  const areaTop=[...DATA].sort((a,b)=>b.area-a.area).slice(0,10);
+  const maxA=areaTop[0].area;
+  document.getElementById("areaBars").innerHTML=areaTop.map(d=>`<div class="bar-row"><span class="lab">${d.cCN}</span><div class="bar-track"><div class="bar-fill" style="width:${d.area/maxA*100}%"></div></div><span class="val">${(d.area/1e6).toFixed(2)}M</span></div>`).join("");
+}
+
+/* ===== 对照 ===== */
+function renderCompare(){
+  const selA=document.getElementById("cmpA"), selB=document.getElementById("cmpB");
+  const opts=DATA.map(d=>`<option value="${d.iso}">${d.capCN}（${d.cCN}）</option>`).join("");
+  if(!selA.options.length){ selA.innerHTML=opts; selB.innerHTML=opts; selB.selectedIndex=1; }
+  drawCompare();
+}
+document.getElementById("cmpA").onchange=drawCompare;
+document.getElementById("cmpB").onchange=drawCompare;
+function drawCompare(){
+  const a=DATA.find(d=>d.iso===document.getElementById("cmpA").value);
+  const b=DATA.find(d=>d.iso===document.getElementById("cmpB").value);
+  if(!a||!b) return;
+  const rows=[
+    ["国旗","flag",flagEmoji(a.iso),flagEmoji(b.iso),null],
+    ["首都(中/英)",null,`${a.capCN} / ${a.capEN}`,`${b.capCN} / ${b.capEN}`,null],
+    ["国家",null,a.cCN,b.cCN,null],
+    ["大洲",null,CONT_CN[a.cont],CONT_CN[b.cont],null],
+    ["首都人口",null,a.capPop,b.capPop,"num"],
+    ["国家人口",null,a.ctryPop,b.ctryPop,"num"],
+    ["国家面积(km²)",null,a.area,b.area,"num"],
+    ["货币",null,a.cur,b.cur,null],
+    ["语言",null,a.lang,b.lang,null],
+    ["时区",null,fmtTz(a.tz),fmtTz(b.tz),null],
+    ["纬度",null,a.lat.toFixed(2),b.lat.toFixed(2),"num"],
+    ["经度",null,a.lng.toFixed(2),b.lng.toFixed(2),"num"],
+  ];
+  let html=`<thead><tr><th>项目</th><th>${a.capCN}</th><th>${b.capCN}</th></tr></thead><tbody>`;
+  rows.forEach(r=>{
+    const [lab,_,va,vb,kind]=r; let ca="",cb="";
+    if(kind==="num"&&va!==vb){ if(va>vb){ca="better";cb="worse";}else{cb="better";ca="worse";} }
+    html+=`<tr><th>${lab}</th><td class="${ca}">${va}</td><td class="${cb}">${vb}</td></tr>`;
+  });
+  html+="</tbody>";
+  document.getElementById("cmpTable").innerHTML=html;
+  const dist=haversine(a.lat,a.lng,b.lat,b.lng);
+  const diffH=b.tz-a.tz;
+  const dh=Math.trunc(diffH), dm=Math.round((diffH-dh)*60);
+  const diffStr=dh===0&&dm===0?"无时差（同步）":`B 比 A ${diffH>0?'快':'慢'} ${Math.abs(dh)} 小时${dm?` ${Math.abs(dm)} 分`:''}`;
+  document.getElementById("cmpSummary").innerHTML=`<b>${a.capCN}</b> 与 <b>${b.capCN}</b> 的直线距离约 <b>${fmtNum(dist)} km</b>（${fmtNum(dist*0.621371)} 英里）；当前${diffStr}。`;
+}
+
+/* ===== 时钟 / 工具 ===== */
+function fillSelect(sel){ if(sel.options.length) return; sel.innerHTML=DATA.map(d=>`<option value="${d.iso}">${d.capCN}（${d.cCN}）</option>`).join(""); }
+function renderClock(){
+  const q=(document.getElementById("clockSearch").value||"").trim().toLowerCase();
+  const list=DATA.filter(d=>!q||[d.capCN,d.cEN,d.cCN,d.cEN].join(" ").toLowerCase().includes(q))
+    .sort((a,b)=>a.capCN.localeCompare(b.capCN,"zh"));
+  const box=document.getElementById("clockList");
+  box.innerHTML=list.map(d=>{ const c=clockText(d.tz);
+    return `<div class="clock-row"><span class="flag">${flagEmoji(d.iso)}</span>
+      <span class="nm"><div class="c">${d.capCN}</div><div class="s">${d.cCN} · ${fmtTz(d.tz)}</div></span>
+      <span class="time" data-iso="${d.iso}"><div class="t">${c.t}</div><div class="d">${c.d}</div></span></div>`;
+  }).join("");
+}
+function updateClocks(){
+  document.querySelectorAll("#clockList .time").forEach(el=>{
+    const d=DATA.find(x=>x.iso===el.dataset.iso); if(!d) return;
+    const c=clockText(d.tz); el.querySelector(".t").textContent=c.t; el.querySelector(".d").textContent=c.d;
+  });
+}
+document.getElementById("clockSearch").addEventListener("input",renderClock);
+
+const dstA=document.getElementById("dstA"), dstB=document.getElementById("dstB");
+fillSelect(dstA); fillSelect(dstB); dstB.selectedIndex=1;
+function computeDst(){
+  const a=DATA.find(d=>d.iso===dstA.value), b=DATA.find(d=>d.iso===dstB.value);
+  const box=document.getElementById("dstResult");
+  if(!a||!b){ box.innerHTML=`<div class="muted" style="font-size:13px">选择两个首都后自动计算直线距离与当前时差。</div>`; return; }
+  const dist=haversine(a.lat,a.lng,b.lat,b.lng);
+  const diffH=b.tz-a.tz, dh=Math.trunc(diffH), dm=Math.round((diffH-dh)*60);
+  const diffStr=dh===0&&dm===0?"两地无时差（时间同步）":`B 比 A ${diffH>0?'快':'慢'} ${Math.abs(dh)} 小时${dm?` ${Math.abs(dm)} 分`:''}`;
+  const ca=clockText(a.tz), cb=clockText(b.tz);
+  box.innerHTML=`
+    <div style="font-size:13px;color:var(--muted);margin-bottom:4px">${flagEmoji(a.iso)} ${a.capCN} ⇄ ${flagEmoji(b.iso)} ${b.capCN}</div>
+    <div class="big">${fmtNum(dist)} km</div>
+    <div class="result-grid">
+      <div class="rg"><div class="k">英里</div><div class="v">${fmtNum(dist*0.621371)} mi</div></div>
+      <div class="rg"><div class="k">时差</div><div class="v">${diffStr}</div></div>
+      <div class="rg"><div class="k">${a.capCN} 现在</div><div class="v" style="font-size:14px">${ca.t}</div></div>
+      <div class="rg"><div class="k">${b.capCN} 现在</div><div class="v" style="font-size:14px">${cb.t}</div></div>
+    </div>`;
+}
+dstA.onchange=computeDst; dstB.onchange=computeDst;
+
+/* 全局每秒刷新时钟相关 */
+setInterval(()=>{ updateClocks(); if(document.getElementById("view-clock").classList.contains("active")) computeDst(); },1000);
+
+/* ===== 测验 ===== */
+let quiz=null, quizTimer=null, quizStartTs=0;
+const quizBox=document.getElementById("quizBox"), quizResult=document.getElementById("quizResult");
+document.getElementById("quizStart").onclick=startQuiz;
+document.getElementById("quizAgain").onclick=startQuiz;
+document.getElementById("quizReview").onclick=()=>{ const wl=document.getElementById("quizWrongList"); wl.style.display=wl.style.display==="none"?"block":"none"; };
+function shuffle(a){ a=a.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+function startQuiz(){
+  quizBox.style.display="none"; quizResult.style.display="none";
+  const mode=document.getElementById("quizMode").value, num=document.getElementById("quizNum").value;
+  let pool=shuffle(DATA); if(num!=="all") pool=pool.slice(0,parseInt(num));
+  quiz={mode,items:pool,idx:0,score:0,wrong:[]};
+  quizBox.style.display="block"; quizStartTs=Date.now(); tickTimer();
+  quizTimer=setInterval(tickTimer,1000); showQuestion();
+}
+function tickTimer(){
+  document.getElementById("quizTimer").textContent="⏱ "+Math.floor((Date.now()-quizStartTs)/1000)+"s";
+  document.getElementById("quizProgFill").style.width=((quiz.idx)/quiz.items.length*100)+"%";
+}
+function showQuestion(){
+  const {mode,items,idx}=quiz; const d=items[idx];
+  document.getElementById("quizProg").textContent=`${idx+1} / ${items.length}`;
+  document.getElementById("quizScore").textContent=`得分 ${quiz.score}`;
+  let q="", correct="", opts=[];
+  if(mode==="ctc"){ q=`${flagEmoji(d.iso)} ${d.cCN} 的首都是？`; correct=d.capCN; opts=shuffle(DATA.filter(x=>x.iso!==d.iso).map(x=>x.capCN)).slice(0,3).concat(d.capCN); }
+  else if(mode==="ctc_rev"){ q=`首都「${d.capCN}」属于哪个国家？`; correct=d.cCN; opts=shuffle(DATA.filter(x=>x.iso!==d.iso).map(x=>x.cCN)).slice(0,3).concat(d.cCN); }
+  else { q=`首都「${d.capCN}」位于哪个大洲？`; correct=CONT_CN[d.cont]; opts=CONT_ORDER.map(c=>CONT_CN[c]); }
+  opts=shuffle(opts);
+  document.getElementById("quizQuestion").textContent=q;
+  const box=document.getElementById("quizOpts");
+  box.innerHTML=opts.map(o=>`<div class="qopt" data-o="${o}">${o}</div>`).join("");
+  box.querySelectorAll(".qopt").forEach(el=>{
+    el.onclick=()=>{
+      const chosen=el.dataset.o, right=chosen===correct;
+      if(right){ quiz.score++; el.classList.add("correct"); }
+      else{ el.classList.add("wrong"); quiz.wrong.push({q,ans:correct,yours:chosen});
+        box.querySelectorAll(".qopt").forEach(x=>{ if(x.dataset.o===correct) x.classList.add("correct"); }); }
+      box.querySelectorAll(".qopt").forEach(x=>x.style.pointerEvents="none");
+      document.getElementById("quizScore").textContent=`得分 ${quiz.score}`;
+      setTimeout(()=>{ quiz.idx++; if(quiz.idx>=quiz.items.length) finishQuiz(); else showQuestion(); }, right?450:850);
+    };
+  });
+}
+function finishQuiz(){
+  clearInterval(quizTimer);
+  document.getElementById("quizProgFill").style.width="100%";
+  quizBox.style.display="none";
+  const total=quiz.items.length, sc=quiz.score, pct=Math.round(sc/total*100);
+  let emoji=pct===100?"🏆":pct>=80?"🎉":pct>=60?"👍":pct>=40?"🤔":"💪";
+  document.getElementById("quizEmoji").textContent=emoji;
+  document.getElementById("quizFinal").textContent=`得分 ${sc} / ${total}（${pct}%）`;
+  document.getElementById("quizDetail").textContent=`用时 ${Math.floor((Date.now()-quizStartTs)/1000)} 秒 · ${quiz.wrong.length?`错 ${quiz.wrong.length} 题`:"全部答对！"}`;
+  const wl=document.getElementById("quizWrongList"); wl.style.display="none";
+  wl.innerHTML=quiz.wrong.length?`<div class="section-title">❌ 错题回顾</div>`+quiz.wrong.map(w=>`<div style="padding:9px 0;border-bottom:1px solid var(--line)"><b>${w.q}</b><br><span class="muted">你的答案：</span><span style="color:var(--red)">${w.yours}</span> · <span class="muted">正确：</span><span style="color:var(--green)">${w.ans}</span></div>`).join(""):`<div class="muted">没有错题，太棒了！</div>`;
+  quizResult.style.display="block";
+}
+
+/* ===== Toast ===== */
+let toastT=null;
+function toast(msg){ const t=document.getElementById("toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove("show"),1800); }
+</script>
+</body>
+</html>

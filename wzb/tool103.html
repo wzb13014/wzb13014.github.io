@@ -1,0 +1,2529 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>随机点名器 - 功能完整版</title>
+<style>
+:root {
+  --bg-primary: #f0f4f8;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #e8eef5;
+  --text-primary: #1a202c;
+  --text-secondary: #4a5568;
+  --text-muted: #718096;
+  --accent: #4299e1;
+  --accent-hover: #3182ce;
+  --accent-light: #ebf8ff;
+  --success: #48bb78;
+  --danger: #f56565;
+  --warning: #ed8936;
+  --border: #e2e8f0;
+  --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --radius: 12px;
+  --radius-sm: 8px;
+  --transition: all 0.3s ease;
+}
+
+[data-theme="dark"] {
+  --bg-primary: #1a202c;
+  --bg-secondary: #2d3748;
+  --bg-tertiary: #4a5568;
+  --text-primary: #f7fafc;
+  --text-secondary: #cbd5e0;
+  --text-muted: #a0aec0;
+  --accent: #63b3ed;
+  --accent-hover: #4299e1;
+  --accent-light: #2a4365;
+  --border: #4a5568;
+  --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  transition: var(--transition);
+  overflow-x: hidden;
+}
+
+.container {
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 16px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+body.fullscreen-mode {
+  overflow: hidden;
+}
+
+body.fullscreen-mode header,
+body.fullscreen-mode .sidebar {
+  display: none;
+}
+
+body.fullscreen-mode .container {
+  max-width: 100%;
+  width: 100%;
+  padding: 0;
+  margin: 0;
+  justify-content: center;
+}
+
+body.fullscreen-mode .main-grid {
+  grid-template-columns: 1fr;
+  gap: 0;
+  width: 100%;
+  height: 100vh;
+}
+
+body.fullscreen-mode .main-content {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+body.fullscreen-mode .card.display-section {
+  width: 100%;
+  height: 100vh;
+  border-radius: 0;
+  box-shadow: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  padding: 30px 40px;
+  box-sizing: border-box;
+}
+
+body.fullscreen-mode .custom-title {
+  font-size: 32px;
+  margin-bottom: 10px;
+  flex-shrink: 0;
+}
+
+body.fullscreen-mode .info-bar {
+  gap: 60px;
+  margin-bottom: 10px;
+  flex-shrink: 0;
+}
+
+body.fullscreen-mode .info-item .label {
+  font-size: 16px;
+}
+
+body.fullscreen-mode .info-item .value {
+  font-size: 32px;
+}
+
+body.fullscreen-mode .name-display {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+}
+
+body.fullscreen-mode .name-text {
+  font-size: 18vw !important;
+  line-height: 1.1;
+}
+
+body.fullscreen-mode .control-panel {
+  margin-top: 20px;
+  gap: 20px;
+  flex-shrink: 0;
+}
+
+body.fullscreen-mode .big-btn {
+  padding: 20px 70px;
+  font-size: 24px;
+  min-width: 220px;
+}
+
+body.fullscreen-mode .shortcut-hint {
+  margin-top: 12px;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+body.fullscreen-mode .copy-btn {
+  display: none;
+}
+
+body.fullscreen-mode .fullscreen-exit-hint {
+  display: block;
+}
+
+.fullscreen-exit-hint {
+  display: none;
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 100;
+  background: rgba(0,0,0,0.5);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  backdrop-filter: blur(4px);
+}
+
+.group-selector {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.group-selector select {
+  flex: 1;
+  padding: 8px 12px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 14px;
+  outline: none;
+  cursor: pointer;
+}
+
+.group-selector button {
+  padding: 8px 12px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 14px;
+  transition: var(--transition);
+}
+
+.group-selector button:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding: 16px 24px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+header h1 {
+  font-size: 24px;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--accent), #667eea);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.header-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow);
+}
+
+.btn:active {
+  transform: translateY(0);
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: white;
+}
+
+.btn-primary:hover {
+  background: var(--accent-hover);
+}
+
+.btn-success {
+  background: var(--success);
+  color: white;
+}
+
+.btn-danger {
+  background: var(--danger);
+  color: white;
+}
+
+.btn-warning {
+  background: var(--warning);
+  color: white;
+}
+
+.btn-outline {
+  background: transparent;
+  border: 2px solid var(--border);
+  color: var(--text-primary);
+}
+
+.btn-outline:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+.btn-icon {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.main-grid {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 16px;
+  flex: 1;
+}
+
+@media (max-width: 1100px) {
+  .main-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.card {
+  background: var(--bg-secondary);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 24px;
+  transition: var(--transition);
+}
+
+.card-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.card-title::before {
+  content: '';
+  width: 4px;
+  height: 18px;
+  background: var(--accent);
+  border-radius: 2px;
+}
+
+.display-section {
+  text-align: center;
+  padding: 50px 30px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 500px;
+}
+
+.name-display {
+  min-height: 240px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 40px;
+  position: relative;
+}
+
+.name-display.rolling.anim-shake .name-text {
+  animation: shake 0.1s infinite;
+}
+
+.name-display.rolling.anim-fade .name-text {
+  animation: fade 0.15s infinite;
+}
+
+.name-display.rolling.anim-zoom .name-text {
+  animation: zoom 0.15s infinite;
+}
+
+.name-display.rolling.anim-spin .name-text {
+  animation: spin 0.3s linear infinite;
+}
+
+.name-display.rolling.anim-slide .name-text {
+  animation: slideDown 0.15s infinite;
+}
+
+.name-display.rolling.anim-flip .name-text {
+  animation: flip 0.4s linear infinite;
+}
+
+.name-display.rolling.anim-typewriter .name-text {
+  animation: none;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+@keyframes fade {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+@keyframes zoom {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+}
+
+@keyframes spin {
+  from { transform: rotateY(0deg); }
+  to { transform: rotateY(360deg); }
+}
+
+@keyframes slideDown {
+  0% { transform: translateY(-20px); opacity: 0; }
+  50% { opacity: 1; }
+  100% { transform: translateY(20px); opacity: 0; }
+}
+
+@keyframes flip {
+  0% { transform: rotateX(0deg); }
+  50% { transform: rotateX(90deg); }
+  100% { transform: rotateX(0deg); }
+}
+
+.name-text {
+  font-size: 96px;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--accent), #667eea, #764ba2);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: none;
+  line-height: 1.2;
+  transition: all 0.3s ease;
+  user-select: none;
+  cursor: pointer;
+}
+
+.name-text.winner {
+  animation: winner-pop 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.copy-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  opacity: 0;
+  transition: var(--transition);
+}
+
+.name-display:hover .copy-btn {
+  opacity: 1;
+}
+
+.custom-title {
+  font-size: 18px;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.custom-title:hover {
+  color: var(--accent);
+}
+
+@keyframes winner-pop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+.info-bar {
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.info-item {
+  text-align: center;
+}
+
+.info-item .label {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.info-item .value {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.control-panel {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.big-btn {
+  padding: 16px 48px;
+  font-size: 20px;
+  font-weight: 700;
+  border-radius: var(--radius);
+  min-width: 180px;
+  justify-content: center;
+}
+
+.big-btn.rolling {
+  background: var(--danger);
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(245, 101, 101, 0.7); }
+  50% { box-shadow: 0 0 0 15px rgba(245, 101, 101, 0); }
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.sidebar > .card {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 100px);
+  overflow: hidden;
+}
+
+.sidebar .tabs {
+  flex-shrink: 0;
+}
+
+.sidebar .tab-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 8px;
+  margin-right: -8px;
+  display: none;
+  min-height: 0;
+}
+
+.sidebar .tab-content.active {
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar .tab-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar .tab-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar .tab-content::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+.sidebar .tab-content::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+.sidebar .tab-content .group-selector,
+.sidebar .tab-content .list-header {
+  flex-shrink: 0;
+}
+
+.sidebar .tab-content .name-list,
+.sidebar .tab-content .history-section {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.sidebar .tab-content .list-actions {
+  flex-shrink: 0;
+  margin-top: 12px;
+}
+
+.sidebar .tab-content.settings-section {
+  overflow-y: auto;
+  display: none;
+}
+
+.sidebar .tab-content.settings-section.active {
+  display: block;
+}
+
+.list-header {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.list-header input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 14px;
+  transition: var(--transition);
+  outline: none;
+}
+
+.list-header input:focus {
+  border-color: var(--accent);
+}
+
+.name-list {
+  max-height: 280px;
+  overflow-y: auto;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 4px;
+}
+
+.name-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  transition: var(--transition);
+  cursor: pointer;
+  margin-bottom: 2px;
+}
+
+.name-item:hover {
+  background: var(--bg-tertiary);
+}
+
+.name-item.selected {
+  background: var(--accent-light);
+  color: var(--accent);
+}
+
+.name-item .name-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  overflow: hidden;
+}
+
+.name-item .name-label {
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.name-item .weight-badge {
+  font-size: 11px;
+  padding: 2px 6px;
+  background: var(--bg-tertiary);
+  border-radius: 10px;
+  color: var(--text-muted);
+}
+
+.name-item .item-actions {
+  display: none;
+  gap: 4px;
+}
+
+.name-item:hover .item-actions {
+  display: flex;
+}
+
+.name-item .count-badge {
+  font-size: 11px;
+  padding: 2px 6px;
+  background: var(--success);
+  color: white;
+  border-radius: 10px;
+  margin-left: auto;
+}
+
+.list-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+.list-actions .btn {
+  flex: 1;
+  justify-content: center;
+  min-width: auto;
+}
+
+.settings-section .setting-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.settings-section .setting-row:last-child {
+  border-bottom: none;
+}
+
+.setting-label {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.setting-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+select, input[type="number"] {
+  padding: 6px 10px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 13px;
+  outline: none;
+  transition: var(--transition);
+}
+
+select:focus, input[type="number"]:focus {
+  border-color: var(--accent);
+}
+
+input[type="range"] {
+  width: 100px;
+  cursor: pointer;
+}
+
+.switch {
+  position: relative;
+  width: 48px;
+  height: 26px;
+  background: var(--bg-tertiary);
+  border-radius: 13px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.switch.active {
+  background: var(--accent);
+}
+
+.switch::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  background: white;
+  border-radius: 50%;
+  transition: var(--transition);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.switch.active::after {
+  left: 25px;
+}
+
+.history-section {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.history-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  margin-bottom: 4px;
+  background: var(--bg-tertiary);
+  font-size: 13px;
+  transition: var(--transition);
+}
+
+.history-item:hover {
+  background: var(--accent-light);
+}
+
+.history-item .history-name {
+  font-weight: 600;
+}
+
+.history-item .history-time {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 16px;
+  background: var(--bg-tertiary);
+  padding: 4px;
+  border-radius: var(--radius-sm);
+}
+
+.tab {
+  flex: 1;
+  padding: 8px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: var(--transition);
+  color: var(--text-secondary);
+}
+
+.tab.active {
+  background: var(--bg-secondary);
+  color: var(--accent);
+  box-shadow: var(--shadow);
+}
+
+.tab-content {
+  display: none;
+}
+
+.tab-content.active {
+  display: block;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+
+.modal-overlay.show {
+  display: flex;
+}
+
+.modal {
+  background: var(--bg-secondary);
+  border-radius: var(--radius);
+  padding: 24px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-lg);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.modal-header h2 {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.modal-close {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: var(--bg-tertiary);
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  transition: var(--transition);
+}
+
+.modal-close:hover {
+  background: var(--danger);
+  color: white;
+}
+
+textarea {
+  width: 100%;
+  min-height: 150px;
+  padding: 12px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-family: inherit;
+  resize: vertical;
+  outline: none;
+  transition: var(--transition);
+}
+
+textarea:focus {
+  border-color: var(--accent);
+}
+
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+  justify-content: flex-end;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.stat-card {
+  background: var(--bg-tertiary);
+  padding: 16px;
+  border-radius: var(--radius-sm);
+  text-align: center;
+}
+
+.stat-card .stat-value {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--accent);
+}
+
+.stat-card .stat-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.weight-input {
+  width: 60px;
+}
+
+.toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.toast {
+  padding: 12px 20px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-lg);
+  font-size: 14px;
+  animation: slideIn 0.3s ease;
+  border-left: 4px solid var(--accent);
+}
+
+.toast.success {
+  border-left-color: var(--success);
+}
+
+.toast.error {
+  border-left-color: var(--danger);
+}
+
+.toast.warning {
+  border-left-color: var(--warning);
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.confetti {
+  position: fixed;
+  pointer-events: none;
+  z-index: 999;
+}
+
+.shortcut-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 8px;
+  text-align: center;
+}
+
+kbd {
+  display: inline-block;
+  padding: 2px 6px;
+  background: var(--bg-tertiary);
+  border-radius: 4px;
+  font-size: 10px;
+  font-family: monospace;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+}
+
+.empty-state {
+  text-align: center;
+  padding: 30px;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.weight-slider-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+}
+
+.weight-slider-row label {
+  flex: 1;
+  font-size: 14px;
+}
+
+.confetti-piece {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  opacity: 0;
+}
+
+@keyframes confetti-fall {
+  0% {
+    transform: translateY(-100vh) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-tertiary);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--text-muted);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}
+</style>
+</head>
+<body>
+<div class="fullscreen-exit-hint" onclick="toggleFullscreen()">按 F 或点击退出全屏 ✕</div>
+<div class="container">
+  <header>
+    <h1>🎯 随机点名器</h1>
+    <div class="header-actions">
+      <button class="btn btn-outline btn-icon" onclick="toggleTheme()" title="切换主题">🌓</button>
+      <button class="btn btn-outline btn-icon" onclick="toggleFullscreen()" title="全屏">⛶</button>
+      <button class="btn btn-outline btn-sm" onclick="showStats()">📊 统计</button>
+    </div>
+  </header>
+
+  <div class="main-grid">
+    <div class="main-content">
+      <div class="card display-section">
+        <div class="custom-title" onclick="editCustomTitle()" title="点击修改标题" id="customTitle">随机点名</div>
+        <div class="info-bar">
+          <div class="info-item">
+            <div class="label">总人数</div>
+            <div class="value" id="totalCount">0</div>
+          </div>
+          <div class="info-item">
+            <div class="label">已点名</div>
+            <div class="value" id="calledCount">0</div>
+          </div>
+          <div class="info-item">
+            <div class="label">剩余</div>
+            <div class="value" id="remainCount">0</div>
+          </div>
+          <div class="info-item">
+            <div class="label">点名模式</div>
+            <div class="value" id="modeDisplay" style="font-size: 14px;">随机</div>
+          </div>
+        </div>
+
+        <div class="name-display" id="nameDisplay">
+          <button class="btn btn-outline btn-sm copy-btn" onclick="copyResult()" title="复制结果">📋 复制</button>
+          <div class="name-text" id="nameText" onclick="toggleRoll()">准备开始</div>
+        </div>
+
+        <div class="control-panel">
+          <button class="btn btn-primary big-btn" id="rollBtn" onclick="toggleRoll()">
+            🎲 开始点名
+          </button>
+          <button class="btn btn-outline big-btn" onclick="resetRoll()">
+            🔄 重置
+          </button>
+        </div>
+
+        <div class="shortcut-hint">
+          快捷键：<kbd>空格</kbd> 开始/停止 | <kbd>R</kbd> 重置 | <kbd>F</kbd> 全屏 | <kbd>C</kbd> 复制结果
+        </div>
+      </div>
+    </div>
+
+    <div class="sidebar">
+      <div class="card">
+        <div class="tabs">
+          <div class="tab active" data-tab="names" onclick="switchTab('names')">名单管理</div>
+          <div class="tab" data-tab="history" onclick="switchTab('history')">历史记录</div>
+          <div class="tab" data-tab="settings" onclick="switchTab('settings')">设置</div>
+        </div>
+
+        <div class="tab-content active" id="tab-names">
+          <div class="group-selector">
+            <select id="groupSelect" onchange="switchGroup(this.value)">
+              <option value="default">默认分组</option>
+            </select>
+            <button onclick="addGroup()" title="新建分组">➕</button>
+            <button onclick="renameGroup()" title="重命名">✏️</button>
+            <button onclick="deleteGroup()" title="删除分组">🗑️</button>
+          </div>
+          <div class="list-header">
+            <input type="text" id="nameInput" placeholder="输入名字后回车添加" onkeypress="if(event.key==='Enter')addName()">
+            <button class="btn btn-primary btn-sm" onclick="addName()">添加</button>
+          </div>
+
+          <div class="name-list" id="nameList"></div>
+
+          <div class="list-actions">
+            <button class="btn btn-outline btn-sm" onclick="showImportModal()">📥 导入</button>
+            <button class="btn btn-outline btn-sm" onclick="exportNames('txt')">📄 导出TXT</button>
+            <button class="btn btn-outline btn-sm" onclick="exportNames('csv')">📊 导出CSV</button>
+            <button class="btn btn-outline btn-sm" onclick="showWeightModal()" title="设置权重">⚖️ 权重</button>
+            <button class="btn btn-danger btn-sm" onclick="clearAllNames()">🗑️ 清空</button>
+          </div>
+        </div>
+
+        <div class="tab-content" id="tab-history">
+          <div class="history-section" id="historyList">
+            <div class="empty-state">暂无点名记录</div>
+          </div>
+          <div class="list-actions" style="margin-top: 12px;">
+            <button class="btn btn-outline btn-sm" onclick="exportHistory('txt')">📄 导出TXT</button>
+            <button class="btn btn-outline btn-sm" onclick="exportHistory('csv')">📊 导出CSV</button>
+            <button class="btn btn-danger btn-sm" onclick="clearHistory()">🗑️ 清空</button>
+          </div>
+        </div>
+
+        <div class="tab-content settings-section" id="tab-settings">
+          <div class="setting-row">
+            <span class="setting-label">点名模式</span>
+            <div class="setting-control">
+              <select id="modeSelect" onchange="changeMode()">
+                <option value="random">完全随机</option>
+                <option value="unique">不重复点名</option>
+                <option value="weight">权重模式</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="setting-row">
+            <span class="setting-label">滚动动画</span>
+            <div class="setting-control">
+              <select id="animSelect" onchange="changeAnimation()">
+                <option value="shake">抖动</option>
+                <option value="fade">淡入淡出</option>
+                <option value="zoom">缩放</option>
+                <option value="spin">旋转</option>
+                <option value="slide">滑动</option>
+                <option value="flip">翻转</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="setting-row">
+            <span class="setting-label">动画速度</span>
+            <div class="setting-control">
+              <input type="range" id="speedRange" min="30" max="200" value="80" onchange="changeSpeed()">
+              <span id="speedValue" style="font-size: 12px; color: var(--text-muted);">80ms</span>
+            </div>
+          </div>
+
+          <div class="setting-row">
+            <span class="setting-label">每次点名人数</span>
+            <div class="setting-control">
+              <input type="number" id="pickCount" min="1" max="10" value="1" style="width: 70px;">
+            </div>
+          </div>
+
+          <div class="setting-row">
+            <span class="setting-label">字体大小</span>
+            <div class="setting-control">
+              <input type="range" id="fontSizeRange" min="48" max="150" value="96" oninput="changeFontSize()">
+            </div>
+          </div>
+
+          <div class="setting-row">
+            <span class="setting-label">音效</span>
+            <div class="setting-control">
+              <div class="switch" id="soundSwitch" onclick="toggleSound()"></div>
+            </div>
+          </div>
+
+          <div class="setting-row">
+            <span class="setting-label">语音播报</span>
+            <div class="setting-control">
+              <div class="switch" id="voiceSwitch" onclick="toggleVoice()"></div>
+            </div>
+          </div>
+
+          <div class="setting-row">
+            <span class="setting-label">撒花特效</span>
+            <div class="setting-control">
+              <div class="switch active" id="confettiSwitch" onclick="toggleConfetti()"></div>
+            </div>
+          </div>
+
+          <div class="setting-row">
+            <span class="setting-label">自动开始下一轮</span>
+            <div class="setting-control">
+              <div class="switch" id="autoNextSwitch" onclick="toggleAutoNext()"></div>
+            </div>
+          </div>
+
+          <div class="setting-row">
+            <span class="setting-label">自动开始间隔(秒)</span>
+            <div class="setting-control">
+              <input type="number" id="autoNextDelay" min="1" max="60" value="5" style="width: 70px;" onchange="saveAutoNextDelay()">
+            </div>
+          </div>
+
+          <div class="setting-row">
+            <span class="setting-label">滚动时长(秒)</span>
+            <div class="setting-control">
+              <input type="number" id="rollDuration" min="0" max="30" value="0" style="width: 70px;" onchange="saveRollDuration()">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="importModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>📥 批量导入名单</h2>
+      <button class="modal-close" onclick="hideImportModal()">✕</button>
+    </div>
+    <p style="color: var(--text-muted); margin-bottom: 12px; font-size: 13px;">
+      每行一个名字，或用逗号/空格分隔。带权重格式：<code>名字,权重</code> 或 <code>名字:权重</code>
+    </p>
+    <div style="margin-bottom: 12px;">
+      <input type="file" id="importFile" accept=".txt,.csv" onchange="handleFileImport(this)" style="display: none;">
+      <button class="btn btn-outline btn-sm" onclick="document.getElementById('importFile').click()">
+        📁 选择文件 (TXT/CSV)
+      </button>
+      <span id="fileNameDisplay" style="margin-left: 10px; font-size: 13px; color: var(--text-muted);"></span>
+    </div>
+    <textarea id="importText" placeholder="张三&#10;李四&#10;王五,2&#10;赵六,3"></textarea>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="hideImportModal()">取消</button>
+      <button class="btn btn-primary" onclick="importNames()">导入</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="statsModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>📊 统计数据</h2>
+      <button class="modal-close" onclick="hideStats()">✕</button>
+    </div>
+    <div class="stats-grid" id="statsGrid"></div>
+    <div style="margin-top: 20px;">
+      <h3 style="font-size: 16px; margin-bottom: 12px;">点名排行榜</h3>
+      <div id="rankingList"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" onclick="hideStats()">关闭</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="weightModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>⚖️ 设置权重</h2>
+      <button class="modal-close" onclick="hideWeightModal()">✕</button>
+    </div>
+    <div id="weightList"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="hideWeightModal()">取消</button>
+      <button class="btn btn-primary" onclick="saveWeights()">保存</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+const state = {
+  names: [],
+  calledNames: new Set(),
+  history: [],
+  rolling: false,
+  rollInterval: null,
+  rollTimeout: null,
+  autoNextTimeout: null,
+  mode: 'random',
+  animation: 'shake',
+  speed: 80,
+  soundEnabled: false,
+  voiceEnabled: false,
+  confettiEnabled: true,
+  fontSize: 96,
+  pickCount: 1,
+  searchQuery: '',
+  currentWinners: [],
+  groups: { 'default': { name: '默认分组', names: [] } },
+  currentGroup: 'default',
+  customTitle: '随机点名',
+  autoNext: false,
+  autoNextDelay: 5,
+  rollDuration: 0
+};
+
+const STORAGE_KEY = 'random-roll-call-data-v2';
+
+function init() {
+  loadData();
+  renderGroupSelect();
+  loadGroupNames();
+  renderNameList();
+  updateStats();
+  applyTheme();
+  setupKeyboardShortcuts();
+  setupAudio();
+  document.getElementById('customTitle').textContent = state.customTitle;
+
+  if (state.names.length === 0) {
+    const sampleNames = [
+      { name: '张三', weight: 1, count: 0 },
+      { name: '李四', weight: 1, count: 0 },
+      { name: '王五', weight: 1, count: 0 },
+      { name: '赵六', weight: 1, count: 0 },
+      { name: '钱七', weight: 1, count: 0 },
+      { name: '孙八', weight: 1, count: 0 },
+      { name: '周九', weight: 1, count: 0 },
+      { name: '吴十', weight: 1, count: 0 }
+    ];
+    state.names = sampleNames;
+    state.groups[state.currentGroup].names = sampleNames;
+    saveData();
+    renderNameList();
+    updateStats();
+  }
+}
+
+function loadData() {
+  try {
+    const data = localStorage.getItem(STORAGE_KEY);
+    if (data) {
+      const parsed = JSON.parse(data);
+      state.mode = parsed.mode || 'random';
+      state.animation = parsed.animation || 'shake';
+      state.speed = parsed.speed || 80;
+      state.soundEnabled = parsed.soundEnabled || false;
+      state.voiceEnabled = parsed.voiceEnabled || false;
+      state.confettiEnabled = parsed.confettiEnabled !== false;
+      state.fontSize = parsed.fontSize || 96;
+      state.pickCount = parsed.pickCount || 1;
+      state.currentGroup = parsed.currentGroup || 'default';
+      state.customTitle = parsed.customTitle || '随机点名';
+      state.autoNext = parsed.autoNext || false;
+      state.autoNextDelay = parsed.autoNextDelay || 5;
+      state.rollDuration = parsed.rollDuration || 0;
+
+      if (parsed.groups && typeof parsed.groups === 'object') {
+        state.groups = parsed.groups;
+      } else if (parsed.names && Array.isArray(parsed.names)) {
+        state.groups = {
+          'default': { name: '默认分组', names: parsed.names }
+        };
+      }
+
+      if (parsed.history && Array.isArray(parsed.history)) {
+        state.history = parsed.history;
+      }
+      if (parsed.calledNames && Array.isArray(parsed.calledNames)) {
+        state.calledNames = new Set(parsed.calledNames);
+      }
+
+      document.getElementById('modeSelect').value = state.mode;
+      document.getElementById('animSelect').value = state.animation;
+      document.getElementById('speedRange').value = state.speed;
+      document.getElementById('speedValue').textContent = state.speed + 'ms';
+      document.getElementById('fontSizeRange').value = state.fontSize;
+      document.getElementById('pickCount').value = state.pickCount;
+      document.getElementById('autoNextDelay').value = state.autoNextDelay;
+      document.getElementById('rollDuration').value = state.rollDuration;
+
+      const soundSwitch = document.getElementById('soundSwitch');
+      const voiceSwitch = document.getElementById('voiceSwitch');
+      const confettiSwitch = document.getElementById('confettiSwitch');
+      const autoNextSwitch = document.getElementById('autoNextSwitch');
+      if (state.soundEnabled) soundSwitch.classList.add('active');
+      if (state.voiceEnabled) voiceSwitch.classList.add('active');
+      if (state.confettiEnabled) confettiSwitch.classList.add('active');
+      if (state.autoNext) autoNextSwitch.classList.add('active');
+
+      updateModeDisplay();
+      document.getElementById('nameText').style.fontSize = state.fontSize + 'px';
+    }
+  } catch (e) {
+    console.error('加载数据失败', e);
+  }
+}
+
+function saveData() {
+  try {
+    saveCurrentGroupNames();
+    const data = {
+      groups: state.groups,
+      history: state.history,
+      calledNames: Array.from(state.calledNames),
+      mode: state.mode,
+      animation: state.animation,
+      speed: state.speed,
+      soundEnabled: state.soundEnabled,
+      voiceEnabled: state.voiceEnabled,
+      confettiEnabled: state.confettiEnabled,
+      fontSize: state.fontSize,
+      pickCount: state.pickCount,
+      currentGroup: state.currentGroup,
+      customTitle: state.customTitle,
+      autoNext: state.autoNext,
+      autoNextDelay: state.autoNextDelay,
+      rollDuration: state.rollDuration
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  } catch (e) {
+    console.error('保存数据失败', e);
+  }
+}
+
+function saveCurrentGroupNames() {
+  if (state.groups[state.currentGroup]) {
+    state.groups[state.currentGroup].names = [...state.names];
+  }
+}
+
+function loadGroupNames() {
+  if (state.groups[state.currentGroup]) {
+    state.names = [...state.groups[state.currentGroup].names];
+  } else {
+    state.names = [];
+  }
+  state.calledNames.clear();
+  state.history = [];
+}
+
+function renderGroupSelect() {
+  const select = document.getElementById('groupSelect');
+  select.innerHTML = '';
+  Object.keys(state.groups).forEach(key => {
+    const option = document.createElement('option');
+    option.value = key;
+    option.textContent = state.groups[key].name;
+    if (key === state.currentGroup) option.selected = true;
+    select.appendChild(option);
+  });
+}
+
+function switchGroup(groupId) {
+  if (state.rolling) {
+    showToast('请先停止点名', 'warning');
+    renderGroupSelect();
+    return;
+  }
+  saveCurrentGroupNames();
+  state.currentGroup = groupId;
+  loadGroupNames();
+  saveData();
+  renderNameList();
+  updateStats();
+  renderHistory();
+  showToast(`已切换到「${state.groups[groupId].name}」`, 'success');
+}
+
+function addGroup() {
+  const name = prompt('请输入分组名称：');
+  if (!name || !name.trim()) return;
+  const id = 'group_' + Date.now();
+  state.groups[id] = { name: name.trim(), names: [] };
+  saveData();
+  renderGroupSelect();
+  document.getElementById('groupSelect').value = id;
+  switchGroup(id);
+}
+
+function renameGroup() {
+  const group = state.groups[state.currentGroup];
+  if (!group) return;
+  const name = prompt('请输入新的分组名称：', group.name);
+  if (!name || !name.trim()) return;
+  group.name = name.trim();
+  saveData();
+  renderGroupSelect();
+  showToast('分组已重命名', 'success');
+}
+
+function deleteGroup() {
+  if (Object.keys(state.groups).length <= 1) {
+    showToast('至少保留一个分组', 'warning');
+    return;
+  }
+  if (!confirm(`确定要删除「${state.groups[state.currentGroup].name}」分组吗？`)) return;
+  delete state.groups[state.currentGroup];
+  state.currentGroup = Object.keys(state.groups)[0];
+  loadGroupNames();
+  saveData();
+  renderGroupSelect();
+  renderNameList();
+  updateStats();
+  renderHistory();
+  showToast('分组已删除', 'success');
+}
+
+function addName() {
+  const input = document.getElementById('nameInput');
+  const name = input.value.trim();
+  if (!name) {
+    showToast('请输入名字', 'warning');
+    return;
+  }
+  if (state.names.some(n => n.name === name)) {
+    showToast('该名字已存在', 'warning');
+    return;
+  }
+  state.names.push({ name, weight: 1, count: 0 });
+  state.searchQuery = '';
+  saveData();
+  renderNameList();
+  updateStats();
+  input.value = '';
+  input.focus();
+  showToast('添加成功', 'success');
+}
+
+function removeName(index) {
+  state.names.splice(index, 1);
+  saveData();
+  renderNameList();
+  updateStats();
+  showToast('已删除', 'success');
+}
+
+function clearAllNames() {
+  if (state.names.length === 0) return;
+  if (!confirm('确定要清空所有名字吗？')) return;
+  state.names = [];
+  state.calledNames.clear();
+  state.history = [];
+  saveData();
+  renderNameList();
+  updateStats();
+  renderHistory();
+  showToast('已清空', 'success');
+}
+
+function renderNameList() {
+  const list = document.getElementById('nameList');
+  let filtered = state.names;
+  if (state.searchQuery) {
+    filtered = state.names.filter(n =>
+      n.name.toLowerCase().includes(state.searchQuery.toLowerCase())
+    );
+  }
+
+  if (filtered.length === 0) {
+    list.innerHTML = '<div class="empty-state">暂无名字</div>';
+    return;
+  }
+
+  list.innerHTML = filtered.map((item, idx) => {
+    const realIndex = state.names.indexOf(item);
+    const isCalled = state.calledNames.has(item.name);
+    return `
+      <div class="name-item ${isCalled ? 'selected' : ''}" ondblclick="editName(${realIndex})">
+        <div class="name-info">
+          <span class="name-label">${escapeHtml(item.name)}</span>
+          ${state.mode === 'weight' ? `<span class="weight-badge">权重:${item.weight}</span>` : ''}
+        </div>
+        ${item.count > 0 ? `<span class="count-badge">${item.count}次</span>` : ''}
+        <div class="item-actions">
+          <button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); editName(${realIndex})" title="编辑">✏️</button>
+          <button class="btn btn-danger btn-sm" onclick="event.stopPropagation(); removeName(${realIndex})" title="删除">🗑️</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function editName(index) {
+  const oldName = state.names[index].name;
+  const newName = prompt('修改名字：', oldName);
+  if (newName === null) return;
+  const trimmed = newName.trim();
+  if (!trimmed) {
+    showToast('名字不能为空', 'warning');
+    return;
+  }
+  if (trimmed !== oldName && state.names.some(n => n.name === trimmed)) {
+    showToast('该名字已存在', 'warning');
+    return;
+  }
+
+  if (state.calledNames.has(oldName)) {
+    state.calledNames.delete(oldName);
+    state.calledNames.add(trimmed);
+  }
+
+  state.names[index].name = trimmed;
+  state.history.forEach(h => {
+    if (h.name === oldName) h.name = trimmed;
+    if (h.names && Array.isArray(h.names)) {
+      h.names = h.names.map(n => n === oldName ? trimmed : n);
+    }
+  });
+
+  saveData();
+  renderNameList();
+  renderHistory();
+  showToast('修改成功', 'success');
+}
+
+function showImportModal() {
+  document.getElementById('importModal').classList.add('show');
+  document.getElementById('importText').value = '';
+  document.getElementById('importText').focus();
+}
+
+function hideImportModal() {
+  document.getElementById('importModal').classList.remove('show');
+}
+
+function handleFileImport(input) {
+  const file = input.files[0];
+  if (!file) return;
+
+  document.getElementById('fileNameDisplay').textContent = file.name;
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const content = e.target.result;
+    document.getElementById('importText').value = content;
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+function parseImportText(text) {
+  const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l);
+  const result = [];
+  let hasHeader = false;
+
+  if (lines.length > 0) {
+    const firstLine = lines[0].toLowerCase();
+    if (firstLine.includes('name') || firstLine.includes('姓名') || firstLine.includes('名字')) {
+      hasHeader = true;
+    }
+  }
+
+  const startIndex = hasHeader ? 1 : 0;
+
+  for (let i = startIndex; i < lines.length; i++) {
+    const line = lines[i];
+    if (!line) continue;
+
+    let name = '';
+    let weight = 1;
+
+    if (line.includes(',')) {
+      const parts = line.split(',').map(p => p.trim());
+      name = parts[0];
+      if (parts.length > 1 && !isNaN(parseInt(parts[1]))) {
+        weight = parseInt(parts[1]);
+      }
+    } else if (line.includes('\t')) {
+      const parts = line.split('\t').map(p => p.trim());
+      name = parts[0];
+      if (parts.length > 1 && !isNaN(parseInt(parts[1]))) {
+        weight = parseInt(parts[1]);
+      }
+    } else if (line.includes(':') || line.includes('：')) {
+      const parts = line.split(/[:：]/);
+      name = parts[0].trim();
+      if (parts.length > 1 && !isNaN(parseInt(parts[1]))) {
+        weight = parseInt(parts[1]);
+      }
+    } else {
+      name = line.trim();
+    }
+
+    if (name && !result.some(r => r.name === name)) {
+      result.push({ name, weight: isNaN(weight) || weight < 1 ? 1 : weight, count: 0 });
+    }
+  }
+
+  return result;
+}
+
+function importNames() {
+  const text = document.getElementById('importText').value.trim();
+  if (!text) {
+    showToast('请输入内容或选择文件', 'warning');
+    return;
+  }
+
+  const parsedNames = parseImportText(text);
+  let added = 0;
+  let skipped = 0;
+
+  parsedNames.forEach(item => {
+    if (state.names.some(n => n.name === item.name)) {
+      skipped++;
+      return;
+    }
+    state.names.push(item);
+    added++;
+  });
+
+  saveData();
+  renderNameList();
+  updateStats();
+  hideImportModal();
+  document.getElementById('importFile').value = '';
+  document.getElementById('fileNameDisplay').textContent = '';
+  showToast(`导入完成：新增${added}个，跳过${skipped}个`, 'success');
+}
+
+function exportNames(format) {
+  if (state.names.length === 0) {
+    showToast('名单为空', 'warning');
+    return;
+  }
+
+  const f = format || 'txt';
+  let content = '';
+  let filename = '';
+  let mimeType = '';
+
+  if (f === 'csv') {
+    const BOM = '\uFEFF';
+    content = BOM + '姓名,权重,被点次数\n' + state.names.map(n => `${n.name},${n.weight},${n.count}`).join('\n');
+    filename = '点名名单.csv';
+    mimeType = 'text/csv;charset=utf-8';
+  } else {
+    content = state.names.map(n => `${n.name}:${n.weight}`).join('\n');
+    filename = '点名名单.txt';
+    mimeType = 'text/plain;charset=utf-8';
+  }
+
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('导出成功', 'success');
+}
+
+function toggleRoll() {
+  if (state.rolling) {
+    stopRoll();
+  } else {
+    startRoll();
+  }
+}
+
+function startRoll() {
+  if (state.names.length === 0) {
+    showToast('请先添加名单', 'warning');
+    return;
+  }
+
+  if (state.mode === 'unique') {
+    const available = state.names.filter(n => !state.calledNames.has(n.name));
+    if (available.length === 0) {
+      showToast('所有人都已被点过，请重置', 'warning');
+      return;
+    }
+    if (available.length < state.pickCount) {
+      showToast(`剩余人数不足，只剩${available.length}人`, 'warning');
+      return;
+    }
+  }
+
+  if (state.mode === 'weight') {
+    const totalWeight = state.names.reduce((sum, n) => sum + n.weight, 0);
+    if (totalWeight === 0) {
+      showToast('总权重为0', 'warning');
+      return;
+    }
+  }
+
+  if (state.autoNextTimeout) {
+    clearTimeout(state.autoNextTimeout);
+    state.autoNextTimeout = null;
+  }
+
+  state.rolling = true;
+  const btn = document.getElementById('rollBtn');
+  btn.textContent = '⏹️ 停止';
+  btn.classList.add('rolling');
+
+  const display = document.getElementById('nameDisplay');
+  display.classList.add('rolling', 'anim-' + state.animation);
+
+  const nameText = document.getElementById('nameText');
+
+  state.rollInterval = setInterval(() => {
+    const winners = pickWinners(state.pickCount, true);
+    nameText.textContent = winners.map(w => w.name).join(' · ');
+    playTickSound();
+  }, state.speed);
+
+  if (state.rollDuration > 0) {
+    state.rollTimeout = setTimeout(() => {
+      stopRoll();
+    }, state.rollDuration * 1000);
+  }
+}
+
+function stopRoll() {
+  if (!state.rolling) return;
+
+  state.rolling = false;
+  clearInterval(state.rollInterval);
+  if (state.rollTimeout) {
+    clearTimeout(state.rollTimeout);
+    state.rollTimeout = null;
+  }
+
+  const btn = document.getElementById('rollBtn');
+  btn.textContent = '🎲 开始点名';
+  btn.classList.remove('rolling');
+
+  const display = document.getElementById('nameDisplay');
+  display.classList.remove('rolling', 'anim-shake', 'anim-fade', 'anim-zoom', 'anim-spin', 'anim-slide', 'anim-flip', 'anim-typewriter');
+
+  const nameText = document.getElementById('nameText');
+  const winners = pickWinners(state.pickCount, false);
+  state.currentWinners = winners;
+
+  nameText.textContent = winners.map(w => w.name).join(' · ');
+  nameText.classList.remove('winner');
+  void nameText.offsetWidth;
+  nameText.classList.add('winner');
+
+  winners.forEach(winner => {
+    const idx = state.names.findIndex(n => n.name === winner.name);
+    if (idx !== -1) {
+      state.names[idx].count++;
+    }
+    if (state.mode === 'unique') {
+      state.calledNames.add(winner.name);
+    }
+  });
+
+  // 修正的历史记录存储
+  const winnerNames = winners.map(w => w.name);
+  state.history.unshift({
+    names: winnerNames,
+    name: winnerNames.join('、'),
+    time: new Date().toLocaleString('zh-CN'),
+    timestamp: Date.now(),
+    mode: state.mode
+  });
+
+  if (state.history.length > 100) {
+    state.history = state.history.slice(0, 100);
+  }
+
+  saveData();
+  renderNameList();
+  updateStats();
+  renderHistory();
+
+  playWinSound();
+  if (state.confettiEnabled) {
+    launchConfetti();
+  }
+  if (state.voiceEnabled) {
+    speakNames(winners.map(w => w.name));
+  }
+
+  if (state.autoNext) {
+    state.autoNextTimeout = setTimeout(() => {
+      if (state.mode === 'unique') {
+        const available = state.names.filter(n => !state.calledNames.has(n.name));
+        if (available.length < state.pickCount) {
+          return;
+        }
+      }
+      startRoll();
+    }, state.autoNextDelay * 1000);
+  }
+}
+
+function pickWinners(count, isRolling) {
+  const winners = [];
+  let pool = [...state.names];
+
+  if (state.mode === 'unique' && !isRolling) {
+    pool = pool.filter(n => !state.calledNames.has(n.name));
+  }
+
+  for (let i = 0; i < count && pool.length > 0; i++) {
+    let winner;
+
+    if (state.mode === 'weight') {
+      winner = weightedRandomPick(pool);
+    } else {
+      winner = pool[Math.floor(Math.random() * pool.length)];
+    }
+
+    winners.push(winner);
+    pool = pool.filter(n => n !== winner);
+  }
+
+  return winners;
+}
+
+function weightedRandomPick(pool) {
+  const totalWeight = pool.reduce((sum, n) => sum + n.weight, 0);
+  if (totalWeight <= 0) {
+    return pool[Math.floor(Math.random() * pool.length)];
+  }
+
+  let random = Math.random() * totalWeight;
+  for (const item of pool) {
+    random -= item.weight;
+    if (random < 0) {
+      return item;
+    }
+  }
+  return pool[pool.length - 1];
+}
+
+function resetRoll() {
+  if (state.autoNextTimeout) {
+    clearTimeout(state.autoNextTimeout);
+    state.autoNextTimeout = null;
+  }
+  state.calledNames.clear();
+  state.currentWinners = [];
+  const nameText = document.getElementById('nameText');
+  nameText.textContent = '准备开始';
+  nameText.classList.remove('winner');
+  saveData();
+  renderNameList();
+  updateStats();
+  showToast('已重置', 'success');
+}
+
+function updateStats() {
+  document.getElementById('totalCount').textContent = state.names.length;
+  document.getElementById('calledCount').textContent = state.calledNames.size;
+  document.getElementById('remainCount').textContent = Math.max(0, state.names.length - state.calledNames.size);
+}
+
+function updateModeDisplay() {
+  const modeNames = {
+    'random': '完全随机',
+    'unique': '不重复',
+    'weight': '权重模式'
+  };
+  document.getElementById('modeDisplay').textContent = modeNames[state.mode] || state.mode;
+}
+
+function changeMode() {
+  if (state.rolling) {
+    showToast('请先停止点名', 'warning');
+    document.getElementById('modeSelect').value = state.mode;
+    return;
+  }
+  state.mode = document.getElementById('modeSelect').value;
+  updateModeDisplay();
+  state.calledNames.clear();
+  saveData();
+  renderNameList();
+  updateStats();
+
+  if (state.mode === 'weight') {
+    showToast('权重模式：权重大的人被选中概率更高', 'success');
+  } else if (state.mode === 'unique') {
+    showToast('不重复模式：每个人只会被点到一次', 'success');
+  }
+}
+
+function changeAnimation() {
+  state.animation = document.getElementById('animSelect').value;
+  saveData();
+  showToast('动画已切换为：' + document.getElementById('animSelect').selectedOptions[0].text, 'success');
+}
+
+function changeSpeed() {
+  state.speed = parseInt(document.getElementById('speedRange').value);
+  document.getElementById('speedValue').textContent = state.speed + 'ms';
+  saveData();
+}
+
+function toggleSound() {
+  state.soundEnabled = !state.soundEnabled;
+  document.getElementById('soundSwitch').classList.toggle('active', state.soundEnabled);
+  saveData();
+  showToast(state.soundEnabled ? '音效已开启' : '音效已关闭', 'success');
+}
+
+function toggleVoice() {
+  state.voiceEnabled = !state.voiceEnabled;
+  document.getElementById('voiceSwitch').classList.toggle('active', state.voiceEnabled);
+  saveData();
+  showToast(state.voiceEnabled ? '语音播报已开启' : '语音播报已关闭', 'success');
+}
+
+function toggleConfetti() {
+  state.confettiEnabled = !state.confettiEnabled;
+  document.getElementById('confettiSwitch').classList.toggle('active', state.confettiEnabled);
+  saveData();
+  showToast(state.confettiEnabled ? '撒花特效已开启' : '撒花特效已关闭', 'success');
+}
+
+function toggleAutoNext() {
+  state.autoNext = !state.autoNext;
+  document.getElementById('autoNextSwitch').classList.toggle('active', state.autoNext);
+  saveData();
+  showToast(state.autoNext ? '自动开始已开启' : '自动开始已关闭', 'success');
+}
+
+function saveAutoNextDelay() {
+  let val = parseInt(document.getElementById('autoNextDelay').value);
+  if (isNaN(val) || val < 1) val = 1;
+  if (val > 60) val = 60;
+  state.autoNextDelay = val;
+  document.getElementById('autoNextDelay').value = val;
+  saveData();
+}
+
+function saveRollDuration() {
+  let val = parseInt(document.getElementById('rollDuration').value);
+  if (isNaN(val) || val < 0) val = 0;
+  if (val > 30) val = 30;
+  state.rollDuration = val;
+  document.getElementById('rollDuration').value = val;
+  saveData();
+  if (val > 0) {
+    showToast(`滚动时长设为${val}秒，开始后自动停止`, 'success');
+  }
+}
+
+function changeFontSize() {
+  state.fontSize = parseInt(document.getElementById('fontSizeRange').value);
+  document.getElementById('nameText').style.fontSize = state.fontSize + 'px';
+  saveData();
+}
+
+function editCustomTitle() {
+  const newTitle = prompt('设置标题：', state.customTitle);
+  if (newTitle === null) return;
+  const trimmed = newTitle.trim();
+  if (!trimmed) {
+    showToast('标题不能为空', 'warning');
+    return;
+  }
+  state.customTitle = trimmed;
+  document.getElementById('customTitle').textContent = trimmed;
+  document.title = trimmed + ' - 随机点名器';
+  saveData();
+  showToast('标题已更新', 'success');
+}
+
+function copyResult() {
+  if (!state.currentWinners || state.currentWinners.length === 0) {
+    showToast('还没有点名结果', 'warning');
+    return;
+  }
+  const text = state.currentWinners.map(w => w.name).join('、');
+  navigator.clipboard.writeText(text).then(() => {
+    showToast('已复制到剪贴板', 'success');
+  }).catch(() => {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textarea);
+    showToast('已复制到剪贴板', 'success');
+  });
+}
+
+function speakNames(names) {
+  if (!('speechSynthesis' in window)) return;
+  window.speechSynthesis.cancel();
+  const text = '被点到的是：' + names.join('、');
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.lang = 'zh-CN';
+  utter.rate = 0.9;
+  utter.pitch = 1;
+  window.speechSynthesis.speak(utter);
+}
+
+function switchTab(tabName) {
+  document.querySelectorAll('.tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.tab === tabName);
+  });
+  document.querySelectorAll('.tab-content').forEach(c => {
+    c.classList.toggle('active', c.id === 'tab-' + tabName);
+  });
+}
+
+function getHistoryNames(h) {
+  if (h.names && Array.isArray(h.names)) {
+    return h.names.join('、');
+  }
+  return h.name || '未知';
+}
+
+function getHistoryMode(h) {
+  const modeMap = { random: '完全随机', unique: '不重复', weight: '权重模式' };
+  return modeMap[h.mode] || modeMap['random'];
+}
+
+function renderHistory() {
+  const list = document.getElementById('historyList');
+  if (state.history.length === 0) {
+    list.innerHTML = '<div class="empty-state">暂无点名记录</div>';
+    return;
+  }
+
+  list.innerHTML = state.history.slice(0, 50).map((h, i) => `
+    <div class="history-item">
+      <span class="history-name">${i + 1}. ${escapeHtml(getHistoryNames(h))}</span>
+      <span class="history-time">${h.time}</span>
+    </div>
+  `).join('');
+}
+
+function exportHistory(format) {
+  if (state.history.length === 0) {
+    showToast('暂无历史记录', 'warning');
+    return;
+  }
+
+  const f = format || 'txt';
+  let content = '';
+  let filename = '';
+  let mimeType = '';
+
+  if (f === 'csv') {
+    const BOM = '\uFEFF';
+    const header = '序号,时间,姓名,模式';
+    const rows = state.history.map((h, i) => {
+      const names = getHistoryNames(h);
+      const mode = getHistoryMode(h);
+      return `${i + 1},${h.time},"${names}",${mode}`;
+    });
+    content = BOM + header + '\n' + rows.join('\n');
+    filename = '点名历史记录.csv';
+    mimeType = 'text/csv;charset=utf-8';
+  } else {
+    const lines = state.history.map((h, i) => {
+      const names = getHistoryNames(h);
+      const mode = getHistoryMode(h);
+      return `${i + 1}. ${h.time} - ${names} (${mode})`;
+    });
+    content = '点名历史记录\n' + '='.repeat(40) + '\n' + lines.join('\n');
+    filename = '点名历史记录.txt';
+    mimeType = 'text/plain;charset=utf-8';
+  }
+
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('导出成功', 'success');
+}
+
+function clearHistory() {
+  if (state.history.length === 0) return;
+  if (!confirm('确定要清空历史记录吗？')) return;
+  state.history = [];
+  state.names.forEach(n => n.count = 0);
+  saveData();
+  renderHistory();
+  renderNameList();
+  showToast('历史已清空', 'success');
+}
+
+function showStats() {
+  const modal = document.getElementById('statsModal');
+  modal.classList.add('show');
+
+  const totalRolls = state.history.length;
+  const uniqueCalled = new Set(state.history.map(h => getHistoryNames(h))).size;
+  const totalNames = state.names.length;
+  const avgCount = totalNames > 0 ? (totalRolls / totalNames).toFixed(1) : 0;
+
+  document.getElementById('statsGrid').innerHTML = `
+    <div class="stat-card">
+      <div class="stat-value">${totalNames}</div>
+      <div class="stat-label">总人数</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">${totalRolls}</div>
+      <div class="stat-label">总点名次数</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">${uniqueCalled}</div>
+      <div class="stat-label">被点过的人数</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">${avgCount}</div>
+      <div class="stat-label">人均次数</div>
+    </div>
+  `;
+
+  const sorted = [...state.names].sort((a, b) => b.count - a.count).filter(n => n.count > 0);
+  const rankingList = document.getElementById('rankingList');
+
+  if (sorted.length === 0) {
+    rankingList.innerHTML = '<div class="empty-state">暂无数据</div>';
+  } else {
+    rankingList.innerHTML = sorted.map((item, i) => {
+      const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`;
+      const barWidth = Math.max(5, (item.count / sorted[0].count) * 100);
+      return `
+        <div style="display: flex; align-items: center; gap: 10px; padding: 6px 0;">
+          <span style="width: 30px; text-align: center;">${medal}</span>
+          <span style="flex: 1; font-size: 13px;">${escapeHtml(item.name)}</span>
+          <div style="width: 120px; height: 8px; background: var(--bg-tertiary); border-radius: 4px; overflow: hidden;">
+            <div style="width: ${barWidth}%; height: 100%; background: linear-gradient(90deg, var(--accent), #667eea); border-radius: 4px;"></div>
+          </div>
+          <span style="width: 40px; text-align: right; font-size: 12px; color: var(--text-muted);">${item.count}次</span>
+        </div>
+      `;
+    }).join('');
+  }
+}
+
+function hideStats() {
+  document.getElementById('statsModal').classList.remove('show');
+}
+
+function showWeightModal() {
+  const modal = document.getElementById('weightModal');
+  modal.classList.add('show');
+
+  const list = document.getElementById('weightList');
+  if (state.names.length === 0) {
+    list.innerHTML = '<div class="empty-state">暂无名单</div>';
+    return;
+  }
+
+  list.innerHTML = state.names.map((item, i) => `
+    <div class="weight-slider-row">
+      <label>${escapeHtml(item.name)}</label>
+      <input type="range" min="1" max="10" value="${item.weight}" 
+             oninput="document.getElementById('weight-val-${i}').textContent = this.value"
+             id="weight-range-${i}">
+      <span id="weight-val-${i}" style="width: 30px; text-align: center; font-weight: 600;">${item.weight}</span>
+    </div>
+  `).join('');
+}
+
+function hideWeightModal() {
+  document.getElementById('weightModal').classList.remove('show');
+}
+
+function saveWeights() {
+  state.names.forEach((item, i) => {
+    const range = document.getElementById(`weight-range-${i}`);
+    if (range) {
+      item.weight = parseInt(range.value);
+    }
+  });
+  saveData();
+  renderNameList();
+  hideWeightModal();
+  showToast('权重已保存', 'success');
+}
+
+function toggleTheme() {
+  const html = document.documentElement;
+  const current = html.getAttribute('data-theme');
+  const next = current === 'dark' ? 'light' : 'dark';
+  html.setAttribute('data-theme', next);
+  localStorage.setItem('theme', next);
+}
+
+function applyTheme() {
+  const saved = localStorage.getItem('theme');
+  if (saved) {
+    document.documentElement.setAttribute('data-theme', saved);
+  }
+}
+
+function toggleFullscreen() {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen().then(() => {
+      document.body.classList.add('fullscreen-mode');
+    }).catch(() => {
+      document.body.classList.add('fullscreen-mode');
+    });
+  } else {
+    document.exitFullscreen().then(() => {
+      document.body.classList.remove('fullscreen-mode');
+    }).catch(() => {
+      document.body.classList.remove('fullscreen-mode');
+    });
+  }
+}
+
+document.addEventListener('fullscreenchange', () => {
+  if (!document.fullscreenElement) {
+    document.body.classList.remove('fullscreen-mode');
+  }
+});
+
+function showToast(message, type = 'info') {
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.textContent = message;
+  container.appendChild(toast);
+
+  setTimeout(() => {
+    toast.style.animation = 'slideIn 0.3s ease reverse';
+    setTimeout(() => toast.remove(), 300);
+  }, 2500);
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+let audioCtx = null;
+
+function setupAudio() {
+  document.addEventListener('click', function initAudio() {
+    if (!audioCtx) {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    document.removeEventListener('click', initAudio);
+  }, { once: true });
+}
+
+function playTickSound() {
+  if (!state.soundEnabled || !audioCtx) return;
+  try {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.frequency.value = 800;
+    osc.type = 'sine';
+    gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
+    osc.start(audioCtx.currentTime);
+    osc.stop(audioCtx.currentTime + 0.05);
+  } catch (e) {}
+}
+
+function playWinSound() {
+  if (!state.soundEnabled || !audioCtx) return;
+  try {
+    const notes = [523.25, 659.25, 783.99, 1046.50];
+    notes.forEach((freq, i) => {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.frequency.value = freq;
+      osc.type = 'sine';
+      const time = audioCtx.currentTime + i * 0.1;
+      gain.gain.setValueAtTime(0.2, time);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.3);
+      osc.start(time);
+      osc.stop(time + 0.3);
+    });
+  } catch (e) {}
+}
+
+function launchConfetti() {
+  const colors = ['#f56565', '#48bb78', '#4299e1', '#ed8936', '#9f7aea', '#667eea', '#f6e05e'];
+  const container = document.createElement('div');
+  container.className = 'confetti';
+  container.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 999;';
+  document.body.appendChild(container);
+
+  for (let i = 0; i < 50; i++) {
+    const piece = document.createElement('div');
+    piece.className = 'confetti-piece';
+    const color = colors[Math.floor(Math.random() * colors.length)];
+    const left = Math.random() * 100;
+    const delay = Math.random() * 0.5;
+    const duration = 2 + Math.random() * 2;
+    const size = 6 + Math.random() * 8;
+
+    piece.style.cssText = `
+      left: ${left}%;
+      width: ${size}px;
+      height: ${size}px;
+      background: ${color};
+      border-radius: ${Math.random() > 0.5 ? '50%' : '2px'};
+      animation: confetti-fall ${duration}s ease-in ${delay}s forwards;
+    `;
+
+    container.appendChild(piece);
+  }
+
+  setTimeout(() => container.remove(), 4500);
+}
+
+function setupKeyboardShortcuts() {
+  document.addEventListener('keydown', (e) => {
+    const tag = document.activeElement.tagName.toLowerCase();
+    if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+
+    if (e.code === 'Space') {
+      e.preventDefault();
+      toggleRoll();
+    } else if (e.key.toLowerCase() === 'r') {
+      resetRoll();
+    } else if (e.key.toLowerCase() === 'f') {
+      toggleFullscreen();
+    } else if (e.key.toLowerCase() === 'c') {
+      copyResult();
+    } else if (e.key === 'Escape') {
+      if (document.fullscreenElement) {
+        toggleFullscreen();
+      }
+    }
+  });
+}
+
+let searchTimeout;
+document.getElementById('nameInput').addEventListener('input', (e) => {
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(() => {
+    state.searchQuery = e.target.value.trim();
+    renderNameList();
+  }, 150);
+});
+
+document.getElementById('pickCount').addEventListener('change', (e) => {
+  let val = parseInt(e.target.value);
+  if (isNaN(val) || val < 1) val = 1;
+  if (val > 10) val = 10;
+  state.pickCount = val;
+  e.target.value = val;
+  saveData();
+});
+
+document.querySelectorAll('.modal-overlay').forEach(modal => {
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      modal.classList.remove('show');
+    }
+  });
+});
+
+init();
+renderHistory();
+</script>
+</body>
+</html>

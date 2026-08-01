@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>活动舞台背景播放系统 · Stage Director</title>
+<style>
+:root{
+  --bg0:#070617; --bg1:#140a35; --bg2:#0a1640;
+  --glass:rgba(255,255,255,.055); --glass2:rgba(255,255,255,.09);
+  --line:rgba(150,130,255,.22); --line2:rgba(150,130,255,.4);
+  --txt:#eaf0ff; --sub:#a7b0d8; --acc:#7c5cff; --acc2:#4f8cff;
+  --ok:#37e0a0; --warn:#ffcf5c; --bad:#ff6b8b;
+  --grad:linear-gradient(135deg,#7c5cff,#4f8cff);
+  --grad2:linear-gradient(135deg,#4f8cff,#37e0a0);
+  --glow:0 0 24px rgba(124,92,255,.45);
+  --shadow:0 18px 60px rgba(0,0,0,.5);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:-apple-system,"PingFang SC","Microsoft YaHei",Segoe UI,Roboto,sans-serif;
+  color:var(--txt); overflow:hidden; user-select:none;
+  background:radial-gradient(1200px 800px at 15% 0%,var(--bg1),transparent 60%),
+             radial-gradient(1000px 700px at 100% 100%,var(--bg2),transparent 55%),
+             var(--bg0);
+}
+body::before{content:"";position:fixed;inset:0;background:
+  radial-gradient(600px 400px at 80% 10%,rgba(124,92,255,.10),transparent 60%),
+  radial-gradient(500px 400px at 10% 90%,rgba(79,140,255,.10),transparent 60%);pointer-events:none;z-index:0}
+button{font-family:inherit;cursor:pointer;border:none;color:var(--txt);background:transparent}
+input,select,textarea{font-family:inherit}
+.glass{background:linear-gradient(180deg,rgba(28,24,56,.94),rgba(16,14,38,.92));border:1px solid var(--line);border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:10px 14px;border-radius:12px;font-size:13px;font-weight:600;background:var(--grad);box-shadow:var(--glow);transition:.18s;border:1px solid transparent}
+.btn:hover{filter:brightness(1.1);transform:translateY(-1px)}
+.btn:active{transform:translateY(0)}
+.btn.ghost{background:var(--glass2);border:1px solid var(--line);box-shadow:none;color:var(--txt)}
+.btn.ghost:hover{background:rgba(124,92,255,.18);border-color:var(--line2)}
+.btn.sm{padding:7px 10px;font-size:12px;border-radius:10px}
+.btn.block{width:100%}
+.icon-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 12px;border-radius:11px;background:var(--glass2);border:1px solid var(--line);font-size:13px;transition:.16s}
+.icon-btn:hover{background:rgba(124,92,255,.2);border-color:var(--line2);box-shadow:0 0 14px rgba(124,92,255,.25)}
+.icon-btn.on{background:var(--grad);border-color:transparent;box-shadow:var(--glow)}
+.icon-btn.danger.on{background:var(--bad);box-shadow:0 0 16px rgba(255,107,139,.5)}
+.icon-btn svg{width:18px;height:18px}
+
+#app{display:flex;height:100vh;width:100vw;position:relative;z-index:1}
+#sidebar{width:372px;min-width:300px;max-width:760px;padding:14px;display:flex;flex-direction:column;gap:12px;position:relative;transition:margin-left .28s,width .1s;z-index:30;overflow:hidden}
+body.present #sidebar{display:none}
+body.present #sbResizer{display:none}
+body.present #stageArea{margin:0;border-radius:0}
+.sb-resizer{position:absolute;top:0;right:0;width:9px;height:100%;cursor:col-resize;z-index:40;border-radius:0 6px 6px 0}
+.sb-resizer:hover{background:linear-gradient(90deg,transparent,rgba(124,92,255,.55))}
+.sb-head{display:flex;align-items:center;gap:11px;padding:4px 4px 2px}
+.sb-head .logo{width:38px;height:38px;border-radius:11px;background:var(--grad);display:flex;align-items:center;justify-content:center;box-shadow:var(--glow)}
+.sb-head .logo svg{width:22px;height:22px;color:#fff}
+.sb-head h1{font-size:16px;font-weight:800;letter-spacing:.4px}
+.sb-head .sub{font-size:11px;color:var(--sub);margin-top:1px}
+.sb-head .live{margin-left:auto;display:flex;align-items:center;gap:7px;font-size:11px;color:var(--sub)}
+.sb-head .dot{width:9px;height:9px;border-radius:50%;background:var(--warn);box-shadow:0 0 10px var(--warn)}
+.sb-scroll{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:12px;padding-right:4px}
+.sb-scroll::-webkit-scrollbar{width:8px}
+.sb-scroll::-webkit-scrollbar-thumb{background:rgba(124,92,255,.3);border-radius:4px}
+.card{padding:13px}
+.card h2{font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--sub);margin-bottom:11px;display:flex;align-items:center;gap:7px;font-weight:700}
+.card h2 svg{width:15px;height:15px;color:var(--acc2)}
+.row{display:flex;align-items:center;gap:9px;margin:9px 0}
+.row label{font-size:12px;color:var(--sub);min-width:56px}
+.row .grow{flex:1}
+select,input[type=text],input[type=number],input[type=datetime-local],textarea{
+  width:100%;background:rgba(8,8,24,.55);border:1px solid var(--line);color:var(--txt);
+  border-radius:10px;padding:8px 10px;font-size:13px;outline:none;transition:.15s}
+select:focus,input:focus,textarea:focus{border-color:var(--acc2);box-shadow:0 0 0 3px rgba(79,140,255,.18)}
+select option{background:#15123a;color:#eaf0ff}
+input[type=color]{padding:2px;height:36px;width:48px;background:rgba(8,8,24,.55);border:1px solid var(--line);border-radius:10px}
+input[type=range]{width:100%;accent-color:var(--acc);height:4px}
+input[type=checkbox]{width:17px;height:17px;accent-color:var(--acc)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.seg{display:flex;border:1px solid var(--line);border-radius:11px;overflow:hidden;background:rgba(8,8,24,.5)}
+.seg button{flex:1;padding:9px;background:transparent;font-size:12px;border-right:1px solid var(--line);color:var(--sub);transition:.15s}
+.seg button:last-child{border-right:none}
+.seg button.on{background:var(--grad);color:#fff;font-weight:600}
+.hint{font-size:11px;color:var(--sub);line-height:1.6;margin-top:8px}
+
+.scene-list{display:flex;flex-direction:column;gap:8px}
+.scene{display:flex;align-items:center;gap:10px;padding:9px;border-radius:13px;background:var(--glass2);border:1px solid var(--line);transition:.16s;cursor:pointer}
+.scene:hover{background:rgba(124,92,255,.14);border-color:var(--line2)}
+.scene.active{border-color:transparent;background:linear-gradient(135deg,rgba(124,92,255,.28),rgba(79,140,255,.22));box-shadow:0 0 0 1px var(--acc) inset,var(--glow)}
+.scene .thumb{width:68px;height:38px;border-radius:8px;overflow:hidden;flex-shrink:0;background:#0a0a1f;display:flex;align-items:center;justify-content:center;position:relative}
+.scene .thumb img{width:100%;height:100%;object-fit:cover}
+.scene .thumb .thumbcss{width:100%;height:100%}
+.scene .thumb .thumbvid{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#fff;font-size:9px;background:linear-gradient(135deg,#2a1b5a,#10204a)}
+.scene .thumb .thumbvid svg{width:14px;height:14px}
+.scene .meta{flex:1;min-width:0}
+.scene .nm{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.scene .tags{font-size:10px;color:var(--sub);margin-top:3px;display:flex;gap:5px;flex-wrap:wrap}
+.tag{padding:1px 6px;border-radius:6px;background:rgba(255,255,255,.07);border:1px solid var(--line)}
+.tag.broken{color:var(--bad);border-color:var(--bad)}
+.scene .acts{display:flex;gap:4px}
+.mini{width:28px;height:28px;border-radius:8px;background:rgba(8,8,24,.5);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;transition:.15s}
+.mini:hover{background:rgba(124,92,255,.25);border-color:var(--line2)}
+.mini.play{color:var(--ok);border-color:rgba(55,224,160,.5)}
+.mini svg{width:15px;height:15px}
+.mini.del:hover{color:var(--bad);border-color:var(--bad)}
+
+.media-item{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:10px;background:var(--glass2);border:1px solid var(--line);font-size:12px}
+.media-item .ty{font-size:10px;padding:2px 7px;border-radius:6px;font-weight:700}
+.ty.v{color:#b9a6ff;background:rgba(124,92,255,.18)}
+.ty.i{color:#7ef0c0;background:rgba(55,224,160,.16)}
+.ty.a{color:#ffd98a;background:rgba(255,207,92,.16)}
+.media-item .fn{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.media-item .sz{color:var(--sub);font-size:10px}
+.media-item .del{width:24px;height:24px;border-radius:7px;background:rgba(8,8,24,.5);border:1px solid var(--line);display:flex;align-items:center;justify-content:center}
+.media-item .del:hover{color:var(--bad);border-color:var(--bad)}
+.media-item .del svg{width:13px;height:13px}
+
+#stageArea{flex:1;position:relative;background:#000;overflow:hidden;margin:14px 14px 14px 0;border-radius:20px;box-shadow:var(--shadow);border:1px solid var(--line)}
+@media(max-width:780px){#stageArea{margin:10px}}
+#stage{position:absolute;inset:0;background:#000;overflow:hidden;border-radius:20px}
+.bg-layer{position:absolute;inset:0;opacity:0;will-change:opacity,transform}
+.bg-layer>*{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+#overlayWrap{position:absolute;inset:0;opacity:0;pointer-events:none;will-change:opacity}
+#overlayWrap>video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+#caption{position:absolute;left:0;right:0;text-align:center;padding:0 6%;pointer-events:none;font-weight:800;line-height:1.2;text-shadow:0 4px 30px rgba(0,0,0,.6);transition:opacity .4s;will-change:opacity,transform;z-index:8}
+#caption .cap-title{font-size:1em}
+#caption .cap-sub{font-size:.46em;font-weight:600;opacity:.82;letter-spacing:.18em;margin-top:.32em;text-transform:uppercase}
+@property --sq{syntax:'<length>';inherits:false;initial-value:0px}
+#clock{position:absolute;top:86px;right:34px;text-align:right;color:#fff;text-shadow:0 2px 18px rgba(0,0,0,.6);pointer-events:none;font-variant-numeric:tabular-nums;z-index:60}
+#clock .t{font-size:42px;font-weight:800;line-height:1;background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;filter:drop-shadow(0 2px 10px rgba(124,92,255,.4))}
+#clock .d{font-size:14px;opacity:.85;margin-top:5px}
+#countdown{position:absolute;top:86px;left:34px;color:#fff;text-shadow:0 2px 18px rgba(0,0,0,.6);pointer-events:none;z-index:60}
+#countdown .lbl{font-size:13px;opacity:.8;letter-spacing:3px}
+#countdown .val{font-size:50px;font-weight:800;line-height:1.1;font-variant-numeric:tabular-nums;background:linear-gradient(135deg,#7c5cff,#37e0a0);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+#logo{position:absolute;max-width:220px;max-height:130px;pointer-events:none;object-fit:contain;filter:drop-shadow(0 4px 18px rgba(0,0,0,.55));z-index:9}
+#spectrum{position:absolute;left:0;right:0;bottom:0;width:100%;height:170px;pointer-events:none;opacity:0;transition:opacity .3s;z-index:6}
+#spectrum.on{opacity:.92}
+#blackout{position:absolute;inset:0;background:#000;opacity:0;pointer-events:none;transition:opacity .25s;z-index:50}
+#blackout.on{opacity:1}
+#stageMsg{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;color:#fff;pointer-events:none;text-align:center;padding:20px}
+#stageMsg .big{font-size:56px;font-weight:900;background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+#stageMsg .sub{font-size:15px;color:var(--sub)}
+
+#topbar{position:absolute;top:16px;left:16px;right:16px;display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:16px;background:linear-gradient(180deg,rgba(22,18,52,.96),rgba(12,10,30,.92));border:1px solid var(--line2);z-index:20;transition:opacity .2s;box-shadow:0 8px 30px rgba(0,0,0,.45)}
+body.present #topbar{opacity:0;pointer-events:none}
+#topbar:hover{opacity:1}
+#topbar .title{font-size:13px;font-weight:800;color:#fff}
+#topbar .sp{flex:1}
+.tb-btn{width:40px;height:40px;border-radius:11px;background:var(--glass2);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;transition:.15s}
+.tb-btn:hover{background:rgba(124,92,255,.25);border-color:var(--line2)}
+.tb-btn.on{background:var(--grad);border-color:transparent;box-shadow:var(--glow)}
+.tb-btn svg{width:19px;height:19px}
+#volWrap{display:flex;align-items:center;gap:8px;color:#fff;padding:0 4px}
+#volWrap input{width:96px}
+
+#sceneBar{position:absolute;bottom:16px;left:16px;right:16px;display:flex;align-items:center;gap:14px;padding:11px 16px;border-radius:16px;background:linear-gradient(180deg,rgba(22,18,52,.96),rgba(12,10,30,.92));border:1px solid var(--line2);z-index:20;transition:opacity .2s;box-shadow:0 8px 30px rgba(0,0,0,.45)}
+body.present #sceneBar{opacity:0;pointer-events:none}
+#sceneBar:hover{opacity:1}
+#sceneBar .cur{font-size:13px;font-weight:700;color:#fff}
+#sceneBar .nxt{font-size:12px;color:var(--sub)}
+#prog{flex:1;height:6px;background:rgba(255,255,255,.13);border-radius:4px;overflow:hidden}
+#prog>div{height:100%;width:0;background:var(--grad);box-shadow:0 0 12px rgba(124,92,255,.6);transition:width .1s linear}
+
+.modal-mask{position:fixed;inset:0;background:rgba(4,4,16,.78);z-index:100;display:none;align-items:center;justify-content:center;padding:20px}
+.modal-mask.show{display:flex}
+.modal{width:580px;max-width:100%;max-height:90vh;overflow-y:auto;background:linear-gradient(180deg,rgba(26,22,54,.98),rgba(16,14,38,.98));border:1px solid var(--line2);border-radius:20px;box-shadow:var(--shadow);scrollbar-width:none;-ms-overflow-style:none}
+.modal::-webkit-scrollbar{display:none}
+.modal-head{display:flex;align-items:center;padding:18px 20px;border-bottom:1px solid var(--line);position:sticky;top:0;background:rgba(16,14,40,.95);z-index:2}
+.modal-head h3{font-size:17px;font-weight:800}
+.modal-head .x{margin-left:auto;font-size:22px;color:var(--sub);cursor:pointer;line-height:1;width:34px;height:34px;display:flex;align-items:center;justify-content:center;border-radius:9px}
+.modal-head .x:hover{background:var(--glass2);color:#fff}
+.modal-body{padding:18px 20px;display:flex;flex-direction:column;gap:13px}
+.modal-foot{padding:15px 20px;border-top:1px solid var(--line);display:flex;gap:10px;justify-content:flex-end;position:sticky;bottom:0;background:rgba(16,14,40,.95)}
+.field{display:flex;flex-direction:column;gap:6px}
+.field>span{font-size:12px;color:var(--sub);font-weight:600}
+#help{position:fixed;inset:0;background:rgba(4,4,16,.85);z-index:200;display:none;align-items:center;justify-content:center;padding:24px}
+#help.show{display:flex}
+#help .box{width:660px;max-width:100%;background:rgba(16,14,40,.94);border:1px solid var(--line2);border-radius:20px;padding:24px;box-shadow:var(--shadow)}
+#help h3{margin-bottom:16px;font-size:18px}
+.keys{display:grid;grid-template-columns:1fr 1fr;gap:12px 20px}
+.keys .k{display:flex;align-items:center;gap:11px;font-size:13px;color:var(--sub)}
+kbd{background:rgba(8,8,24,.7);border:1px solid var(--line);border-bottom-width:2px;border-radius:7px;padding:4px 9px;font-size:12px;font-family:ui-monospace,monospace;color:#fff;min-width:30px;text-align:center}
+.toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(10px);background:rgba(20,16,46,.96);border:1px solid var(--line2);padding:12px 20px;border-radius:12px;font-size:13px;z-index:300;opacity:0;transition:.25s;box-shadow:var(--shadow);pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.empty{color:var(--sub);font-size:12px;text-align:center;padding:14px 0}
+
+/* ===== Director monitor window ===== */
+#director{display:none}
+body.director #director{display:flex}
+body.director #app{display:none}
+#director{flex-direction:column;height:100vh;width:100vw;padding:16px;gap:14px}
+.dir-head{display:flex;align-items:center;gap:12px}
+.dir-head .badge{width:34px;height:34px;border-radius:10px;background:var(--grad);display:flex;align-items:center;justify-content:center;box-shadow:var(--glow)}
+.dir-head .badge svg{width:20px;height:20px;color:#fff}
+.dir-head h1{font-size:16px;font-weight:800}
+.dir-head .sub{font-size:11px;color:var(--sub)}
+.dir-head .st{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--sub)}
+.dir-head .st .dot{width:9px;height:9px;border-radius:50%;background:var(--warn);box-shadow:0 0 10px var(--warn)}
+.dir-body{flex:1;display:flex;gap:14px;min-height:0}
+.dir-preview-wrap{flex:1;display:flex;flex-direction:column;gap:10px;min-width:0}
+.dir-preview{position:relative;flex:1;border-radius:18px;overflow:hidden;background:#000;border:1px solid var(--line2);box-shadow:var(--glow)}
+.dir-preview img{width:100%;height:100%;object-fit:cover;display:block}
+.dir-preview .cssbg{width:100%;height:100%}
+.dir-preview .pname{position:absolute;left:16px;bottom:14px;font-size:24px;font-weight:900;color:#fff;text-shadow:0 3px 16px rgba(0,0,0,.7)}
+.dir-preview .pcap{position:absolute;left:16px;top:14px;font-size:15px;font-weight:700;color:#fff;background:rgba(124,92,255,.55);padding:5px 12px;border-radius:9px}
+.dir-preview .pblack{position:absolute;inset:0;background:#000;display:none;align-items:center;justify-content:center;color:#fff;font-size:20px;font-weight:800;letter-spacing:3px}
+.dir-preview.black .pblack{display:flex}
+.dir-transport{display:flex;gap:10px;justify-content:center}
+.dir-transport .tbtn{width:56px;height:48px;border-radius:13px;background:var(--glass2);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;transition:.15s}
+.dir-transport .tbtn:hover{background:rgba(124,92,255,.25);border-color:var(--line2)}
+.dir-transport .tbtn.on{background:var(--grad);border-color:transparent;box-shadow:var(--glow)}
+.dir-transport .tbtn svg{width:22px;height:22px}
+.dir-side{width:300px;min-width:300px;display:flex;flex-direction:column;gap:10px}
+.dir-side .panel{padding:12px;display:flex;flex-direction:column;gap:8px;min-height:0}
+.dir-side .panel h3{font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--sub);font-weight:700}
+.dir-clock{font-size:34px;font-weight:800;background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;font-variant-numeric:tabular-nums}
+.dir-list{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:6px}
+.dir-list .ds{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:10px;background:var(--glass2);border:1px solid var(--line);font-size:13px;cursor:pointer;transition:.15s}
+.dir-list .ds:hover{background:rgba(124,92,255,.18)}
+.dir-list .ds.active{border-color:transparent;background:linear-gradient(135deg,rgba(124,92,255,.3),rgba(79,140,255,.22));box-shadow:var(--glow)}
+.dir-list .ds .n{width:22px;height:22px;border-radius:6px;background:rgba(8,8,24,.6);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--acc2)}
+.dir-hint{font-size:11px;color:var(--sub);text-align:center;padding:6px}
+</style>
+</head>
+<body>
+<div id="app">
+  <aside id="sidebar">
+    <div class="sb-head">
+      <div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div>
+      <div><h1>舞台背景播放</h1><div class="sub">Stage Director · 年会/活动专用</div></div>
+      <div class="live"><span class="dot" id="liveDot"></span><span id="liveTxt">待机</span></div>
+    </div>
+    <div class="sb-scroll">
+
+      <div class="card glass">
+        <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="6 4 20 12 6 20 6 4"/></svg>播放控制</h2>
+        <div class="grid2">
+          <button class="btn" id="btnPlay"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>播放/暂停</button>
+          <button class="btn ghost" id="btnPresent"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>演示模式</button>
+        </div>
+        <div class="row" style="margin-top:11px">
+          <button class="icon-btn" id="btnPrev"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M18 5v14l-9-7zM6 5h2v14H6z"/></svg>上一幕</button>
+          <button class="icon-btn" id="btnNext">下一幕<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 5v14l9-7zM16 5h2v14h-2z"/></svg></button>
+        </div>
+        <div class="row" style="margin-top:9px">
+          <button class="icon-btn" id="btnBlack"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="7"/></svg>黑场</button>
+          <button class="icon-btn" id="btnFreeze"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M2 12h20"/></svg>冻结</button>
+          <button class="icon-btn" id="btnMute"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor" stroke="none"/><path d="M16 9l5 6M21 9l-5 6"/></svg>静音</button>
+        </div>
+        <div class="row" style="margin-top:9px">
+          <label>主音量</label>
+          <input type="range" id="masterVol" min="0" max="1" step="0.01" value="0.8">
+          <span id="volVal" style="font-size:12px;color:var(--sub);min-width:36px;text-align:right">80%</span>
+        </div>
+      </div>
+
+      <div class="card glass">
+        <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 14l3-4 3 3 4-6"/></svg>场景编排 <button class="btn sm" id="btnAddScene" style="margin-left:auto">+ 新增</button></h2>
+        <div class="scene-list" id="sceneList"></div>
+        <div class="row" style="margin-top:11px">
+          <input type="checkbox" id="autoLoop" checked>
+          <span style="font-size:12px;color:var(--sub)">循环播放列表</span>
+          <button class="icon-btn sm" id="btnDirector" style="margin-left:auto"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>导播窗</button>
+        </div>
+        <div class="hint">每幕可同时含：背景(图片/视频/纯色)+叠加视频+独立音乐。点 ▶ 直接播放该幕。</div>
+      </div>
+
+      <div class="card glass">
+        <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3v18M5 8h11l-2-3M5 8l2 3M19 21V3"/></svg>转场与显示</h2>
+        <div class="row">
+          <label>转场</label>
+          <div class="seg grow" id="transSeg">
+            <button data-v="fade" class="on">淡入</button><button data-v="ripple">涟漪</button>
+            <button data-v="zoom">缩放</button><button data-v="curtain">帘幕</button><button data-v="dissolve">溶解</button>
+          </div>
+        </div>
+        <div class="row">
+          <label>时长</label>
+          <input type="range" id="xfade" min="0" max="5" step="0.1" value="1.5">
+          <span id="xfadeVal" style="font-size:12px;color:var(--sub);min-width:42px;text-align:right">1.5s</span>
+        </div>
+        <div class="row">
+          <input type="checkbox" id="showClock" checked>
+          <span style="font-size:12px;color:var(--sub)">显示时钟</span>
+          <button class="icon-btn sm" id="btnCountdown" style="margin-left:auto"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M9 2h6"/></svg>倒计时</button>
+          <button class="icon-btn sm" id="btnClearCd">清除</button>
+          <button class="icon-btn sm" id="btnSpectrum"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h2l2-7 4 16 3-11 2 5h5"/></svg>频谱</button>
+        </div>
+        <div class="row">
+          <label>Logo</label>
+          <input type="file" id="logoFile" accept="image/*" style="display:none">
+          <button class="btn ghost sm" id="btnLogo">上传</button>
+          <button class="btn ghost sm" id="btnLogoDel" style="color:var(--bad);border-color:rgba(255,107,139,.45)">删除</button>
+          <select id="logoPos" style="max-width:110px">
+            <option value="bottom-right">右下</option><option value="bottom-left">左下</option>
+            <option value="top-right">右上</option><option value="top-left">左上</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="card glass">
+        <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h18M3 12h18M3 17h18"/><circle cx="7" cy="7" r="1.4" fill="currentColor"/><circle cx="7" cy="17" r="1.4" fill="currentColor"/></svg>媒体库 <label for="mediaUpload" class="btn sm" style="margin-left:auto;cursor:pointer">+ 上传</label><button class="btn sm" id="btnFolder" style="cursor:pointer;margin-left:6px">文件夹</button></h2>
+        <input type="file" id="mediaUpload" accept=".mp4,.webm,.ogg,.ogv,.mov,.mkv,.avi,.flv,.m4v,.wmv,.mpg,.mpeg,.ts,.m2ts,.3gp,.mp3,.wav,.oga,.m4a,.aac,.flac,.jpg,.jpeg,.png,.gif,.webp,.bmp,.svg,.heic,.avif,.tiff" multiple style="display:none">
+        <input type="file" id="mediaFolder" webkitdirectory directory multiple style="display:none">
+        <div id="mediaList" style="display:flex;flex-direction:column;gap:6px;margin-top:2px"></div>
+        <div class="hint" style="margin-top:8px">媒体存于浏览器本地(IndexedDB)，刷新/重开不丢失。「上传」可多选批量，「文件夹」可整目录导入；兼容 mp4/webm/mov/mkv/avi 等格式（能否播放取决于浏览器解码，建议转 mp4 更稳）。</div>
+      </div>
+
+      <div class="card glass">
+        <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v5h7"/></svg>工程</h2>
+        <div class="grid2">
+          <button class="btn ghost sm" id="btnExport">导出配置</button>
+          <button class="btn ghost sm" id="btnImport">导入配置</button>
+        </div>
+        <div class="grid2" style="margin-top:9px">
+          <button class="btn ghost sm" id="btnDemo">载入示例</button>
+          <button class="btn ghost sm" id="btnReset" style="border-color:rgba(255,107,139,.5);color:var(--bad)">清空全部</button>
+        </div>
+        <input type="file" id="importFile" accept="application/json" style="display:none">
+      </div>
+
+    </div>
+    <div class="sb-resizer" id="sbResizer" title="拖动调整侧栏宽度"></div>
+  </aside>
+
+  <main id="stageArea">
+    <div id="stage">
+      <div class="bg-layer" id="bgA"></div>
+      <div class="bg-layer" id="bgB"></div>
+      <div id="overlayWrap"><video id="overlayVideo" playsinline></video></div>
+      <div id="caption"></div>
+      <div id="countdown"><div class="lbl">活动倒计时</div><div class="val" id="cdVal">--:--:--</div></div>
+      <div id="clock"><div class="t" id="clkT">--:--</div><div class="d" id="clkD">----</div></div>
+      <img id="logo" style="display:none">
+      <canvas id="spectrum"></canvas>
+      <div id="blackout"></div>
+      <div id="stageMsg"><div class="big" id="smBig">就绪</div><div class="sub" id="smSub">点击「播放」或按空格开始 · 按 H 隐藏控制面板 · 按 ? 看快捷键</div></div>
+    </div>
+
+    <div id="topbar">
+      <span class="title" id="tbTitle">未播放</span>
+      <span class="sp"></span>
+      <div id="volWrap"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16 8a5 5 0 010 8" fill="none" stroke="currentColor" stroke-width="2"/></svg><input type="range" id="tbVol" min="0" max="1" step="0.01" value="0.8"></div>
+      <button class="tb-btn" id="tbPrev" title="上一幕"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M18 5v14l-9-7zM6 5h2v14H6z"/></svg></button>
+      <button class="tb-btn" id="tbPlay" title="播放/暂停"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></button>
+      <button class="tb-btn" id="tbNext" title="下一幕"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 5v14l9-7zM16 5h2v14h-2z"/></svg></button>
+      <button class="tb-btn" id="tbBlack" title="黑场"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="7"/></svg></button>
+      <button class="tb-btn" id="tbFull" title="全屏"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+      <button class="tb-btn" id="tbHelp" title="帮助"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 115 0c0 1.5-2.5 2-2.5 3.5" stroke-linecap="round"/><circle cx="12" cy="17" r="1" fill="currentColor" stroke="none"/></svg></button>
+    </div>
+
+    <div id="sceneBar">
+      <div><div class="cur" id="sbCur">—</div><div class="nxt" id="sbNxt"></div></div>
+      <div id="prog"><div></div></div>
+    </div>
+  </main>
+</div>
+
+<!-- ===== Director monitor window ===== -->
+<div id="director">
+  <div class="dir-head">
+    <div class="badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div>
+    <div><h1>导播监视屏</h1><div class="sub">Director Monitor · 拖到副屏即可双屏同步</div></div>
+    <div class="st"><span class="dot" id="dirDot"></span><span id="dirState">连接中…</span></div>
+  </div>
+  <div class="dir-body">
+    <div class="dir-preview-wrap">
+      <div class="dir-preview glass" id="dirPreview">
+        <img id="dirImg" alt="" style="display:none">
+        <video id="dirVid" muted loop playsinline style="display:none;width:100%;height:100%;object-fit:cover"></video>
+        <div class="cssbg" id="dirCss" style="display:none"></div>
+        <div class="pcap" id="dirCap" style="display:none"></div>
+        <div class="pname" id="dirName">—</div>
+        <div class="pblack">● 黑场 BLACKOUT</div>
+      </div>
+      <div class="dir-transport">
+        <button class="tbtn" id="dirPrev" title="上一幕"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M18 5v14l-9-7zM6 5h2v14H6z"/></svg></button>
+        <button class="tbtn" id="dirPlay" title="播放/暂停"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></button>
+        <button class="tbtn" id="dirNext" title="下一幕"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 5v14l9-7zM16 5h2v14h-2z"/></svg></button>
+        <button class="tbtn" id="dirBlack" title="黑场"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="7"/></svg></button>
+      </div>
+    </div>
+    <div class="dir-side">
+      <div class="panel glass">
+        <h3>现场时间</h3>
+        <div class="dir-clock" id="dirClock">--:--:--</div>
+      </div>
+      <div class="panel glass" style="flex:1">
+        <h3>场景清单（点击跳转）</h3>
+        <div class="dir-list" id="dirList"></div>
+      </div>
+      <div class="dir-hint">主舞台的任何操作都会实时同步到本监视屏</div>
+    </div>
+  </div>
+</div>
+
+<!-- SCENE MODAL -->
+<div class="modal-mask" id="sceneModal">
+  <div class="modal">
+    <div class="modal-head"><h3 id="smTitle">新增场景</h3><span class="x" id="smClose">✕</span></div>
+    <div class="modal-body">
+      <div class="field"><span>场景名称</span><input type="text" id="fName" placeholder="如：开场欢迎 / 抽奖环节"></div>
+      <div class="field"><span>背景类型</span>
+        <div class="seg" id="bgTypeSeg">
+          <button data-v="color" class="on">纯色/渐变</button><button data-v="image">图片</button>
+          <button data-v="video">视频</button><button data-v="none">无</button>
+        </div>
+      </div>
+      <div class="field" id="bgColorField"><span>背景色 / 渐变 (CSS)</span><input type="text" id="fBgColor" value="linear-gradient(135deg,#0a0e27,#1b2a4a)"></div>
+      <div class="field" id="bgMediaField" style="display:none"><span>背景素材</span>
+        <div class="grid2"><select id="fBgMedia"></select><button class="btn ghost sm" id="fBgUpload" style="cursor:pointer">本地上传</button></div>
+        <label style="font-size:12px;color:var(--sub);display:flex;gap:6px;align-items:center"><input type="checkbox" id="fBgMuted" checked> 背景视频静音(推荐，音乐单独走音轨)</label>
+      </div>
+      <div class="field"><span>叠加视频(可选)</span>
+        <div class="grid2"><select id="fOverlay"></select><button class="btn ghost sm" id="fOvUpload" style="cursor:pointer">本地上传</button></div>
+        <div class="row" style="gap:10px"><label style="min-width:auto">透明度</label><input type="range" id="fOvOp" min="0.1" max="1" step="0.05" value="1" style="flex:1"><label style="min-width:auto"><input type="checkbox" id="fOvMuted" checked> 静音</label></div>
+      </div>
+      <div class="field"><span>音乐音轨(可选)</span>
+        <div class="grid2"><select id="fAudio"></select><button class="btn ghost sm" id="fAuUpload" style="cursor:pointer">本地上传</button></div>
+        <div class="row" style="gap:10px"><label style="min-width:auto">音量</label><input type="range" id="fAuVol" min="0" max="1" step="0.05" value="1" style="flex:1"><label style="min-width:auto"><input type="checkbox" id="fAuLoop" checked> 循环</label></div>
+      </div>
+      <div class="field"><span>字幕 / 标题</span><input type="text" id="fCaption" placeholder="如：欢迎莅临 2026 年度盛典"></div>
+      <div class="field"><span>副标题</span><input type="text" id="fSub" placeholder="如：ANNUAL CEREMONY · 2026（可选）"></div>
+      <div class="row">
+        <label>位置</label>
+        <select id="fCapPos" style="max-width:110px"><option value="top">顶部</option><option value="center">居中</option><option value="bottom" selected>底部</option></select>
+        <label style="min-width:auto">颜色</label><input type="color" id="fCapColor" value="#ffffff">
+        <label style="min-width:auto">字号</label><input type="number" id="fCapSize" value="48" min="16" max="140" style="max-width:70px">
+      </div>
+      <div class="row"><label>倒计时</label><input type="datetime-local" id="fCountdown"><span style="font-size:11px;color:var(--sub)">留空则不显示</span></div>
+      <div class="row"><label>自动播</label><input type="number" id="fDuration" value="0" min="0" step="1" style="max-width:80px"><span style="font-size:11px;color:var(--sub)">秒，0=手动切换</span></div>
+    </div>
+    <div class="modal-foot"><button class="btn ghost" id="smCancel">取消</button><button class="btn" id="smSave">保存场景</button></div>
+  </div>
+</div>
+
+<div id="help">
+  <div class="box">
+    <h3>⌨ 键盘快捷键</h3>
+    <div class="keys">
+      <div class="k"><kbd>空格</kbd> 播放/暂停(冻结)</div>
+      <div class="k"><kbd>→</kbd>/<kbd>Page↓</kbd> 下一幕</div>
+      <div class="k"><kbd>←</kbd>/<kbd>Page↑</kbd> 上一幕</div>
+      <div class="k"><kbd>1</kbd>~<kbd>9</kbd> 跳转场景</div>
+      <div class="k"><kbd>F</kbd> 全屏</div>
+      <div class="k"><kbd>B</kbd> 黑场</div>
+      <div class="k"><kbd>M</kbd> 静音</div>
+      <div class="k"><kbd>H</kbd> 隐藏/显示面板</div>
+      <div class="k"><kbd>P</kbd> 演示模式</div>
+      <div class="k"><kbd>?</kbd> 本帮助</div>
+      <div class="k"><kbd>Esc</kbd> 退出</div>
+      <div class="k"><kbd>双击</kbd> 舞台=黑场</div>
+    </div>
+    <div style="margin-top:18px;text-align:right"><button class="btn" id="helpClose">知道了</button></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+const ICON={
+  play:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>',
+  pause:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>',
+  next:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 5v14l9-7zM16 5h2v14h-2z"/></svg>',
+  prev:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M18 5v14l-9-7zM6 5h2v14H6z"/></svg>',
+  edit:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20h4L19 9l-4-4L4 16v4z"/></svg>',
+  trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>',
+  up:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5M6 11l6-6 6 6"/></svg>',
+  down:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M6 13l6 6 6-6"/></svg>',
+  video:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3z" fill="currentColor" stroke="none"/></svg>'
+};
+const DIRECTOR = (()=>{try{const p=new URLSearchParams(location.search);return p.get('view')==='director';}catch(e){return false;}})();
+if(DIRECTOR) document.body.classList.add('director');
+
+const S={scenes:[],settings:{transition:'fade',crossfade:1.5,masterVolume:0.8,loop:true,showClock:true,countdownTarget:'',logoPos:'bottom-right',spectrum:false},
+  current:-1,playing:false,blackout:false,muted:false,presenting:false,activeLayer:'A',token:0,autoTimer:null,progTimer:null,sceneStart:0,curBgId:null,curOvId:null,curAuId:null,_dirBgId:null};
+
+const $=id=>document.getElementById(id);
+const stage=$('stage'),bgA=$('bgA'),bgB=$('bgB');
+const overlayWrap=$('overlayWrap'),overlayVideo=$('overlayVideo');
+const captionEl=$('caption'),audioEl=new Audio(),blackoutEl=$('blackout'),logoEl=$('logo');
+const mediaCache=new Map();
+
+/* ---------- IndexedDB ---------- */
+const DB_NAME='stagePlayerDB',STORE='media';
+function openDB(){return new Promise((res,rej)=>{const r=indexedDB.open(DB_NAME,1);r.onupgradeneeded=()=>r.result.createObjectStore(STORE,{keyPath:'id'});r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});}
+function dbPut(rec){return openDB().then(db=>new Promise((res,rej)=>{const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).put(rec);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error);}));}
+function dbGetAll(){return openDB().then(db=>new Promise((res,rej)=>{const tx=db.transaction(STORE,'readonly');const req=tx.objectStore(STORE).getAll();req.onsuccess=()=>res(req.result);req.onerror=()=>rej(req.error);}));}
+function dbDelete(id){return openDB().then(db=>new Promise((res,rej)=>{const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).delete(id);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error);}));}
+async function ensureURL(id){if(!id)return null;if(mediaCache.has(id))return mediaCache.get(id).url;const all=await dbGetAll();const rec=all.find(m=>m.id===id);if(!rec)return null;const url=URL.createObjectURL(rec.blob);mediaCache.set(id,{url,blob:rec.blob,name:rec.name,cat:rec.cat});return url;}
+function catOf(name,type){
+  const ext=(String(name).split('.').pop()||'').toLowerCase();
+  const V=['mp4','webm','ogg','ogv','mov','mkv','avi','flv','m4v','mpg','mpeg','ts','m2ts','3gp','wmv'];
+  const I=['jpg','jpeg','png','gif','webp','bmp','svg','heic','heif','avif','tiff','tif'];
+  const A=['mp3','wav','ogg','oga','m4a','aac','flac','wma','aiff','opus','caf'];
+  if(V.includes(ext))return 'video';
+  if(I.includes(ext))return 'image';
+  if(A.includes(ext))return 'audio';
+  if(type)return type.startsWith('video')?'video':type.startsWith('image')?'image':type.startsWith('audio')?'audio':'file';
+  return 'file';
+}
+function fmtSize(b){if(b<1024)return b+'B';if(b<1048576)return (b/1024).toFixed(0)+'KB';return (b/1048576).toFixed(1)+'MB';}
+function getURL(id){if(!id)return null;const m=mediaCache.get(id);return m?m.url:null;}
+
+/* ---------- media upload ---------- */
+async function uploadMedia(files,onDone){
+  const arr=Array.from(files||[]);          // 先快照成数组，避免 FileList 被清空后丢失
+  if(arr.length===0){if(onDone)onDone();return;}
+  for(const f of arr){
+    const id=(crypto.randomUUID?crypto.randomUUID():'m'+Date.now()+Math.random().toString(16).slice(2));
+    mediaCache.set(id,{url:URL.createObjectURL(f),blob:f,name:f.name,cat:catOf(f.name,f.type)});
+    try{await dbPut({id,name:f.name,type:f.type,cat:catOf(f.name,f.type),size:f.size,blob:f});}catch(e){/* 即使 DB 失败也保留在内存 */}  // 单文件失败不影响整批
+  }
+  renderMedia();renderSceneModalOptions();toast(`已上传 ${arr.length} 个文件`);if(onDone)onDone();
+}
+$('mediaUpload').addEventListener('change',e=>{const arr=[...e.target.files];e.target.value='';if(arr.length)uploadMedia(arr);});
+function renderMedia(){
+  const box=$('mediaList');box.innerHTML='';
+  if(mediaCache.size===0){box.innerHTML='<div class="empty">暂无媒体，点击「上传」添加</div>';return;}
+  for(const [id,m] of mediaCache.entries()){
+    const div=document.createElement('div');div.className='media-item';
+    const tl=m.cat==='video'?'视频':m.cat==='image'?'图片':m.cat==='audio'?'音频':'文件';
+    const tc=m.cat==='video'?'v':m.cat==='image'?'i':m.cat==='audio'?'a':'';
+    div.innerHTML=`<span class="ty ${tc}">${tl}</span><span class="fn">${escapeHtml(m.name)}</span><span class="sz">${fmtSize(m.blob.size)}</span>`;
+    const del=document.createElement('button');del.className='del';del.innerHTML=ICON.trash;del.title='删除';
+    del.onclick=e=>{e.stopPropagation();deleteMedia(id);};
+    div.appendChild(del);box.appendChild(div);
+  }
+}
+function findIdByUrl(url){for(const [id,v] of mediaCache)if(v.url===url)return id;return null;}
+function deleteMedia(id){
+  const m=mediaCache.get(id);                        // ① 先删内存缓存（同步、必定生效，不受 DB 异常影响）
+  if(m){URL.revokeObjectURL(m.url);mediaCache.delete(id);}
+  for(const sc of S.scenes){                         // 清除所有场景对该媒体的引用，避免缩略图/播放缺失
+    if(sc.bgMediaId===id)sc.bgMediaId=null;
+    if(sc.overlayId===id)sc.overlayId=null;
+    if(sc.audioId===id)sc.audioId=null;
+  }
+  if(S.settings.logoId===id){S.settings.logoId=null;logoEl.style.display='none';}
+  renderScenes();renderMedia();renderSceneModalOptions();saveProject();toast('已删除');
+  dbDelete(id).catch(()=>{});                         // ② DB 清理放最后，失败也不影响 UI
+}
+
+/* ---------- scenes ---------- */
+function defaultScene(name){return {id:(crypto.randomUUID?crypto.randomUUID():'s'+Date.now()),name:name||'新场景',
+  bgType:'color',bgColor:'linear-gradient(135deg,#0a0e27,#1b2a4a)',bgMediaId:null,bgMuted:true,
+  overlayId:null,overlayMuted:true,overlayOpacity:1,audioId:null,audioLoop:true,audioVolume:1,
+  caption:'',subtitle:'',captionPos:'bottom',captionColor:'#ffffff',captionSize:48,countdownTarget:'',duration:0};}
+function thumbHTML(sc){
+  if(sc.bgType==='image'&&sc.bgMediaId&&mediaCache.has(sc.bgMediaId))return `<img src="${mediaCache.get(sc.bgMediaId).url}" alt="">`;
+  if(sc.bgType==='color')return `<div class="thumbcss" style="background:${escapeAttr(sc.bgColor)}"></div>`;
+  if(sc.bgType==='video')return `<div class="thumbvid">${ICON.video}<span>视频</span></div>`;
+  return `<div class="thumbcss" style="background:#0a0a1f"></div>`;
+}
+function renderScenes(){
+  const box=$('sceneList');box.innerHTML='';
+  if(S.scenes.length===0){box.innerHTML='<div class="empty">还没有场景，点击「+ 新增」或「载入示例」</div>';updateSceneBar();return;}
+  S.scenes.forEach((sc,i)=>{
+    const div=document.createElement('div');div.className='scene'+(i===S.current?' active':'');
+    const tags=[];
+    if(sc.bgType==='image')tags.push('<span class="tag">背景图</span>');
+    else if(sc.bgType==='video')tags.push('<span class="tag">背景视频</span>');
+    else if(sc.bgType==='color')tags.push('<span class="tag">纯色</span>');
+    if(sc.overlayId)tags.push('<span class="tag">叠加</span>');
+    if(sc.audioId)tags.push('<span class="tag">音乐</span>');
+    if(sc.caption)tags.push('<span class="tag">字幕</span>');
+    if(sc.duration>0)tags.push('<span class="tag">'+sc.duration+'s</span>');
+    const broken=[];
+    if(sc.bgMediaId&&!mediaCache.has(sc.bgMediaId))broken.push('bg');
+    if(sc.overlayId&&!mediaCache.has(sc.overlayId))broken.push('ov');
+    if(sc.audioId&&!mediaCache.has(sc.audioId))broken.push('au');
+    const bt=broken.length?`<span class="tag broken">缺失:${broken.join('/')}</span>`:'';
+    div.innerHTML=`<div class="thumb">${thumbHTML(sc)}</div><div class="meta"><div class="nm">${escapeHtml(sc.name)}</div><div class="tags">${tags.join('')}${bt}</div></div>`;
+    const acts=document.createElement('div');acts.className='acts';
+    const play=document.createElement('button');play.className='mini play';play.innerHTML=ICON.play;play.title='播放此幕';play.onclick=e=>{e.stopPropagation();goTo(i);playAll();};
+    const edit=document.createElement('button');edit.className='mini';edit.innerHTML=ICON.edit;edit.title='编辑';edit.onclick=e=>{e.stopPropagation();openSceneModal(i);};
+    const up=document.createElement('button');up.className='mini';up.innerHTML=ICON.up;up.title='上移';up.onclick=e=>{e.stopPropagation();moveScene(i,-1);};
+    const down=document.createElement('button');down.className='mini';down.innerHTML=ICON.down;down.title='下移';down.onclick=e=>{e.stopPropagation();moveScene(i,1);};
+    const del=document.createElement('button');del.className='mini del';del.innerHTML=ICON.trash;del.title='删除';del.onclick=e=>{e.stopPropagation();deleteScene(i);};
+    acts.append(play,edit,up,down,del);div.appendChild(acts);
+    div.onclick=()=>goTo(i);box.appendChild(div);
+  });
+  updateSceneBar();syncDirector();
+}
+function moveScene(i,dir){const j=i+dir;if(j<0||j>=S.scenes.length)return;[S.scenes[i],S.scenes[j]]=[S.scenes[j],S.scenes[i]];renderScenes();saveProject();}
+function deleteScene(i){const was=i===S.current;S.scenes.splice(i,1);if(was){S.current=-1;clearStage();}else if(i<S.current)S.current--;renderScenes();saveProject();}
+function updateSceneBar(){
+  const cur=S.scenes[S.current];
+  $('sbCur').textContent=cur?('● '+cur.name):'—';
+  const nxt=S.scenes[S.current+1];
+  $('sbNxt').textContent=nxt?('下一幕: '+nxt.name):(S.settings.loop&&S.scenes.length?'下一幕: '+S.scenes[0].name:'已是最后一幕');
+  $('tbTitle').textContent=cur?(cur.name+'  ·  '+S.scenes.length+'幕'):'未播放';
+}
+
+/* ---------- playback engine ---------- */
+function setLayerContent(layer,sc,play){
+  layer.innerHTML='';layer.style.background='transparent';
+  if(sc.bgType==='color'||sc.bgType==='none'){layer.style.background=sc.bgType==='color'?sc.bgColor:'#000';return;}
+  const url=getURL(sc.bgMediaId);
+  if(!url){layer.style.background='#000';return;}
+  if(sc.bgType==='image'){const img=new Image();img.src=url;img.alt='';layer.appendChild(img);}
+  else if(sc.bgType==='video'){const v=document.createElement('video');v.src=url;v.loop=true;v.muted=sc.bgMuted;v.playsInline=true;v.autoplay=!!play;layer.appendChild(v);if(play)v.play().catch(()=>{});else v.pause();}
+}
+function clearLayerMask(el){el.style.maskImage='';el.style.webkitMaskImage='';el.style.maskComposite='';el.style.webkitMaskComposite='';el.style.removeProperty('--sq');el.style.removeProperty('--cell');}
+function applyTransition(target,source,type,dur,token){
+  target.style.transition='none';source.style.transition='none';
+  clearLayerMask(target);clearLayerMask(source);            // 清除上一次转场可能残留的 mask
+  target._dissolve=false;source._dissolve=false;             // 重置溶解标记，避免连续切幕时残留
+  if(type==='cut'||dur<=0){target.style.opacity='1';target.style.transform='none';target.style.clipPath='none';source.style.opacity='0';source.style.transform='none';return;}
+  let tS,tE,sE;
+  if(type==='dissolve'||type==='cut'){                      // 方块溶解：新画面通过由小到大的方格网格"揭开"旧画面
+    tS={o:1};tE={o:1};sE={o:1};
+    const cell=40;                                          // 方格边长(px)，越小方块越多
+    const mask=`repeating-linear-gradient(to right,#000 0,#000 var(--sq),transparent var(--sq),transparent ${cell}px),repeating-linear-gradient(to bottom,#000 0,#000 var(--sq),transparent var(--sq),transparent ${cell}px)`;
+    target.style.setProperty('--cell',cell+'px');target.style.setProperty('--sq','0px');
+    target.style.maskImage=mask;target.style.webkitMaskImage=mask;target.style.maskComposite='intersect';target.style.webkitMaskComposite='source-in';
+    target._dissolve=true;
+  }
+  else if(type==='ripple'||type==='slide'){tS={o:1,cp:'circle(0% at 50% 50%)'};tE={o:1,cp:'circle(150% at 50% 50%)'};sE={o:0};}      // 涟漪：新画面从中心圆形扩散揭示
+  else if(type==='zoom'){tS={o:0,x:'scale(.85)'};tE={o:1,x:'scale(1)'};sE={o:0,x:'scale(1.12)'};}
+  else if(type==='curtain'){tS={o:1,cp:'inset(0 50% 0 50%)'};tE={o:1,cp:'inset(0 0 0 0)'};sE={o:0};}
+  else {tS={o:0,x:'none'};tE={o:1,x:'none'};sE={o:0,x:'none'};}
+  target.style.opacity=tS.o;target.style.transform=tS.x||'none';target.style.clipPath=tS.cp||'none';
+  source.style.opacity='1';source.style.transform='none';source.style.clipPath='none';
+  target.style.zIndex='2';source.style.zIndex='1';          // 新图层置于旧图层之上，涟漪/滑动才能正确"揭示"
+  void target.offsetWidth;
+  const tr=`opacity ${dur}s ease, transform ${dur}s ease, clip-path ${dur}s ease${target._dissolve?', --sq '+dur+'s ease':''}`;
+  target.style.transition=tr;source.style.transition=tr;
+  target.style.opacity=tE.o;target.style.transform=tE.x||'none';target.style.clipPath=tE.cp||'none';
+  if(target._dissolve)target.style.setProperty('--sq',target.style.getPropertyValue('--cell'));   // 方格由 0 长大到填满 → 方块溶解
+  source.style.opacity=sE.o;source.style.transform=sE.x||'none';
+  setTimeout(()=>{if(token!==S.token)return;source.innerHTML='';source.style.opacity='0';source.style.transform='none';source.style.clipPath='none';if(target._dissolve){clearLayerMask(target);target._dissolve=false;}},dur*1000+80);
+}
+function setOverlay(sc,dur){
+  if(!sc.overlayId){overlayWrap.style.transition='none';overlayWrap.style.opacity='0';overlayVideo.pause();overlayVideo.removeAttribute('src');return;}
+  const url=getURL(sc.overlayId);if(!url){overlayWrap.style.opacity='0';return;}
+  overlayWrap.style.transition=`opacity ${Math.max(0.2,dur*0.5)}s ease`;overlayWrap.style.opacity='0';
+  setTimeout(()=>{overlayVideo.src=url;overlayVideo.loop=true;overlayVideo.muted=sc.overlayMuted;overlayVideo.play().then(()=>{overlayWrap.style.opacity=sc.overlayOpacity;}).catch(()=>{});},dur*1000*0.45);
+}
+function setAudio(sc){
+  if(!sc.audioId){audioEl.pause();audioEl.removeAttribute('src');return;}
+  const url=getURL(sc.audioId);if(!url){audioEl.pause();return;}
+  audioEl.loop=sc.audioLoop;audioEl.src=url;applyAudioVolume();audioEl.play().catch(()=>{});
+}
+function applyAudioVolume(){const sc=S.scenes[S.current];let v=S.settings.masterVolume*(sc?sc.audioVolume:1);if(S.muted)v=0;audioEl.volume=Math.max(0,Math.min(1,v));}
+function setCaption(sc){
+  if(!sc.caption&&!sc.subtitle){captionEl.style.opacity='0';return;}
+  captionEl.innerHTML='';
+  if(sc.caption){const t=document.createElement('div');t.className='cap-title';t.textContent=sc.caption;captionEl.appendChild(t);}
+  if(sc.subtitle){const s=document.createElement('div');s.className='cap-sub';s.textContent=sc.subtitle;captionEl.appendChild(s);}
+  captionEl.style.color=sc.captionColor;captionEl.style.fontSize=sc.captionSize+'px';
+  captionEl.style.top='auto';captionEl.style.bottom='auto';captionEl.style.transform='none';
+  if(sc.captionPos==='top')captionEl.style.top='8%';
+  else if(sc.captionPos==='center'){captionEl.style.top='50%';captionEl.style.transform='translateY(-50%)';}
+  else captionEl.style.bottom='10%';
+  captionEl.style.opacity=S.blackout?'0':'1';
+}
+function applySceneLive(i){               // 编辑当前播放幕时，把参数实时同步到舞台（无需重新切幕）
+  const sc=S.scenes[i];if(i!==S.current)return;
+  setCaption(sc);                          // 字幕/标题
+  const layer=S.activeLayer==='A'?bgA:bgB;
+  // 背景：仅当媒体 id 变化才重建(否则视频/图片会从头重播)；只改静音等属性时直接改现有元素
+  if(sc.bgMediaId!==S.curBgId){setLayerContent(layer,sc);S.curBgId=sc.bgMediaId;}
+  else layer.querySelectorAll('video').forEach(v=>{v.muted=sc.bgMuted;});
+  // 叠加视频：同理
+  if(sc.overlayId!==S.curOvId){setOverlay(sc,0);S.curOvId=sc.overlayId;}
+  else {overlayVideo.muted=sc.overlayMuted;overlayWrap.style.opacity=sc.overlayOpacity;}
+  // 音乐：仅当 id 变化才重建 audio，否则只更新音量/循环，不打断播放
+  if(sc.audioId!==S.curAuId){setAudio(sc);S.curAuId=sc.audioId;}
+  else {audioEl.loop=sc.audioLoop;applyAudioVolume();}
+  syncDirector();
+}
+async function playScene(index,transition=true){
+  if(index<0||index>=S.scenes.length)return;
+  const sc=S.scenes[index];const token=++S.token;S.current=index;
+  const targetKey=S.activeLayer==='A'?'B':'A';
+  const target=targetKey==='A'?bgA:bgB;const source=S.activeLayer==='A'?bgA:bgB;
+  const type=transition?S.settings.transition:'cut';const dur=transition?S.settings.crossfade:0;
+  await ensureURL(sc.bgMediaId);await ensureURL(sc.overlayId);await ensureURL(sc.audioId);
+  setLayerContent(target,sc,true);applyTransition(target,source,type,dur,token);S.activeLayer=targetKey;
+  setOverlay(sc,dur);setAudio(sc);setCaption(sc);
+  S.curBgId=sc.bgMediaId;S.curOvId=sc.overlayId;S.curAuId=sc.audioId;
+  $('stageMsg').style.opacity='0';
+  renderScenes();updateSceneBar();saveProject();syncDirector();
+  clearTimeout(S.autoTimer);clearInterval(S.progTimer);
+  if(sc.duration>0&&S.playing){S.sceneStart=Date.now();S.progTimer=setInterval(()=>updateProgress(sc.duration),100);S.autoTimer=setTimeout(()=>{if(S.playing)next();},sc.duration*1000);}
+  else $('prog').firstElementChild.style.width='0%';
+}
+function updateProgress(dur){const el=$('prog').firstElementChild;const p=Math.min(1,(Date.now()-S.sceneStart)/(dur*1000));el.style.width=(p*100)+'%';}
+function clearStage(){bgA.innerHTML='';bgB.innerHTML='';bgA.style.opacity='0';bgB.style.opacity='0';overlayWrap.style.opacity='0';overlayVideo.pause();audioEl.pause();captionEl.style.opacity='0';$('stageMsg').style.opacity='1';}
+function showFirstScene(i){            // 默认静态加载某幕(不自动播放)，让舞台与字幕在打开即有内容
+  if(i<0||i>=S.scenes.length)return;
+  const sc=S.scenes[i];S.current=i;
+  const target=S.activeLayer==='A'?bgB:bgA;const source=S.activeLayer==='A'?bgA:bgB;
+  setLayerContent(source,sc,false);source.querySelectorAll('video').forEach(v=>v.pause());
+  source.style.opacity='1';source.style.zIndex='2';source.style.transform='none';source.style.clipPath='none';
+  target.innerHTML='';target.style.opacity='0';target.style.zIndex='1';target.style.transform='none';target.style.clipPath='none';
+  S.activeLayer=(S.activeLayer==='A')?'B':'A';
+  setCaption(sc);
+  if(sc.overlayId){const u=getURL(sc.overlayId);if(u){overlayVideo.src=u;overlayVideo.loop=true;overlayVideo.muted=sc.overlayMuted;overlayVideo.pause();overlayWrap.style.opacity=sc.overlayOpacity;}else overlayWrap.style.opacity='0';}
+  else {overlayWrap.style.opacity='0';overlayVideo.pause();}
+  if(sc.audioId){const u=getURL(sc.audioId);if(u){audioEl.loop=sc.audioLoop;audioEl.src=u;applyAudioVolume();audioEl.pause();}}else audioEl.pause();
+  S.curBgId=sc.bgMediaId;S.curOvId=sc.overlayId;S.curAuId=sc.audioId;
+  $('stageMsg').style.opacity='0';renderScenes();updateSceneBar();
+}
+function goTo(i){if(i<0||i>=S.scenes.length)return;playScene(i);}
+function next(){if(!S.scenes.length)return;let i=S.current+1;if(i>=S.scenes.length){if(S.settings.loop)i=0;else{toast('已是最后一幕');return;}}playScene(i);}
+function prev(){if(!S.scenes.length)return;let i=S.current-1;if(i<0){if(S.settings.loop)i=S.scenes.length-1;else i=0;}playScene(i);}
+function playAll(){
+  S.playing=true;$('btnPlay').innerHTML='<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>暂停';
+  $('tbPlay').innerHTML=ICON.pause;$('liveDot').style.background='var(--ok)';$('liveDot').style.boxShadow='0 0 10px var(--ok)';$('liveTxt').textContent='直播中';
+  const sc=S.scenes[S.current];if(!sc){if(S.scenes.length)playScene(0);return;}
+  const layer=S.activeLayer==='A'?bgA:bgB;layer.querySelectorAll('video').forEach(v=>v.play().catch(()=>{}));
+  if(sc.overlayId)overlayVideo.play().catch(()=>{});if(sc.audioId)audioEl.play().catch(()=>{});
+  if(sc.duration>0){S.sceneStart=Date.now();clearInterval(S.progTimer);S.progTimer=setInterval(()=>updateProgress(sc.duration),100);clearTimeout(S.autoTimer);S.autoTimer=setTimeout(()=>{if(S.playing)next();},sc.duration*1000);}
+  if(S.settings.spectrum)startSpectrum();
+  if(audioCtx)audioCtx.resume();
+  syncDirector();
+}
+function pauseAll(){
+  S.playing=false;$('btnPlay').innerHTML='<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>播放/暂停';
+  $('tbPlay').innerHTML=ICON.play;$('liveDot').style.background='var(--warn)';$('liveDot').style.boxShadow='0 0 10px var(--warn)';$('liveTxt').textContent='已冻结';
+  const layer=S.activeLayer==='A'?bgA:bgB;layer.querySelectorAll('video').forEach(v=>v.pause());overlayVideo.pause();audioEl.pause();
+  clearTimeout(S.autoTimer);clearInterval(S.progTimer);syncDirector();
+}
+function togglePlay(){if(S.playing)pauseAll();else{if(S.current<0&&S.scenes.length)playScene(0);playAll();}}
+
+/* ---------- blackout / mute / full / present ---------- */
+function toggleBlackout(){S.blackout=!S.blackout;blackoutEl.classList.toggle('on',S.blackout);$('btnBlack').classList.toggle('on',S.blackout);$('tbBlack').classList.toggle('on',S.blackout);
+  const cur=S.scenes[S.current];captionEl.style.opacity=(S.blackout||!cur||(!cur.caption&&!cur.subtitle))?'0':'1';syncDirector();}
+function toggleMute(){S.muted=!S.muted;$('btnMute').classList.toggle('on',S.muted);applyAudioVolume();if(audioCtx)audioCtx.resume();syncDirector();}
+function toggleFull(){if(!document.fullscreenElement)document.documentElement.requestFullscreen?.().catch(()=>{});else document.exitFullscreen?.();}
+function togglePresent(){S.presenting=!S.presenting;document.body.classList.toggle('present',S.presenting);if(S.presenting)toggleFull();}
+
+/* ---------- clock / countdown ---------- */
+function parseCountdown(s){if(!s)return NaN;let t=new Date(s).getTime();if(!isNaN(t))return t;
+  t=new Date(String(s).replace(' ','T')).getTime();if(!isNaN(t))return t;
+  const m=/(\d{4})[-/](\d{1,2})[-/](\d{1,2})[ T](\d{1,2}):(\d{1,2})(?::(\d{2}))?/.exec(s);
+  if(m)return new Date(+m[1],+m[2]-1,+m[3],+m[4],+m[5],m[6]?+m[6]:0).getTime();
+  return NaN;}
+function tick(){
+  const now=new Date();
+  const hh=String(now.getHours()).padStart(2,'0'),mm=String(now.getMinutes()).padStart(2,'0'),ss=String(now.getSeconds()).padStart(2,'0');
+  $('clkT').textContent=`${hh}:${mm}`;$('clock').style.display=S.settings.showClock?'block':'none';
+  const wd=['日','一','二','三','四','五','六'][now.getDay()];
+  $('clkD').textContent=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} 周${wd}`;
+  const sc=S.scenes[S.current];const target=(sc&&sc.countdownTarget)?sc.countdownTarget:S.settings.countdownTarget;
+  const cd=$('countdown');
+  if(target){const t=parseCountdown(target);let diff=Math.floor((t-now.getTime())/1000);if(isNaN(diff)){cd.style.display='none';return;}cd.style.display='block';
+    if(diff<=0){$('cdVal').textContent='00:00:00';cd.querySelector('.lbl').textContent='已开始';}
+    else{const d=Math.floor(diff/86400);diff%=86400;const h=Math.floor(diff/3600);diff%=3600;const m=Math.floor(diff/60);const s=diff%60;const pad=n=>String(n).padStart(2,'0');
+      $('cdVal').textContent=(d>0?d+'天 ':'')+`${pad(h)}:${pad(m)}:${pad(s)}`;cd.querySelector('.lbl').textContent=(sc&&sc.countdownTarget)?'本幕倒计时':'活动倒计时';}}
+  else cd.style.display='none';
+  $('dirClock').textContent=`${hh}:${mm}:${ss}`;
+}
+
+/* ---------- scene modal ---------- */
+let editingIndex=-1;
+function renderSceneModalOptions(){fillSelect($('fBgMedia'),'video','image');fillSelect($('fOverlay'),'video');fillSelect($('fAudio'),'audio');}
+function fillSelect(sel,...cats){const cur=sel.value;sel.innerHTML='<option value="">— 未选择 —</option>';for(const [id,m] of mediaCache){if(!cats.includes(m.cat))continue;const o=document.createElement('option');o.value=id;o.textContent=m.name;sel.appendChild(o);}sel.value=cur;}
+function openSceneModal(index){
+  editingIndex=(index==null)?-1:index;renderSceneModalOptions();
+  const sc=index!=null&&index>=0?S.scenes[index]:defaultScene();
+  $('smTitle').textContent=index!=null&&index>=0?'编辑场景':'新增场景';
+  $('fName').value=sc.name;setSeg('bgTypeSeg',sc.bgType);$('fBgColor').value=sc.bgColor;$('fBgMedia').value=sc.bgMediaId||'';$('fBgMuted').checked=sc.bgMuted;
+  $('fOverlay').value=sc.overlayId||'';$('fOvMuted').checked=sc.overlayMuted;$('fOvOp').value=sc.overlayOpacity;$('fAudio').value=sc.audioId||'';
+  $('fAuVol').value=sc.audioVolume;$('fAuLoop').checked=sc.audioLoop;$('fCaption').value=sc.caption;$('fSub').value=sc.subtitle||'';$('fCapPos').value=sc.captionPos;
+  $('fCapColor').value=sc.captionColor;$('fCapSize').value=sc.captionSize;$('fCountdown').value=sc.countdownTarget||'';$('fDuration').value=sc.duration;
+  toggleBgFields(sc.bgType);$('sceneModal').classList.add('show');
+}
+function closeSceneModal(){$('sceneModal').classList.remove('show');}
+function toggleBgFields(t){$('bgColorField').style.display=(t==='color')?'flex':'none';$('bgMediaField').style.display=(t==='image'||t==='video')?'flex':'none';}
+function setSeg(segId,val){document.querySelectorAll('#'+segId+' button').forEach(b=>b.classList.toggle('on',b.dataset.v===val));}
+$('bgTypeSeg').addEventListener('click',e=>{if(e.target.dataset.v){setSeg('bgTypeSeg',e.target.dataset.v);toggleBgFields(e.target.dataset.v);}});
+$('transSeg').addEventListener('click',e=>{if(e.target.dataset.v){setSeg('transSeg',e.target.dataset.v);S.settings.transition=e.target.dataset.v;saveProject();toast('转场：'+e.target.textContent);}});
+function quickUpload(accept,after){const inp=document.createElement('input');inp.type='file';inp.accept=accept;inp.onchange=()=>{if(inp.files.length)uploadMedia(inp.files,after);};inp.click();}
+$('fBgUpload').onclick=()=>quickUpload('video/*,image/*',()=>renderSceneModalOptions());
+$('fOvUpload').onclick=()=>quickUpload('video/*',()=>renderSceneModalOptions());
+$('fAuUpload').onclick=()=>quickUpload('audio/*',()=>renderSceneModalOptions());
+$('smSave').onclick=()=>{
+  const name=$('fName').value.trim()||'未命名场景';const bgType=document.querySelector('#bgTypeSeg button.on').dataset.v;
+  const sc=editingIndex>=0?S.scenes[editingIndex]:defaultScene();
+  sc.name=name;sc.bgType=bgType;sc.bgColor=$('fBgColor').value;
+  sc.bgMediaId=(bgType==='image'||bgType==='video')?$('fBgMedia').value||null:null;sc.bgMuted=$('fBgMuted').checked;
+  sc.overlayId=$('fOverlay').value||null;sc.overlayMuted=$('fOvMuted').checked;sc.overlayOpacity=parseFloat($('fOvOp').value);
+  sc.audioId=$('fAudio').value||null;sc.audioVolume=parseFloat($('fAuVol').value);sc.audioLoop=$('fAuLoop').checked;
+  sc.caption=$('fCaption').value;sc.subtitle=$('fSub').value;sc.captionPos=$('fCapPos').value;sc.captionColor=$('fCapColor').value;sc.captionSize=parseInt($('fCapSize').value);
+  sc.countdownTarget=$('fCountdown').value||'';sc.duration=parseInt($('fDuration').value)||0;
+  if(editingIndex<0)S.scenes.push(sc);
+  if(editingIndex>=0&&editingIndex===S.current)applySceneLive(editingIndex);   // 编辑的是当前播放幕 → 实时同步
+  renderScenes();saveProject();closeSceneModal();toast(editingIndex>=0?'场景已更新':'场景已添加');
+};
+
+/* ---------- project ---------- */
+const LS_KEY='stagePlayer.project';
+function saveProject(){try{localStorage.setItem(LS_KEY,JSON.stringify({scenes:S.scenes,settings:S.settings}));}catch(e){}}
+function loadProject(){try{const raw=localStorage.getItem(LS_KEY);if(!raw)return false;const d=JSON.parse(raw);S.scenes=d.scenes||[];S.settings=Object.assign(S.settings,d.settings||{});
+  if(S.settings.transition==='cut')S.settings.transition='dissolve';   // 旧「硬切」迁移为「溶解」
+  if(S.settings.transition==='slide')S.settings.transition='ripple';   // 旧「滑动」迁移为「涟漪」
+  return true;}catch(e){return false;}}
+function exportConfig(){const data={app:'stage-background-player',version:2,exportedAt:new Date().toISOString(),scenes:S.scenes,settings:S.settings,media:[...mediaCache.values()].map(m=>({id:findIdByUrl(m.url),name:m.name,cat:m.cat,size:m.blob.size}))};
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='舞台工程_'+new Date().toISOString().slice(0,10)+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);toast('配置已导出');}
+$('importFile').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;try{const txt=await f.text();const d=JSON.parse(txt);if(d.scenes)S.scenes=d.scenes;if(d.settings)S.settings=Object.assign(S.settings,d.settings);
+  if(S.settings.transition==='cut')S.settings.transition='dissolve';
+  if(S.settings.transition==='slide')S.settings.transition='ripple';
+  renderScenes();applySettingsToUI();saveProject();toast('工程已导入');}catch(err){toast('导入失败：'+err.message);}e.target.value='';});
+function loadDemo(){S.scenes=[
+  Object.assign(defaultScene('开场欢迎'),{bgType:'color',bgColor:'radial-gradient(circle at 50% 30%, #1b3a6b, #060a18)',caption:'欢迎莅临 2026 年度盛典',subtitle:'ANNUAL CEREMONY · 2026',captionPos:'center',captionSize:64,duration:8}),
+  Object.assign(defaultScene('主题视频'),{bgType:'color',bgColor:'linear-gradient(135deg,#10182e,#2a1b4a)',caption:'回顾这一年',subtitle:'HIGHLIGHTS REEL',captionPos:'bottom',captionSize:48,duration:0}),
+  Object.assign(defaultScene('颁奖环节'),{bgType:'color',bgColor:'linear-gradient(135deg,#3a1010,#1a0a0a)',caption:'荣誉时刻 · 年度之星',subtitle:'EMPLOYEE OF THE YEAR',captionPos:'center',captionSize:56,duration:0}),
+  Object.assign(defaultScene('抽奖互动'),{bgType:'color',bgColor:'conic-gradient(from 0deg, #4f8cff, #7c5cff, #37e0a0, #4f8cff)',caption:'幸运抽奖进行中…',subtitle:'LUCKY DRAW',captionPos:'bottom',captionSize:52,duration:0}),
+  Object.assign(defaultScene('圆满落幕'),{bgType:'color',bgColor:'linear-gradient(135deg,#0a0e27,#0e2a2a)',caption:'感谢有你 · 明年再会',subtitle:'THANK YOU ALL',captionPos:'center',captionSize:60,duration:0})];
+  renderScenes();applySettingsToUI();saveProject();toast('已载入 5 个示例场景');}
+function resetAll(){if(!confirm('确定清空全部场景与媒体？此操作不可撤销。'))return;S.scenes=[];S.current=-1;clearStage();
+  dbGetAll().then(async all=>{for(const m of all)await dbDelete(m.id);});mediaCache.forEach(v=>URL.revokeObjectURL(v.url));mediaCache.clear();
+  localStorage.removeItem(LS_KEY);renderScenes();renderMedia();toast('已清空');}
+
+/* ---------- UI binding ---------- */
+function applySettingsToUI(){setSeg('transSeg',S.settings.transition);$('xfade').value=S.settings.crossfade;$('xfadeVal').textContent=S.settings.crossfade.toFixed(1)+'s';
+  $('masterVol').value=S.settings.masterVolume;$('tbVol').value=S.settings.masterVolume;$('volVal').textContent=Math.round(S.settings.masterVolume*100)+'%';
+  $('autoLoop').checked=S.settings.loop;$('showClock').checked=S.settings.showClock;$('logoPos').value=S.settings.logoPos;applyLogoPos();
+  $('btnSpectrum').classList.toggle('on',S.settings.spectrum);}
+function applyLogoPos(){const p=S.settings.logoPos,s=24;logoEl.style.top='auto';logoEl.style.bottom='auto';logoEl.style.left='auto';logoEl.style.right='auto';
+  if(p==='bottom-right'){logoEl.style.right=s+'px';logoEl.style.bottom=s+'px';}else if(p==='bottom-left'){logoEl.style.left=s+'px';logoEl.style.bottom=s+'px';}
+  else if(p==='top-right'){logoEl.style.right=s+'px';logoEl.style.top=s+'px';}else{logoEl.style.left=s+'px';logoEl.style.top=s+'px';}}
+
+$('btnPlay').onclick=togglePlay;$('tbPlay').onclick=togglePlay;$('btnNext').onclick=next;$('tbNext').onclick=next;$('btnPrev').onclick=prev;$('tbPrev').onclick=prev;
+$('btnBlack').onclick=toggleBlackout;$('tbBlack').onclick=toggleBlackout;$('btnFreeze').onclick=()=>{S.playing?pauseAll():playAll();};$('btnMute').onclick=toggleMute;
+$('btnPresent').onclick=togglePresent;$('tbFull').onclick=toggleFull;$('btnAddScene').onclick=()=>openSceneModal(null);
+$('smClose').onclick=closeSceneModal;$('smCancel').onclick=closeSceneModal;$('sceneModal').addEventListener('click',e=>{if(e.target===$('sceneModal'))closeSceneModal();});
+$('btnExport').onclick=exportConfig;$('btnImport').onclick=()=>$('importFile').click();$('btnDemo').onclick=loadDemo;$('btnReset').onclick=resetAll;
+$('btnCountdown').onclick=()=>{const v=prompt('设置活动倒计时目标时间\n支持格式：2026-12-31T19:30 或 2026-12-31 19:30',S.settings.countdownTarget||'');if(v===null)return;const t=v.trim();if(!t){S.settings.countdownTarget='';saveProject();tick();toast('已清除倒计时');return;}if(isNaN(parseCountdown(t))){toast('时间格式无法识别，请按提示格式输入');return;}S.settings.countdownTarget=t;saveProject();tick();toast('倒计时已设置');};
+$('btnClearCd').onclick=()=>{S.settings.countdownTarget='';saveProject();tick();toast('已清除全局倒计时');};
+$('btnLogoDel').onclick=()=>{if(!S.settings.logoId){toast('当前没有已设置的 Logo');return;}const id=S.settings.logoId;S.settings.logoId=null;logoEl.style.display='none';logoEl.src='';if(mediaCache.has(id)){mediaCache.delete(id);dbDelete(id).catch(()=>{});renderMedia();}saveProject();toast('Logo 已删除');};
+$('btnFolder').onclick=()=>$('mediaFolder').click();
+$('mediaFolder').addEventListener('change',e=>{const arr=[...e.target.files];e.target.value='';if(arr.length)uploadMedia(arr);});
+$('logoFile').addEventListener('change',async e=>{if(e.target.files[0]){await uploadMedia([e.target.files[0]]);const ids=[...mediaCache.keys()];S.settings.logoId=ids[ids.length-1];const m=[...mediaCache.values()].pop();logoEl.src=m.url;logoEl.style.display='block';applyLogoPos();saveProject();toast('Logo 已设置');}e.target.value='';});
+$('btnLogo').onclick=()=>$('logoFile').click();$('logoPos').onchange=()=>{S.settings.logoPos=$('logoPos').value;applyLogoPos();saveProject();};
+$('btnSpectrum').onclick=()=>{S.settings.spectrum=!S.settings.spectrum;$('btnSpectrum').classList.toggle('on',S.settings.spectrum);$('spectrum').classList.toggle('on',S.settings.spectrum);if(S.settings.spectrum)startSpectrum();saveProject();};
+$('masterVol').oninput=()=>{S.settings.masterVolume=parseFloat($('masterVol').value);$('tbVol').value=S.settings.masterVolume;$('volVal').textContent=Math.round(S.settings.masterVolume*100)+'%';applyAudioVolume();saveProject();};
+$('tbVol').oninput=()=>{S.settings.masterVolume=parseFloat($('tbVol').value);$('masterVol').value=S.settings.masterVolume;$('volVal').textContent=Math.round(S.settings.masterVolume*100)+'%';applyAudioVolume();saveProject();};
+$('xfade').oninput=()=>{S.settings.crossfade=parseFloat($('xfade').value);$('xfadeVal').textContent=S.settings.crossfade.toFixed(1)+'s';saveProject();};
+$('autoLoop').onchange=()=>{S.settings.loop=$('autoLoop').checked;saveProject();};
+$('showClock').onchange=()=>{S.settings.showClock=$('showClock').checked;saveProject();};
+$('tbHelp').onclick=()=>$('help').classList.add('show');$('helpClose').onclick=()=>$('help').classList.remove('show');
+$('help').addEventListener('click',e=>{if(e.target===$('help'))$('help').classList.remove('show');});
+stage.addEventListener('dblclick',toggleBlackout);
+
+/* ---------- spectrum ---------- */
+let audioCtx,analyser,specData,specRAF,specW=0,specH=0,specGrad=null;
+function startSpectrum(){if(!S.settings.spectrum)return;$('spectrum').classList.add('on');
+  try{if(!audioCtx){audioCtx=new (window.AudioContext||window.webkitAudioContext)();analyser=audioCtx.createAnalyser();analyser.fftSize=128;specData=new Uint8Array(analyser.frequencyBinCount);const src=audioCtx.createMediaElementSource(audioEl);src.connect(analyser);analyser.connect(audioCtx.destination);}audioCtx.resume();}catch(e){}
+  cancelAnimationFrame(specRAF);specW=0;drawSpectrum();}
+function drawSpectrum(){if(!S.settings.spectrum){$('spectrum').classList.remove('on');return;}specRAF=requestAnimationFrame(drawSpectrum);
+  const cv=$('spectrum');if(!cv||!analyser)return;const w=cv.clientWidth,h=cv.clientHeight;if(!w||!h)return;
+  const ctx=cv.getContext('2d');
+  if(w!==specW||h!==specH){cv.width=w;cv.height=h;specW=w;specH=h;specGrad=ctx.createLinearGradient(0,h,0,0);specGrad.addColorStop(0,'#4f8cff');specGrad.addColorStop(1,'#7c5cff');}
+  ctx.clearRect(0,0,w,h);
+  analyser.getByteFrequencyData(specData);const n=specData.length,bw=w/n;
+  ctx.fillStyle=specGrad;
+  for(let i=0;i<n;i++){const v=specData[i]/255;const bh=Math.max(2,v*h);ctx.fillRect(i*bw,h-bh,bw*0.75,bh);}}
+
+/* ---------- keyboard ---------- */
+document.addEventListener('keydown',e=>{const tag=(e.target.tagName||'').toLowerCase();if(['input','textarea','select'].includes(tag))return;
+  if(e.key===' '){e.preventDefault();togglePlay();}
+  else if(e.key==='ArrowRight'||e.key==='PageDown'){e.preventDefault();next();}
+  else if(e.key==='ArrowLeft'||e.key==='PageUp'){e.preventDefault();prev();}
+  else if(e.key==='f'||e.key==='F')toggleFull();
+  else if(e.key==='b'||e.key==='B')toggleBlackout();
+  else if(e.key==='m'||e.key==='M')toggleMute();
+  else if(e.key==='h'||e.key==='H'||e.key==='p'||e.key==='P')togglePresent();
+  else if(e.key==='?'){$('help').classList.add('show');}
+  else if(e.key==='Escape'){if(document.fullscreenElement)document.exitFullscreen();$('help').classList.remove('show');}
+  else if(/^[1-9]$/.test(e.key)){const i=parseInt(e.key)-1;if(i<S.scenes.length)goTo(i);}
+  else if(e.key==='0'){if(S.scenes.length>=10)goTo(9);}});
+
+/* ---------- toast / helpers ---------- */
+let toastTimer;function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),1800);}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function escapeAttr(s){return String(s).replace(/"/g,'&quot;');}
+
+/* ============================================================
+   导播监视窗（双屏同步）
+   ============================================================ */
+let dirWin=null;
+let dirBlobUrls={};          // 导播窗：按 mediaId 缓存 blob 生成的 object URL，避免每帧重复创建
+function openDirector(){const url=location.pathname+(location.search?'&':'?')+'view=director';S._dirBgId=null;dirWin=window.open(url,'stage_director','width=1000,height=640');if(!dirWin){toast('被浏览器拦截，请允许弹出窗口');return;}toast('已打开导播监视窗，拖到副屏即可');}
+$('btnDirector').onclick=openDirector;
+
+function capturePreview(){
+  const sc=S.scenes[S.current];if(!sc)return null;
+  const layer=S.activeLayer==='A'?bgA:bgB;
+  if(sc.bgType==='video'){const v=layer.querySelector('video');if(v&&v.videoWidth){const c=document.createElement('canvas');c.width=240;c.height=135;try{c.getContext('2d').drawImage(v,0,0,240,135);return {kind:'img',data:c.toDataURL('image/jpeg',0.5)};}catch(e){}}}
+  if(sc.bgType==='image'){const img=layer.querySelector('img');if(img&&img.complete){const c=document.createElement('canvas');c.width=240;c.height=135;try{c.getContext('2d').drawImage(img,0,0,240,135);return {kind:'img',data:c.toDataURL('image/jpeg',0.55)};}catch(e){}}}
+  if(sc.bgType==='color'||sc.bgType==='none')return {kind:'css',data:layer.style.background||'#000'};
+  return null;
+}
+function syncDirector(withPreview){if(!dirWin||dirWin.closed)return;
+  const sc=S.scenes[S.current];
+  const msg={ch:'dir',type:'sync',name:sc?sc.name:'—',caption:sc?sc.caption:'',subtitle:sc?sc.subtitle:'',blackout:S.blackout,playing:S.playing,muted:S.muted,current:S.current,
+    scenes:S.scenes.map(s=>({name:s.name})),preview:withPreview?capturePreview():null,
+    bgType:sc?sc.bgType:null,bgMediaId:sc?sc.bgMediaId:null};
+  // 直接把媒体 Blob 传给导播窗，由它自己渲染 <video>/<img>；避免 file:// 下 canvas 抓帧被污染(toDataURL 抛 SecurityError)导致视频不显示
+  if(sc&&(sc.bgType==='video'||sc.bgType==='image')&&sc.bgMediaId&&sc.bgMediaId!==S._dirBgId){
+    const m=mediaCache.get(sc.bgMediaId);if(m&&m.blob)msg.blob=m.blob;S._dirBgId=sc.bgMediaId;
+  }
+  try{dirWin.postMessage(msg,'*');}catch(e){}
+}
+// main listens for commands from director
+window.addEventListener('message',e=>{const d=e.data;if(!d||d.ch!=='dir')return;
+  if(d.type==='hello'){syncDirector(true);}
+  else if(d.type==='cmd'){if(d.action==='next')next();else if(d.action==='prev')prev();else if(d.action==='play')togglePlay();else if(d.action==='black')toggleBlackout();else if(d.action==='jump'&&typeof d.index==='number')goTo(d.index);}});
+
+/* ============================================================
+   Director window mode
+   ============================================================ */
+if(DIRECTOR){
+  window.addEventListener('message',e=>{const d=e.data;if(!d||d.ch!=='dir')return;if(d.type==='sync')renderDirector(d);});
+  if(window.opener)window.opener.postMessage({ch:'dir',type:'hello'},'*');
+  // transport buttons
+  $('dirPrev').onclick=()=>window.opener&&window.opener.postMessage({ch:'dir',type:'cmd',action:'prev'},'*');
+  $('dirNext').onclick=()=>window.opener&&window.opener.postMessage({ch:'dir',type:'cmd',action:'next'},'*');
+  $('dirPlay').onclick=()=>window.opener&&window.opener.postMessage({ch:'dir',type:'cmd',action:'play'},'*');
+  $('dirBlack').onclick=()=>window.opener&&window.opener.postMessage({ch:'dir',type:'cmd',action:'black'},'*');
+  $('dirState').textContent='已连接';
+  $('dirDot').style.background='var(--ok)';$('dirDot').style.boxShadow='0 0 10px var(--ok)';
+  setInterval(tick,1000);tick();
+}
+function renderDirector(d){
+  // preview：优先用主窗传来的真实媒体 Blob 渲染 <video>/<img>(file:// 下 canvas 抓帧会被污染)；降级用截图
+  const img=$('dirImg'),vid=$('dirVid'),css=$('dirCss');
+  let shown=false;
+  if(d.bgMediaId){
+    let url=dirBlobUrls[d.bgMediaId];
+    if(!url&&d.blob){url=URL.createObjectURL(d.blob);dirBlobUrls[d.bgMediaId]=url;}
+    if(url){
+      if(d.bgType==='video'){vid.src=url;vid.style.display='block';img.style.display='none';css.style.display='none';vid.play().catch(()=>{});shown=true;}
+      else {img.src=url;img.style.display='block';vid.style.display='none';css.style.display='none';shown=true;}
+    }
+  }
+  if(!shown){
+    if(d.preview&&d.preview.kind==='img'){img.style.display='block';vid.style.display='none';css.style.display='none';img.src=d.preview.data;shown=true;}
+    else if(d.preview&&d.preview.kind==='css'){css.style.display='block';img.style.display='none';vid.style.display='none';css.style.background=d.preview.data;shown=true;}
+    else {img.style.display='none';vid.style.display='none';css.style.display='none';}
+  }
+  $('dirName').textContent=d.name||'—';
+  const cap=$('dirCap');if(d.caption||d.subtitle){cap.style.display='block';cap.innerHTML='';if(d.caption){const t=document.createElement('div');t.textContent=d.caption;cap.appendChild(t);}if(d.subtitle){const s=document.createElement('div');s.style.fontSize='.5em';s.style.opacity='.82';s.style.marginTop='.25em';s.style.letterSpacing='.15em';s.textContent=d.subtitle;cap.appendChild(s);}}else cap.style.display='none';
+  $('dirPreview').classList.toggle('black',!!d.blackout);
+  $('dirPlay').classList.toggle('on',!!d.playing);
+  $('dirBlack').classList.toggle('on',!!d.blackout);
+  // scene list
+  const list=$('dirList');list.innerHTML='';
+  (d.scenes||[]).forEach((s,i)=>{const div=document.createElement('div');div.className='ds'+(i===d.current?' active':'');
+    div.innerHTML=`<span class="n">${i+1}</span><span>${escapeHtml(s.name)}</span>`;
+    div.onclick=()=>window.opener&&window.opener.postMessage({ch:'dir',type:'cmd',action:'jump',index:i},'*');list.appendChild(div);});
+}
+
+/* ============================================================
+   初始化
+   ============================================================ */
+async function init(){
+  try{const all=await dbGetAll();for(const m of all)mediaCache.set(m.id,{url:URL.createObjectURL(m.blob),blob:m.blob,name:m.name,cat:m.cat});}catch(e){}
+  const had=loadProject();
+  renderMedia();renderSceneModalOptions();renderScenes();applySettingsToUI();
+  if(S.settings.logoId&&mediaCache.has(S.settings.logoId)){logoEl.src=mediaCache.get(S.settings.logoId).url;logoEl.style.display='block';applyLogoPos();}
+  $('spectrum').classList.toggle('on',S.settings.spectrum);
+  tick();setInterval(tick,1000);
+  if(!had)loadDemo();
+  if(S.scenes.length)showFirstScene(0);     // 打开即静态显示第一幕(背景+字幕)，无需先点播放
+  toast('就绪 · 共 '+S.scenes.length+' 个场景');
+  // 导播窗：状态变化已通过事件即时同步(不含画面)；画面按 ~1fps 节流捕获，避免 toDataURL 阻塞主线程
+  setInterval(()=>{if(dirWin&&!dirWin.closed)syncDirector(true);},1000);
+}
+/* ---------- sidebar resizable ---------- */
+(function(){const sb=$('sidebar'),rz=$('sbResizer');if(!sb||!rz)return;let drag=false,sx=0,sw=0;
+  rz.addEventListener('mousedown',e=>{drag=true;sx=e.clientX;sw=sb.offsetWidth;document.body.style.cursor='col-resize';e.preventDefault();});
+  window.addEventListener('mousemove',e=>{if(!drag)return;const w=Math.max(300,Math.min(760,sw+(e.clientX-sx)));sb.style.width=w+'px';});
+  window.addEventListener('mouseup',()=>{if(drag){drag=false;document.body.style.cursor='';}});
+})();
+init();
+</script>
+</body>
+</html>

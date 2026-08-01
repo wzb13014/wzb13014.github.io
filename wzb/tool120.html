@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>汇率工具 · 精准实时换算</title>
+<style>
+  :root{
+    --bg:#0f1419; --bg2:#161c24; --card:#1b232e; --card2:#222c39;
+    --line:#2a3543; --text:#e7edf3; --muted:#93a1b3; --accent:#4f8cff;
+    --accent2:#34d399; --up:#ef5350; --down:#26a69a; --warn:#f6c453;
+    --shadow:0 8px 30px rgba(0,0,0,.35); --radius:16px;
+  }
+  [data-theme="light"]{
+    --bg:#f4f7fb; --bg2:#ffffff; --card:#ffffff; --card2:#f1f5fb;
+    --line:#e2e8f0; --text:#16202c; --muted:#5b6b7d; --accent:#2563eb;
+    --accent2:#059669; --up:#e23b3b; --down:#15916f; --warn:#c79100;
+    --shadow:0 8px 30px rgba(20,40,80,.12);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    background:linear-gradient(180deg,var(--bg),var(--bg2));color:var(--text);min-height:100vh;
+    -webkit-font-smoothing:antialiased;transition:background .3s,color .3s;}
+  .wrap{max-width:1080px;margin:0 auto;padding:22px 16px 60px;}
+  header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:18px;}
+  .brand{display:flex;align-items:center;gap:12px;}
+  .brand .logo{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;font-size:22px;
+    background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:var(--shadow);}
+  .brand h1{font-size:19px;font-weight:700;letter-spacing:.3px;}
+  .brand p{font-size:12px;color:var(--muted);margin-top:2px;}
+  .head-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .status{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);
+    background:var(--card);border:1px solid var(--line);padding:7px 12px;border-radius:999px;}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--warn);}
+  .dot.ok{background:var(--accent2);} .dot.err{background:var(--up);}
+  .icon-btn{background:var(--card);border:1px solid var(--line);color:var(--text);width:38px;height:38px;
+    border-radius:10px;cursor:pointer;font-size:16px;display:grid;place-items:center;transition:.2s;}
+  .icon-btn:hover{border-color:var(--accent);transform:translateY(-1px);}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);}
+  .tabs{display:flex;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:6px;margin-bottom:18px;flex-wrap:wrap;}
+  .tab{flex:1;min-width:84px;text-align:center;padding:10px 8px;border-radius:9px;cursor:pointer;font-size:13.5px;font-weight:600;color:var(--muted);transition:.2s;border:1px solid transparent;}
+  .tab.active{background:var(--card2);color:var(--text);border-color:var(--line);}
+  .tab:hover{color:var(--text);}
+  .panel{display:none;animation:fade .3s;}
+  .panel.active{display:block;}
+  @keyframes fade{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+  .conv{padding:22px;}
+  .row{display:grid;grid-template-columns:1fr auto 1fr;gap:14px;align-items:end;}
+  .field label{display:block;font-size:12px;color:var(--muted);margin-bottom:7px;font-weight:600;}
+  .amount-input{width:100%;background:var(--card2);border:1px solid var(--line);color:var(--text);
+    font-size:22px;font-weight:700;padding:14px;border-radius:12px;outline:none;transition:.2s;}
+  .amount-input:focus{border-color:var(--accent);}
+  select.cur{width:100%;background:var(--card2);border:1px solid var(--line);color:var(--text);
+    font-size:15px;font-weight:600;padding:14px 12px;border-radius:12px;outline:none;cursor:pointer;transition:.2s;}
+  select.cur:focus{border-color:var(--accent);}
+  .swap{align-self:center;background:var(--card2);border:1px solid var(--line);color:var(--accent);
+    width:44px;height:44px;border-radius:50%;cursor:pointer;font-size:18px;transition:.25s;}
+  .swap:hover{transform:rotate(180deg);border-color:var(--accent);}
+  .result{margin-top:20px;padding:20px;border-radius:14px;background:linear-gradient(135deg,var(--card2),var(--card));border:1px solid var(--line);}
+  .result .big{font-size:30px;font-weight:800;letter-spacing:.5px;word-break:break-all;}
+  .result .eq{font-size:13px;color:var(--muted);margin-top:8px;}
+  .result .actions{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;}
+  .mini{background:var(--card);border:1px solid var(--line);color:var(--text);padding:8px 14px;border-radius:9px;
+    font-size:12.5px;cursor:pointer;font-weight:600;transition:.2s;}
+  .mini:hover{border-color:var(--accent);color:var(--accent);}
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:18px;}
+  .chip{background:var(--card2);border:1px solid var(--line);color:var(--text);padding:7px 12px;border-radius:999px;
+    font-size:12.5px;cursor:pointer;transition:.2s;}
+  .chip:hover{border-color:var(--accent);color:var(--accent);}
+  .controls{display:flex;gap:18px;flex-wrap:wrap;align-items:center;margin-top:18px;padding-top:16px;border-top:1px dashed var(--line);}
+  .controls .ctl{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);}
+  .controls select{background:var(--card2);border:1px solid var(--line);color:var(--text);padding:7px 10px;border-radius:8px;font-size:13px;outline:none;cursor:pointer;}
+  .tbl-head{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:16px;}
+  .tbl-head input{background:var(--card2);border:1px solid var(--line);color:var(--text);padding:10px 14px;border-radius:10px;font-size:14px;outline:none;flex:1;min-width:200px;}
+  .tbl-head input:focus{border-color:var(--accent);}
+  .tbl-wrap{max-height:520px;overflow:auto;}
+  table{width:100%;border-collapse:collapse;font-size:14px;}
+  th,td{text-align:left;padding:12px 16px;border-bottom:1px solid var(--line);}
+  th{position:sticky;top:0;background:var(--card);font-size:12px;color:var(--muted);cursor:pointer;user-select:none;z-index:2;}
+  th:hover{color:var(--accent);}
+  tbody tr{cursor:pointer;transition:.15s;}
+  tbody tr:hover{background:var(--card2);}
+  .flag{font-size:18px;margin-right:8px;}
+  .cname{font-weight:600;}
+  .ccode{color:var(--muted);font-size:12px;margin-left:6px;}
+  .rate-val{font-weight:700;font-variant-numeric:tabular-nums;}
+  .chart-box{padding:18px;}
+  .range{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+  .range button{background:var(--card2);border:1px solid var(--line);color:var(--text);padding:8px 16px;border-radius:9px;font-size:13px;cursor:pointer;font-weight:600;transition:.2s;}
+  .range button.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+  .chart-meta{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:10px;font-size:13px;color:var(--muted);}
+  .change{font-weight:700;padding:4px 10px;border-radius:8px;}
+  .change.up{color:var(--up);background:rgba(239,83,80,.12);}
+  .change.down{color:var(--down);background:rgba(38,166,154,.14);}
+  #chart{width:100%;height:340px;display:block;}
+  .tip{position:absolute;pointer-events:none;background:var(--text);color:var(--bg);padding:6px 10px;border-radius:8px;font-size:12px;font-weight:600;opacity:0;transition:.1s;white-space:nowrap;transform:translate(-50%,-130%);z-index:10;box-shadow:var(--shadow);}
+  .chart-note{font-size:12px;color:var(--muted);margin-top:10px;line-height:1.6;}
+  .bulk-head{padding:16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;}
+  .bulk-head input{background:var(--card2);border:1px solid var(--line);color:var(--text);padding:12px 14px;border-radius:10px;font-size:18px;font-weight:700;outline:none;width:200px;}
+  .fav-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;padding:18px;}
+  .fav-card{background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:16px;position:relative;transition:.2s;}
+  .fav-card:hover{border-color:var(--accent);transform:translateY(-2px);}
+  .fav-pair{font-size:13px;color:var(--muted);margin-bottom:8px;}
+  .fav-val{font-size:20px;font-weight:800;word-break:break-all;}
+  .fav-x{position:absolute;top:10px;right:12px;color:var(--muted);cursor:pointer;font-size:16px;border:none;background:none;}
+  .fav-x:hover{color:var(--up);}
+  .empty{padding:40px;text-align:center;color:var(--muted);font-size:14px;}
+  .banner{padding:12px 16px;border-radius:10px;font-size:13px;margin-bottom:14px;display:none;}
+  .banner.show{display:block;}
+  .banner.err{background:rgba(239,83,80,.12);color:var(--up);border:1px solid rgba(239,83,80,.3);}
+  .banner.ok{background:rgba(52,211,153,.12);color:var(--accent2);border:1px solid rgba(52,211,153,.3);}
+  .src{font-size:11.5px;color:var(--muted);text-align:center;margin-top:22px;line-height:1.7;}
+  .src a{color:var(--accent);text-decoration:none;}
+  @media(max-width:640px){.row{grid-template-columns:1fr;}.swap{justify-self:center;transform:rotate(90deg);}.swap:hover{transform:rotate(270deg);}.result .big{font-size:24px;}}
+  /* ===== 视觉增强 & 新组件 ===== */
+  .wrap{max-width:1360px;margin:0 auto;padding:26px 20px 64px;}
+  body{background:
+      radial-gradient(1100px 520px at 12% -8%, rgba(79,140,255,.12), transparent 60%),
+      radial-gradient(900px 480px at 100% 0%, rgba(52,211,153,.09), transparent 55%),
+      linear-gradient(180deg,var(--bg),var(--bg2));}
+  header{padding:4px 4px 16px;margin-bottom:16px;border-bottom:1px solid var(--line);}
+  .brand .logo{width:48px;height:48px;border-radius:14px;font-size:24px;background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 6px 20px rgba(79,140,255,.35);}
+  .brand h1{font-size:22px;font-weight:800;}
+  .brand p{font-size:12.5px;margin-top:3px;}
+  .icon-btn{width:40px;height:40px;border-radius:11px;font-size:17px;}
+  .icon-btn:hover{border-color:var(--accent);transform:translateY(-1px);box-shadow:0 4px 14px rgba(79,140,255,.22);}
+  .icon-btn.spin{animation:spin 1s linear infinite;pointer-events:none;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .tabs{border-radius:14px;padding:7px;gap:8px;margin-bottom:20px;}
+  .tab{min-width:96px;padding:12px 10px;font-size:14px;font-weight:700;}
+  .tab.active{background:linear-gradient(135deg,var(--accent),#6aa0ff);color:#fff;border-color:transparent;box-shadow:0 4px 14px rgba(79,140,255,.3);}
+  .tab:hover:not(.active){color:var(--text);background:var(--card2);}
+  .conv{padding:26px;}
+  .conv-row{display:grid;grid-template-columns:1.15fr 1fr 56px 1fr;gap:16px;align-items:end;}
+  .field label{font-size:12.5px;margin-bottom:8px;font-weight:700;letter-spacing:.3px;}
+  .amount-input{font-size:24px;padding:15px 16px;border-radius:13px;}
+  .amount-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(79,140,255,.15);}
+  select.cur{padding:15px 12px;border-radius:13px;appearance:none;}
+  select.cur:focus{border-color:var(--accent);}
+  .combo{position:relative;}
+  .combo-input{width:100%;background:var(--card2);border:1px solid var(--line);color:var(--text);font-size:15px;font-weight:600;padding:15px 38px 15px 12px;border-radius:13px;outline:none;cursor:pointer;transition:.2s;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M2 4l4 4 4-4' fill='none' stroke='%2393a1b3' stroke-width='1.6'/></svg>");background-repeat:no-repeat;background-position:right 14px center;}
+  .combo-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(79,140,255,.15);}
+  .combo-list{position:absolute;top:calc(100% + 8px);left:0;right:0;max-height:300px;overflow:auto;background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);z-index:60;display:none;padding:6px;}
+  .combo-list.open{display:block;animation:fade .15s;}
+  .combo-item{display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:10px;cursor:pointer;font-size:14px;}
+  .combo-item:hover,.combo-item.sel{background:var(--card2);}
+  .combo-item .cname{font-weight:600;} .combo-item .ccode{color:var(--muted);font-size:12px;margin-left:auto;}
+  .combo-empty{padding:14px;color:var(--muted);font-size:13px;text-align:center;}
+  .swap{align-self:center;background:linear-gradient(135deg,var(--accent),#6aa0ff);border:none;color:#fff;width:48px;height:48px;border-radius:50%;cursor:pointer;font-size:20px;transition:.25s;box-shadow:0 4px 14px rgba(79,140,255,.3);justify-self:center;}
+  .swap:hover{transform:rotate(180deg);}
+  .quick{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;}
+  .quick button{background:var(--card2);border:1px solid var(--line);color:var(--muted);padding:6px 12px;border-radius:9px;font-size:12.5px;cursor:pointer;font-weight:600;transition:.2s;}
+  .quick button:hover{border-color:var(--accent);color:var(--accent);}
+  .result{margin-top:22px;padding:24px;border-radius:16px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border:none;position:relative;overflow:hidden;}
+  .result::after{content:"";position:absolute;right:-40px;top:-40px;width:170px;height:170px;border-radius:50%;background:rgba(255,255,255,.12);}
+  .result .big{font-size:34px;font-weight:800;letter-spacing:.5px;word-break:break-all;position:relative;}
+  .result .eq{font-size:13.5px;opacity:.92;margin-top:10px;position:relative;}
+  .result .eq b{font-weight:800;}
+  .result .actions{position:relative;}
+  .result .actions .mini{background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.3);color:#fff;}
+  .result .actions .mini:hover{background:rgba(255,255,255,.32);color:#fff;border-color:#fff;}
+  .result.flash{animation:flash 1s ease;}
+  @keyframes flash{0%{box-shadow:0 0 0 0 rgba(255,255,255,.7);}100%{box-shadow:0 0 0 16px rgba(255,255,255,0);}}
+  .chip{padding:8px 13px;}
+  .chip:hover{border-color:var(--accent);color:var(--accent);background:var(--card);}
+  .range button{padding:9px 18px;border-radius:10px;}
+  .range button:hover{border-color:var(--accent);}
+  .range button.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+  .fav-card{padding:18px;border-radius:14px;}
+  .fav-card:hover{transform:translateY(-3px);box-shadow:0 8px 22px rgba(0,0,0,.18);}
+  .bulk-head input{width:210px;padding:13px 14px;border-radius:11px;}
+  .rec-head{display:flex;justify-content:space-between;align-items:center;padding:18px 20px;border-bottom:1px solid var(--line);}
+  .rec-head h3{font-size:15px;font-weight:700;}
+  .rec-list{padding:8px 16px 18px;max-height:560px;overflow:auto;}
+  .rec-item{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 16px;border:1px solid var(--line);border-radius:12px;margin-bottom:9px;cursor:pointer;transition:.15s;background:var(--card2);}
+  .rec-item:hover{border-color:var(--accent);transform:translateX(2px);}
+  .rec-main{font-weight:700;font-size:14.5px;}
+  .rec-sub{font-size:12px;color:var(--muted);margin-top:3px;}
+  .rec-time{font-size:12px;color:var(--muted);white-space:nowrap;}
+  .empty{padding:50px 20px;line-height:1.7;}
+  @media(max-width:760px){.conv-row{grid-template-columns:1fr;}.swap{justify-self:center;transform:rotate(90deg);}.swap:hover{transform:rotate(270deg);}.result .big{font-size:26px;}.wrap{max-width:100%;}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <div class="logo">💱</div>
+      <div>
+        <h1>汇率工具</h1>
+        <p>精准实时换算 · 基于欧洲央行(ECB)参考汇率</p>
+      </div>
+    </div>
+    <div class="head-actions">
+      <div class="status"><span class="dot" id="statusDot"></span><span id="statusText">连接中…</span></div>
+      <button class="icon-btn" id="themeBtn" title="切换主题">🌓</button>
+      <button class="icon-btn" id="refreshBtn" title="刷新汇率">⟳</button>
+    </div>
+  </header>
+
+  <div class="banner" id="banner"></div>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="conv">实时换算</div>
+    <div class="tab" data-tab="table">汇率表</div>
+    <div class="tab" data-tab="chart">历史走势</div>
+    <div class="tab" data-tab="bulk">批量换算</div>
+    <div class="tab" data-tab="fav">收藏</div>
+    <div class="tab" data-tab="rec">换算记录</div>
+  </div>
+
+  <section class="panel active card" id="panel-conv">
+    <div class="conv">
+      <div class="conv-row">
+        <div class="field">
+          <label>金额</label>
+          <input class="amount-input" id="amount" type="number" value="100" min="0" step="any" />
+          <div class="quick" id="quickAmt">
+            <button data-v="1">1</button><button data-v="10">10</button>
+            <button data-v="100">100</button><button data-v="1000">1千</button>
+            <button data-v="10000">1万</button>
+          </div>
+        </div>
+        <div class="field">
+          <label>原始货币</label>
+          <div class="combo" id="fromCur"></div>
+        </div>
+        <button class="swap" id="swapBtn" title="互换">⇅</button>
+        <div class="field">
+          <label>目标货币</label>
+          <div class="combo" id="toCur"></div>
+        </div>
+      </div>
+      <div class="result" id="resultCard">
+        <div class="big" id="resultBig">—</div>
+        <div class="eq" id="resultEq">—</div>
+        <div class="actions">
+          <button class="mini" id="copyBtn">📋 复制结果</button>
+          <button class="mini" id="favBtn">⭐ 收藏此货币对</button>
+          <span class="change" id="changeBadge" style="display:none;"></span>
+        </div>
+      </div>
+      <div class="chips" id="popularChips"></div>
+      <div class="controls">
+        <div class="ctl">精度
+          <select id="decimals">
+            <option value="2">2 位</option>
+            <option value="4">4 位</option>
+            <option value="6" selected>6 位</option>
+            <option value="8">8 位</option>
+          </select>
+        </div>
+        <div class="ctl" id="updatedInfo">更新时间：—</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel card" id="panel-table">
+    <div class="tbl-head">
+      <input id="tblSearch" placeholder="搜索货币代码 / 中文名 / 英文名…" />
+      <div class="ctl">基准：
+        <select id="tblBase"></select>
+      </div>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr>
+          <th data-sort="name">货币</th>
+          <th data-sort="code">代码</th>
+          <th data-sort="rate">汇率 (每 1 <span id="tblBaseLabel">USD</span>)</th>
+        </tr></thead>
+        <tbody id="tblBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel card" id="panel-chart">
+    <div class="chart-box">
+      <div class="chart-meta">
+        <div id="chartTitle">—</div>
+        <div class="change" id="chartChange">—</div>
+      </div>
+      <div class="range" id="rangeBtns">
+        <button data-days="30" class="active">近 30 天</button>
+        <button data-days="90">近 90 天</button>
+        <button data-days="180">近 180 天</button>
+        <button data-days="365">近 1 年</button>
+      </div>
+      <div style="position:relative;">
+        <canvas id="chart"></canvas>
+        <div class="tip" id="tip"></div>
+      </div>
+      <div class="chart-note" id="chartNote"></div>
+    </div>
+  </section>
+
+  <section class="panel card" id="panel-bulk">
+    <div class="bulk-head">
+      <div class="ctl">金额 <input id="bulkAmount" type="number" value="100" step="any" /></div>
+      <div class="ctl">从
+        <select class="cur" id="bulkFrom" style="padding:10px 12px;"></select>
+      </div>
+      <span style="color:var(--muted);font-size:13px;">一键查看多种货币等价金额</span>
+    </div>
+    <div class="tbl-wrap" style="max-height:560px;">
+      <table>
+        <thead><tr><th>货币</th><th>代码</th><th>换算结果</th><th></th></tr></thead>
+        <tbody id="bulkBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel card" id="panel-fav">
+    <div class="fav-grid" id="favGrid"></div>
+  </section>
+
+  <section class="panel card" id="panel-rec">
+    <div class="rec-head"><h3>最近换算记录</h3><button class="mini" id="clearRec">🗑 清空记录</button></div>
+    <div class="rec-list" id="recList"></div>
+  </section>
+
+  <div class="src">
+    实时汇率数据来源：<a href="https://www.exchangerate-api.com" target="_blank" rel="noopener">open.er-api.com</a>（欧洲央行 ECB 参考汇率，每日更新）　|　历史走势数据来源：<a href="https://frankfurter.dev" target="_blank" rel="noopener">Frankfurter</a>（ECB）<br/>
+    ⚠️ 以上均为市场中间价(mid-market)，仅供换算参考，不等于银行实际买卖价。数据自动缓存于本地，断网时显示最近一次结果。
+  </div>
+</div>
+
+<script>
+"use strict";
+const CUR = {
+  USD:{zh:"美元",en:"US Dollar",fl:"🇺🇸",sy:"$"}, EUR:{zh:"欧元",en:"Euro",fl:"🇪🇺",sy:"€"},
+  CNY:{zh:"人民币",en:"Chinese Yuan",fl:"🇨🇳",sy:"¥"}, JPY:{zh:"日元",en:"Japanese Yen",fl:"🇯🇵",sy:"¥"},
+  GBP:{zh:"英镑",en:"British Pound",fl:"🇬🇧",sy:"£"}, HKD:{zh:"港币",en:"Hong Kong Dollar",fl:"🇭🇰",sy:"HK$"},
+  KRW:{zh:"韩元",en:"South Korean Won",fl:"🇰🇷",sy:"₩"}, TWD:{zh:"新台币",en:"New Taiwan Dollar",fl:"🇹🇼",sy:"NT$"},
+
+  AUD:{zh:"澳元",en:"Australian Dollar",fl:"🇦🇺",sy:"A$"}, CAD:{zh:"加元",en:"Canadian Dollar",fl:"🇨🇦",sy:"C$"},
+  CHF:{zh:"瑞士法郎",en:"Swiss Franc",fl:"🇨🇭",sy:"Fr"}, SGD:{zh:"新加坡元",en:"Singapore Dollar",fl:"🇸🇬",sy:"S$"},
+  THB:{zh:"泰铢",en:"Thai Baht",fl:"🇹🇭",sy:"฿"}, MYR:{zh:"马来西亚林吉特",en:"Malaysian Ringgit",fl:"🇲🇾",sy:"RM"},
+  INR:{zh:"印度卢比",en:"Indian Rupee",fl:"🇮🇳",sy:"₹"}, RUB:{zh:"俄罗斯卢布",en:"Russian Ruble",fl:"🇷🇺",sy:"₽"},
+  NZD:{zh:"新西兰元",en:"New Zealand Dollar",fl:"🇳🇿",sy:"NZ$"}, SEK:{zh:"瑞典克朗",en:"Swedish Krona",fl:"🇸🇪",sy:"kr"},
+  NOK:{zh:"挪威克朗",en:"Norwegian Krone",fl:"🇳🇴",sy:"kr"}, DKK:{zh:"丹麦克朗",en:"Danish Krone",fl:"🇩🇰",sy:"kr"},
+  ZAR:{zh:"南非兰特",en:"South African Rand",fl:"🇿🇦",sy:"R"}, BRL:{zh:"巴西雷亚尔",en:"Brazilian Real",fl:"🇧🇷",sy:"R$"},
+  MXN:{zh:"墨西哥比索",en:"Mexican Peso",fl:"🇲🇽",sy:"$"}, IDR:{zh:"印尼盾",en:"Indonesian Rupiah",fl:"🇮🇩",sy:"Rp"},
+  TRY:{zh:"土耳其里拉",en:"Turkish Lira",fl:"🇹🇷",sy:"₺"}, AED:{zh:"阿联酋迪拉姆",en:"UAE Dirham",fl:"🇦🇪",sy:"د.إ"},
+  SAR:{zh:"沙特里亚尔",en:"Saudi Riyal",fl:"🇸🇦",sy:"﷼"}, PHP:{zh:"菲律宾比索",en:"Philippine Peso",fl:"🇵🇭",sy:"₱"},
+  VND:{zh:"越南盾",en:"Vietnamese Dong",fl:"🇻🇳",sy:"₫"}, PLN:{zh:"波兰兹罗提",en:"Polish Zloty",fl:"🇵🇱",sy:"zł"},
+  CZK:{zh:"捷克克朗",en:"Czech Koruna",fl:"🇨🇿",sy:"Kč"}, HUF:{zh:"匈牙利福林",en:"Hungarian Forint",fl:"🇭🇺",sy:"Ft"},
+  ILS:{zh:"以色列谢克尔",en:"Israeli Shekel",fl:"🇮🇱",sy:"₪"}, EGP:{zh:"埃及镑",en:"Egyptian Pound",fl:"🇪🇬",sy:"E£"},
+  NGN:{zh:"尼日利亚奈拉",en:"Nigerian Naira",fl:"🇳🇬",sy:"₦"}, UAH:{zh:"乌克兰格里夫纳",en:"Ukrainian Hryvnia",fl:"🇺🇦",sy:"₴"},
+  PKR:{zh:"巴基斯坦卢比",en:"Pakistani Rupee",fl:"🇵🇰",sy:"₨"}, BDT:{zh:"孟加拉塔卡",en:"Bangladeshi Taka",fl:"🇧🇩",sy:"৳"},
+  LKR:{zh:"斯里兰卡卢比",en:"Sri Lankan Rupee",fl:"🇱🇰",sy:"Rs"}, MOP:{zh:"澳门元",en:"Macau Pataca",fl:"🇲🇴",sy:"MOP$"},
+  KHR:{zh:"柬埔寨瑞尔",en:"Cambodian Riel",fl:"🇰🇭",sy:"៛"}, QAR:{zh:"卡塔尔里亚尔",en:"Qatari Riyal",fl:"🇶🇦",sy:"﷼"},
+  KWD:{zh:"科威特第纳尔",en:"Kuwaiti Dinar",fl:"🇰🇼",sy:"د.ك"}, BHD:{zh:"巴林第纳尔",en:"Bahraini Dinar",fl:"🇧🇭",sy:".د.ب"},
+  OMR:{zh:"阿曼里亚尔",en:"Omani Rial",fl:"🇴🇲",sy:"﷼"}, JOD:{zh:"约旦第纳尔",en:"Jordanian Dinar",fl:"🇯🇴",sy:"د.ا"},
+  MAD:{zh:"摩洛哥迪拉姆",en:"Moroccan Dirham",fl:"🇲🇦",sy:"د.م."}, TND:{zh:"突尼斯第纳尔",en:"Tunisian Dinar",fl:"🇹🇳",sy:"د.ت"},
+  XOF:{zh:"西非法郎",en:"West African CFA",fl:"🇸🇳",sy:"CFA"}, XAF:{zh:"中非法郎",en:"Central African CFA",fl:"🇨🇲",sy:"FCFA"},
+  ARS:{zh:"阿根廷比索",en:"Argentine Peso",fl:"🇦🇷",sy:"$"}, CLP:{zh:"智利比索",en:"Chilean Peso",fl:"🇨🇱",sy:"$"},
+  COP:{zh:"哥伦比亚比索",en:"Colombian Peso",fl:"🇨🇴",sy:"$"}, PEN:{zh:"秘鲁索尔",en:"Peruvian Sol",fl:"🇵🇪",sy:"S/"},
+  VES:{zh:"委内瑞拉玻利瓦尔",en:"Venezuelan Bolivar",fl:"🇻🇪",sy:"Bs"}, CRC:{zh:"哥斯达黎加科朗",en:"Costa Rican Colon",fl:"🇨🇷",sy:"₡"},
+  DOP:{zh:"多米尼加比索",en:"Dominican Peso",fl:"🇩🇴",sy:"RD$"}, JMD:{zh:"牙买加元",en:"Jamaican Dollar",fl:"🇯🇲",sy:"J$"},
+  BOB:{zh:"玻利维亚诺",en:"Bolivian Boliviano",fl:"🇧🇴",sy:"Bs"}, PYG:{zh:"巴拉圭瓜拉尼",en:"Paraguayan Guarani",fl:"🇵🇾",sy:"₲"},
+  UYU:{zh:"乌拉圭比索",en:"Uruguayan Peso",fl:"🇺🇾",sy:"$U"}, ISK:{zh:"冰岛克朗",en:"Icelandic Krona",fl:"🇮🇸",sy:"kr"},
+  RON:{zh:"罗马尼亚列伊",en:"Romanian Leu",fl:"🇷🇴",sy:"lei"}, BGN:{zh:"保加利亚列弗",en:"Bulgarian Lev",fl:"🇧🇬",sy:"лв"},
+  ALL:{zh:"阿尔巴尼亚列克",en:"Albanian Lek",fl:"🇦🇱",sy:"L"}, RSD:{zh:"塞尔维亚第纳尔",en:"Serbian Dinar",fl:"🇷🇸",sy:"дин"},
+  BAM:{zh:"波黑可兑换马克",en:"Bosnian Mark",fl:"🇧🇦",sy:"KM"}, MKD:{zh:"北马其顿代纳尔",en:"Macedonian Denar",fl:"🇲🇰",sy:"ден"},
+  GEL:{zh:"格鲁吉亚拉里",en:"Georgian Lari",fl:"🇬🇪",sy:"₾"}, AMD:{zh:"亚美尼亚德拉姆",en:"Armenian Dram",fl:"🇦🇲",sy:"֏"},
+  AZN:{zh:"阿塞拜疆马纳特",en:"Azerbaijani Manat",fl:"🇦🇿",sy:"₼"}, KZT:{zh:"哈萨克斯坦坚戈",en:"Kazakhstani Tenge",fl:"🇰🇿",sy:"₸"},
+  UZS:{zh:"乌兹别克斯坦索姆",en:"Uzbekistani Som",fl:"🇺🇿",sy:"so'm"}, KGS:{zh:"吉尔吉斯索姆",en:"Kyrgystani Som",fl:"🇰🇬",sy:"сом"},
+  TMT:{zh:"土库曼斯坦马纳特",en:"Turkmenistani Manat",fl:"🇹🇲",sy:"m"}, MNT:{zh:"蒙古图格里克",en:"Mongolian Tugrik",fl:"🇲🇳",sy:"₮"},
+  AFN:{zh:"阿富汗尼",en:"Afghan Afghani",fl:"🇦🇫",sy:"؋"}, IRR:{zh:"伊朗里亚尔",en:"Iranian Rial",fl:"🇮🇷",sy:"﷼"},
+  IQD:{zh:"伊拉克第纳尔",en:"Iraqi Dinar",fl:"🇮🇶",sy:"ع.د"}, YER:{zh:"也门里亚尔",en:"Yemeni Rial",fl:"🇾🇪",sy:"﷼"},
+  GHS:{zh:"加纳塞地",en:"Ghanaian Cedi",fl:"🇬🇭",sy:"₵"}, KES:{zh:"肯尼亚先令",en:"Kenyan Shilling",fl:"🇰🇪",sy:"KSh"},
+  TZS:{zh:"坦桑尼亚先令",en:"Tanzanian Shilling",fl:"🇹🇿",sy:"TSh"}, UGX:{zh:"乌干达先令",en:"Ugandan Shilling",fl:"🇺🇬",sy:"USh"},
+  ETB:{zh:"埃塞俄比亚比尔",en:"Ethiopian Birr",fl:"🇪🇹",sy:"Br"}, MUR:{zh:"毛里求斯卢比",en:"Mauritian Rupee",fl:"🇲🇺",sy:"₨"},
+  AOA:{zh:"安哥拉宽扎",en:"Angolan Kwanza",fl:"🇦🇴",sy:"Kz"}, ZMW:{zh:"赞比亚克瓦查",en:"Zambian Kwacha",fl:"🇿🇲",sy:"ZK"},
+  BWP:{zh:"博茨瓦纳普拉",en:"Botswana Pula",fl:"🇧🇼",sy:"P"}, MWK:{zh:"马拉维克瓦查",en:"Malawian Kwacha",fl:"🇲🇼",sy:"MK"},
+  MGA:{zh:"马达加斯加阿里亚里",en:"Malagasy Ariary",fl:"🇲🇬",sy:"Ar"}, XPF:{zh:"太平洋法郎",en:"CFP Franc",fl:"🇵🇫",sy:"CFP"},
+  FJD:{zh:"斐济元",en:"Fijian Dollar",fl:"🇫🇯",sy:"FJ$"}, PGK:{zh:"巴新基那",en:"Papua New Guinean Kina",fl:"🇵🇬",sy:"K"},
+  SBD:{zh:"所罗门群岛元",en:"Solomon Islands Dollar",fl:"🇸🇧",sy:"SI$"}, TOP:{zh:"汤加潘加",en:"Tongan Pa'anga",fl:"🇹🇴",sy:"T$"},
+  VUV:{zh:"瓦努阿图瓦图",en:"Vanuatu Vatu",fl:"🇻🇺",sy:"VT"}, WST:{zh:"萨摩亚塔拉",en:"Samoan Tala",fl:"🇼🇸",sy:"WS$"},
+  XCD:{zh:"东加勒比元",en:"East Caribbean Dollar",fl:"🇦🇮",sy:"EC$"}, BND:{zh:"文莱元",en:"Brunei Dollar",fl:"🇧🇳",sy:"B$"},
+  MVR:{zh:"马尔代夫拉菲亚",en:"Maldivian Rufiyaa",fl:"🇲🇻",sy:"MVR"}, BTN:{zh:"不丹努扎姆",en:"Bhutanese Ngultrum",fl:"🇧🇹",sy:"Nu"},
+  LAK:{zh:"老挝基普",en:"Lao Kip",fl:"🇱🇦",sy:"₭"}
+};
+/* 常用货币快捷 */
+const POPULAR = ["USD","CNY","EUR","JPY","GBP","HKD","KRW","TWD","AUD","CAD","SGD","THB"];
+
+/* ============ 状态与存储 ============ */
+const LS = {
+  get(k,d){ try{ const v=localStorage.getItem(k); return v==null?d:JSON.parse(v); }catch(e){ return d; } },
+  set(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
+};
+const state = {
+  rates:null,            // 以 USD 为基准：rates[code] = 1 USD 可兑换的该货币数量
+  updated:null,          // 更新时间戳
+  from: LS.get('fx_from','USD'),
+  to:   LS.get('fx_to','CNY'),
+  amount: LS.get('fx_amount',100),
+  decimals: LS.get('fx_dec',6),
+  base: LS.get('fx_base','USD'),
+  theme: LS.get('fx_theme','dark'),
+  fav: LS.get('fx_fav',[]),       // [{from,to}]
+  rec: LS.get('fx_rec',[])        // 最近换算记录
+};
+let fromCombo=null, toCombo=null;
+/* ============ 工具函数 ============ */
+const $ = (id)=>document.getElementById(id);
+function curName(code){ const c=CUR[code]; return c? (c.zh+' '+c.en):code; }
+function curLabel(code){ const c=CUR[code]; return c? (c.fl+' '+code+' '+c.zh):code; }
+function fmt(num,dec){
+  if(num==null||isNaN(num)) return '—';
+  dec = (dec==null)? state.decimals : dec;
+  try{ return new Intl.NumberFormat('zh-CN',{minimumFractionDigits:Math.min(dec,2),maximumFractionDigits:dec}).format(num); }
+  catch(e){ return Number(num).toFixed(dec); }
+}
+function rateOf(from,to){ // 1 from = ? to （基于 USD 三角换算）
+  if(!state.rates||!state.rates[from]||!state.rates[to]) return null;
+  const usd = 1/state.rates[from];
+  return usd*state.rates[to];
+}
+function convert(amount,from,to){
+  const r = rateOf(from,to);
+  if(r==null) return null;
+  return amount*r;
+}
+function banner(msg,type){
+  const b=$('banner'); b.textContent=msg; b.className='banner show '+(type||'');
+  if(type) setTimeout(()=>{ b.className='banner'; },4000);
+}
+
+/* ============ 数据获取 ============ */
+async function fetchRates(){
+  const url='https://open.er-api.com/v6/latest/USD';
+  try{
+    const res=await fetch(url,{cache:'no-store'});
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const data=await res.json();
+    if(data.result!=='success'||!data.rates) throw new Error('数据格式异常');
+    state.rates=data.rates;
+    state.rates.USD=1;
+    state.updated=data.time_last_update_unix? data.time_last_update_unix*1000 : Date.now();
+    LS.set('fx_cache',{rates:state.rates,updated:state.updated});
+    setStatus(true,'实时');
+    return true;
+  }catch(e){
+    // 离线或失败：尝试使用本地缓存
+    const cache=LS.get('fx_cache',null);
+    if(cache&&cache.rates){
+      state.rates=cache.rates; state.updated=cache.updated;
+      setStatus(true,'缓存('+new Date(cache.updated).toLocaleDateString()+')');
+      banner('⚠️ 无法连接实时接口，已加载本地缓存数据（'+new Date(cache.updated).toLocaleString()+'）。','');
+      return true;
+    }
+    setStatus(false,'失败');
+    banner('❌ 汇率获取失败：'+e.message+'（请检查网络后点击右上角 ⟳ 刷新）','err');
+    return false;
+  }
+}
+function setStatus(ok,text){
+  const dot=$('statusDot'); dot.className='dot '+(ok?'ok':'err');
+  $('statusText').textContent = text==='实时'?'已连接 · 实时'
+    : text==='失败'?'连接失败':'已连接 · '+text;
+}
+async function fetchHistory(from,to,days){
+  const end=new Date(); const start=new Date(); start.setDate(end.getDate()-days);
+  const f=(d)=>{ const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0'); return y+'-'+m+'-'+day; };
+  const range=f(start)+'..'+f(end);
+  const tryUrl=(base)=>`https://${base}/v1/${range}?base=${from}&symbols=${to}`;
+  let data=null, lastErr=null;
+  for(const dom of ['api.frankfurter.dev','api.frankfurter.app']){
+    try{
+      const res=await fetch(tryUrl(dom),{cache:'no-store'});
+      if(!res.ok) throw new Error('HTTP '+res.status);
+      data=await res.json();
+      if(data&&data.rates) break;
+    }catch(e){ lastErr=e; }
+  }
+  if(!data||!data.rates) throw new Error(lastErr?lastErr.message:'无历史数据');
+  // 转为有序数组
+  const entries=Object.keys(data.rates).sort().map(d=>({date:d,value:data.rates[d][to]}));
+  return entries;
+}
+
+/* ============ 渲染 ============ */
+function allCodes(){
+  if(!state.rates) return Object.keys(CUR);
+  const codes=Object.keys(state.rates);
+  // 优先展示有中文名的货币，其余按代码排序
+  codes.sort((a,b)=>{
+    const ha=!!CUR[a], hb=!!CUR[b];
+    if(ha!==hb) return hb-ha;
+    return a.localeCompare(b);
+  });
+  return codes;
+}
+function fillSelect(sel,selected){
+  const codes=allCodes();
+  sel.innerHTML='';
+  codes.forEach(c=>{
+    const o=document.createElement('option');
+    o.value=c; o.textContent=curLabel(c);
+    if(c===selected) o.selected=true;
+    sel.appendChild(o);
+  });
+}
+function makeCombo(id,value,onChange){
+  const root=document.getElementById(id); root.className='combo'; root.innerHTML='';
+  const input=document.createElement('input'); input.className='combo-input'; input.type='text'; input.autocomplete='off'; input.placeholder='搜索货币 / 代码';
+  const list=document.createElement('div'); list.className='combo-list';
+  root.appendChild(input); root.appendChild(list);
+  let current=value;
+  function render(filter){
+    const q=(filter||'').trim().toLowerCase();
+    const codes=allCodes().filter(c=>{
+      if(!q) return true;
+      const m=CUR[c];
+      return c.toLowerCase().includes(q) || (m&&m.zh.indexOf(filter)>=0) || (m&&m.en.toLowerCase().includes(q));
+    }).slice(0,50);
+    list.innerHTML='';
+    if(!codes.length){ const e=document.createElement('div'); e.className='combo-empty'; e.textContent='无匹配货币'; list.appendChild(e); return; }
+    codes.forEach(c=>{
+      const d=document.createElement('div'); d.className='combo-item'+(c===current?' sel':''); d.dataset.code=c;
+      d.innerHTML=`<span class="flag">${CUR[c]?CUR[c].fl:'🏳'}</span><span class="cname">${curName(c)}</span><span class="ccode">${c}</span>`;
+      d.addEventListener('mousedown',(ev)=>{ ev.preventDefault(); pick(c); });
+      list.appendChild(d);
+    });
+  }
+  function pick(c){ current=c; input.value=curLabel(c); list.classList.remove('open'); onChange&&onChange(c); }
+  input.value=curLabel(value); current=value;
+  input.addEventListener('focus',()=>{ list.classList.add('open'); render(''); });
+  input.addEventListener('input',()=>{ list.classList.add('open'); render(input.value); });
+  input.addEventListener('blur',()=>{ setTimeout(()=>list.classList.remove('open'),150); input.value=curLabel(current); });
+  input.addEventListener('keydown',(e)=>{
+    if(e.key==='Enter'){ const it=list.querySelector('.combo-item'); if(it) pick(it.dataset.code); }
+    if(e.key==='Escape'){ list.classList.remove('open'); }
+  });
+  root.setValue=(c)=>{ current=c; input.value=curLabel(c); };
+  return root;
+}
+function fillAllSelects(){
+  fillSelect($('tblBase'),state.base);
+  fillSelect($('bulkFrom'),state.from);
+}
+function renderChips(){
+  const box=$('popularChips'); box.innerHTML='';
+  POPULAR.forEach(c=>{
+    const s=document.createElement('span'); s.className='chip';
+    s.textContent=curLabel(c);
+    s.onclick=()=>{ state.from=c; if(fromCombo) fromCombo.setValue(c); onPairChange('from',c); };
+    box.appendChild(s);
+  });
+}
+function renderConverter(){
+  const amt=parseFloat($('amount').value);
+  const from=state.from, to=state.to;
+  const r=rateOf(from,to);
+  if(r==null){ $('resultBig').textContent='—'; $('resultEq').textContent='汇率加载中…'; return; }
+  const out=isNaN(amt)?0:amt*r;
+  $('resultBig').textContent=fmt(out);
+  const inv=1/r;
+  $('resultEq').innerHTML=`1 ${from} = <b>${fmt(r)}</b> ${to}　·　1 ${to} = <b>${fmt(inv)}</b> ${from}`;
+}
+function renderUpdated(){
+  if(state.updated){
+    $('updatedInfo').textContent='更新时间：'+new Date(state.updated).toLocaleString();
+  }
+}
+function renderTable(){
+  const base=$('tblBase').value; state.base=base; LS.set('fx_base',base);
+  $('tblBaseLabel').textContent=base;
+  const q=($('tblSearch').value||'').trim().toLowerCase();
+  const codes=allCodes().filter(c=>{
+    if(!q) return true;
+    const m=CUR[c];
+    return c.toLowerCase().includes(q) || (m&&(m.zh.includes(q)||m.en.toLowerCase().includes(q)));
+  });
+  const rows=codes.map(c=>{
+    const v=rateOf(base,c);
+    return {code:c, name:curName(c), rate:(v==null?0:v), flag:(CUR[c]?CUR[c].fl:'🏳')};
+  });
+  const key=$('tblBody').dataset.sort||'rate';
+  const dir=$('tblBody').dataset.dir==='asc'?1:-1;
+  rows.sort((a,b)=>{
+    if(key==='rate') return (a.rate-b.rate)*dir;
+    if(key==='code') return a.code.localeCompare(b.code)*dir;
+    return a.name.localeCompare(b.name,'zh')*dir;
+  });
+  const tb=$('tblBody'); tb.innerHTML='';
+  rows.forEach(r=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td><span class="flag">${r.flag}</span><span class="cname">${r.name}</span></td>
+      <td><span class="ccode">${r.code}</span></td>
+      <td class="rate-val">${fmt(r.rate)}</td>`;
+    tr.onclick=()=>{ state.to=r.code; if(toCombo) toCombo.setValue(r.code); switchTab('conv'); doConvert(); updateChangeBadge(); };
+    tb.appendChild(tr);
+  });
+}
+function renderBulk(){
+  const amt=parseFloat($('bulkAmount').value);
+  const from=$('bulkFrom').value;
+  const codes=allCodes().filter(c=>c!==from);
+  const tb=$('bulkBody'); tb.innerHTML='';
+  codes.forEach(c=>{
+    const v=convert(isNaN(amt)?0:amt,from,c);
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td><span class="flag">${CUR[c]?CUR[c].fl:'🏳'}</span><span class="cname">${curName(c)}</span></td>
+      <td><span class="ccode">${c}</span></td>
+      <td class="rate-val">${fmt(v)}</td><td></td>`;
+    tr.onclick=()=>{ state.to=c; if(toCombo) toCombo.setValue(c); switchTab('conv'); doConvert(); updateChangeBadge(); };
+    tb.appendChild(tr);
+  });
+}
+function favKey(f){ return f.from+'>'+f.to; }
+function renderFav(){
+  const grid=$('favGrid'); grid.innerHTML='';
+  if(!state.fav.length){ grid.innerHTML='<div class="empty">还没有收藏的货币对。<br>在「实时换算」中点击 ⭐ 收藏常用货币对吧！</div>'; return; }
+  state.fav.forEach(f=>{
+    const r=rateOf(f.from,f.to);
+    const amt=parseFloat($('amount').value)||100;
+    const val=(r==null?0:amt*r);
+    const card=document.createElement('div'); card.className='fav-card';
+    card.innerHTML=`<button class="fav-x" title="删除">✕</button>
+      <div class="fav-pair">${f.from} → ${f.to}（${amt} ${f.from}）</div>
+      <div class="fav-val">${fmt(val)} ${f.to}</div>`;
+    card.querySelector('.fav-x').onclick=(e)=>{ e.stopPropagation(); state.fav=state.fav.filter(x=>favKey(x)!==favKey(f)); LS.set('fx_fav',state.fav); renderFav(); };
+    card.onclick=()=>{ state.from=f.from; state.to=f.to; if(fromCombo) fromCombo.setValue(f.from); if(toCombo) toCombo.setValue(f.to); switchTab('conv'); doConvert(); updateChangeBadge(); };
+    grid.appendChild(card);
+  });
+}
+function doConvert(){ renderConverter(); renderFav(); }
+
+/* ============ 历史走势图 ============ */
+let chartDays=30;
+function drawChart(entries){
+  const cv=$('chart'); const wrap=cv.parentElement;
+  const cssW=wrap.clientWidth||800, cssH=340;
+  const dpr=window.devicePixelRatio||1;
+  cv.width=cssW*dpr; cv.height=cssH*dpr; cv.style.height=cssH+'px';
+  const ctx=cv.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,cssW,cssH);
+  if(entries.length===0) return;
+  const padL=60,padR=16,padT=16,padB=28;
+  const W=cssW-padL-padR, H=cssH-padT-padB;
+  const vals=entries.map(e=>e.value);
+  let min=Math.min.apply(null,vals), max=Math.max.apply(null,vals);
+  if(min===max){ min-=0.01; max+=0.01; }
+  const range=max-min; min-=range*0.08; max+=range*0.08;
+  const x=i=> padL+(entries.length===1?W/2:W*i/(entries.length-1));
+  const y=v=> padT+H*(1-(v-min)/(max-min));
+  ctx.strokeStyle='rgba(148,161,179,.18)'; ctx.fillStyle='#93a1b3'; ctx.font='11px sans-serif';
+  ctx.textAlign='right'; ctx.textBaseline='middle';
+  const ticks=4;
+  for(let i=0;i<=ticks;i++){
+    const yy=padT+H*i/ticks; const val=max-(max-min)*i/ticks;
+    ctx.beginPath(); ctx.moveTo(padL,yy); ctx.lineTo(padL+W,yy); ctx.stroke();
+    ctx.fillText(val.toFixed(state.decimals>4?4:state.decimals), padL-6, yy);
+  }
+  const grad=ctx.createLinearGradient(0,padT,0,padT+H);
+  grad.addColorStop(0,'rgba(79,140,255,.35)'); grad.addColorStop(1,'rgba(79,140,255,0)');
+  ctx.beginPath(); ctx.moveTo(x(0),y(vals[0]));
+  for(let i=1;i<entries.length;i++) ctx.lineTo(x(i),y(vals[i]));
+  if(entries.length>1){ ctx.lineTo(x(entries.length-1),padT+H); ctx.lineTo(x(0),padT+H); }
+  ctx.closePath(); ctx.fillStyle=grad; ctx.fill();
+  ctx.beginPath(); ctx.moveTo(x(0),y(vals[0]));
+  for(let i=1;i<entries.length;i++) ctx.lineTo(x(i),y(vals[i]));
+  ctx.strokeStyle='#4f8cff'; ctx.lineWidth=2; ctx.stroke();
+  ctx.fillStyle='#93a1b3'; ctx.textAlign='center'; ctx.textBaseline='top';
+  const idx=[0,Math.floor((entries.length-1)/2),entries.length-1];
+  idx.forEach(i=>{ if(entries[i]) ctx.fillText(entries[i].date.slice(5), x(i), padT+H+6); });
+  cv._pts=entries.map((e,i)=>({x:x(i),y:y(e.value),e}));
+}
+function setupChartHover(){
+  const cv=$('chart'); const tip=$('tip');
+  cv.addEventListener('mousemove',(ev)=>{
+    if(!cv._pts||!cv._pts.length) return;
+    const rect=cv.getBoundingClientRect(); const mx=ev.clientX-rect.left;
+    let best=0,bd=1e9;
+    cv._pts.forEach((p,i)=>{ const d=Math.abs(p.x-mx); if(d<bd){bd=d;best=i;} });
+    const p=cv._pts[best];
+    tip.style.left=p.x+'px'; tip.style.top=p.y+'px'; tip.style.opacity='1';
+    tip.textContent=p.e.date+'  ·  1 '+state.from+' = '+fmt(p.e.value)+' '+state.to;
+  });
+  cv.addEventListener('mouseleave',()=>{ tip.style.opacity='0'; });
+}
+async function loadHistory(){
+  const from=state.from, to=state.to;
+  $('chartTitle').textContent=from+' → '+to+' 历史走势';
+  const chgEl=$('chartChange'); chgEl.textContent='加载中…'; chgEl.className='change';
+  $('chartNote').textContent='';
+  if(from===to){ $('chartNote').textContent='原始货币与目标货币相同，无需查看走势。'; ctxClear(); return; }
+  try{
+    const entries=await fetchHistory(from,to,chartDays);
+    if(!entries.length){ $('chartNote').textContent='暂无历史数据。'; return; }
+    drawChart(entries);
+    const first=entries[0].value, last=entries[entries.length-1].value;
+    const ch=(last-first)/first*100; const up=ch>=0;
+    chgEl.textContent=(up?'▲ +':'▼ ')+ch.toFixed(2)+'%'; chgEl.className='change '+(up?'up':'down');
+    $('chartNote').textContent='统计区间 '+entries[0].date+' 至 '+entries[entries.length-1].date+'，共 '+entries.length+' 个交易日（来源 Frankfurter / ECB，仅含工作日）。';
+  }catch(e){
+    $('chartNote').textContent='⚠️ 该货币对暂无历史走势数据（Frankfurter 仅支持约 30 种主要货币）。实时换算不受影响。';
+    chgEl.textContent='—';
+  }
+}
+function ctxClear(){ const cv=$('chart'); const ctx=cv.getContext('2d'); ctx.clearRect(0,0,cv.width,cv.height); }
+
+/* ============ 初始化与事件 ============ */
+function applyTheme(t){ state.theme=t; document.documentElement.setAttribute('data-theme',t); LS.set('fx_theme',t); }
+function switchTab(name){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===name));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active',p.id==='panel-'+name));
+  if(name==='chart') loadHistory();
+  if(name==='table') renderTable();
+  if(name==='bulk') renderBulk();
+  if(name==='fav') renderFav();
+  if(name==='rec') renderRec();
+}
+function addFav(){
+  const f={from:state.from,to:state.to};
+  if(state.fav.some(x=>favKey(x)===favKey(f))){ banner('该货币对已在收藏中。',''); return; }
+  state.fav.push(f); LS.set('fx_fav',state.fav); renderFav(); banner('已收藏 '+f.from+' → '+f.to,'ok');
+}
+function bind(){
+  document.querySelectorAll('.tab').forEach(t=> t.onclick=()=>switchTab(t.dataset.tab));
+  $('amount').addEventListener('input',()=>{ state.amount=parseFloat($('amount').value); LS.set('fx_amount',state.amount); doConvert(); });
+  $('amount').addEventListener('change',recordConversion);
+  $('swapBtn').onclick=()=>{ const a=state.from; state.from=state.to; state.to=a; if(fromCombo) fromCombo.setValue(state.from); if(toCombo) toCombo.setValue(state.to); LS.set('fx_from',state.from); LS.set('fx_to',state.to); doConvert(); updateChangeBadge(); if($('panel-chart').classList.contains('active')) loadHistory(); };
+  $('decimals').value=String(state.decimals);
+  $('decimals').addEventListener('change',()=>{ state.decimals=parseInt($('decimals').value,10); LS.set('fx_dec',state.decimals); doConvert(); renderTable(); renderBulk(); renderFav(); });
+  $('refreshBtn').onclick=async()=>{
+    const btn=$('refreshBtn'); btn.classList.add('spin');
+    await fetchRates(); afterRates(); flashResult();
+    banner('✅ 汇率已刷新（更新时间：'+new Date(state.updated).toLocaleString()+'）','ok');
+    btn.classList.remove('spin');
+  };
+  $('themeBtn').onclick=()=> applyTheme(state.theme==='dark'?'light':'dark');
+  $('copyBtn').onclick=()=>{ const v=$('resultBig').textContent; if(!v||v==='—') return; navigator.clipboard?navigator.clipboard.writeText(v).then(()=>banner('已复制：'+v,'ok')):banner(v,'ok'); };
+  $('favBtn').onclick=addFav;
+  $('clearRec').onclick=()=>{ state.rec=[]; LS.set('fx_rec',[]); renderRec(); banner('已清空换算记录','ok'); };
+  $('quickAmt').querySelectorAll('button').forEach(b=> b.onclick=()=>{ const v=parseFloat(b.dataset.v); $('amount').value=v; state.amount=v; LS.set('fx_amount',v); doConvert(); });
+  $('tblSearch').addEventListener('input',renderTable);
+  $('tblBase').addEventListener('change',renderTable);
+  document.querySelectorAll('th[data-sort]').forEach(th=> th.onclick=()=>{
+    const k=th.dataset.sort; const tb=$('tblBody');
+    if(tb.dataset.sort===k){ tb.dataset.dir = tb.dataset.dir==='asc'?'desc':'asc'; }
+    else { tb.dataset.sort=k; tb.dataset.dir = k==='rate'?'desc':'asc'; }
+    renderTable();
+  });
+  $('bulkAmount').addEventListener('input',renderBulk);
+  $('bulkFrom').addEventListener('change',renderBulk);
+  $('rangeBtns').querySelectorAll('button').forEach(b=> b.onclick=()=>{
+    chartDays=parseInt(b.dataset.days,10);
+    $('rangeBtns').querySelectorAll('button').forEach(x=>x.classList.toggle('active',x===b));
+    loadHistory();
+  });
+  window.addEventListener('resize',()=>{ if($('panel-chart').classList.contains('active')) loadHistory(); });
+}
+function onPairChange(side,val){
+  if(side==='from') state.from=val; else state.to=val;
+  LS.set('fx_from',state.from); LS.set('fx_to',state.to);
+  doConvert(); updateChangeBadge();
+  if($('panel-chart').classList.contains('active')) loadHistory();
+}
+const changeCache={}; let changeTimer=null;
+async function updateChangeBadge(){
+  const from=state.from,to=state.to; const badge=$('changeBadge');
+  if(from===to){ badge.style.display='none'; return; }
+  const key=from+'>'+to;
+  badge.style.display='inline-block'; badge.textContent='涨跌加载中…'; badge.className='change';
+  clearTimeout(changeTimer);
+  changeTimer=setTimeout(async()=>{
+    try{
+      let e=changeCache[key];
+      if(e===undefined){
+        const arr=await fetchHistory(from,to,30);
+        e=(arr.length>1)?((arr[arr.length-1].value-arr[0].value)/arr[0].value*100):null;
+        changeCache[key]=e;
+      }
+      if(e==null){ badge.style.display='none'; return; }
+      const up=e>=0; badge.textContent=(up?'▲ +':'▼ ')+e.toFixed(2)+'% (30天)'; badge.className='change '+(up?'up':'down');
+    }catch(err){ badge.style.display='none'; }
+  },400);
+}
+function recordConversion(){
+  const amt=parseFloat($('amount').value); if(isNaN(amt)||amt<=0) return;
+  const r=rateOf(state.from,state.to); if(r==null) return;
+  const rec={from:state.from,to:state.to,amount:amt,result:amt*r,time:Date.now()};
+  state.rec=state.rec.filter(x=>!(x.from===rec.from&&x.to===rec.to&&x.amount===rec.amount));
+  state.rec.unshift(rec); if(state.rec.length>25) state.rec=state.rec.slice(0,25);
+  LS.set('fx_rec',state.rec);
+  if($('panel-rec').classList.contains('active')) renderRec();
+}
+function renderRec(){
+  const list=$('recList'); list.innerHTML='';
+  if(!state.rec.length){ list.innerHTML='<div class="empty">暂无换算记录。<br>在「实时换算」中输入金额并回车 / 失焦即可自动记录。</div>'; return; }
+  state.rec.forEach(r=>{
+    const d=document.createElement('div'); d.className='rec-item';
+    d.innerHTML=`<div><div class="rec-main">${fmt(r.amount,2)} ${r.from} = ${fmt(r.result)} ${r.to}</div>
+      <div class="rec-sub">${curName(r.from)} → ${curName(r.to)}</div></div>
+      <div class="rec-time">${new Date(r.time).toLocaleString()}</div>`;
+    d.onclick=()=>{ state.from=r.from; state.to=r.to; if(fromCombo) fromCombo.setValue(r.from); if(toCombo) toCombo.setValue(r.to); $('amount').value=r.amount; LS.set('fx_amount',r.amount); switchTab('conv'); doConvert(); updateChangeBadge(); };
+    list.appendChild(d);
+  });
+}
+function flashResult(){ const c=$('resultCard'); if(!c) return; c.classList.remove('flash'); void c.offsetWidth; c.classList.add('flash'); }
+function afterRates(){
+  fillAllSelects();
+  doConvert(); renderTable(); renderBulk(); renderFav(); renderUpdated(); updateChangeBadge();
+  if($('panel-chart').classList.contains('active')) loadHistory();
+}
+async function init(){
+  applyTheme(state.theme);
+  $('amount').value=state.amount;
+  fromCombo=makeCombo('fromCur',state.from,(v)=>onPairChange('from',v));
+  toCombo=makeCombo('toCur',state.to,(v)=>onPairChange('to',v));
+  fillAllSelects();
+  renderChips();
+  bind();
+  setupChartHover();
+  doConvert(); renderUpdated(); renderTable(); renderBulk(); renderFav();
+  await fetchRates();
+  afterRates();
+}
+document.addEventListener('DOMContentLoaded',init);
+</script>
+</body>
+</html>

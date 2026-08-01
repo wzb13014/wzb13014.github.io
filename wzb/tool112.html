@@ -1,0 +1,2390 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>海报生成器 · Poster Studio</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Oswald:wght@400;600&family=Montserrat:wght@400;700&family=Playfair+Display:wght@700&family=Pacifico&family=Lobster&family=Bebas+Neue&family=Noto+Sans+SC:wght@400;700&display=swap"
+    media="print" onload="this.media='all'">
+    <noscript>
+        <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Oswald:wght@400;600&family=Montserrat:wght@400;700&family=Playfair+Display:wght@700&family=Pacifico&family=Lobster&family=Bebas+Neue&family=Noto+Sans+SC:wght@400;700&display=swap">
+    </noscript>
+    <style>
+        :root {
+            --bg: #0f1115;
+            --panel: #171a21;
+            --panel2: #1e222b;
+            --border: #2a2f3a;
+            --text: #e6e9ef;
+            --muted: #8b93a3;
+            --accent: #5b8cff;
+            --accent2: #7c5cff;
+            --danger: #ff5c6c;
+            --ok: #3ad29f;
+            --radius: 8px;
+        }
+        * {
+            box-sizing: border-box;
+        }
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+        }
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: "Noto Sans SC", "Microsoft YaHei", system-ui, sans-serif;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            font-size: 13px;
+        }
+        button {
+            font-family: inherit;
+        }
+        .topbar {
+            height: 50px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 0 12px;
+            background: linear-gradient(90deg, #1a1f2b, #141821);
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+        .brand {
+            font-weight: 700;
+            font-size: 15px;
+            letter-spacing: .5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .brand .logo {
+            width: 22px;
+            height: 22px;
+            border-radius: 6px;
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            display: grid;
+            place-items: center;
+            font-size: 13px;
+        }
+        .tb-sep {
+            width: 1px;
+            height: 26px;
+            background: var(--border);
+            margin: 0 4px;
+        }
+        .btn {
+            background: var(--panel2);
+            color: var(--text);
+            border: 1px solid var(--border);
+            padding: 7px 11px;
+            border-radius: var(--radius);
+            cursor: pointer;
+            font-size: 12.5px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: .15s;
+            white-space: nowrap;
+        }
+        .btn:hover {
+            background: #262b36;
+            border-color: #3a4150;
+        }
+        .btn.primary {
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            border: none;
+            color: #fff;
+            font-weight: 600;
+        }
+        .btn.primary:hover {
+            filter: brightness(1.08);
+        }
+        .btn.icon {
+            padding: 7px 9px;
+        }
+        .btn:disabled {
+            opacity: .4;
+            cursor: not-allowed;
+        }
+        .spacer {
+            flex: 1;
+        }
+        .zoombox {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            background: var(--panel2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 3px;
+        }
+        .zoombox input {
+            width: 54px;
+            background: transparent;
+            border: none;
+            color: var(--text);
+            text-align: center;
+            font-size: 12px;
+        }
+        .zoombox span {
+            color: var(--muted);
+            font-size: 11px;
+        }
+        .main {
+            flex: 1;
+            display: flex;
+            min-height: 0;
+        }
+        .left {
+            width: 248px;
+            background: var(--panel);
+            border-right: 1px solid var(--border);
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+        .center {
+            flex: 1;
+            position: relative;
+            overflow: auto;
+            background: repeating-conic-gradient(#14171d 0% 25%, #10131a 0% 50%) 50%/24px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .right {
+            width: 300px;
+            background: var(--panel);
+            border-left: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+        }
+        .section {
+            padding: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+        .section h3 {
+            margin: 0 0 10px;
+            font-size: 12px;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: .6px;
+            font-weight: 600;
+        }
+        .grid2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+        .grid3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
+        }
+        .field {
+            margin-bottom: 9px;
+        }
+        .field label {
+            display: block;
+            font-size: 11.5px;
+            color: var(--muted);
+            margin-bottom: 4px;
+        }
+        input[type=text],
+        input[type=number],
+        textarea,
+        select {
+            width: 100%;
+            background: var(--panel2);
+            border: 1px solid var(--border);
+            color: var(--text);
+            border-radius: 6px;
+            padding: 7px 8px;
+            font-size: 12.5px;
+            font-family: inherit;
+        }
+        textarea {
+            resize: vertical;
+            min-height: 54px;
+        }
+        input:focus,
+        textarea:focus,
+        select:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+        input[type=range] {
+            width: 100%;
+            accent-color: var(--accent);
+        }
+        input[type=color] {
+            width: 100%;
+            height: 32px;
+            background: var(--panel2);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 2px;
+            cursor: pointer;
+        }
+        .btn.block {
+            width: 100%;
+            justify-content: center;
+            margin-bottom: 6px;
+        }
+        .seg {
+            display: flex;
+            background: var(--panel2);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        .seg button {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--muted);
+            padding: 6px 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .seg button.active {
+            background: var(--accent);
+            color: #fff;
+        }
+        .emoji-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 4px;
+        }
+        .emoji-grid button {
+            background: var(--panel2);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 18px;
+            padding: 4px 0;
+            cursor: pointer;
+        }
+        .emoji-grid button:hover {
+            background: #2a3140;
+        }
+        .swatch {
+            width: 100%;
+            height: 30px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            cursor: pointer;
+        }
+        .grad-presets {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
+            margin-top: 8px;
+        }
+        .grad-presets .swatch {
+            height: 28px;
+        }
+        .chk {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            margin-bottom: 7px;
+            cursor: pointer;
+            font-size: 12.5px;
+        }
+        .chk input {
+            width: auto;
+            accent-color: var(--accent);
+        }
+        .stepwrap {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .stepwrap input {
+            flex: 1;
+        }
+        .step {
+            width: 28px;
+            height: 30px;
+            flex-shrink: 0;
+            background: var(--panel2);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text);
+            cursor: pointer;
+            font-size: 16px;
+            line-height: 1;
+        }
+        .step:hover {
+            background: #2a3140;
+        }
+        .hint {
+            color: var(--muted);
+            font-size: 11.5px;
+            line-height: 1.5;
+        }
+        .canvas-wrap {
+            position: relative;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, .5);
+            background: #fff;
+        }
+        #stage {
+            display: block;
+        }
+        .empty-hint {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #555;
+            pointer-events: none;
+        }
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border);
+        }
+        .tabs button {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--muted);
+            padding: 10px;
+            cursor: pointer;
+            font-size: 12.5px;
+            border-bottom: 2px solid transparent;
+        }
+        .tabs button.active {
+            color: var(--text);
+            border-bottom-color: var(--accent);
+        }
+        .prop-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px;
+        }
+        .layers {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px;
+            border-top: 1px solid var(--border);
+            min-height: 120px;
+        }
+        .layer-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 7px 8px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            margin-bottom: 6px;
+            background: var(--panel2);
+            cursor: pointer;
+        }
+        .layer-item.sel {
+            border-color: var(--accent);
+            background: #222a3a;
+        }
+        .layer-item .lname {
+            flex: 1;
+            font-size: 12px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .layer-item .lic {
+            background: transparent;
+            border: none;
+            color: var(--muted);
+            cursor: pointer;
+            font-size: 13px;
+            padding: 2px 4px;
+        }
+        .layer-item .lic:hover {
+            color: var(--text);
+        }
+        .tag {
+            font-size: 10px;
+            color: var(--muted);
+            background: #11141a;
+            padding: 1px 6px;
+            border-radius: 10px;
+        }
+        .align-tools {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 5px;
+        }
+        .align-tools button {
+            background: var(--panel2);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 8px 0;
+            cursor: pointer;
+            color: var(--text);
+            font-size: 14px;
+        }
+        .align-tools button:hover {
+            background: #2a3140;
+        }
+        .mini {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+        .mini button {
+            flex: 1;
+            min-width: 60px;
+            background: var(--panel2);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 7px 4px;
+            cursor: pointer;
+            color: var(--text);
+            font-size: 11.5px;
+        }
+        .mini button:hover {
+            background: #2a3140;
+        }
+        .toast {
+            position: fixed;
+            bottom: 18px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #222a3a;
+            border: 1px solid var(--accent);
+            color: #fff;
+            padding: 10px 18px;
+            border-radius: 10px;
+            font-size: 13px;
+            opacity: 0;
+            transition: .3s;
+            pointer-events: none;
+            z-index: 99;
+        }
+        .toast.show {
+            opacity: 1;
+        }
+        ::-webkit-scrollbar {
+            width: 9px;
+            height: 9px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2c323d;
+            border-radius: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        details summary {
+            cursor: pointer;
+            font-size: 11.5px;
+            color: var(--muted);
+            margin-bottom: 6px;
+        }
+    </style>
+</head>
+<body>
+    <div class="topbar">
+        <div class="brand"><span class="logo">🎨</span> 海报生成器</div>
+        <div class="tb-sep"></div>
+        <button class="btn icon" id="btnNew" title="新建">📄 新建</button>
+        <button class="btn icon" id="btnTpl" title="模板">📚 模板</button>
+        <div class="tb-sep"></div>
+        <button class="btn icon" id="btnUndo" title="撤销 (Ctrl+Z)">↶ 撤销</button>
+        <button class="btn icon" id="btnRedo" title="重做 (Ctrl+Y)">↷ 重做</button>
+        <div class="tb-sep"></div>
+        <button class="btn icon" id="btnDup" title="复制 (Ctrl+D)">⧉ 复制</button>
+        <button class="btn icon" id="btnDel" title="删除 (Del)">🗑 删除</button>
+        <div class="spacer"></div>
+        <div class="zoombox">
+            <button class="btn icon" id="zoomOut" style="padding:4px 8px">−</button>
+            <input id="zoomVal" value="100" title="缩放"><span>%</span>
+            <button class="btn icon" id="zoomIn" style="padding:4px 8px">+</button>
+            <button class="btn icon" id="zoomFit" title="适应屏幕">⤢</button>
+        </div>
+        <div class="tb-sep"></div>
+        <button class="btn" id="btnPNG" title="导出 PNG">🖼 PNG</button>
+        <button class="btn" id="btnJPG" title="导出 JPG">📷 JPG</button>
+        <button class="btn primary" id="btnExport" title="导出设置">⬇ 导出</button>
+    </div>
+
+    <div class="main">
+        <div class="left">
+            <div class="section">
+                <h3>画布尺寸</h3>
+                <div class="field">
+                    <label>预设</label>
+                    <select id="preset">
+                        <option value="custom">自定义</option>
+                        <option value="1080x1080">社交媒体 1080×1080</option>
+                        <option value="1080x1920">竖屏故事 1080×1920</option>
+                        <option value="1200x628">Facebook 帖文 1200×628</option>
+                        <option value="1500x500">横幅 Banner 1500×500</option>
+                        <option value="794x1123">A4 竖版 (打印)</option>
+                        <option value="1123x794">A4 横版 (打印)</option>
+                        <option value="2480x3508">A3 海报 300dpi</option>
+                        <option value="1080x1350">Pinterest 1080×1350</option>
+                        <option value="1050x600">博客封面 1050×600</option>
+                    </select>
+                </div>
+                <div class="grid2">
+                    <div class="field"><label>宽 (px)</label><input type="number" id="cvW" value="1080"></div>
+                    <div class="field"><label>高 (px)</label><input type="number" id="cvH" value="1080"></div>
+                </div>
+                <div class="mini">
+                    <button id="applySize">应用尺寸</button>
+                    <button id="rotateCv">↻ 旋转画布</button>
+                </div>
+            </div>
+            <div class="section">
+                <h3>添加元素</h3>
+                <button class="btn block" id="addText">＋ 添加文字</button>
+                <div class="field" style="margin-top:8px">
+                    <label>添加形状</label>
+                    <div class="grid3">
+                        <button class="btn" data-shape="rect">▭</button>
+                        <button class="btn" data-shape="round">▢</button>
+                        <button class="btn" data-shape="ellipse">●</button>
+                        <button class="btn" data-shape="triangle">△</button>
+                        <button class="btn" data-shape="star">★</button>
+                        <button class="btn" data-shape="line">／</button>
+                    </div>
+                </div>
+                <button class="btn block" id="addImage">🖼 上传图片</button>
+                <button class="btn block" id="addQR">🔳 二维码</button>
+                <div class="field" style="margin-top:8px">
+                    <label>添加图标 (Emoji)</label>
+                    <div class="emoji-grid" id="emojiGrid"></div>
+                </div>
+            </div>
+            <div class="section">
+                <h3>背景</h3>
+                <div class="field">
+                    <label>类型</label>
+                    <div class="seg" id="bgType">
+                        <button data-v="solid" class="active">纯色</button>
+                        <button data-v="gradient">渐变</button>
+                        <button data-v="image">图片</button>
+                    </div>
+                </div>
+                <div id="bgSolid">
+                    <div class="field"><label>背景颜色</label><input type="color" id="bgColor" value="#1b6ec2"></div>
+                </div>
+                <div id="bgGradient" style="display:none">
+                    <div class="field"><label>渐变类型</label>
+                        <div class="seg" id="gradType">
+                            <button data-v="linear" class="active">线性</button>
+                            <button data-v="radial">径向</button>
+                        </div>
+                    </div>
+                    <div class="field"><label>角度 <span id="gradAngleV">45</span>°</label>
+                        <div class="stepwrap"><input type="range" id="gradAngle" min="0" max="360" value="45"><button
+                                type="button" class="step" data-target="gradAngle" data-step="-5">−</button><button
+                                type="button" class="step" data-target="gradAngle" data-step="5">+</button></div>
+                    </div>
+                    <div class="grid2">
+                        <div class="field"><label>颜色 1</label><input type="color" id="gradC1" value="#5b8cff"></div>
+                        <div class="field"><label>颜色 2</label><input type="color" id="gradC2" value="#7c5cff"></div>
+                    </div>
+                    <div class="grad-presets" id="gradPresets"></div>
+                </div>
+                <div id="bgImage" style="display:none">
+                    <button class="btn block" id="bgImgBtn">上传背景图</button>
+                    <div class="field" style="margin-top:8px"><label>填充方式</label>
+                        <select id="bgImgFit">
+                            <option value="cover">覆盖 (cover)</option>
+                            <option value="contain">包含 (contain)</option>
+                            <option value="fill">拉伸 (fill)</option>
+                        </select>
+                    </div>
+                    <div class="field"><label>不透明度 <span id="bgImgOpV">100</span>%</label><input type="range" id="bgImgOp"
+                            min="0" max="100" value="100"></div>
+                </div>
+            </div>
+            <div class="section">
+                <h3>对齐与分布</h3>
+                <div class="align-tools">
+                    <button data-al="left" title="左对齐">⬅</button>
+                    <button data-al="hcenter" title="水平居中">↔</button>
+                    <button data-al="right" title="右对齐">➡</button>
+                    <button data-al="top" title="顶对齐">⬆</button>
+                    <button data-al="vcenter" title="垂直居中">↕</button>
+                    <button data-al="bottom" title="底对齐">⬇</button>
+                </div>
+                <div class="mini" style="margin-top:8px">
+                    <button data-al="canvas-h">画布水平居中</button>
+                    <button data-al="canvas-v">画布垂直居中</button>
+                    <button data-al="bring">置顶</button>
+                    <button data-al="front">上移</button>
+                    <button data-al="back">下移</button>
+                    <button data-al="send">置底</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="center" id="center">
+            <div class="canvas-wrap" id="canvasWrap">
+                <canvas id="stage"></canvas>
+                <div class="empty-hint" id="emptyHint">从左侧添加元素，或选择模板开始设计</div>
+            </div>
+        </div>
+
+        <div class="right">
+            <div class="tabs">
+                <button class="active" data-tab="prop">属性</button>
+                <button data-tab="layer">图层</button>
+            </div>
+            <div class="prop-area" id="propArea">
+                <div class="hint">未选择元素。点击画布上的元素进行编辑，或使用左侧工具栏添加新元素。</div>
+            </div>
+            <div class="layers" id="layerList" style="display:none"></div>
+        </div>
+    </div>
+    <input type="file" id="fileInput" accept="image/*" style="display:none">
+    <input type="file" id="bgFileInput" accept="image/*" style="display:none">
+    <div class="toast" id="toast"></div>
+
+    <script>
+        "use strict";
+        /* ============================ 状态 ============================ */
+        const stage = document.getElementById('stage');
+        const ctx = stage.getContext('2d');
+        let state = {
+            w: 1080,
+            h: 1080,
+            bg: {
+                type: 'solid',
+                color: '#1b6ec2',
+                gradient: { type: 'linear', angle: 45, c1: '#5b8cff', c2: '#7c5cff' },
+                image: null,
+                fit: 'cover',
+                opacity: 1
+            },
+            elements: [],
+            selected: null
+        };
+        let zoom = 1;
+        let drag = null;
+        let guides = [];
+        const MIN = 8;
+
+        const uid = () => 'el' + Math.random().toString(36).slice(2, 9);
+        const cloneObj = o => {
+            if (o == null || typeof o !== 'object') return o;
+            if (o instanceof HTMLImageElement) return o;
+            if (Array.isArray(o)) return o.map(cloneObj);
+            const c = {};
+            for (const k in o) c[k] = cloneObj(o[k]);
+            return c;
+        };
+        const cloneEl = el => ({ ...el, img: el.img || null });
+        const cloneBg = () => cloneObj(state.bg);
+
+        /* ============================ 历史 ============================ */
+        let undoStack = [],
+            redoStack = [];
+
+        function serialize() {
+            return { w: state.w, h: state.h, bg: cloneBg(), els: state.elements.map(cloneEl) };
+        }
+
+        function pushHistory() {
+            undoStack.push(serialize());
+            if (undoStack.length > 80) undoStack.shift();
+            redoStack = [];
+            updateHistButtons();
+        }
+
+        function restore(s) {
+            state.w = s.w;
+            state.h = s.h;
+            state.bg = s.bg;
+            state.elements = s.els.map(e => ({ ...e }));
+            state.selected = null;
+            applyCanvasSize();
+            invalidateScene();
+            render();
+            renderProps();
+            renderLayers();
+        }
+
+        function undo() {
+            if (!undoStack.length) return;
+            redoStack.push(serialize());
+            restore(undoStack.pop());
+            updateHistButtons();
+        }
+
+        function redo() {
+            if (!redoStack.length) return;
+            undoStack.push(serialize());
+            restore(redoStack.pop());
+            updateHistButtons();
+        }
+
+        function updateHistButtons() {
+            document.getElementById('btnUndo').disabled = !undoStack.length;
+            document.getElementById('btnRedo').disabled = !redoStack.length;
+        }
+
+        /* ============================ 渲染 ============================ */
+        function applyCanvasSize() {
+            stage.width = state.w;
+            stage.height = state.h;
+            stage.style.width = (state.w * zoom) + 'px';
+            stage.style.height = (state.h * zoom) + 'px';
+        }
+
+        let _sceneOff = null,
+            _sceneCtx = null,
+            _sceneKey = '';
+
+        function invalidateScene() { _sceneKey = ''; }
+
+        function sceneHash() {
+            const bg = state.bg.type === 'image' ?
+                { type: 'image', color: state.bg.color, fit: state.bg.fit, opacity: state.bg.opacity,
+                gradient: state.bg.gradient } :
+                state.bg;
+            const els = state.elements
+                .filter(e => e.id !== state.selected && e.visible !== false)
+                .map(e => ({ ...e, img: null }));
+            try { return state.w + '|' + state.h + '|' + JSON.stringify(bg) + '|' + JSON.stringify(els); } catch (e) { return 'r' +
+                    Math.random(); }
+        }
+
+        function buildScene() {
+            if (!_sceneOff) { _sceneOff = document.createElement('canvas');
+                _sceneCtx = _sceneOff.getContext('2d'); }
+            if (_sceneOff.width !== state.w || _sceneOff.height !== state.h) { _sceneOff.width = state.w;
+                _sceneOff.height = state.h; }
+            const c = _sceneCtx;
+            c.setTransform(1, 0, 0, 1, 0, 0);
+            c.clearRect(0, 0, state.w, state.h);
+            if (state.bg.type === 'solid') { c.fillStyle = state.bg.color;
+                c.fillRect(0, 0, state.w, state.h); } else if (state.bg.type === 'gradient') { drawGradient(c); } else if (
+                state.bg.type === 'image' && state.bg.image) { drawBgImage(c); } else { c.fillStyle = '#ffffff';
+                c.fillRect(0, 0, state.w, state.h); }
+            for (const el of state.elements) { if (el.visible === false) continue; if (el.id === state.selected)
+            continue;
+                drawElement(c, el); }
+        }
+
+        function render() {
+            const key = sceneHash();
+            if (key !== _sceneKey || !_sceneOff) { buildScene();
+                _sceneKey = key; }
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.clearRect(0, 0, state.w, state.h);
+            ctx.drawImage(_sceneOff, 0, 0);
+            const el = getSel();
+            if (el) drawElement(ctx, el);
+            drawOverlay(ctx);
+            document.getElementById('emptyHint').style.display = state.elements.length ? 'none' : 'flex';
+        }
+
+        function renderScene(c, scale) {
+            c.save();
+            c.scale(scale, scale);
+            c.clearRect(0, 0, state.w, state.h);
+            if (state.bg.type === 'solid') { c.fillStyle = state.bg.color;
+                c.fillRect(0, 0, state.w, state.h); } else if (state.bg.type === 'gradient') { drawGradient(c); } else if (
+                state.bg.type === 'image' && state.bg.image) { drawBgImage(c); } else { c.fillStyle = '#ffffff';
+                c.fillRect(0, 0, state.w, state.h); }
+            for (const el of state.elements) { if (el.visible !== false) drawElement(c, el); }
+            c.restore();
+        }
+
+        function drawGradient(c) {
+            const g = state.bg.gradient;
+            if (g.type === 'linear') {
+                const a = g.angle * Math.PI / 180,
+                    cx = state.w / 2,
+                    cy = state.h / 2,
+                    hw = state.w / 2,
+                    hh = state.h / 2;
+                const L = Math.abs(hw * Math.cos(a)) + Math.abs(hh * Math.sin(a));
+                const dx = Math.cos(a),
+                    dy = Math.sin(a);
+                const grad = c.createLinearGradient(cx - dx * L, cy - dy * L, cx + dx * L, cy + dy * L);
+                grad.addColorStop(0, g.c1);
+                grad.addColorStop(1, g.c2);
+                c.fillStyle = grad;
+                c.fillRect(0, 0, state.w, state.h);
+            } else {
+                const grad = c.createRadialGradient(state.w / 2, state.h / 2, 0, state.w / 2, state.h / 2, Math.max(state.w,
+                    state.h) / 1.4);
+                grad.addColorStop(0, g.c1);
+                grad.addColorStop(1, g.c2);
+                c.fillStyle = grad;
+                c.fillRect(0, 0, state.w, state.h);
+            }
+        }
+
+        function drawBgImage(c) {
+            const img = state.bg.image;
+            c.save();
+            c.globalAlpha = state.bg.opacity;
+            const r = fitRect(img.width, img.height, state.w, state.h, state.bg.fit);
+            c.drawImage(img, r.x, r.y, r.w, r.h);
+            c.restore();
+        }
+
+        function fitRect(iw, ih, cw, ch, mode) {
+            const ir = iw / ih,
+                cr = cw / ch;
+            let w, h;
+            if (mode === 'cover') { if (ir > cr) { h = ch;
+                    w = ch * ir; } else { w = cw;
+                    h = cw / ir; } } else if (mode === 'contain') { if (ir > cr) { w = cw;
+                    h = cw / ir; } else { h = ch;
+                    w = ch * ir; } } else { w = cw;
+                h = ch; }
+            return { x: (cw - w) / 2, y: (ch - h) / 2, w, h };
+        }
+
+        function drawElement(c, el) {
+            c.save();
+            c.globalAlpha = (el.opacity == null ? 1 : el.opacity);
+            const cx = el.x + el.w / 2,
+                cy = el.y + el.h / 2;
+            c.translate(cx, cy);
+            c.rotate((el.rotation || 0) * Math.PI / 180);
+            if (el.type === 'text') drawText(c, el);
+            else if (el.type === 'shape') drawShape(c, el);
+            else if (el.type === 'image') drawImageEl(c, el);
+            else if (el.type === 'icon') drawIcon(c, el);
+            else if (el.type === 'qr') drawQR(c, el);
+            c.restore();
+        }
+
+        function wrapText(c, text, maxW) {
+            const lines = [];
+            const paras = text.split('\n');
+            for (const p of paras) {
+                if (p === '') { lines.push(''); continue; }
+                const words = p.split(/(\s+)/);
+                let cur = '';
+                for (const w of words) {
+                    const test = cur + w;
+                    if (c.measureText(test).width > maxW && cur !== '') { lines.push(cur.trimEnd());
+                        cur = w.trimStart(); } else cur = test;
+                }
+                lines.push(cur.trimEnd());
+            }
+            return lines;
+        }
+
+        function drawText(c, el) {
+            const fs = el.fontSize;
+            c.font = `${el.italic?'italic ':''}${el.bold?'700':'400'} ${fs}px ${el.fontFamily}`;
+            c.textBaseline = 'top';
+            c.textAlign = el.align;
+            const lh = fs * (el.lineHeight || 1.2);
+            const ls = el.letterSpacing || 0;
+            let lines = wrapText(c, el.text, el.w);
+            const totalH = lines.length * lh;
+            let y = -el.h / 2;
+            if (el.valign === 'middle') y = -totalH / 2;
+            else if (el.valign === 'bottom') y = el.h / 2 - totalH;
+            if (el.shadow && el.shadow.on) { c.shadowColor = el.shadow.color;
+                c.shadowBlur = el.shadow.blur;
+                c.shadowOffsetX = el.shadow.x;
+                c.shadowOffsetY = el.shadow.y; }
+            for (const line of lines) {
+                let tx;
+                if (el.align === 'center') tx = 0;
+                else if (el.align === 'right') tx = el.w / 2;
+                else tx = -el.w / 2;
+                drawLine(c, line, tx, y, el, ls);
+                y += lh;
+            }
+            c.shadowColor = 'transparent';
+            c.shadowBlur = 0;
+            c.shadowOffsetX = 0;
+            c.shadowOffsetY = 0;
+        }
+
+        function drawLine(c, line, tx, y, el, ls) {
+            if (ls > 0) {
+                const chars = [...line];
+                let total = 0;
+                for (const ch of chars) total += c.measureText(ch).width + ls;
+                total -= ls;
+                let startX = tx - (el.align === 'center' ? total / 2 : (el.align === 'right' ? total : 0));
+                let cx2 = startX;
+                for (const ch of chars) {
+                    if (el.stroke && el.stroke.on) { c.lineWidth = el.stroke.width;
+                        c.strokeStyle = el.stroke.color;
+                        c.lineJoin = 'round';
+                        c.strokeText(ch, cx2, y); }
+                    c.fillStyle = el.color;
+                    c.fillText(ch, cx2, y);
+                    cx2 += c.measureText(ch).width + ls;
+                }
+            } else {
+                if (el.stroke && el.stroke.on) { c.lineWidth = el.stroke.width;
+                    c.strokeStyle = el.stroke.color;
+                    c.lineJoin = 'round';
+                    c.strokeText(line, tx, y); }
+                c.fillStyle = el.color;
+                c.fillText(line, tx, y);
+            }
+            if (el.underline) {
+                const lw = c.measureText(line).width;
+                let ux = tx;
+                if (el.align === 'center') ux = tx - lw / 2;
+                else if (el.align === 'right') ux = tx - lw;
+                c.strokeStyle = el.color;
+                c.lineWidth = Math.max(1, el.fontSize / 14);
+                c.beginPath();
+                c.moveTo(ux, y + el.fontSize + 2);
+                c.lineTo(ux + lw, y + el.fontSize + 2);
+                c.stroke();
+            }
+        }
+
+        function drawShape(c, el) {
+            const w = el.w,
+                h = el.h,
+                sw = el.strokeWidth || 0;
+            const fill = el.fill,
+                stroke = el.strokeColor,
+                r = el.cornerRadius || 0;
+            c.fillStyle = fill;
+            if (stroke) { c.strokeStyle = stroke;
+                c.lineWidth = sw; }
+            if (el.shape === 'rect' || el.shape === 'round') {
+                roundRectPath(c, -w / 2, -h / 2, w, h, el.shape === 'round' ? Math.min(r, w / 2, h / 2) : 0);
+                if (fill !== 'none') c.fill();
+                if (stroke && sw > 0) c.stroke();
+            } else if (el.shape === 'ellipse') {
+                c.beginPath();
+                c.ellipse(0, 0, w / 2, h / 2, 0, 0, Math.PI * 2);
+                if (fill !== 'none') c.fill();
+                if (stroke && sw > 0) c.stroke();
+            } else if (el.shape === 'line') {
+                c.beginPath();
+                c.moveTo(-w / 2, 0);
+                c.lineTo(w / 2, 0);
+                c.strokeStyle = fill === 'none' ? stroke : fill;
+                c.lineWidth = el.lineThickness || sw || 4;
+                c.lineCap = 'round';
+                c.stroke();
+            } else if (el.shape === 'triangle') {
+                c.beginPath();
+                c.moveTo(0, -h / 2);
+                c.lineTo(w / 2, h / 2);
+                c.lineTo(-w / 2, h / 2);
+                c.closePath();
+                if (fill !== 'none') c.fill();
+                if (stroke && sw > 0) c.stroke();
+            } else if (el.shape === 'star') {
+                starPath(c, Math.min(w, h) / 2, Math.min(w, h) / 4, 5, -Math.PI / 2);
+                if (fill !== 'none') c.fill();
+                if (stroke && sw > 0) c.stroke();
+            }
+        }
+
+        function roundRectPath(c, x, y, w, h, r) { r = Math.min(r, w / 2, h / 2);
+            c.beginPath();
+            c.moveTo(x + r, y);
+            c.arcTo(x + w, y, x + w, y + h, r);
+            c.arcTo(x + w, y + h, x, y + h, r);
+            c.arcTo(x, y + h, x, y, r);
+            c.arcTo(x, y, x + w, y, r);
+            c.closePath(); }
+
+        function starPath(c, R, r, points, rot) { c.beginPath(); for (let i = 0; i < points * 2; i++) { const rad = i % 2 ? r :
+                R; const a = rot + i * Math.PI / points; const x = Math.cos(a) * rad,
+                y = Math.sin(a) * rad;
+            i ? c.lineTo(x, y) : c.moveTo(x, y); } c.closePath(); }
+
+        function drawImageEl(c, el) {
+            if (!el.img) { c.fillStyle = '#ddd';
+                roundRectPath(c, -el.w / 2, -el.h / 2, el.w, el.h, el.radius || 0);
+                c.fill(); return; }
+            const img = el.img;
+            if (el.shadow && el.shadow.on) { c.shadowColor = el.shadow.color;
+                c.shadowBlur = el.shadow.blur;
+                c.shadowOffsetX = el.shadow.x;
+                c.shadowOffsetY = el.shadow.y; }
+            c.save();
+            let filter = '';
+            if (el.filter) { const f = el.filter; if (f.gray) filter += 'grayscale(1) '; if (f.sepia) filter +=
+                    'sepia(1) '; if (f.bright != 100) filter += `brightness(${f.bright}%) `; if (f.blur > 0) filter +=
+                    `blur(${f.blur}px) `; if (f.contrast != 100) filter += `contrast(${f.contrast}%) `; }
+            c.filter = filter ? filter.trim() : 'none';
+            roundRectPath(c, -el.w / 2, -el.h / 2, el.w, el.h, el.radius || 0);
+            c.clip();
+            const r = fitRect(img.width, img.height, el.w, el.h, el.fit || 'cover');
+            c.drawImage(img, r.x, r.y, r.w, r.h);
+            c.restore();
+            if (el.border && el.border.w > 0) { c.strokeStyle = el.border.color;
+                c.lineWidth = el.border.w;
+                roundRectPath(c, -el.w / 2, -el.h / 2, el.w, el.h, el.radius || 0);
+                c.stroke(); }
+        }
+
+        function drawIcon(c, el) {
+            c.font = `${el.fontSize}px serif`;
+            c.textAlign = 'center';
+            c.textBaseline = 'middle';
+            c.fillStyle = el.color || '#000';
+            c.fillText(el.char, 0, 0);
+        }
+        let qrCache = {};
+
+        function drawQR(c, el) {
+            if (typeof qrcode === 'undefined') { c.fillStyle = '#f55';
+                c.font = '20px sans-serif';
+                c.textAlign = 'center';
+                c.fillText('需联网加载', 0, 0); return; }
+            const key = el.text + '|' + el.ecc;
+            let qr = qrCache[key];
+            if (!qr) { qr = qrcode(0, el.ecc || 'M'); try { qr.addData(el.text || ' ');
+                    qr.make(); } catch (e) {} qrCache[key] = qr; }
+            const n = qr.getModuleCount();
+            const pad = Math.max(2, Math.floor(n / 10));
+            const size = n + pad * 2;
+            const cell = el.w / size;
+            c.fillStyle = el.light || '#ffffff';
+            c.fillRect(-el.w / 2, -el.h / 2, el.w, el.h);
+            c.fillStyle = el.dark || '#000000';
+            for (let r = 0; r < n; r++)
+                for (let cc = 0; cc < n; cc++)
+                    if (qr.isDark(r, cc)) c.fillRect(-el.w / 2 + (cc + pad) * cell, -el.h / 2 + (r + pad) * cell, cell +
+                        0.5, cell + 0.5);
+        }
+
+        /* ============================ 选择 / 手柄 ============================ */
+        function getSel() { return state.selected ? state.elements.find(e => e.id === state.selected) : null; }
+
+        function elementBounds(el) {
+            if (el.type === 'image' && el.img && (el.fit || 'cover') === 'contain') {
+                const r = fitRect(el.img.width, el.img.height, el.w, el.h, 'contain');
+                return { x: r.x - el.w / 2, y: r.y - el.h / 2, w: r.w, h: r.h };
+            }
+            return { x: -el.w / 2, y: -el.h / 2, w: el.w, h: el.h };
+        }
+
+        function handlePositions(el) {
+            const b = elementBounds(el);
+            const hw = b.w / 2,
+                hh = b.h / 2,
+                cx = el.x + el.w / 2,
+                cy = el.y + el.h / 2,
+                rad = (el.rotation || 0) * Math.PI / 180;
+            const pts = { tl: [-hw, -hh], tm: [0, -hh], tr: [hw, -hh], ml: [-hw, 0], mr: [hw, 0], bl: [-hw, hh],
+            bm: [0, hh], br: [hw, hh] };
+            const rot = (x, y) => ({ x: cx + x * Math.cos(rad) - y * Math.sin(rad), y: cy + x * Math.sin(rad) + y * Math
+            .cos(rad) });
+            const out = {};
+            for (const k in pts) out[k] = rot(pts[k][0], pts[k][1]);
+            out.rot = rot(0, -hh - 28 / zoom);
+            return out;
+        }
+
+        function drawOverlay(c) {
+            const el = getSel();
+            if (guides.length) {
+                c.save();
+                c.strokeStyle = '#5b8cff';
+                c.lineWidth = 1 / zoom;
+                c.setLineDash([6 / zoom, 4 / zoom]);
+                for (const g of guides) {
+                    if (g.vertical) c.beginPath(), c.moveTo(g.pos, 0), c.lineTo(g.pos, state.h), c.stroke();
+                    else c.beginPath(), c.moveTo(0, g.pos), c.lineTo(state.w, g.pos), c.stroke();
+                }
+                c.restore();
+            }
+            if (!el || el.visible === false) return;
+            const pts = handlePositions(el);
+            c.save();
+            if (el.type === 'image' && el.img && (el.fit || 'cover') === 'contain') {
+                const b = elementBounds(el);
+                const cx = el.x + el.w / 2,
+                    cy = el.y + el.h / 2,
+                    rad = (el.rotation || 0) * Math.PI / 180;
+                const rot = (x, y) => ({ x: cx + x * Math.cos(rad) - y * Math.sin(rad), y: cy + x * Math.sin(rad) + y *
+                        Math.cos(rad) });
+                const inner = [rot(b.x, b.y), rot(b.x + b.w, b.y), rot(b.x + b.w, b.y + b.h), rot(b.x, b.y + b.h)];
+                c.strokeStyle = 'rgba(91,140,255,0.5)';
+                c.lineWidth = 1 / zoom;
+                c.setLineDash([4 / zoom, 3 / zoom]);
+                c.beginPath();
+                c.moveTo(inner[0].x, inner[0].y);
+                for (let i = 1; i < 4; i++) c.lineTo(inner[i].x, inner[i].y);
+                c.closePath();
+                c.stroke();
+                c.setLineDash([]);
+            }
+            c.strokeStyle = '#5b8cff';
+            c.lineWidth = 1.5 / zoom;
+            c.beginPath();
+            const corners = [pts.tl, pts.tr, pts.br, pts.bl];
+            c.moveTo(corners[0].x, corners[0].y);
+            for (let i = 1; i < 4; i++) c.lineTo(corners[i].x, corners[i].y);
+            c.closePath();
+            c.stroke();
+            c.beginPath();
+            c.moveTo(pts.tm.x, pts.tm.y);
+            c.lineTo(pts.rot.x, pts.rot.y);
+            c.stroke();
+            const hs = 5 / zoom;
+            for (const k in pts) {
+                if (k === 'rot') continue;
+                c.fillStyle = '#fff';
+                c.strokeStyle = '#5b8cff';
+                c.lineWidth = 1.5 / zoom;
+                c.beginPath();
+                c.rect(pts[k].x - hs, pts[k].y - hs, hs * 2, hs * 2);
+                c.fill();
+                c.stroke();
+            }
+            c.fillStyle = '#5b8cff';
+            c.beginPath();
+            c.arc(pts.rot.x, pts.rot.y, hs * 1.2, 0, Math.PI * 2);
+            c.fill();
+            c.restore();
+        }
+
+        /* ============================ 坐标 ============================ */
+        function toCanvas(e) {
+            const rect = stage.getBoundingClientRect();
+            const sx = stage.width / rect.width,
+                sy = stage.height / rect.height;
+            return { x: (e.clientX - rect.left) * sx, y: (e.clientY - rect.top) * sy };
+        }
+
+        function hitHandle(el, p) {
+            const pts = handlePositions(el);
+            const t = 9 / zoom;
+            for (const k in pts) { if (k === 'rot') continue; const d = Math.hypot(p.x - pts[k].x, p.y - pts[k].y); if (d <=
+                t) return k; }
+            const dr = Math.hypot(p.x - pts.rot.x, p.y - pts.rot.y);
+            if (dr <= t * 1.4) return 'rot';
+            return null;
+        }
+
+        function pointInEl(el, p) {
+            const cx = el.x + el.w / 2,
+                cy = el.y + el.h / 2,
+                rad = -(el.rotation || 0) * Math.PI / 180;
+            const dx = p.x - cx,
+                dy = p.y - cy;
+            const lx = dx * Math.cos(rad) - dy * Math.sin(rad),
+                ly = dx * Math.sin(rad) + dy * Math.cos(rad);
+            return Math.abs(lx) <= el.w / 2 + 3 && Math.abs(ly) <= el.h / 2 + 3;
+        }
+
+        function topElementAt(p) {
+            for (let i = state.elements.length - 1; i >= 0; i--) { const el = state.elements[i]; if (el.visible === false ||
+                    el.locked) continue; if (pointInEl(el, p)) return el; }
+            return null;
+        }
+
+        /* ============================ 交互 ============================ */
+        let _dragging = false;
+
+        function startHandleDrag(el, h, p, e) {
+            pushHistory();
+            _dragging = true;
+            const pts = handlePositions(el);
+            const cx = el.x + el.w / 2,
+                cy = el.y + el.h / 2;
+            const ax = -pts[h].x + 2 * cx,
+                ay = -pts[h].y + 2 * cy;
+            const startProps = {
+                w: el.w,
+                h: el.h,
+                x: el.x,
+                y: el.y,
+                fontSize: el.fontSize,
+                lineHeight: el.lineHeight,
+                letterSpacing: el.letterSpacing,
+                cornerRadius: el.cornerRadius,
+                strokeWidth: el.strokeWidth,
+                lineThickness: el.lineThickness,
+                radius: el.radius,
+                border: el.border ? { ...el.border } : null,
+            };
+            drag = { mode: 'resize', handle: h, el, anchor: { x: ax, y: ay }, startW: el.w, startH: el.h, cx, cy,
+                startProps, shiftLock: e.shiftKey };
+        }
+        let _rafPending = false;
+
+        function scheduleRender() {
+            if (_rafPending) return;
+            _rafPending = true;
+            requestAnimationFrame(() => { _rafPending = false;
+                render(); });
+        }
+        window.addEventListener('mousemove', e => {
+            if (!drag) return;
+            const p = toCanvas(e);
+            if (drag.mode === 'move') {
+                const dx = p.x - drag.start.x,
+                    dy = p.y - drag.start.y;
+                const sel = getSel();
+                if (!sel) return;
+                for (const o of drag.orig) { const el = state.elements.find(c => c.id === o.id); if (el && !el
+                    .locked) { el.x = o.x + dx;
+                        el.y = o.y + dy; } }
+                snapSelected();
+                scheduleRender();
+            } else if (drag.mode === 'resize') {
+                resizeEl(drag.el, drag.handle, p, drag.anchor, drag.cx, drag.cy, e.shiftKey);
+                scheduleRender();
+            } else if (drag.mode === 'rotate') {
+                const el = drag.el;
+                const cx = el.x + el.w / 2,
+                    cy = el.y + el.h / 2;
+                const ang = Math.atan2(p.y - cy, p.x - cx) * 180 / Math.PI + 90;
+                el.rotation = Math.round(ang);
+                scheduleRender();
+            }
+        });
+        window.addEventListener('mouseup', () => {
+            if (drag) {
+                drag = null;
+                guides = [];
+                _dragging = false;
+                invalidateScene();
+                render();
+                renderProps();
+            }
+        });
+
+        function snapSelected() {
+            const sel = getSel();
+            if (!sel) return;
+            guides = [];
+            const t = 10 / zoom;
+            const cx = sel.x + sel.w / 2,
+                cy = sel.y + sel.h / 2;
+            if (Math.abs(cx - state.w / 2) < t) { sel.x = state.w / 2 - sel.w / 2;
+                guides.push({ vertical: true, pos: state.w / 2 }); }
+            if (Math.abs(sel.x) < t) { sel.x = 0;
+                guides.push({ vertical: true, pos: 0 }); }
+            if (Math.abs(sel.x + sel.w - state.w) < t) { sel.x = state.w - sel.w;
+                guides.push({ vertical: true, pos: state.w }); }
+            if (Math.abs(cy - state.h / 2) < t) { sel.y = state.h / 2 - sel.h / 2;
+                guides.push({ horizontal: true, pos: state.h / 2 }); }
+            if (Math.abs(sel.y) < t) { sel.y = 0;
+                guides.push({ horizontal: true, pos: 0 }); }
+            if (Math.abs(sel.y + sel.h - state.h) < t) { sel.y = state.h - sel.h;
+                guides.push({ horizontal: true, pos: state.h }); }
+        }
+
+        function resizeEl(el, h, p, anchor, cx, cy, shiftKey) {
+            const rad = (el.rotation || 0) * Math.PI / 180;
+            const dx = p.x - anchor.x,
+                dy = p.y - anchor.y;
+            const lx = dx * Math.cos(-rad) - dy * Math.sin(-rad);
+            const ly = dx * Math.sin(-rad) + dy * Math.cos(-rad);
+            const hx = h.includes('l') ? -1 : (h.includes('r') ? 1 : 0);
+            const hy = h.includes('t') ? -1 : (h.includes('b') ? 1 : 0);
+            const sp = drag.startProps;
+            const startRatio = sp.w / sp.h;
+            const isCorner = hx !== 0 && hy !== 0;
+            let nw = hx !== 0 ? lx / hx : el.w;
+            let nh = hy !== 0 ? ly / hy : el.h;
+            const shouldLockRatio = (el.type === 'image' || el.type === 'icon') ? !shiftKey : shiftKey;
+            if (shouldLockRatio && isCorner && startRatio > 0 && isFinite(startRatio)) {
+                const rawW = Math.abs(lx);
+                const rawH = Math.abs(ly);
+                let useW = rawW;
+                let useH = rawW / startRatio;
+                if (useH < rawH) { useH = rawH;
+                    useW = rawH * startRatio; }
+                nw = useW;
+                nh = useH;
+            }
+            nw = Math.max(MIN, Math.abs(nw));
+            nh = Math.max(MIN, Math.abs(nh));
+            if (shouldLockRatio && isCorner && startRatio > 0 && isFinite(startRatio)) {
+                if (nw / nh > startRatio) nw = nh * startRatio;
+                else nh = nw / startRatio;
+            }
+            const nlx = -hx * nw / 2,
+                nly = -hy * nh / 2;
+            const ncx = anchor.x + (nlx * Math.cos(rad) - nly * Math.sin(rad));
+            const ncy = anchor.y + (nlx * Math.sin(rad) + nly * Math.cos(rad));
+            const scaleX = nw / Math.max(MIN, sp.w);
+            const scaleY = nh / Math.max(MIN, sp.h);
+            el.w = nw;
+            el.h = nh;
+            el.x = ncx - nw / 2;
+            el.y = ncy - nh / 2;
+            if (el.type === 'text' && sp.fontSize != null) {
+                if (isCorner && (hx !== 0 && hy !== 0)) {
+                    const avgScale = Math.sqrt(scaleX * scaleY);
+                    el.fontSize = Math.max(4, Math.round(sp.fontSize * avgScale));
+                    if (sp.lineHeight != null) el.lineHeight = Math.round(sp.lineHeight * avgScale * 20) / 20;
+                    if (sp.letterSpacing != null) el.letterSpacing = Math.max(0, Math.round(sp.letterSpacing *
+                    avgScale));
+                } else if (hx !== 0 && hy === 0) {
+                    el.fontSize = sp.fontSize;
+                    if (sp.lineHeight != null) el.lineHeight = sp.lineHeight;
+                    if (sp.letterSpacing != null) el.letterSpacing = sp.letterSpacing;
+                } else if (hy !== 0 && hx === 0) {
+                    const scl = nh / Math.max(MIN, sp.h);
+                    el.fontSize = Math.max(4, Math.round(sp.fontSize * scl));
+                    if (sp.lineHeight != null) el.lineHeight = Math.round(sp.lineHeight * scl * 20) / 20;
+                    if (sp.letterSpacing != null) el.letterSpacing = Math.max(0, Math.round(sp.letterSpacing * scl));
+                }
+                if (sp.strokeWidth != null && el.stroke) el.stroke.width = Math.max(0, Math.round(sp.strokeWidth * Math
+                .sqrt(scaleX * scaleY)));
+                if (sp.shadowBlur != null && el.shadow) el.shadow.blur = Math.max(0, Math.round(sp.shadowBlur * Math.sqrt(
+                    scaleX * scaleY)));
+            }
+            if (el.type === 'icon' && sp.fontSize != null) {
+                const avgScale = Math.sqrt(scaleX * scaleY);
+                el.fontSize = Math.max(4, Math.round(sp.fontSize * avgScale));
+            }
+            if (el.type === 'shape') {
+                if (sp.cornerRadius != null) el.cornerRadius = Math.max(0, Math.round(sp.cornerRadius * Math.sqrt(scaleX *
+                    scaleY)));
+                if (sp.strokeWidth != null) el.strokeWidth = Math.max(0, Math.round(sp.strokeWidth * Math.sqrt(scaleX *
+                    scaleY)));
+                if (sp.lineThickness != null) el.lineThickness = Math.max(1, Math.round(sp.lineThickness * Math.sqrt(
+                scaleX * scaleY)));
+            }
+            if (el.type === 'image') {
+                if (sp.radius != null) el.radius = Math.max(0, Math.round(sp.radius * Math.sqrt(scaleX * scaleY)));
+                if (sp.border && el.border) el.border.w = Math.max(1, Math.round(sp.border.w * Math.sqrt(scaleX *
+                scaleY)));
+            }
+        }
+    </script>
+    <script>
+        /* ========================= 旋转手柄 ========================= */
+        stage.onmousedown = function(e) {
+            if (e.button !== 0) return;
+            const p = toCanvas(e);
+            const el = getSel();
+            if (el) {
+                const h = hitHandle(el, p);
+                if (h === 'rot') { pushHistory();
+                    _dragging = true;
+                    drag = { mode: 'rotate', el }; return; }
+                if (h) { startHandleDrag(el, h, p, e); return; }
+            }
+            const hit = topElementAt(p);
+            if (hit) {
+                if (state.selected !== hit.id) { state.selected = hit.id;
+                    invalidateScene();
+                    render();
+                    renderProps();
+                    renderLayers(); }
+                pushHistory();
+                _dragging = true;
+                drag = { mode: 'move', start: p, orig: [{ id: hit.id, x: hit.x, y: hit.y }] };
+            } else {
+                state.selected = null;
+                invalidateScene();
+                render();
+                renderProps();
+                renderLayers();
+            }
+        };
+
+        /* ============================ 添加元素 ============================ */
+        function addElement(el) {
+            el.id = uid();
+            el.opacity = el.opacity ?? 1;
+            el.rotation = el.rotation || 0;
+            el.visible = true;
+            pushHistory();
+            state.elements.push(el);
+            state.selected = el.id;
+            invalidateScene();
+            render();
+            renderProps();
+            renderLayers();
+            return el;
+        }
+
+        function addText(opts = {}) {
+            const el = Object.assign({
+                type: 'text',
+                x: state.w / 2 - 300,
+                y: state.h / 2 - 60,
+                w: 600,
+                h: 120,
+                text: '双击编辑文字',
+                fontFamily: '"Noto Sans SC",sans-serif',
+                fontSize: 64,
+                color: '#ffffff',
+                bold: false,
+                italic: false,
+                underline: false,
+                align: 'center',
+                valign: 'middle',
+                lineHeight: 1.2,
+                letterSpacing: 0,
+                shadow: { on: false, color: '#000000', blur: 8, x: 2, y: 2 },
+                stroke: { on: false, color: '#000000', width: 0 }
+            }, opts);
+            return addElement(el);
+        }
+
+        function addShape(shape) {
+            const w = 200,
+                h = shape === 'line' ? 16 : 200;
+            const el = {
+                type: 'shape',
+                shape,
+                x: state.w / 2 - w / 2,
+                y: state.h / 2 - h / 2,
+                w,
+                h,
+                fill: shape === 'line' ? '#ffffff' : '#5b8cff',
+                strokeColor: '#ffffff',
+                strokeWidth: 0,
+                cornerRadius: 20,
+                lineThickness: 8
+            };
+            return addElement(el);
+        }
+
+        function addIcon(ch) {
+            const el = { type: 'icon', char: ch, x: state.w / 2 - 60, y: state.h / 2 - 60, w: 120, h: 120,
+            fontSize: 96, color: '#000000' };
+            return addElement(el);
+        }
+        let _qrLoading = false;
+
+        function ensureQr(cb) {
+            if (typeof qrcode !== 'undefined') { cb(); return; }
+            if (_qrLoading) return;
+            _qrLoading = true;
+            const s = document.createElement('script');
+            s.src = 'https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js';
+            s.onload = () => { _qrLoading = false;
+                cb(); };
+            s.onerror = () => { _qrLoading = false;
+                toast('二维码库加载失败，请检查网络'); };
+            document.head.appendChild(s);
+        }
+
+        function addQR() {
+            ensureQr(() => {
+                const el = {
+                    type: 'qr',
+                    text: 'https://www.workbuddy.cn',
+                    ecc: 'M',
+                    dark: '#000000',
+                    light: '#ffffff',
+                    x: state.w / 2 - 120,
+                    y: state.h / 2 - 260,
+                    w: 200,
+                    h: 200
+                };
+                addElement(el);
+            });
+        }
+
+        function addImageFromImg(img) {
+            const r = fitRect(img.width, img.height, Math.min(state.w * 0.6, 600), Math.min(state.h * 0.6, 600),
+            'contain');
+            const el = {
+                type: 'image',
+                img,
+                x: state.w / 2 - r.w / 2,
+                y: state.h / 2 - r.h / 2,
+                w: r.w,
+                h: r.h,
+                fit: 'cover',
+                radius: 0,
+                border: null,
+                shadow: { on: false, color: '#000000', blur: 20, x: 0, y: 10 },
+                filter: { gray: false, sepia: false, bright: 100, blur: 0, contrast: 100 }
+            };
+            return addElement(el);
+        }
+
+        /* ============================ 文件 ============================ */
+        const fileInput = document.getElementById('fileInput');
+        document.getElementById('addImage').onclick = () => fileInput.click();
+        fileInput.onchange = e => {
+            const f = e.target.files[0];
+            if (!f) return;
+            const img = new Image();
+            img.onload = () => addImageFromImg(img);
+            img.src = URL.createObjectURL(f);
+            fileInput.value = '';
+        };
+        const bgFileInput = document.getElementById('bgFileInput');
+        document.getElementById('bgImgBtn').onclick = () => bgFileInput.click();
+        bgFileInput.onchange = e => {
+            const f = e.target.files[0];
+            if (!f) return;
+            const img = new Image();
+            img.onload = () => { pushHistory();
+                state.bg.image = img;
+                state.bg.type = 'image';
+                invalidateScene();
+                syncBgUI();
+                render(); };
+            img.src = URL.createObjectURL(f);
+            bgFileInput.value = '';
+        };
+
+        /* ============================ 属性面板 ============================ */
+        const propArea = document.getElementById('propArea');
+
+        function renderProps() {
+            const el = getSel();
+            if (!el) { propArea.innerHTML =
+                    '<div class="hint">未选择元素。点击画布上的元素进行编辑，或使用左侧工具栏添加新元素。</div>'; return; }
+            let h = '';
+            h +=
+                `<div class="field"><label>名称</label><input type="text" id="pName" value="${(el.name||el.type)}"></div>`;
+            h += `<div class="grid2">
+    <div class="field"><label>X</label><input type="number" id="pX" value="${Math.round(el.x)}"></div>
+    <div class="field"><label>Y</label><input type="number" id="pY" value="${Math.round(el.y)}"></div>
+    <div class="field"><label>宽 W</label><input type="number" id="pW" value="${Math.round(el.w)}"></div>
+    <div class="field"><label>高 H</label><input type="number" id="pH" value="${Math.round(el.h)}"></div>
+  </div>`;
+            h +=
+                `<div class="field"><label>旋转 <span id="pRotV">${el.rotation||0}</span>°</label><div class="stepwrap"><input type="range" id="pRot" min="-180" max="180" value="${el.rotation||0}"><button type="button" class="step" data-target="pRot" data-step="-1">−</button><button type="button" class="step" data-target="pRot" data-step="1">+</button></div></div>`;
+            h +=
+                `<div class="field"><label>不透明度 <span id="pOpV">${Math.round((el.opacity??1)*100)}</span>%</label><div class="stepwrap"><input type="range" id="pOp" min="0" max="100" value="${Math.round((el.opacity??1)*100)}"><button type="button" class="step" data-target="pOp" data-step="-5">−</button><button type="button" class="step" data-target="pOp" data-step="5">+</button></div></div>`;
+            if (el.type === 'text') h += textProps(el);
+            else if (el.type === 'shape') h += shapeProps(el);
+            else if (el.type === 'image') h += imageProps(el);
+            else if (el.type === 'icon') h += iconProps(el);
+            else if (el.type === 'qr') h += qrProps(el);
+            h += `<div class="mini" style="margin-top:6px">
+    <button id="pLock">${el.locked?'🔒 已锁定':'🔓 锁定'}</button>
+    <button id="pHide">${el.visible===false?'👁 显示':'🙈 隐藏'}</button>
+    <button id="pDup">复制</button>
+    <button id="pDel">删除</button>
+  </div>`;
+            propArea.innerHTML = h;
+            bindProps(el);
+            propArea.querySelectorAll('.step').forEach(bindStep);
+        }
+
+        function bindStep(b) {
+            b.onclick = () => {
+                const inp = document.getElementById(b.dataset.target);
+                if (!inp) return;
+                pushHistory();
+                let v = parseFloat(inp.value) || 0;
+                v += parseFloat(b.dataset.step);
+                const mn = parseFloat(inp.min),
+                    mx = parseFloat(inp.max);
+                if (!isNaN(mn)) v = Math.max(mn, v);
+                if (!isNaN(mx)) v = Math.min(mx, v);
+                inp.value = v;
+                inp.dispatchEvent(new Event('input'));
+            };
+        }
+
+        function row(l, c) { return `<div class="field"><label>${l}</label>${c}</div>`; }
+
+        function textProps(el) {
+            let h = row('文字内容', '<textarea id="tText">' + escapeHtml(el.text) + '</textarea>');
+            h += row('字体', '<select id="tFont">' + FONT_OPTIONS.map(f =>
+                `<option ${el.fontFamily.includes(f.v)?'selected':''} value="${f.v}">${f.n}</option>`).join('') +
+                '</select>');
+            h += row('字号', '<input type="number" id="tSize" value="' + el.fontSize + '">');
+            h +=
+                `<div class="grid2"><div class="field"><label>颜色</label><input type="color" id="tColor" value="${el.color}"></div>
+    <div class="field"><label>行高 <span id="tLhV">${el.lineHeight}</span></label><input type="range" id="tLh" min="0.8" max="3" step="0.05" value="${el.lineHeight}"></div></div>`;
+            h += row('字间距 <span id="tLsV">' + el.letterSpacing + '</span>',
+                '<input type="range" id="tLs" min="0" max="40" value="' + el.letterSpacing + '">');
+            h += `<div class="field"><label>样式</label><div class="mini">
+    <button id="tBold" class="${el.bold?'primary':''}">B粗</button>
+    <button id="tItalic" class="${el.italic?'primary':''}">I斜</button>
+    <button id="tUnder" class="${el.underline?'primary':''}">U下划</button>
+  </div></div>`;
+            h += row('对齐',
+                '<div class="seg" id="tAlign"><button data-v="left" class="' + (el.align === 'left' ? 'active' : '') +
+                '">左</button><button data-v="center" class="' + (el.align === 'center' ? 'active' : '') +
+                '">中</button><button data-v="right" class="' + (el.align === 'right' ? 'active' : '') +
+                '">右</button></div>');
+            h += row('垂直', '<div class="seg" id="tValign"><button data-v="top" class="' + (el.valign === 'top' ? 'active' :
+                '') + '">上</button><button data-v="middle" class="' + (el.valign === 'middle' ? 'active' : '') +
+                '">中</button><button data-v="bottom" class="' + (el.valign === 'bottom' ? 'active' : '') +
+                '">下</button></div>');
+            h += `<details><summary>描边 / 阴影</summary>
+    <div class="chk"><input type="checkbox" id="tStrokeOn" ${el.stroke.on?'checked':''}><span>启用描边</span></div>
+    <div class="grid2"><div class="field"><label>描边色</label><input type="color" id="tStrokeC" value="${el.stroke.color}"></div>
+    <div class="field"><label>宽度 <span id="tStrokeWV">${el.stroke.width}</span></label><input type="range" id="tStrokeW" min="0" max="30" value="${el.stroke.width}"></div></div>
+    <div class="chk"><input type="checkbox" id="tShadowOn" ${el.shadow.on?'checked':''}><span>启用阴影</span></div>
+    <div class="grid2"><div class="field"><label>阴影色</label><input type="color" id="tShadowC" value="${el.shadow.color}"></div>
+    <div class="field"><label>模糊 <span id="tShadowBV">${el.shadow.blur}</span></label><input type="range" id="tShadowB" min="0" max="60" value="${el.shadow.blur}"></div></div>
+    <div class="grid2"><div class="field"><label>偏移X <span id="tShadowXV">${el.shadow.x}</span></label><input type="range" id="tShadowX" min="-40" max="40" value="${el.shadow.x}"></div>
+    <div class="field"><label>偏移Y <span id="tShadowYV">${el.shadow.y}</span></label><input type="range" id="tShadowY" min="-40" max="40" value="${el.shadow.y}"></div></div>
+  </details>`;
+            return h;
+        }
+
+        function shapeProps(el) {
+            let h = row('填充', '<input type="color" id="sFill" value="' + ((el.fill && el.fill !== 'none') ? el.fill :
+                '#5b8cff') + '">');
+            h +=
+                `<div class="chk"><input type="checkbox" id="sFillNone" ${el.fill==='none'?'checked':''}><span>无填充（仅描边）</span></div>`;
+            h += row('描边色', '<input type="color" id="sStroke" value="' + (el.strokeColor || '#ffffff') + '">');
+            h += row('描边宽度 <span id="sStrokeWV">' + el.strokeWidth + '</span>',
+                '<input type="range" id="sStrokeW" min="0" max="40" value="' + el.strokeWidth + '">');
+            if (el.shape === 'rect' || el.shape === 'round') h += row('圆角 <span id="sRWV">' + el.cornerRadius + '</span>',
+                '<input type="range" id="sR" min="0" max="200" value="' + el.cornerRadius + '">');
+            if (el.shape === 'line') h += row('线粗 <span id="sLTV">' + el.lineThickness + '</span>',
+                '<input type="range" id="sLT" min="1" max="60" value="' + el.lineThickness + '">');
+            return h;
+        }
+
+        function imageProps(el) {
+            let h = row('填充方式',
+                '<select id="iFit"><option value="cover" ' + ((el.fit || 'cover') === 'cover' ? 'selected' : '') +
+                '>覆盖</option><option value="contain" ' + (el.fit === 'contain' ? 'selected' : '') +
+                '>包含</option><option value="fill" ' + (el.fit === 'fill' ? 'selected' : '') + '>拉伸</option></select>');
+            h += row('圆角 <span id="iRV">' + el.radius + '</span>', '<input type="range" id="iR" min="0" max="200" value="' +
+                el.radius + '">');
+            h +=
+                `<div class="chk"><input type="checkbox" id="iBorderOn" ${el.border?'checked':''}><span>启用边框</span></div>`;
+            if (el.border) {
+                h +=
+                    `<div class="grid2"><div class="field"><label>边框色</label><input type="color" id="iBorderC" value="${el.border.color}"></div>
+    <div class="field"><label>边框宽 <span id="iBorderWV">${el.border.w}</span></label><input type="range" id="iBorderW" min="1" max="40" value="${el.border.w}"></div></div>`;
+            }
+            h += `<details open><summary>图片滤镜</summary>
+    <div class="chk"><input type="checkbox" id="iGray" ${el.filter.gray?'checked':''}><span>灰度</span></div>
+    <div class="chk"><input type="checkbox" id="iSepia" ${el.filter.sepia?'checked':''}><span>复古棕</span></div>
+    <div class="field"><label>亮度 <span id="iBrightV">${el.filter.bright}</span>%</label><input type="range" id="iBright" min="0" max="200" value="${el.filter.bright}"></div>
+    <div class="field"><label>对比度 <span id="iContrastV">${el.filter.contrast}</span>%</label><input type="range" id="iContrast" min="0" max="200" value="${el.filter.contrast}"></div>
+    <div class="field"><label>模糊 <span id="iBlurV">${el.filter.blur}</span>px</label><input type="range" id="iBlur" min="0" max="20" value="${el.filter.blur}"></div>
+  </details>`;
+            h += `<details><summary>阴影</summary>
+    <div class="chk"><input type="checkbox" id="iShadowOn" ${el.shadow.on?'checked':''}><span>启用阴影</span></div>
+    <div class="field"><label>阴影色</label><input type="color" id="iShadowC" value="${el.shadow.color}"></div>
+    <div class="field"><label>模糊 <span id="iShadowBV">${el.shadow.blur}</span></label><input type="range" id="iShadowB" min="0" max="80" value="${el.shadow.blur}"></div>
+    <div class="grid2"><div class="field"><label>偏移X</label><input type="number" id="iShadowX" value="${el.shadow.x}"></div>
+    <div class="field"><label>偏移Y</label><input type="number" id="iShadowY" value="${el.shadow.y}"></div></div>
+  </details>`;
+            return h;
+        }
+
+        function iconProps(el) {
+            let h = row('Emoji', '<input type="text" id="icChar" value="' + el.char + '" maxlength="4">');
+            h += row('大小', '<input type="number" id="icSize" value="' + el.fontSize + '">');
+            h += row('颜色', '<input type="color" id="icColor" value="' + el.color + '">');
+            return h;
+        }
+
+        function qrProps(el) {
+            let h = row('内容 (URL/文本)', '<textarea id="qText">' + escapeHtml(el.text) + '</textarea>');
+            h += row('纠错级别', '<select id="qEcc"><option value="L" ' + (el.ecc === 'L' ? 'selected' : '') +
+                '>L 低</option><option value="M" ' + (el.ecc === 'M' ? 'selected' : '') +
+                '>M 中</option><option value="Q" ' + (el.ecc === 'Q' ? 'selected' : '') +
+                '>Q 较高</option><option value="H" ' + (el.ecc === 'H' ? 'selected' : '') + '>H 高</option></select>');
+            h +=
+                `<div class="grid2"><div class="field"><label>前景色</label><input type="color" id="qDark" value="${el.dark}"></div>
+    <div class="field"><label>背景色</label><input type="color" id="qLight" value="${el.light}"></div></div>`;
+            return h;
+        }
+        const FONT_OPTIONS = [
+            { v: '"Noto Sans SC",sans-serif', n: '思源黑体' }, { v: '"Microsoft YaHei",sans-serif',
+            n: '微软雅黑' }, { v: 'SimHei,sans-serif', n: '黑体' }, { v: 'KaiTi,serif', n: '楷体' },
+            { v: '"PingFang SC",sans-serif', n: '苹方' }, { v: 'Arial,sans-serif', n: 'Arial' },
+            { v: 'Georgia,serif', n: 'Georgia' }, { v: 'Times New Roman,serif', n: 'Times' },
+            { v: 'Courier New,monospace', n: 'Courier' }, { v: 'Impact,sans-serif', n: 'Impact' },
+            { v: '"Roboto",sans-serif', n: 'Roboto' }, { v: '"Oswald",sans-serif', n: 'Oswald' },
+            { v: '"Montserrat",sans-serif', n: 'Montserrat' }, { v: '"Playfair Display",serif',
+            n: 'Playfair' }, { v: '"Pacifico",cursive', n: 'Pacifico' }, { v: '"Lobster",cursive',
+            n: 'Lobster' }, { v: '"Bebas Neue",sans-serif', n: 'Bebas' }
+        ];
+
+        function escapeHtml(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;',
+                '"': '&quot;' } [c])); }
+
+        /* ============================ 属性绑定 ============================ */
+        function bindProps(el) {
+            const $ = (id) => document.getElementById(id);
+            const upd = () => { invalidateScene();
+                render(); };
+            bindNum($('pX'), v => el.x = v, true);
+            bindNum($('pY'), v => el.y = v, true);
+            bindNum($('pW'), v => el.w = Math.max(MIN, v), true);
+            bindNum($('pH'), v => el.h = Math.max(MIN, v), true);
+            bindRange($('pRot'), v => { el.rotation = v;
+                $('pRotV').textContent = v; }, true);
+            bindRange($('pOp'), v => { el.opacity = v / 100;
+                $('pOpV').textContent = v; }, true);
+            $('pName').onchange = e => { el.name = e.target.value;
+                renderLayers(); };
+            if (el.type === 'text') {
+                $('tText').oninput = e => { el.text = e.target.value;
+                    upd(); };
+                $('tFont').onchange = e => { el.fontFamily = e.target.value;
+                    upd(); };
+                bindNum($('tSize'), v => { el.fontSize = v;
+                    recomputeTextH(el);
+                    upd(); }, true);
+                $('tColor').oninput = e => { el.color = e.target.value;
+                    upd(); };
+                bindRange($('tLh'), v => { el.lineHeight = v;
+                    $('tLhV').textContent = v;
+                    upd(); }, true);
+                bindRange($('tLs'), v => { el.letterSpacing = v;
+                    $('tLsV').textContent = v;
+                    upd(); }, true);
+                $('tBold').onclick = () => { el.bold = !el.bold;
+                    $('tBold').classList.toggle('primary', el.bold);
+                    upd(); };
+                $('tItalic').onclick = () => { el.italic = !el.italic;
+                    $('tItalic').classList.toggle('primary', el.italic);
+                    upd(); };
+                $('tUnder').onclick = () => { el.underline = !el.underline;
+                    $('tUnder').classList.toggle('primary', el.underline);
+                    upd(); };
+                segClick($('tAlign'), v => { el.align = v;
+                    upd(); });
+                segClick($('tValign'), v => { el.valign = v;
+                    upd(); });
+                $('tStrokeOn').onchange = e => { el.stroke.on = e.target.checked;
+                    upd(); };
+                $('tStrokeC').oninput = e => { el.stroke.color = e.target.value;
+                    upd(); };
+                bindRange($('tStrokeW'), v => { el.stroke.width = v;
+                    $('tStrokeWV').textContent = v;
+                    upd(); }, true);
+                $('tShadowOn').onchange = e => { el.shadow.on = e.target.checked;
+                    upd(); };
+                $('tShadowC').oninput = e => { el.shadow.color = e.target.value;
+                    upd(); };
+                bindRange($('tShadowB'), v => { el.shadow.blur = v;
+                    $('tShadowBV').textContent = v;
+                    upd(); }, true);
+                bindRange($('tShadowX'), v => { el.shadow.x = v;
+                    $('tShadowXV').textContent = v;
+                    upd(); }, true);
+                bindRange($('tShadowY'), v => { el.shadow.y = v;
+                    $('tShadowYV').textContent = v;
+                    upd(); }, true);
+            }
+            if (el.type === 'shape') {
+                $('sFill').oninput = e => { if (!$('sFillNone').checked) el.fill = e.target.value;
+                    upd(); };
+                $('sFillNone').onchange = e => { el.fill = e.target.checked ? 'none' : $('sFill').value;
+                    upd(); };
+                $('sStroke').oninput = e => { el.strokeColor = e.target.value;
+                    upd(); };
+                bindRange($('sStrokeW'), v => { el.strokeWidth = v;
+                    $('sStrokeWV').textContent = v;
+                    upd(); }, true);
+                if ($('sR')) bindRange($('sR'), v => { el.cornerRadius = v;
+                    $('sRWV').textContent = v;
+                    upd(); }, true);
+                if ($('sLT')) bindRange($('sLT'), v => { el.lineThickness = v;
+                    $('sLTV').textContent = v;
+                    upd(); }, true);
+            }
+            if (el.type === 'image') {
+                $('iFit').onchange = e => { el.fit = e.target.value;
+                    upd(); };
+                bindRange($('iR'), v => { el.radius = v;
+                    $('iRV').textContent = v;
+                    upd(); }, true);
+                $('iBorderOn').onchange = e => { el.border = e.target.checked ? { color: '#ffffff', w: 6 } : null;
+                    upd();
+                    renderProps(); };
+                if (el.border) { $('iBorderC').oninput = e => { el.border.color = e.target.value;
+                        upd(); };
+                    bindRange($('iBorderW'), v => { el.border.w = v;
+                        $('iBorderWV').textContent = v;
+                        upd(); }, true); }
+                $('iGray').onchange = e => { el.filter.gray = e.target.checked;
+                    upd(); };
+                $('iSepia').onchange = e => { el.filter.sepia = e.target.checked;
+                    upd(); };
+                bindRange($('iBright'), v => { el.filter.bright = v;
+                    $('iBrightV').textContent = v;
+                    upd(); }, true);
+                bindRange($('iContrast'), v => { el.filter.contrast = v;
+                    $('iContrastV').textContent = v;
+                    upd(); }, true);
+                bindRange($('iBlur'), v => { el.filter.blur = v;
+                    $('iBlurV').textContent = v;
+                    upd(); }, true);
+                $('iShadowOn').onchange = e => { el.shadow.on = e.target.checked;
+                    upd(); };
+                $('iShadowC').oninput = e => { el.shadow.color = e.target.value;
+                    upd(); };
+                bindRange($('iShadowB'), v => { el.shadow.blur = v;
+                    $('iShadowBV').textContent = v;
+                    upd(); }, true);
+                bindNum($('iShadowX'), v => el.shadow.x = v, true);
+                bindNum($('iShadowY'), v => el.shadow.y = v, true);
+            }
+            if (el.type === 'icon') {
+                $('icChar').oninput = e => { el.char = e.target.value.slice(-2);
+                    upd(); };
+                bindNum($('icSize'), v => { el.fontSize = v;
+                    el.w = v;
+                    el.h = v;
+                    upd(); }, true);
+                $('icColor').oninput = e => { el.color = e.target.value;
+                    upd(); };
+            }
+            if (el.type === 'qr') {
+                $('qText').oninput = e => { el.text = e.target.value;
+                    upd(); };
+                $('qEcc').onchange = e => { el.ecc = e.target.value;
+                    upd(); };
+                $('qDark').oninput = e => { el.dark = e.target.value;
+                    upd(); };
+                $('qLight').oninput = e => { el.light = e.target.value;
+                    upd(); };
+            }
+            $('pLock').onclick = () => { el.locked = !el.locked;
+                $('pLock').textContent = el.locked ? '🔒 已锁定' : '🔓 锁定';
+                renderLayers(); };
+            $('pHide').onclick = () => { el.visible = el.visible === false ? true : false;
+                $('pHide').textContent = el.visible === false ? '👁 显示' : '🙈 隐藏';
+                invalidateScene();
+                render();
+                renderLayers(); };
+            $('pDup').onclick = () => duplicateSelected();
+            $('pDel').onclick = () => deleteSelected();
+        }
+
+        function recomputeTextH(el) {
+            const c = document.createElement('canvas').getContext('2d');
+            c.font = `${el.italic?'italic ':''}${el.bold?'700':'400'} ${el.fontSize}px ${el.fontFamily}`;
+            const lines = wrapText(c, el.text, el.w);
+            el.h = Math.max(MIN, lines.length * el.fontSize * (el.lineHeight || 1.2));
+        }
+
+        function bindNum(input, fn, hist) {
+            if (!input) return;
+            onceHist(input);
+            input.oninput = () => { const v = parseFloat(input.value) || 0;
+                fn(v);
+                render(); };
+        }
+
+        function bindRange(input, fn, hist) {
+            if (!input) return;
+            onceHist(input);
+            input.oninput = () => { const v = parseFloat(input.value);
+                fn(v);
+                render(); };
+        }
+
+        function onceHist(input) {
+            input.addEventListener('pointerdown', () => { if (!input._hp) { pushHistory();
+                    input._hp = true; } });
+            input.addEventListener('change', () => { input._hp = false; });
+            input.addEventListener('blur', () => { input._hp = false; });
+        }
+
+        function segClick(container, fn) {
+            container.querySelectorAll('button').forEach(b => b.onclick = () => {
+                container.querySelectorAll('button').forEach(x => x.classList.remove('active'));
+                b.classList.add('active');
+                fn(b.dataset.v);
+            });
+        }
+
+        /* ============================ 图层 ============================ */
+        const layerList = document.getElementById('layerList');
+
+        function renderLayers() {
+            layerList.innerHTML = '';
+            for (let i = state.elements.length - 1; i >= 0; i--) {
+                const el = state.elements[i];
+                const div = document.createElement('div');
+                div.className = 'layer-item' + (el.id === state.selected ? ' sel' : '');
+                const icon = el.type === 'text' ? '🅣' : el.type === 'shape' ? '🔷' : el.type === 'image' ? '🖼' : el
+                    .type === 'icon' ? '😊' : '🔳';
+                div.innerHTML =
+                    `<span class="tag">${icon}</span><span class="lname">${escapeHtml(el.name||el.type)}</span>`;
+                const vis = document.createElement('button');
+                vis.className = 'lic';
+                vis.title = '显示/隐藏';
+                vis.textContent = el.visible === false ? '🙈' : '👁';
+                vis.onclick = e => { e.stopPropagation();
+                    el.visible = el.visible === false ? true : false;
+                    invalidateScene();
+                    render();
+                    renderLayers(); };
+                const lk = document.createElement('button');
+                lk.className = 'lic';
+                lk.title = '锁定';
+                lk.textContent = el.locked ? '🔒' : '🔓';
+                lk.onclick = e => { e.stopPropagation();
+                    el.locked = !el.locked;
+                    renderLayers(); };
+                const del = document.createElement('button');
+                del.className = 'lic';
+                del.title = '删除';
+                del.textContent = '🗑';
+                del.onclick = e => { e.stopPropagation();
+                    pushHistory();
+                    state.elements = state.elements.filter(x => x.id !== el.id);
+                    if (state.selected === el.id) state.selected = null;
+                    invalidateScene();
+                    render();
+                    renderProps();
+                    renderLayers(); };
+                div.appendChild(vis);
+                div.appendChild(lk);
+                div.appendChild(del);
+                div.onclick = () => { state.selected = el.id;
+                    invalidateScene();
+                    render();
+                    renderProps();
+                    renderLayers(); };
+                layerList.appendChild(div);
+            }
+        }
+
+        /* ============================ 对齐 / Z序 ============================ */
+        document.querySelectorAll('.align-tools button, .mini button[data-al]').forEach(b => { b.onclick = () =>
+            doAlign(b.dataset.al); });
+
+        function selectedEls() { const el = getSel(); return el ? [el] : []; }
+
+        function doAlign(a) {
+            const el = getSel();
+            if (!el) return;
+            pushHistory();
+            if (a === 'left') el.x = 0;
+            else if (a === 'right') el.x = state.w - el.w;
+            else if (a === 'top') el.y = 0;
+            else if (a === 'bottom') el.y = state.h - el.h;
+            else if (a === 'hcenter') el.x = state.w / 2 - el.w / 2;
+            else if (a === 'vcenter') el.y = state.h / 2 - el.h / 2;
+            else if (a === 'canvas-h') el.x = state.w / 2 - el.w / 2;
+            else if (a === 'canvas-v') el.y = state.h / 2 - el.h / 2;
+            else if (a === 'bring') { state.elements = state.elements.filter(x => x.id !== el.id);
+                state.elements.push(el); } else if (a === 'send') { state.elements = state.elements.filter(x => x.id !==
+                    el.id);
+                state.elements.unshift(el); } else if (a === 'front') { const i = state.elements.indexOf(el); if (i < state
+                    .elements.length - 1) { state.elements.splice(i, 1);
+                    state.elements.splice(i + 1, 0, el); } } else if (a === 'back') { const i = state.elements.indexOf(
+                el); if (i > 0) { state.elements.splice(i, 1);
+                    state.elements.splice(i - 1, 0, el); } }
+            invalidateScene();
+            render();
+            renderProps();
+            renderLayers();
+        }
+
+        /* ============================ 复制 / 删除 ============================ */
+        function duplicateSelected() {
+            const el = getSel();
+            if (!el) return;
+            pushHistory();
+            const c = { ...cloneEl(el) };
+            c.id = uid();
+            c.x += 20;
+            c.y += 20;
+            state.elements.push(c);
+            state.selected = c.id;
+            invalidateScene();
+            render();
+            renderProps();
+            renderLayers();
+        }
+
+        function deleteSelected() {
+            const el = getSel();
+            if (!el) return;
+            pushHistory();
+            state.elements = state.elements.filter(x => x.id !== el.id);
+            state.selected = null;
+            invalidateScene();
+            render();
+            renderProps();
+            renderLayers();
+        }
+        document.getElementById('btnDup').onclick = duplicateSelected;
+        document.getElementById('btnDel').onclick = deleteSelected;
+
+        /* ============================ 背景 UI 同步 ============================ */
+        function syncBgUI() {
+            document.querySelectorAll('#bgType button').forEach(b => b.classList.toggle('active', b.dataset.v === state
+                .bg.type));
+            document.getElementById('bgSolid').style.display = state.bg.type === 'solid' ? 'block' : 'none';
+            document.getElementById('bgGradient').style.display = state.bg.type === 'gradient' ? 'block' : 'none';
+            document.getElementById('bgImage').style.display = state.bg.type === 'image' ? 'block' : 'none';
+            document.getElementById('bgColor').value = state.bg.color;
+            document.getElementById('gradType').querySelectorAll('button').forEach(b => b.classList.toggle('active', b
+                .dataset.v === state.bg.gradient.type));
+            document.getElementById('gradAngle').value = state.bg.gradient.angle;
+            document.getElementById('gradAngleV').textContent = state.bg.gradient.angle;
+            document.getElementById('gradC1').value = state.bg.gradient.c1;
+            document.getElementById('gradC2').value = state.bg.gradient.c2;
+        }
+        document.querySelectorAll('#bgType button').forEach(b => b.onclick = () => { pushHistory();
+            state.bg.type = b.dataset.v;
+            invalidateScene();
+            syncBgUI();
+            render(); });
+        document.getElementById('bgColor').oninput = e => { state.bg.color = e.target.value;
+            invalidateScene();
+            render(); };
+        document.querySelectorAll('#gradType button').forEach(b => b.onclick = () => { pushHistory();
+            state.bg.gradient.type = b.dataset.v;
+            invalidateScene();
+            syncBgUI();
+            render(); });
+        bindRange(document.getElementById('gradAngle'), v => { state.bg.gradient.angle = v;
+            document.getElementById('gradAngleV').textContent = v;
+            invalidateScene();
+            render(); }, true);
+        document.querySelectorAll('#bgGradient .step').forEach(bindStep);
+        document.getElementById('gradC1').oninput = e => { state.bg.gradient.c1 = e.target.value;
+            invalidateScene();
+            render(); };
+        document.getElementById('gradC2').oninput = e => { state.bg.gradient.c2 = e.target.value;
+            invalidateScene();
+            render(); };
+        document.getElementById('bgImgFit').onchange = e => { state.bg.fit = e.target.value;
+            invalidateScene();
+            render(); };
+        bindRange(document.getElementById('bgImgOp'), v => { state.bg.opacity = v / 100;
+            document.getElementById('bgImgOpV').textContent = v;
+            invalidateScene();
+            render(); }, true);
+        const GRAD_PRESETS = [
+            ['#ff9a9e', '#fad0c4'],
+            ['#a18cd1', '#fbc2eb'],
+            ['#5b8cff', '#7c5cff'],
+            ['#11998e', '#38ef7d'],
+            ['#fc466b', '#3f5efb'],
+            ['#f7971e', '#ffd200'],
+            ['#000428', '#004e92'],
+            ['#ee0979', '#ff6a00']
+        ];
+        (function() {
+            const g = document.getElementById('gradPresets');
+            GRAD_PRESETS.forEach(p => {
+                const d = document.createElement('div');
+                d.className = 'swatch';
+                d.style.background = `linear-gradient(135deg,${p[0]},${p[1]})`;
+                d.onclick = () => { pushHistory();
+                    state.bg.gradient.c1 = p[0];
+                    state.bg.gradient.c2 = p[1];
+                    invalidateScene();
+                    syncBgUI();
+                    render(); };
+                g.appendChild(d);
+            });
+        })();
+
+        /* ============================ 画布尺寸 ============================ */
+        document.getElementById('preset').onchange = e => {
+            if (e.target.value === 'custom') return;
+            const [w, h] = e.target.value.split('x').map(Number);
+            document.getElementById('cvW').value = w;
+            document.getElementById('cvH').value = h;
+            applyNewSize(w, h);
+        };
+        document.getElementById('applySize').onclick = () => { const w = +document.getElementById('cvW').value,
+                h = +document.getElementById('cvH').value;
+            applyNewSize(w, h); };
+        document.getElementById('rotateCv').onclick = () => { const w = +document.getElementById('cvW').value,
+                h = +document.getElementById('cvH').value;
+            document.getElementById('cvW').value = h;
+            document.getElementById('cvH').value = w;
+            applyNewSize(h, w); };
+
+        function applyNewSize(w, h) { if (w < 50 || h < 50) return;
+            pushHistory();
+            state.w = w;
+            state.h = h;
+            applyCanvasSize();
+            invalidateScene();
+            render();
+            fitZoom(); }
+
+        /* ============================ 缩放 ============================ */
+        function setZoom(z) { zoom = Math.max(0.05, Math.min(z, 4));
+            document.getElementById('zoomVal').value = Math.round(zoom * 100);
+            applyCanvasSize();
+            render(); }
+        document.getElementById('zoomIn').onclick = () => setZoom(zoom + 0.1);
+        document.getElementById('zoomOut').onclick = () => setZoom(zoom - 0.1);
+        document.getElementById('zoomVal').onchange = e => setZoom((+e.target.value) / 100);
+        document.getElementById('zoomFit').onclick = fitZoom;
+
+        function fitZoom() { const c = document.getElementById('center'); const z = Math.min((c.clientWidth - 40) / state.w, (
+                c.clientHeight - 40) / state.h);
+            setZoom(z); }
+        stage.addEventListener('wheel', e => { if (e.ctrlKey || e.metaKey) { e.preventDefault();
+                setZoom(zoom * (e.deltaY < 0 ? 1.1 : 0.9)); } }, { passive: false });
+
+        /* ============================ 导出 ============================ */
+        function exportImage(type, scale, quality) {
+            const c = document.createElement('canvas');
+            c.width = state.w * scale;
+            c.height = state.h * scale;
+            const cc = c.getContext('2d');
+            renderScene(cc, scale);
+            const mime = type === 'png' ? 'image/png' : 'image/jpeg';
+            const url = c.toDataURL(mime, quality);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `poster_${state.w}x${state.h}.${type==='png'?'png':'jpg'}`;
+            a.click();
+            toast('已导出 ' + type.toUpperCase());
+        }
+        document.getElementById('btnPNG').onclick = () => exportImage('png', 2, 1);
+        document.getElementById('btnJPG').onclick = () => exportImage('jpg', 2, 0.92);
+        document.getElementById('btnExport').onclick = showExportDialog;
+
+        function showExportDialog() {
+            const d = document.createElement('div');
+            d.style.cssText =
+                'position:fixed;inset:0;background:rgba(0,0,0,.6);display:grid;place-items:center;z-index:50;';
+            d.innerHTML =
+                `<div style="background:#1b1f29;border:1px solid #2a2f3a;border-radius:12px;padding:22px;width:320px;color:#e6e9ef;font-family:inherit;">
+    <h3 style="margin:0 0 14px;">导出设置</h3>
+    <div class="field"><label>格式</label><select id="exF"><option value="png">PNG (透明)</option><option value="jpg">JPG</option></select></div>
+    <div class="field"><label>倍率 (清晰度)</label><select id="exS"><option value="1">1x 原尺寸</option><option value="2" selected>2x</option><option value="3">3x</option><option value="4">4x</option></select></div>
+    <div class="field" id="exQbox"><label>JPG 质量 <span id="exQv">92</span>%</label><input type="range" id="exQ" min="50" max="100" value="92"></div>
+    <div class="mini" style="margin-top:10px"><button id="exOk" class="primary" style="background:#5b8cff;color:#fff;border:none;padding:9px;border-radius:6px;cursor:pointer;flex:1">导出</button><button id="exCancel" style="background:#2a2f3a;color:#fff;border:none;padding:9px;border-radius:6px;cursor:pointer;flex:1">取消</button></div>
+  </div>`;
+            document.body.appendChild(d);
+            const qbox = d.querySelector('#exQbox');
+            d.querySelector('#exF').onchange = e => { qbox.style.display = e.target.value === 'jpg' ? 'block' : 'none'; };
+            d.querySelector('#exQ').oninput = e => d.querySelector('#exQv').textContent = e.target.value;
+            d.querySelector('#exCancel').onclick = () => d.remove();
+            d.querySelector('#exOk').onclick = () => { const f = d.querySelector('#exF').value,
+                    s = +d.querySelector('#exS').value,
+                    q = +d.querySelector('#exQ').value / 100;
+                d.remove();
+                exportImage(f, s, q); };
+            d.onclick = e => { if (e.target === d) d.remove(); };
+        }
+
+        /* ============================ 模板 ============================ */
+        document.getElementById('btnTpl').onclick = showTemplates;
+        const TEMPLATES = [{
+                name: '促销大促',
+                build: () => {
+                    state.bg = { type: 'gradient', color: '', gradient: { type: 'linear', angle: 135, c1: '#ee0979',
+                            c2: '#ff6a00' }, image: null, fit: 'cover', opacity: 1 };
+                    addText({ text: '限时大促', fontSize: 140, color: '#ffffff', bold: true, x: state.w / 2 -
+                            500, y: state.h / 2 - 260, w: 1000, h: 180 });
+                    addText({ text: '全场 5 折起', fontSize: 90, color: '#fff200', bold: true, x: state.w / 2 -
+                            400, y: state.h / 2 - 40, w: 800, h: 120 });
+                    addShape('round');
+                    const s = state.elements[state.elements.length - 1];
+                    s.fill = '#ffffff';
+                    s.w = 360;
+                    s.h = 110;
+                    s.x = state.w / 2 - 180;
+                    s.y = state.h / 2 + 120;
+                    s.cornerRadius = 55;
+                    addText({ text: '立即抢购 →', fontSize: 54, color: '#ee0979', bold: true, x: state.w / 2 -
+                            180, y: state.h / 2 + 135, w: 360, h: 80, valign: 'middle' });
+                }
+            }, {
+                name: '活动邀请',
+                build: () => {
+                    state.bg = { type: 'solid', color: '#0f172a' };
+                    addShape('rect');
+                    const r = state.elements[state.elements.length - 1];
+                    r.fill = 'none';
+                    r.strokeColor = '#5b8cff';
+                    r.strokeWidth = 4;
+                    r.w = state.w * 0.82;
+                    r.h = state.h * 0.82;
+                    r.x = state.w * 0.09;
+                    r.y = state.h * 0.09;
+                    r.cornerRadius = 0;
+                    addText({ text: 'INVITATION', fontSize: 40, color: '#5b8cff', letterSpacing: 12, x: state.w /
+                            2 - 300, y: state.h * 0.22, w: 600, h: 60 });
+                    addText({ text: '年度盛典晚会', fontSize: 96, color: '#ffffff', bold: true, x: state.w / 2 -
+                            450, y: state.h * 0.34, w: 900, h: 140 });
+                    addText({ text: '2026.08.18  上海·中心大厦', fontSize: 46, color: '#cbd5e1', x: state.w / 2 -
+                            400, y: state.h * 0.56, w: 800, h: 60 });
+                }
+            }, {
+                name: '语录卡片',
+                build: () => {
+                    state.bg = { type: 'gradient', gradient: { type: 'radial', angle: 0, c1: '#7c5cff',
+                            c2: '#1b1f29' }, color: '' };
+                    addText({ text: '「设计不是', fontSize: 80, color: '#ffffff', bold: true, x: state.w * 0.12,
+                        y: state.h * 0.2, w: state.w * 0.76, h: 110 });
+                    addText({ text: '它看上去怎样', fontSize: 80, color: '#fff200', bold: true, x: state.w * 0.12,
+                        y: state.h * 0.36, w: state.w * 0.76, h: 110 });
+                    addText({ text: '而是它如何运作」', fontSize: 80, color: '#ffffff', bold: true, x: state.w *
+                            0.12, y: state.h * 0.52, w: state.w * 0.76, h: 110 });
+                    addText({ text: '— 保罗·兰德', fontSize: 40, color: '#9aa4b2', x: state.w * 0.12, y: state
+                            .h * 0.72, w: state.w * 0.76, h: 50, align: 'right' });
+                }
+            }, {
+                name: '商品海报',
+                build: () => {
+                    state.bg = { type: 'solid', color: '#f5f5f5' };
+                    addImagePlaceholder();
+                    addText({ text: 'NEW ARRIVAL', fontSize: 42, color: '#ff4757', bold: true, letterSpacing: 6,
+                        x: state.w * 0.1, y: state.h * 0.055, w: state.w * 0.8, h: 60 });
+                    addText({ text: '时尚单品', fontSize: 96, color: '#222222', bold: true, x: state.w * 0.1, y: state
+                            .h * 0.14, w: state.w * 0.8, h: 130 });
+                    addText({ text: '¥299', fontSize: 110, color: '#ff4757', bold: true, x: state.w * 0.1, y: state
+                            .h * 0.72, w: 400, h: 140 });
+                    addText({ text: '原价 ¥599', fontSize: 46, color: '#999999', x: state.w * 0.55, y: state.h *
+                            0.78, w: 400, h: 60, valign: 'middle' });
+                }
+            }, {
+                name: '空白画布',
+                build: () => { state.bg = { type: 'solid', color: '#ffffff' }; }
+            }];
+
+        function addImagePlaceholder() {
+            addShape('round');
+            const s = state.elements[state.elements.length - 1];
+            s.fill = '#e2e8f0';
+            s.w = state.w * 0.62;
+            s.h = state.h * 0.40;
+            s.x = state.w * 0.19;
+            s.y = state.h * 0.30;
+            s.cornerRadius = 20;
+            addText({ text: '🖼 点击左侧"上传图片"替换', fontSize: 44, color: '#64748b', x: state.w * 0.19, y: state.h *
+                    0.30, w: state.w * 0.62, h: state.h * 0.40, valign: 'middle' });
+        }
+
+        function showTemplates() {
+            const d = document.createElement('div');
+            d.style.cssText =
+                'position:fixed;inset:0;background:rgba(0,0,0,.6);display:grid;place-items:center;z-index:50;';
+            let cards = TEMPLATES.map((t, i) =>
+                `<div data-i="${i}" style="background:#222a3a;border:1px solid #2a2f3a;border-radius:10px;padding:18px;text-align:center;cursor:pointer;width:100%;"><div style="font-size:34px;margin-bottom:8px">🎴</div><div style="font-size:13px">${t.name}</div></div>`
+                ).join('');
+            d.innerHTML =
+                `<div style="background:#1b1f29;border:1px solid #2a2f3a;border-radius:12px;padding:22px;width:min(92vw,720px);max-height:90vh;overflow:auto;color:#e6e9ef;font-family:inherit;">
+    <h3 style="margin:0 0 16px;">选择模板</h3>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;">${cards}</div>
+    <div style="text-align:right;margin-top:16px"><button id="tplClose" style="background:#2a2f3a;color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;">关闭</button></div>
+  </div>`;
+            document.body.appendChild(d);
+            d.querySelectorAll('[data-i]').forEach(c => c.onclick = () => { const i = +c.dataset.i;
+                pushHistory();
+                state.elements = [];
+                state.selected = null;
+                TEMPLATES[i].build();
+                invalidateScene();
+                syncBgUI();
+                render();
+                renderProps();
+                renderLayers();
+                d.remove();
+                fitZoom();
+                toast('已应用模板：' + TEMPLATES[i].name); });
+            d.querySelector('#tplClose').onclick = () => d.remove();
+            d.onclick = e => { if (e.target === d) d.remove(); };
+        }
+
+        /* ============================ 新建 ============================ */
+        document.getElementById('btnNew').onclick = () => { if (confirm('新建会清空当前画布，确定？')) { pushHistory();
+                state.elements = [];
+                state.selected = null;
+                state.bg = { type: 'solid', color: '#1b6ec2', gradient: { type: 'linear', angle: 45, c1: '#5b8cff',
+                        c2: '#7c5cff' }, image: null, fit: 'cover', opacity: 1 };
+                invalidateScene();
+                syncBgUI();
+                render();
+                renderProps();
+                renderLayers(); } };
+        document.getElementById('btnUndo').onclick = undo;
+        document.getElementById('btnRedo').onclick = redo;
+
+        /* ============================ Emoji 面板 ============================ */
+        const EMOJIS = ['🔥', '⭐', '❤️', '✨', '🎉', '💡', '🌟', '🚀', '📌', '✅', '⚡', '🌈', '🍀', '🌸', '💎', '🎯',
+        '📣', '👍', '🐱', '🌍', '☕', '🎵', '📚', '💰', '🏆', '🌞', '🌙', '🍎', '🎁', '💬', '🔔', '⏰'];
+        (function() { const g = document.getElementById('emojiGrid');
+            EMOJIS.forEach(e => { const b = document.createElement('button');
+                b.textContent = e;
+                b.onclick = () => addIcon(e);
+                g.appendChild(b); }); })();
+
+        /* ============================ 左侧按钮 ============================ */
+        document.getElementById('addText').onclick = () => addText();
+        document.getElementById('addQR').onclick = () => addQR();
+        document.querySelectorAll('[data-shape]').forEach(b => b.onclick = () => addShape(b.dataset.shape));
+
+        /* ============================ 键盘 ============================ */
+        window.addEventListener('keydown', e => {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName ===
+                'SELECT') return;
+            const k = e.key.toLowerCase();
+            if ((e.ctrlKey || e.metaKey) && k === 'z') { e.preventDefault();
+                e.shiftKey ? redo() : undo(); } else if ((e.ctrlKey || e.metaKey) && k === 'y') { e.preventDefault();
+                redo(); } else if ((e.ctrlKey || e.metaKey) && k === 'd') { e.preventDefault();
+                duplicateSelected(); } else if (k === 'delete' || k === 'backspace') { e.preventDefault();
+                deleteSelected(); } else if (k === 'escape') { state.selected = null;
+                invalidateScene();
+                render();
+                renderProps();
+                renderLayers(); } else if (['arrowleft', 'arrowright', 'arrowup', 'arrowdown'].includes(k)) {
+                const el = getSel();
+                if (!el) return;
+                e.preventDefault();
+                pushHistory();
+                const step = e.shiftKey ? 10 : 1;
+                if (k === 'arrowleft') el.x -= step;
+                if (k === 'arrowright') el.x += step;
+                if (k === 'arrowup') el.y -= step;
+                if (k === 'arrowdown') el.y += step;
+                invalidateScene();
+                render();
+                renderProps();
+            }
+        });
+
+        /* ============================ Toast ============================ */
+        let toastTimer;
+
+        function toast(msg) { const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.classList.add('show');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => t.classList.remove('show'), 1800); }
+
+        /* ============================ Tabs ============================ */
+        document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => {
+            document.querySelectorAll('.tabs button').forEach(x => x.classList.remove('active'));
+            b.classList.add('active');
+            if (b.dataset.tab === 'prop') { propArea.style.display = 'block';
+                layerList.style.display = 'none'; } else { propArea.style.display = 'none';
+                layerList.style.display = 'block'; }
+        });
+
+        /* ============================ 初始化 ============================ */
+        function init() {
+            document.getElementById('cvW').value = state.w;
+            document.getElementById('cvH').value = state.h;
+            syncBgUI();
+            applyCanvasSize();
+            fitZoom();
+            addText({ text: '你的标题', fontSize: 120, color: '#ffffff', bold: true, x: state.w / 2 - 400, y: state.h / 2 -
+                    80, w: 800, h: 160 });
+            undoStack = [];
+            redoStack = [];
+            updateHistButtons();
+            renderLayers();
+        }
+        init();
+    </script>
+</body>
+</html>
