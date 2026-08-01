@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>自驾油耗与过路费合计计算器</title>
+<style>
+  :root{
+    --bg:#0f1115; --panel:#171a21; --panel-2:#1e222b; --border:#2a2f3a;
+    --text:#e7ebf0; --muted:#9aa3b2; --accent:#4f8cff; --accent-2:#34d399;
+    --warn:#f59e0b; --danger:#ef4444; --shadow:0 6px 24px rgba(0,0,0,.35);
+    --radius:14px;
+  }
+  html[data-theme="light"]{
+    --bg:#eef1f7; --panel:#ffffff; --panel-2:#f3f6fb; --border:#e0e6ef;
+    --text:#1c2230; --muted:#5b6678; --accent:#2563eb; --accent-2:#059669;
+    --warn:#d97706; --danger:#dc2626; --shadow:0 6px 24px rgba(20,30,60,.12);
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    background:var(--bg); color:var(--text); line-height:1.5; padding:16px;
+  }
+  .wrap{max-width:1680px; margin:0 auto;}
+  header{display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:18px;}
+  h1{font-size:22px; margin:0; display:flex; align-items:center; gap:10px;}
+  h1 .logo{font-size:26px;}
+  .toolbar{display:flex; gap:8px; flex-wrap:wrap;}
+  button, .btn{
+    cursor:pointer; border:1px solid var(--border); background:var(--panel-2); color:var(--text);
+    padding:8px 14px; border-radius:10px; font-size:13px; transition:.15s; font-family:inherit;
+  }
+  button:hover{filter:brightness(1.12);}
+  button.primary{background:var(--accent); border-color:var(--accent); color:#fff;}
+  button.danger{background:var(--danger); border-color:var(--danger); color:#fff;}
+  button.ghost{background:transparent;}
+  button.sm{padding:4px 9px; font-size:12px;}
+  .card{background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:18px; box-shadow:var(--shadow);}
+  .card h2{font-size:15px; margin:0 0 14px; color:var(--muted); font-weight:600; letter-spacing:.3px; display:flex; align-items:center; gap:8px;}
+  .grid{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  @media(max-width:1000px){.grid{grid-template-columns:1fr}}
+  .field{margin-bottom:14px;}
+  .field label{display:block; font-size:13px; color:var(--muted); margin-bottom:6px;}
+  .row{display:flex; gap:8px; align-items:center;}
+  input[type="number"], input[type="text"], select{
+    width:100%; background:var(--panel-2); border:1px solid var(--border); color:var(--text);
+    border-radius:10px; padding:10px 12px; font-size:14px; outline:none;
+  }
+  input:focus, select:focus{border-color:var(--accent);}
+  .seg{display:inline-flex; border:1px solid var(--border); border-radius:10px; overflow:hidden;}
+  .seg button{border:none; border-radius:0; background:var(--panel-2); padding:9px 16px; color:var(--text);}
+  .seg button.active{background:var(--accent); color:#fff;}
+  .inline{display:flex; gap:10px; flex-wrap:wrap;}
+  .inline .field{flex:1; min-width:120px; margin-bottom:0;}
+  .result-card{background:linear-gradient(135deg,var(--panel),var(--panel-2)); }
+  .big-total{font-size:40px; font-weight:700; color:var(--accent); margin:4px 0 2px; font-variant-numeric:tabular-nums;}
+  .sub{color:var(--muted); font-size:13px; margin-bottom:16px;}
+  .stat-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin-top:8px;}
+  .stat{background:var(--panel-2); border:1px solid var(--border); border-radius:12px; padding:12px 14px;}
+  .stat .k{font-size:12px; color:var(--muted);}
+  .stat .v{font-size:19px; font-weight:600; margin-top:3px; font-variant-numeric:tabular-nums;}
+  .stat .v.fuel{color:var(--warn);} .stat .v.toll{color:var(--accent);} .stat .v.total{color:var(--accent-2);}
+  .breakdown{margin-top:16px; font-size:13px;}
+  .breakdown .line{display:flex; justify-content:space-between; padding:7px 0; border-bottom:1px dashed var(--border);}
+  .breakdown .line:last-child{border-bottom:none;}
+  .formula{margin-top:14px; font-size:12px; color:var(--muted); background:var(--panel-2); border:1px solid var(--border); border-radius:10px; padding:10px 12px; line-height:1.7;}
+  .history{margin-top:16px;}
+  table{width:100%; border-collapse:collapse; font-size:13px;}
+  th,td{text-align:left; padding:9px 10px; border-bottom:1px solid var(--border);}
+  th{color:var(--muted); font-weight:600;}
+  td.num{text-align:right; font-variant-numeric:tabular-nums;}
+  .tag{display:inline-block; padding:2px 8px; border-radius:999px; font-size:11px; background:var(--panel-2); border:1px solid var(--border); color:var(--muted);}
+  .empty{color:var(--muted); font-size:13px; padding:18px 0; text-align:center;}
+  .actions{display:flex; gap:8px; flex-wrap:wrap; margin-top:4px;}
+  .compare-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin-top:6px;}
+  .cmp{border:1px solid var(--border); border-radius:12px; padding:12px; background:var(--panel-2); position:relative;}
+  .cmp .name{font-size:12px; color:var(--muted);}
+  .cmp .val{font-size:20px; font-weight:700; margin:4px 0; font-variant-numeric:tabular-nums;}
+  .cmp .diff{font-size:11px;}
+  .cmp .del{position:absolute; top:8px; right:8px; padding:2px 7px; font-size:11px;}
+  .toast{position:fixed; left:50%; bottom:28px; transform:translateX(-50%); background:var(--accent); color:#fff; padding:10px 18px; border-radius:10px; font-size:13px; opacity:0; transition:.25s; pointer-events:none; z-index:99;}
+  .toast.show{opacity:1;}
+  .hint{font-size:12px; color:var(--muted);}
+  details{margin-top:10px;} summary{cursor:pointer; color:var(--muted); font-size:13px;}
+  /* 分段行程 */
+  .leg{border:1px solid var(--border); border-radius:10px; padding:10px; margin-bottom:8px; background:var(--panel-2);}
+  .leg .leg-top{display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;}
+  .leg .leg-title{font-size:12px; color:var(--muted);}
+  /* 占比条 */
+  .bar{display:flex; height:22px; border-radius:8px; overflow:hidden; margin-top:8px; border:1px solid var(--border);}
+  .bar .seg-fuel{background:var(--warn);} .bar .seg-toll{background:var(--accent);}
+  .legend{display:flex; gap:16px; font-size:12px; color:var(--muted); margin-top:8px;}
+  .legend i{display:inline-block; width:10px; height:10px; border-radius:3px; margin-right:5px; vertical-align:middle;}
+  .verdict{margin-top:12px; padding:12px; border-radius:10px; font-size:14px; font-weight:600; text-align:center;}
+  .verdict.save{background:rgba(52,211,153,.15); color:var(--accent-2); border:1px solid var(--accent-2);}
+  .verdict.lose{background:rgba(239,68,68,.15); color:var(--danger); border:1px solid var(--danger);}
+  .pill{display:inline-block; padding:2px 8px; border-radius:999px; font-size:12px;}
+  .pill.go{background:rgba(79,140,255,.18); color:var(--accent);} .pill.co2{background:rgba(52,211,153,.18); color:var(--accent-2);}
+  .preset{display:flex; gap:6px; flex-wrap:wrap; margin-top:6px;}
+  .preset button{padding:5px 11px; font-size:12px;}
+  .two-col{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  @media(max-width:1000px){.two-col{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1><span class="logo">🚗</span> 自驾油耗与过路费合计计算器</h1>
+    <div class="toolbar">
+      <button class="ghost" id="themeBtn">🌓 主题</button>
+      <button class="ghost" id="printBtn">🖨 打印</button>
+      <button class="ghost" id="resetBtn">↺ 重置</button>
+    </div>
+  </header>
+
+  <div class="grid">
+    <!-- 输入区 -->
+    <div class="card">
+      <h2>⚙️ 参数输入</h2>
+
+      <div class="field">
+        <label>行程类型</label>
+        <div class="seg" id="tripSeg">
+          <button data-trip="one" class="active">单程</button>
+          <button data-trip="round">往返（里程×2）</button>
+        </div>
+      </div>
+
+      <div class="inline">
+        <div class="field">
+          <label>油耗（L / 100km）</label>
+          <input type="number" id="consumption" value="7.5" min="0" step="any">
+        </div>
+        <div class="field">
+          <label>油价（元 / L）</label>
+          <input type="number" id="price" value="7.8" min="0" step="any">
+        </div>
+      </div>
+
+      <div class="preset">
+        <span class="hint" style="align-self:center">油号快捷：</span>
+        <button data-oil="92" data-p="7.1">92#</button>
+        <button data-oil="95" data-p="7.6">95#</button>
+        <button data-oil="98" data-p="8.5">98#</button>
+      </div>
+
+      <div class="inline" style="margin-top:14px">
+        <div class="field">
+          <label>默认过路费单价（元 / km）</label>
+          <input type="number" id="tollUnit" value="0.5" min="0" step="any">
+        </div>
+        <div class="field">
+          <label>人数分摊（AA）</label>
+          <input type="number" id="people" value="1" min="1" step="1">
+        </div>
+      </div>
+
+      <div class="field" style="margin-top:14px">
+        <label>备注名称</label>
+        <input type="text" id="label" placeholder="如：北京→天津 自驾游">
+      </div>
+
+      <div class="field">
+        <label>🛣 分段行程（多段拼接，留空过路费则用默认单价）</label>
+        <div id="legsBox"></div>
+        <button class="sm ghost" id="addLeg" style="margin-top:6px">＋ 添加一段</button>
+      </div>
+
+      <div class="actions" style="margin-top:16px">
+        <button class="primary" id="calcBtn">立即计算</button>
+        <button id="saveBtn">💾 存历史</button>
+        <button id="cmpBtn">➕ 加入对比</button>
+      </div>
+      <p class="hint" style="margin-top:10px">实时计算：改动任意数值自动更新结果。往返时各段里程与过路费自动×2。</p>
+    </div>
+
+    <!-- 结果区 -->
+    <div class="card result-card">
+      <h2>💰 费用合计</h2>
+      <div class="big-total" id="total">¥0.00</div>
+      <div class="sub" id="totalSub">填写左侧参数后自动计算</div>
+
+      <div class="stat-grid">
+        <div class="stat"><div class="k">油费</div><div class="v fuel" id="fuelCost">¥0.00</div></div>
+        <div class="stat"><div class="k">过路费</div><div class="v toll" id="tollCost">¥0.00</div></div>
+        <div class="stat"><div class="k">每公里成本</div><div class="v" id="perKm">¥0.00</div></div>
+        <div class="stat"><div class="k">人均费用（AA）</div><div class="v total" id="perPerson">¥0.00</div></div>
+      </div>
+
+      <div class="field" style="margin-top:16px">
+        <label>费用构成占比</label>
+        <div class="bar" id="bar"><div class="seg-fuel" id="barFuel" style="width:50%"></div><div class="seg-toll" id="barToll" style="width:50%"></div></div>
+        <div class="legend">
+          <span><i style="background:var(--warn)"></i>油费 <b id="pctFuel">50%</b></span>
+          <span><i style="background:var(--accent)"></i>过路费 <b id="pctToll">50%</b></span>
+        </div>
+      </div>
+
+      <div class="breakdown">
+        <div class="line"><span>总里程</span><span id="bDist">— km</span></div>
+        <div class="line"><span>总油耗</span><span id="bFuel">— L</span></div>
+        <div class="line"><span>油费 = 里程 × 油耗 ÷ 100 × 油价</span><span id="bFuelCalc">—</span></div>
+        <div class="line"><span>过路费 = Σ(段里程 × 单价)</span><span id="bTollCalc">—</span></div>
+        <div class="line"><span>🌿 碳排放估算</span><span class="pill co2" id="co2">—</span></div>
+      </div>
+
+      <div class="formula">
+        📐 计算公式<br>
+        油费 = 总里程 ×（油耗 ÷ 100）× 油价<br>
+        过路费 = Σ 各段里程 × 该段单价<br>
+        合计 = 油费 + 过路费；人均 = 合计 ÷ 人数；碳排放 = 总油耗 × 2.31 kg
+      </div>
+
+      <details>
+        <summary>📋 复制结果文本</summary>
+        <div class="actions" style="margin-top:8px">
+          <button id="copyBtn">复制当前结果</button>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <!-- 自驾 vs 公共交通 -->
+  <div class="card history">
+    <h2>🚆 自驾 vs 公共交通对比</h2>
+    <div class="inline">
+      <div class="field">
+        <label>交通方式</label>
+        <input type="text" id="transitName" value="高铁">
+      </div>
+      <div class="field">
+        <label>单价（元 / km / 人）</label>
+        <input type="number" id="transitUnit" value="0.45" min="0" step="any">
+      </div>
+    </div>
+    <div class="stat-grid">
+      <div class="stat"><div class="k" id="transitLabel">高铁费用</div><div class="v toll" id="transitCost">¥0.00</div></div>
+      <div class="stat"><div class="k">自驾费用</div><div class="v fuel" id="driveCost">¥0.00</div></div>
+    </div>
+    <div class="verdict" id="verdict">—</div>
+    <p class="hint" style="margin-top:8px">公共交通费用 = 总里程 × 单价 × 人数（含往返）。对比帮你在「开车」和「坐车」之间做决策。</p>
+  </div>
+
+  <!-- 通勤估算 -->
+  <div class="card history">
+    <h2>📅 通勤费用估算（基于当前单程）</h2>
+    <div class="inline">
+      <div class="field">
+        <label>每月通勤天数</label>
+        <input type="number" id="commuteDays" value="22" min="0" step="1">
+      </div>
+      <div class="field">
+        <label>每日往返次数</label>
+        <input type="number" id="commuteTrips" value="1" min="1" step="1">
+      </div>
+    </div>
+    <div class="stat-grid">
+      <div class="stat"><div class="k">每月费用</div><div class="v total" id="monthCost">¥0.00</div></div>
+      <div class="stat"><div class="k">每年费用（×12）</div><div class="v" id="yearCost">¥0.00</div></div>
+    </div>
+  </div>
+
+  <!-- 方案对比 -->
+  <div class="card history">
+    <h2>📊 方案对比（不同路线 / 油价 / 车型）</h2>
+    <div class="compare-grid" id="compareGrid">
+      <div class="empty" id="cmpEmpty">暂无对比方案，点击「加入对比」添加。</div>
+    </div>
+  </div>
+
+  <!-- 历史记录 -->
+  <div class="card history">
+    <h2>🕘 历史记录 <span class="tag" id="histCount">0</span></h2>
+    <div id="historyBox">
+      <div class="empty">暂无记录，计算后可点击「存历史」。</div>
+    </div>
+    <div class="actions" style="margin-top:10px">
+      <button class="danger" id="clearHistBtn">清空历史</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  const LS_KEY = "drive_cost_history_v2";
+  const THEME_KEY = "drive_cost_theme";
+
+  // 安全存储：沙箱 iframe 可能禁用 localStorage，加内存兜底
+  const mem = {};
+  const store = {
+    get(k, def){ try{ const v = localStorage.getItem(k); return v==null?def:v; }catch(e){ return (k in mem)?mem[k]:def; } },
+    set(k, v){ try{ localStorage.setItem(k, v); }catch(e){ mem[k]=v; } }
+  };
+
+  // 主题（修复：setItem 可能在沙箱抛错，需 try/catch 且先切换再存储）
+  let theme = store.get(THEME_KEY, "dark");
+  function applyTheme(t){ document.documentElement.setAttribute("data-theme", t); }
+  applyTheme(theme);
+  function syncThemeBtn(){ $("themeBtn").textContent = (theme==="dark"?"🌓 浅色":"🌓 深色"); }
+  syncThemeBtn();
+  $("themeBtn").onclick = () => {
+    theme = theme === "dark" ? "light" : "dark";
+    applyTheme(theme);
+    store.set(THEME_KEY, theme);   // 存储放最后，绝不影响切换
+    syncThemeBtn();
+    toast("已切换到" + (theme==="dark"?"深色":"浅色") + "主题");
+  };
+
+  // 行程类型
+  let tripType = "one";
+  $("tripSeg").querySelectorAll("button").forEach(b=>{
+    b.onclick = () => {
+      $("tripSeg").querySelectorAll("button").forEach(x=>x.classList.remove("active"));
+      b.classList.add("active"); tripType = b.dataset.trip; refresh();
+    };
+  });
+
+  // 油号预设
+  document.querySelectorAll(".preset button").forEach(b=>{
+    b.onclick = () => { $("price").value = b.dataset.p; refresh(); toast("已填入 "+b.dataset.oil+"# 参考价 "+b.dataset.p+" 元/L"); };
+  });
+
+  // 分段行程
+  let segments = [{dist:"300", toll:""}];
+  function renderLegs(){
+    const box = $("legsBox");
+    box.innerHTML = "";
+    segments.forEach((s,i)=>{
+      const div = document.createElement("div");
+      div.className = "leg";
+      div.innerHTML =
+        '<div class="leg-top"><span class="leg-title">第 '+(i+1)+' 段</span>'+
+        (segments.length>1?'<button class="sm ghost" data-i="'+i+'">删除</button>':'<span></span>')+'</div>'+
+        '<div class="inline">'+
+          '<div class="field"><label>里程（km）</label><input type="number" data-k="dist" data-i="'+i+'" value="'+s.dist+'" min="0" step="any"></div>'+
+          '<div class="field"><label>过路费单价（留空=默认）</label><input type="number" data-k="toll" data-i="'+i+'" value="'+s.toll+'" min="0" step="any" placeholder="默认"></div>'+
+        '</div>';
+      box.appendChild(div);
+    });
+    box.querySelectorAll('input[data-k]').forEach(inp=>{
+      inp.addEventListener("input", ()=>{
+        const i = +inp.dataset.i, k = inp.dataset.k;
+        segments[i][k] = inp.value;
+        refresh();
+      });
+    });
+    box.querySelectorAll('button[data-i]').forEach(btn=>{
+      btn.onclick = () => { segments.splice(+btn.dataset.i,1); renderLegs(); refresh(); };
+    });
+  }
+  $("addLeg").onclick = () => { segments.push({dist:"", toll:""}); renderLegs(); refresh(); };
+
+  function num(id, def=0){ const v = parseFloat($(id).value); return (isNaN(v)||v<0)?def:v; }
+
+  function compute(){
+    const cons = num("consumption");
+    const price = num("price");
+    const tollUnit = num("tollUnit");
+    const people = Math.max(1, Math.floor(num("people",1))||1);
+    const round = tripType === "round";
+    const mul = round ? 2 : 1;
+
+    let totalDist = 0, tollCost = 0;
+    const legs = [];
+    segments.forEach(s=>{
+      const d = Math.max(0, parseFloat(s.dist)||0);
+      const raw = (s.toll===""||s.toll==null) ? null : parseFloat(s.toll);
+      const tu = (raw!=null && !isNaN(raw)) ? raw : tollUnit;
+      const legToll = d * tu * mul;
+      totalDist += d;
+      tollCost += legToll;
+      legs.push({dist:d, tollUnit:tu, toll:legToll});
+    });
+    totalDist *= mul;
+    const fuelL = totalDist * (cons/100);
+    const fuelCost = fuelL * price;
+    const total = fuelCost + tollCost;
+    const perKm = totalDist>0 ? total/totalDist : 0;
+    const perPerson = total/people;
+    const singleTotal = round ? total/2 : total;   // 单程方向合计（通勤用）
+    return {totalDist, fuelL, fuelCost, tollCost, total, perKm, perPerson, people, legs, round, singleTotal, cons, price, tollUnit};
+  }
+
+  function fmt(n){ return "¥" + n.toLocaleString("zh-CN",{minimumFractionDigits:2, maximumFractionDigits:2}); }
+  function fmtKm(n){ return n.toLocaleString("zh-CN",{maximumFractionDigits:1}) + " km"; }
+
+  let last = null;
+  function render(r){
+    $("total").textContent = fmt(r.total);
+    $("totalSub").textContent = (r.round?"往返 ":"单程 ") + r.totalDist.toLocaleString() + " km · " + (r.people>1? r.people+"人AA · ":"") + "合计费用";
+    $("fuelCost").textContent = fmt(r.fuelCost);
+    $("tollCost").textContent = fmt(r.tollCost);
+    $("perKm").textContent = fmt(r.perKm);
+    $("perPerson").textContent = fmt(r.perPerson);
+    $("bDist").textContent = fmtKm(r.totalDist);
+    $("bFuel").textContent = r.fuelL.toLocaleString("zh-CN",{maximumFractionDigits:2}) + " L";
+    $("bFuelCalc").textContent = fmt(r.fuelCost);
+    $("bTollCalc").textContent = fmt(r.tollCost);
+    $("co2").textContent = (r.fuelL*2.31).toLocaleString("zh-CN",{maximumFractionDigits:1}) + " kg CO₂";
+    // 占比
+    const tot = r.total || 1;
+    const pf = Math.round(r.fuelCost/tot*100), pt = 100-pf;
+    $("barFuel").style.width = pf+"%"; $("barToll").style.width = pt+"%";
+    $("pctFuel").textContent = pf+"%"; $("pctToll").textContent = pt+"%";
+    // 对比
+    const tName = ($("transitName").value.trim()||"公共交通");
+    const tUnit = num("transitUnit");
+    const tCost = r.totalDist * tUnit * r.people;
+    $("transitLabel").textContent = tName + "费用";
+    $("transitCost").textContent = fmt(tCost);
+    $("driveCost").textContent = fmt(r.total);
+    const diff = r.total - tCost;
+    const v = $("verdict");
+    if(Math.abs(diff) < 0.5){ v.className="verdict"; v.style.background="var(--panel-2)"; v.textContent = "两种方式费用基本持平"; }
+    else if(diff > 0){ v.className="verdict lose"; v.textContent = "🚆 "+tName+"更省：比自驾少花 "+fmt(diff); }
+    else { v.className="verdict save"; v.textContent = "🚗 自驾更省：比"+tName+"少花 "+fmt(-diff); }
+    // 通勤
+    const days = Math.max(0, Math.floor(num("commuteDays",0)));
+    const trips = Math.max(1, Math.floor(num("commuteTrips",1))||1);
+    const month = r.singleTotal * 2 * trips * days;
+    $("monthCost").textContent = fmt(month);
+    $("yearCost").textContent = fmt(month*12);
+  }
+
+  function refresh(){ last = compute(); render(last); }
+
+  ["consumption","price","tollUnit","people","transitName","transitUnit","commuteDays","commuteTrips"].forEach(id=>{
+    $(id).addEventListener("input", refresh);
+  });
+
+  $("calcBtn").onclick = refresh;
+
+  // 复制
+  $("copyBtn").onclick = () => {
+    const r = last || compute();
+    const label = $("label").value.trim() || "自驾行程";
+    const txt = `${label}\n总里程：${fmtKm(r.totalDist)}\n油费：${fmt(r.fuelCost)}（${r.fuelL.toFixed(2)}L × ${r.price}）\n过路费：${fmt(r.tollCost)}\n合计：${fmt(r.total)}\n每公里：${fmt(r.perKm)}` + (r.people>1?`\n人均(AA ${r.people}人)：${fmt(r.perPerson)}`:"") + `\n碳排放：${(r.fuelL*2.31).toFixed(1)} kg CO₂`;
+    navigator.clipboard.writeText(txt).then(()=>toast("结果已复制")).catch(()=>toast("复制失败，请手动选择"));
+  };
+
+  // 历史（安全存储，沙箱下用内存）
+  function loadHist(){ try{ return JSON.parse(store.get(LS_KEY,"[]"))||[]; }catch(e){ return []; } }
+  function saveHist(arr){ store.set(LS_KEY, JSON.stringify(arr)); }
+  function renderHist(){
+    const arr = loadHist(); $("histCount").textContent = arr.length;
+    const box = $("historyBox");
+    if(!arr.length){ box.innerHTML = '<div class="empty">暂无记录，计算后可点击「存历史」。</div>'; return; }
+    let html = '<table><thead><tr><th>名称</th><th>里程</th><th>油费</th><th>过路费</th><th class="num">合计</th><th></th></tr></thead><tbody>';
+    arr.slice().reverse().forEach((h,i)=>{
+      const idx = arr.length-1-i;
+      html += `<tr><td>${escapeHtml(h.label)||"未命名"}</td><td>${h.dist} km</td><td>${fmt(h.fuelCost)}</td><td>${fmt(h.tollCost)}</td><td class="num">${fmt(h.total)}</td><td><button class="ghost sm" data-del="${idx}">删除</button></td></tr>`;
+    });
+    html += "</tbody></table>";
+    box.innerHTML = html;
+    box.querySelectorAll("[data-del]").forEach(b=> b.onclick = () => {
+      const a = loadHist(); a.splice(parseInt(b.dataset.del),1); saveHist(a); renderHist(); toast("已删除");
+    });
+  }
+  function escapeHtml(s){ return (s||"").replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+  $("saveBtn").onclick = () => {
+    const r = last || compute();
+    const arr = loadHist();
+    arr.push({label:$("label").value.trim(), dist:r.totalDist, fuelCost:r.fuelCost, tollCost:r.tollCost, total:r.total, t:Date.now()});
+    saveHist(arr); renderHist(); toast("已保存到历史");
+  };
+  $("clearHistBtn").onclick = () => { if(confirm("确定清空全部历史记录？")){ saveHist([]); renderHist(); } };
+
+  // 对比
+  let compares = [];
+  function renderCmp(){
+    const grid = $("compareGrid");
+    if(!compares.length){ grid.innerHTML = '<div class="empty" id="cmpEmpty">暂无对比方案，点击「加入对比」添加。</div>'; return; }
+    const min = Math.min(...compares.map(c=>c.total));
+    grid.innerHTML = compares.map((c,i)=>{
+      const diff = c.total - min;
+      const diffTxt = diff===0 ? '<span style="color:var(--accent-2)">最低</span>' : `<span style="color:var(--danger)">+${fmt(diff)}</span>`;
+      return `<div class="cmp"><button class="del ghost" data-cmp="${i}">✕</button>
+        <div class="name">${escapeHtml(c.label)||"方案"+(i+1)}</div>
+        <div class="val">${fmt(c.total)}</div>
+        <div class="diff">${fmtKm(c.dist)} · ${diffTxt}</div></div>`;
+    }).join("");
+    grid.querySelectorAll("[data-cmp]").forEach(b=> b.onclick = () => { compares.splice(parseInt(b.dataset.cmp),1); renderCmp(); });
+  }
+  $("cmpBtn").onclick = () => {
+    const r = last || compute();
+    compares.push({label:$("label").value.trim() || ("方案"+(compares.length+1)), dist:r.totalDist, total:r.total});
+    renderCmp(); toast("已加入对比");
+  };
+
+  // 打印
+  $("printBtn").onclick = () => window.print();
+
+  // 重置
+  $("resetBtn").onclick = () => {
+    ["consumption","price","tollUnit","people","label","transitName","transitUnit","commuteDays","commuteTrips"].forEach(id=> $(id).value="");
+    $("consumption").value=7.5; $("price").value=7.8; $("tollUnit").value=0.5; $("people").value=1;
+    $("transitName").value="高铁"; $("transitUnit").value=0.45; $("commuteDays").value=22; $("commuteTrips").value=1;
+    tripType="one"; $("tripSeg").querySelectorAll("button").forEach((b,i)=> b.classList.toggle("active", i===0));
+    segments=[{dist:"300", toll:""}]; renderLegs(); refresh(); toast("已重置");
+  };
+
+  function toast(msg){
+    const t=$("toast"); t.textContent=msg; t.classList.add("show");
+    clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove("show"),1600);
+  }
+
+  // 初始化
+  renderLegs(); renderHist(); renderCmp(); refresh();
+})();
+</script>
+</body>
+</html>

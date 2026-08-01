@@ -1,0 +1,1139 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>全景地球仪 · Globe Explorer</title>
+<style>
+  :root{
+    --bg:#06080f; --panel:rgba(16,22,38,0.82); --panel-border:rgba(120,160,255,0.18);
+    --txt:#e6ecff; --muted:#93a0c4; --accent:#4ea0ff; --accent2:#7af0c8; --warn:#ffcf6b;
+    --bad:#ff7b7b; --good:#73e6a0;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{height:100%; overflow:hidden; background:var(--bg); color:var(--txt);
+    font-family:"Segoe UI",system-ui,"Microsoft YaHei",sans-serif; -webkit-font-smoothing:antialiased;}
+  #app{position:fixed; inset:0;}
+  canvas{display:block;}
+  .panel{position:absolute; background:var(--panel); border:1px solid var(--panel-border);
+    border-radius:14px; backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+    box-shadow:0 8px 30px rgba(0,0,0,.45); padding:14px;}
+  .panel h3{font-size:13px; letter-spacing:.5px; color:var(--accent2); margin-bottom:10px;
+    font-weight:600; display:flex; align-items:center; gap:6px;}
+  .panel h3 .dot{width:7px; height:7px; border-radius:50%; background:var(--accent2); box-shadow:0 0 8px var(--accent2);}
+
+  /* 顶部栏 */
+  #topbar{top:14px; left:50%; transform:translateX(-50%); display:flex; gap:10px; align-items:center;
+    padding:10px 14px; z-index:20;}
+  #topbar .title{font-weight:700; font-size:15px; letter-spacing:.5px; white-space:nowrap;
+    display:flex; align-items:center; gap:8px;}
+  #topbar .title .globe{width:18px;height:18px;border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, #8fd0ff, #2f6fd8 55%, #0b1f4d); box-shadow:0 0 10px #3a7bff;}
+  #search{width:240px; padding:8px 12px; border-radius:10px; border:1px solid var(--panel-border);
+    background:rgba(8,12,24,.7); color:var(--txt); font-size:13px; outline:none;}
+  #search:focus{border-color:var(--accent);}
+  #searchRes{position:absolute; top:54px; left:0; right:0; background:var(--panel);
+    border:1px solid var(--panel-border); border-radius:10px; overflow:hidden; max-height:260px; overflow-y:auto; display:none; z-index:30;}
+  #searchRes div{padding:9px 12px; font-size:13px; cursor:pointer; border-bottom:1px solid rgba(255,255,255,.04);}
+  #searchRes div:hover{background:rgba(78,160,255,.18);}
+  #searchRes .sub{color:var(--muted); font-size:11px; margin-left:6px;}
+
+  /* 左侧控制面板 */
+  #left{top:84px; left:14px; width:248px; z-index:15; max-height:calc(100vh - 160px); overflow-y:auto;}
+  .group{margin-bottom:14px;}
+  .group:last-child{margin-bottom:0;}
+  .row{display:flex; align-items:center; justify-content:space-between; gap:8px; margin:7px 0; font-size:12.5px; color:var(--muted);}
+  .btn{appearance:none; border:1px solid var(--panel-border); background:rgba(78,160,255,.10);
+    color:var(--txt); padding:7px 10px; border-radius:9px; font-size:12.5px; cursor:pointer; transition:.15s; flex:1; text-align:center;}
+  .btn:hover{background:rgba(78,160,255,.25); border-color:var(--accent);}
+  .btn.active{background:var(--accent); color:#04122e; font-weight:600; border-color:var(--accent);}
+  .btn.wide{flex:none; width:100%;}
+  .btnrow{display:flex; gap:7px;}
+  /* toggle */
+  .toggle{position:relative; width:38px; height:20px; border-radius:20px; background:rgba(255,255,255,.12); cursor:pointer; transition:.2s; flex:none;}
+  .toggle.on{background:var(--accent);}
+  .toggle::after{content:""; position:absolute; top:2px; left:2px; width:16px; height:16px; border-radius:50%;
+    background:#fff; transition:.2s;}
+  .toggle.on::after{left:20px;}
+  input[type=range]{width:100%; accent-color:var(--accent);}
+  select{width:100%; padding:7px 9px; border-radius:9px; border:1px solid var(--panel-border);
+    background:rgba(8,12,24,.7); color:var(--txt); font-size:12.5px; outline:none;}
+
+  /* 右侧信息面板 */
+  #right{top:84px; right:14px; width:268px; z-index:15; max-height:calc(100vh - 160px); overflow-y:auto;}
+  .kv{display:flex; justify-content:space-between; font-size:12.5px; padding:5px 0; border-bottom:1px solid rgba(255,255,255,.04);}
+  .kv .k{color:var(--muted);} .kv .v{color:var(--txt); font-weight:600; text-align:right;}
+  .tag{display:inline-block; font-size:11px; padding:2px 8px; border-radius:20px; background:rgba(78,160,255,.16); color:var(--accent); margin:2px 3px 2px 0;}
+  #markerList .m{display:flex; align-items:center; justify-content:space-between; gap:6px; font-size:12px;
+    padding:6px 8px; background:rgba(255,255,255,.04); border-radius:8px; margin:5px 0;}
+  #markerList .m .name{color:var(--txt); cursor:pointer; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  #markerList .m .del{color:var(--bad); cursor:pointer; font-weight:700; padding:0 4px;}
+  .hint{font-size:11px; color:var(--muted); line-height:1.5; margin-top:6px;}
+  .pill{font-size:11px; padding:3px 9px; border-radius:20px; background:rgba(122,240,200,.14); color:var(--accent2);}
+
+  /* 底部状态栏 */
+  #bottom{bottom:14px; left:50%; transform:translateX(-50%); display:flex; gap:18px; align-items:center;
+    padding:9px 16px; font-size:12px; color:var(--muted); z-index:15; white-space:nowrap;}
+  #bottom b{color:var(--accent2); font-weight:600;}
+  #bottom .sep{width:1px; height:14px; background:var(--panel-border);}
+
+  /* 工具模式提示 */
+  #modeHint{position:absolute; bottom:60px; left:50%; transform:translateX(-50%); z-index:18;
+    background:rgba(255,207,107,.15); border:1px solid var(--warn); color:var(--warn);
+    padding:7px 16px; border-radius:20px; font-size:12.5px; display:none;}
+
+  /* 加载层 */
+  #loading{position:absolute; inset:0; background:var(--bg); display:flex; flex-direction:column;
+    align-items:center; justify-content:center; z-index:50; gap:16px;}
+  #loading .spin{width:42px; height:42px; border:3px solid rgba(255,255,255,.12); border-top-color:var(--accent);
+    border-radius:50%; animation:sp 1s linear infinite;}
+  @keyframes sp{to{transform:rotate(360deg);}}
+  #loading .t{color:var(--muted); font-size:13px;}
+  #loading .err{color:var(--warn); font-size:12px; max-width:340px; text-align:center; line-height:1.6;}
+
+  /* 小屏适配 */
+  @media (max-width:760px){
+    #left,#right{width:46vw; font-size:11px;}
+    #search{width:150px;}
+    #topbar .title span.t{display:none;}
+    #bottom{font-size:10px; gap:8px; padding:6px 10px;}
+  }
+  ::-webkit-scrollbar{width:8px; height:8px;}
+  ::-webkit-scrollbar-thumb{background:rgba(120,160,255,.25); border-radius:8px;}
+
+  /* 搜索标注开关 */
+  .annotate{display:flex; align-items:center; gap:7px; font-size:12px; color:var(--muted);
+    background:rgba(8,12,24,.6); border:1px solid var(--panel-border); padding:6px 11px; border-radius:10px;}
+  .annotate .toggle{transform:scale(.85);}
+
+  /* 世界时钟 */
+  #worldClock .wc{display:flex; justify-content:space-between; font-size:12px; padding:4px 0; border-bottom:1px solid rgba(255,255,255,.04);}
+  #worldClock .wc .ct{color:var(--muted);} #worldClock .wc .tm{color:var(--accent2); font-weight:600; font-variant-numeric:tabular-nums;}
+
+  /* 比例尺 */
+  #scale{position:absolute; left:14px; bottom:14px; z-index:15; padding:8px 12px; display:flex;
+    flex-direction:column; gap:5px; align-items:center; min-width:120px;}
+  #scale .bar{height:7px; border:1.5px solid var(--accent); border-top:none; border-radius:0 0 4px 4px; width:150px;}
+  #scale .lab{font-size:11px; color:var(--muted);}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<!-- 顶部：标题 + 搜索 -->
+<div id="topbar" class="panel">
+  <div class="title"><span class="globe"></span><span class="t">全景地球仪</span></div>
+  <div style="position:relative;">
+    <input id="search" placeholder="搜索城市或国家…" autocomplete="off">
+    <div id="searchRes"></div>
+  </div>
+  <div class="annotate"><span>搜索后标注</span><div class="toggle" id="tgAnnot"></div></div>
+</div>
+
+<!-- 左侧：控制 -->
+<div id="left" class="panel">
+  <div class="group">
+    <h3><span class="dot"></span>视图控制</h3>
+    <div class="btnrow">
+      <button class="btn" id="btnRotate">自动旋转</button>
+      <button class="btn" id="btnReset">复位视角</button>
+    </div>
+    <div class="row"><span>旋转速度</span><span id="spdVal">0.30</span></div>
+    <input type="range" id="spd" min="0" max="1" step="0.02" value="0.30">
+    <div class="btnrow" style="margin-top:7px;">
+      <button class="btn" id="btnZoomIn">放大 +</button>
+      <button class="btn" id="btnZoomOut">缩小 −</button>
+    </div>
+    <div class="row" style="margin-top:8px;"><span>亮度</span><span id="ambVal">0.55</span></div>
+    <input type="range" id="amb" min="0.2" max="1.0" step="0.02" value="0.55">
+  </div>
+
+  <div class="group">
+    <h3><span class="dot"></span>图层</h3>
+    <div class="row"><span>地图风格</span></div>
+    <select id="styleSel">
+      <option value="political">政治（国家着色）</option>
+      <option value="satellite">自然（海陆色调）</option>
+      <option value="night">夜览（暗色高对比）</option>
+    </select>
+    <div class="row" style="margin-top:8px;"><span>经纬网格</span><div class="toggle on" id="tgGrat"></div></div>
+    <div class="row"><span>国家边界</span><div class="toggle on" id="tgBord"></div></div>
+    <div class="row"><span>大气辉光</span><div class="toggle on" id="tgAtmo"></div></div>
+    <div class="row"><span>星空背景</span><div class="toggle on" id="tgStars"></div></div>
+    <div class="row"><span>昼夜光照</span><div class="toggle on" id="tgDayNight"></div></div>
+    <div class="row"><span>晨昏线</span><div class="toggle" id="tgTerm"></div></div>
+  </div>
+
+  <div class="group">
+    <h3><span class="dot"></span>坐标定位</h3>
+    <div class="btnrow">
+      <input class="btn" id="latIn" placeholder="纬度" style="flex:1; text-align:center;">
+      <input class="btn" id="lonIn" placeholder="经度" style="flex:1; text-align:center;">
+    </div>
+    <button class="btn wide" id="btnGoto" style="margin-top:7px;">飞往坐标</button>
+    <button class="btn wide" id="btnGeo" style="margin-top:7px;">定位我的位置</button>
+  </div>
+</div>
+
+<!-- 右侧：信息 + 工具 -->
+<div id="right" class="panel">
+  <div class="group">
+    <h3><span class="dot"></span>实时信息</h3>
+    <div class="kv"><span class="k">光标经纬度</span><span class="v" id="iCoord">—</span></div>
+    <div class="kv"><span class="k">所在区域</span><span class="v" id="iCountry">—</span></div>
+    <div class="kv"><span class="k">当地时区</span><span class="v" id="iTz">—</span></div>
+    <div class="kv"><span class="k">当地时间</span><span class="v" id="iLocal">—</span></div>
+    <div class="kv"><span class="k">UTC 时间</span><span class="v" id="iUtc">—</span></div>
+    <div class="kv"><span class="k">太阳直射点</span><span class="v" id="iSun">—</span></div>
+  </div>
+
+  <div class="group" id="worldClock">
+    <h3><span class="dot"></span>世界时钟</h3>
+    <div id="wcList"></div>
+  </div>
+
+  <div class="group">
+    <h3><span class="dot"></span>工具</h3>
+    <div class="btnrow">
+      <button class="btn" id="btnDist">测距</button>
+      <button class="btn" id="btnMark">添加标记</button>
+    </div>
+    <div class="btnrow" style="margin-top:7px;">
+      <button class="btn" id="btnRoute">飞行航线</button>
+      <button class="btn" id="btnClear">清除叠加</button>
+    </div>
+    <div class="row" style="margin-top:8px;"><span>出发城市</span></div>
+    <select id="fromSel"></select>
+    <div class="row" style="margin-top:6px;"><span>到达城市</span></div>
+    <select id="toSel"></select>
+    <div id="distOut" class="hint"></div>
+  </div>
+
+  <div class="group">
+    <h3><span class="dot"></span>我的标记 <span class="pill" id="markCount">0</span></h3>
+    <div id="markerList"></div>
+    <div class="hint">点击「添加标记」后在地球上点选位置即可创建，自动保存在本地。</div>
+  </div>
+
+  <div class="group">
+    <div class="btnrow">
+      <button class="btn" id="btnShot">截图保存</button>
+      <button class="btn" id="btnFull">全屏</button>
+    </div>
+  </div>
+</div>
+
+<!-- 底部状态 -->
+<div id="bottom" class="panel">
+  <span>经度 <b id="bLon">0°</b></span><span class="sep"></span>
+  <span>纬度 <b id="bLat">0°</b></span><span class="sep"></span>
+  <span>缩放 <b id="bZoom">1.0×</b></span><span class="sep"></span>
+  <span>国家 <b id="bCountry">—</b></span><span class="sep"></span>
+  <span>FPS <b id="bFps">60</b></span>
+</div>
+
+<!-- 比例尺 -->
+<div id="scale" class="panel">
+  <div class="bar" id="scaleBar" style="width:150px;"></div>
+  <div class="lab" id="scaleLab">—</div>
+</div>
+
+<div id="modeHint"></div>
+
+<div id="loading">
+  <div class="spin"></div>
+  <div class="t">正在加载地球数据…</div>
+  <div class="err" id="loadErr"></div>
+</div>
+
+<!-- Three.js（带降级源） -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+  if (typeof THREE === 'undefined') {
+    document.write('<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"><\/script>');
+  }
+</script>
+
+<script>
+"use strict";
+/* ============================================================
+   全景地球仪 Globe Explorer — 单文件实现
+   ============================================================ */
+const DEG = Math.PI / 180;
+const R = 1;                         // 地球半径（场景单位）
+const EARTH_RADIUS_KM = 6371.0088;   // 真实地球半径
+
+/* ---------- 内置城市库（名称, 纬度, 经度, 国家） ---------- */
+const CITIES = [
+  ["北京",39.90,116.40,"中国"],["上海",31.23,121.47,"中国"],["广州",23.13,113.26,"中国"],
+  ["深圳",22.54,114.06,"中国"],["成都",30.57,104.07,"中国"],["重庆",29.56,106.55,"中国"],
+  ["武汉",30.59,114.31,"中国"],["西安",34.34,108.94,"中国"],["杭州",30.27,120.15,"中国"],
+  ["南京",32.06,118.80,"中国"],["天津",39.13,117.20,"中国"],["香港",22.32,114.17,"中国"],
+  ["台北",25.03,121.57,"中国"],["乌鲁木齐",43.83,87.62,"中国"],["拉萨",29.65,91.13,"中国"],
+  ["哈尔滨",45.80,126.53,"中国"],["昆明",25.04,102.71,"中国"],["沈阳",41.80,123.43,"中国"],
+  ["东京",35.68,139.69,"日本"],["大阪",34.69,135.50,"日本"],["首尔",37.57,126.98,"韩国"],
+  ["平壤",39.03,125.75,"朝鲜"],["河内",21.03,105.85,"越南"],["曼谷",13.76,100.50,"泰国"],
+  ["新加坡",1.35,103.82,"新加坡"],["吉隆坡",3.14,101.69,"马来西亚"],["雅加达",-6.21,106.85,"印尼"],
+  ["马尼拉",14.60,120.98,"菲律宾"],["新德里",28.61,77.21,"印度"],["孟买",19.08,72.88,"印度"],
+  ["班加罗尔",12.97,77.59,"印度"],["加德满都",27.72,85.32,"尼泊尔"],["伊斯兰堡",33.69,73.06,"巴基斯坦"],
+  ["卡拉奇",24.86,67.01,"巴基斯坦"],["达卡",23.81,90.41,"孟加拉"],["科伦坡",6.93,79.86,"斯里兰卡"],
+  ["喀布尔",34.53,69.17,"阿富汗"],["德黑兰",35.69,51.39,"伊朗"],["巴格达",33.31,44.36,"伊拉克"],
+  ["利雅得",24.71,46.68,"沙特"],["迪拜",25.20,55.27,"阿联酋"],["耶路撒冷",31.77,35.21,"以色列"],
+  ["特拉维夫",32.08,34.78,"以色列"],["安卡拉",39.93,32.86,"土耳其"],["伊斯坦布尔",41.01,28.98,"土耳其"],
+  ["莫斯科",55.75,37.62,"俄罗斯"],["圣彼得堡",59.93,30.34,"俄罗斯"],["新西伯利亚",55.03,82.92,"俄罗斯"],
+  ["伦敦",51.51,-0.13,"英国"],["曼彻斯特",53.48,-2.24,"英国"],["巴黎",48.85,2.35,"法国"],
+  ["柏林",52.52,13.40,"德国"],["慕尼黑",48.14,11.58,"德国"],["罗马",41.90,12.50,"意大利"],
+  ["米兰",45.46,9.19,"意大利"],["马德里",40.42,-3.70,"西班牙"],["巴塞罗那",41.39,2.17,"西班牙"],
+  ["里斯本",38.72,-9.14,"葡萄牙"],["阿姆斯特丹",52.37,4.90,"荷兰"],["布鲁塞尔",50.85,4.35,"比利时"],
+  ["苏黎世",47.37,8.54,"瑞士"],["维也纳",48.21,16.37,"奥地利"],["斯德哥尔摩",59.33,18.07,"瑞典"],
+  ["奥斯陆",59.91,10.75,"挪威"],["哥本哈根",55.68,12.57,"丹麦"],["赫尔辛基",60.17,24.94,"芬兰"],
+  ["华沙",52.23,21.01,"波兰"],["布拉格",50.08,14.44,"捷克"],["雅典",37.98,23.73,"希腊"],
+  ["都柏林",53.35,-6.26,"爱尔兰"],["雷克雅未克",64.15,-21.94,"冰岛"],
+  ["纽约",40.71,-74.01,"美国"],["华盛顿",38.91,-77.04,"美国"],["洛杉矶",34.05,-118.24,"美国"],
+  ["旧金山",37.77,-122.42,"美国"],["芝加哥",41.88,-87.63,"美国"],["西雅图",47.61,-122.33,"美国"],
+  ["波士顿",42.36,-71.06,"美国"],["迈阿密",25.76,-80.19,"美国"],["拉斯维加斯",36.17,-115.14,"美国"],
+  ["休斯顿",29.76,-95.37,"美国"],["多伦多",43.65,-79.38,"加拿大"],["温哥华",49.28,-123.12,"加拿大"],
+  ["蒙特利尔",45.50,-73.57,"加拿大"],["墨西哥城",19.43,-99.13,"墨西哥"],["哈瓦那",23.11,-82.37,"古巴"],
+  ["圣保罗",-23.55,-46.63,"巴西"],["里约热内卢",-22.91,-43.17,"巴西"],["布宜诺斯艾利斯",-34.60,-58.38,"阿根廷"],
+  ["利马",-12.05,-77.04,"秘鲁"],["圣地亚哥",-33.45,-70.67,"智利"],["波哥大",4.71,-74.07,"哥伦比亚"],
+  ["加拉加斯",10.48,-66.90,"委内瑞拉"],["开罗",30.04,31.24,"埃及"],["拉各斯",6.52,3.38,"尼日利亚"],
+  ["内罗毕",-1.29,36.82,"肯尼亚"],["开普敦",-33.92,18.42,"南非"],["约翰内斯堡",-26.20,28.05,"南非"],
+  ["卡萨布兰卡",33.57,-7.59,"摩洛哥"],["阿尔及尔",36.75,3.06,"阿尔及利亚"],["亚的斯亚贝巴",9.03,38.74,"埃塞俄比亚"],
+  ["悉尼",-33.87,151.21,"澳大利亚"],["墨尔本",-37.81,144.96,"澳大利亚"],["珀斯",-31.95,115.86,"澳大利亚"],
+  ["布里斯班",-27.47,153.03,"澳大利亚"],["奥克兰",-36.85,174.76,"新西兰"],
+  ["斐济苏瓦",-18.14,178.44,"斐济"]
+];
+
+/* ---------- 全局状态 ---------- */
+let scene, camera, renderer, earthGroup, earthMesh, atmoMesh, starField;
+let sunLight, sunMarker, earthTexture, earthCanvas, earthCtx;
+let geoData = null;            // 国家 GeoJSON
+let countryPolygons = [];      // 预解析后的多边形（用于拾取国家名）
+let mode = "none";             // none | distance | mark
+let distancePts = [];          // 测距选点
+let distanceLine = null;
+let markers = [];              // {name,lat,lon,mesh}
+let routes = [];               // 飞行航线对象
+let routeAnim = null;          // 当前动画航线
+let autoRotate = false;
+let rotSpeed = 0.30;
+let camDist = 3.0;
+let velocity = {x:0, y:0};     // 拖拽惯性
+let dragging = false, lastX=0, lastY=0;
+let raycaster = new THREE.Raycaster();
+let mouseNDC = new THREE.Vector2();
+let hoverLat=0, hoverLon=0;
+let showGrat=true, showBord=true, showAtmo=true, showStars=true, showDayNight=true;
+let showTerm=false;
+let curStyle = "political";
+let fps=60, lastT=performance.now(), frames=0, fpsT=performance.now();
+let app;
+let ambientLevel = 0.55;        // 环境光强度（亮度）
+let ambientLight = null;
+let searchAnnotate = false;      // 搜索后是否标注城市
+let termLine = null;             // 晨昏线
+const WORLD_CLOCK = [
+  ["北京",39.90,116.40],["伦敦",51.51,-0.13],["纽约",40.71,-74.01],
+  ["东京",35.68,139.69],["巴黎",48.85,2.35],["悉尼",-33.87,151.21]
+];
+
+/* ============================================================
+   坐标换算
+   ============================================================ */
+function latLonToVec3(lat, lon, r){
+  const v = (90 - lat) * DEG;          // 极角（自 +Y）
+  const u = (lon + 180) * DEG;         // 经度角
+  return new THREE.Vector3(
+    -r * Math.cos(u) * Math.sin(v),
+     r * Math.cos(v),
+     r * Math.sin(u) * Math.sin(v)
+  );
+}
+function vec3ToLatLon(v){
+  const n = v.clone().normalize();
+  const lat = 90 - Math.acos(THREE.MathUtils.clamp(n.y, -1, 1)) / DEG;
+  let lon = Math.atan2(n.z, -n.x) / DEG - 180;
+  if (lon < -180) lon += 360; if (lon > 180) lon -= 360;
+  return {lat, lon};
+}
+
+/* ============================================================
+   地球贴图（等距柱状投影，由 GeoJSON 实时绘制）
+   ============================================================ */
+function makeEarthCanvas(){
+  const c = document.createElement('canvas');
+  c.width = 2048; c.height = 1024;
+  return c;
+}
+function drawEarth(){
+  if (!earthCanvas) earthCanvas = makeEarthCanvas();
+  earthCtx = earthCanvas.getContext('2d');
+  const W = earthCanvas.width, H = earthCanvas.height;
+  const ctx = earthCtx;
+  ctx.clearRect(0,0,W,H);
+
+  // 海洋
+  const ocean = {
+    political:"#12407a", satellite:"#0e2f5c", night:"#0a1426"
+  }[curStyle];
+  const grad = ctx.createLinearGradient(0,0,0,H);
+  grad.addColorStop(0, shade(ocean, 18));
+  grad.addColorStop(0.5, ocean);
+  grad.addColorStop(1, shade(ocean, -14));
+  ctx.fillStyle = grad; ctx.fillRect(0,0,W,H);
+
+  // 国家填充
+  if (countryPolygons.length && (curStyle==="political")){
+    for (const cp of countryPolygons){
+      ctx.beginPath();
+      for (const poly of cp.polys){
+        const ring = poly[0];
+        for (let i=0;i<ring.length;i++){
+          const [lon,lat] = ring[i];
+          const x = (lon+180)/360*W, y = (90-lat)/180*H;
+          if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+        }
+        ctx.closePath();
+      }
+      ctx.fillStyle = colorFor(cp.name);
+      ctx.fill();
+    }
+  } else if (geoData){
+    // satellite / night：陆地统一色调
+    const land = curStyle==="satellite" ? "#3f8a4d" : "#26344f";
+    const land2= curStyle==="satellite" ? "#8a6f3f" : "#33415f";
+    for (const cp of countryPolygons){
+      ctx.beginPath();
+      for (const poly of cp.polys){
+        const ring = poly[0];
+        for (let i=0;i<ring.length;i++){
+          const [lon,lat] = ring[i];
+          const x = (lon+180)/360*W, y = (90-lat)/180*H;
+          if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+        }
+        ctx.closePath();
+      }
+      // 纬度决定微调色
+      const latMid = cp.lat;
+      ctx.fillStyle = latMid > 50 ? shade(land2, 10) : (latMid < -30 ? shade(land, -6) : land);
+      ctx.fill();
+    }
+  }
+
+  // 边界
+  if (showBord && countryPolygons.length){
+    ctx.strokeStyle = curStyle==="night" ? "rgba(120,200,255,.55)" : "rgba(180,210,255,.45)";
+    ctx.lineWidth = curStyle==="night" ? 1.1 : 0.8;
+    for (const cp of countryPolygons){
+      for (const poly of cp.polys){
+        for (const ring of poly){
+          ctx.beginPath();
+          for (let i=0;i<ring.length;i++){
+            const [lon,lat] = ring[i];
+            const x = (lon+180)/360*W, y = (90-lat)/180*H;
+            if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+          }
+          ctx.stroke();
+        }
+      }
+    }
+  }
+
+  // 经纬网格
+  if (showGrat){
+    ctx.strokeStyle = curStyle==="night" ? "rgba(122,240,200,.18)" : "rgba(255,255,255,.10)";
+    ctx.lineWidth = 0.7;
+    // 经线
+    for (let lon=-180; lon<=180; lon+=30){
+      const x = (lon+180)/360*W;
+      ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke();
+    }
+    // 纬线
+    for (let lat=-90; lat<=90; lat+=30){
+      const y = (90-lat)/180*H;
+      ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke();
+    }
+    // 赤道 & 本初子午线加粗
+    ctx.strokeStyle = curStyle==="night" ? "rgba(122,240,200,.5)" : "rgba(255,220,140,.5)";
+    ctx.lineWidth = 1.4;
+    ctx.beginPath(); ctx.moveTo(0,H/2); ctx.lineTo(W,H/2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(W/2,0); ctx.lineTo(W/2,H); ctx.stroke();
+  }
+
+  if (!earthTexture){
+    earthTexture = new THREE.CanvasTexture(earthCanvas);
+    earthTexture.anisotropy = 4;
+  }
+  earthTexture.needsUpdate = true;
+  if (earthMesh){ earthMesh.material.map = earthTexture; earthMesh.material.needsUpdate = true; }
+}
+
+function shade(hex, amt){
+  const c = hex.replace('#','');
+  let r=parseInt(c.substr(0,2),16), g=parseInt(c.substr(2,2),16), b=parseInt(c.substr(4,2),16);
+  r=THREE.MathUtils.clamp(r+amt,0,255); g=THREE.MathUtils.clamp(g+amt,0,255); b=THREE.MathUtils.clamp(b+amt,0,255);
+  return `rgb(${r|0},${g|0},${b|0})`;
+}
+function colorFor(name){
+  let h=0; for (let i=0;i<name.length;i++) h=(h*31 + name.charCodeAt(i))>>>0;
+  const hue = h % 360;
+  return `hsl(${hue}, 48%, 58%)`;
+}
+
+/* ============================================================
+   初始化场景
+   ============================================================ */
+function init(){
+  app = document.getElementById('app');
+  scene = new THREE.Scene();
+
+  camera = new THREE.PerspectiveCamera(45, innerWidth/innerHeight, 0.1, 1000);
+  camera.position.set(0,0,camDist);
+
+  renderer = new THREE.WebGLRenderer({antialias:true, preserveDrawingBuffer:true});
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.setSize(innerWidth, innerHeight);
+  app.appendChild(renderer.domElement);
+
+  earthGroup = new THREE.Group();
+  scene.add(earthGroup);
+
+  // 地球
+  const geo = new THREE.SphereGeometry(R, 96, 96);
+  const mat = new THREE.MeshPhongMaterial({shininess:12, specular:0x223344});
+  earthMesh = new THREE.Mesh(geo, mat);
+  earthGroup.add(earthMesh);
+
+  // 大气辉光
+  const atmGeo = new THREE.SphereGeometry(R*1.025, 64, 64);
+  const atmMat = new THREE.ShaderMaterial({
+    vertexShader:`varying vec3 vN; void main(){ vN=normalize(normalMatrix*normal);
+      gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`,
+    fragmentShader:`varying vec3 vN; void main(){ float i=pow(0.72 - dot(vN, vec3(0.0,0.0,1.0)), 2.2);
+      i=clamp(i,0.0,1.0); gl_FragColor=vec4(0.30,0.60,1.0,1.0)*i; }`,
+    blending:THREE.AdditiveBlending, side:THREE.BackSide, transparent:true, depthWrite:false
+  });
+  atmoMesh = new THREE.Mesh(atmGeo, atmMat);
+  scene.add(atmoMesh);
+
+  // 光照（太阳方向由昼夜逻辑设置）
+  sunLight = new THREE.DirectionalLight(0xffffff, 1.25);
+  scene.add(sunLight);
+  ambientLight = new THREE.AmbientLight(0xffffff, ambientLevel);
+  scene.add(ambientLight);
+
+  // 晨昏线（固定于世界坐标，随太阳方向更新）
+  termLine = new THREE.LineLoop(new THREE.BufferGeometry(),
+    new THREE.LineBasicMaterial({color:0xffcf6b, transparent:true, opacity:0.85}));
+  termLine.visible = false;
+  scene.add(termLine);
+
+  // 太阳标记
+  const sunCanvas = document.createElement('canvas'); sunCanvas.width=sunCanvas.height=64;
+  const sctx = sunCanvas.getContext('2d');
+  const sg = sctx.createRadialGradient(32,32,2,32,32,30);
+  sg.addColorStop(0,'#fff7d6'); sg.addColorStop(0.4,'#ffd34d'); sg.addColorStop(1,'rgba(255,180,40,0)');
+  sctx.fillStyle=sg; sctx.fillRect(0,0,64,64);
+  const sunTex = new THREE.CanvasTexture(sunCanvas);
+  sunMarker = new THREE.Sprite(new THREE.SpriteMaterial({map:sunTex, transparent:true, depthWrite:false}));
+  sunMarker.scale.set(0.28,0.28,0.28);
+  scene.add(sunMarker);
+
+  // 星空
+  buildStars();
+
+  drawEarth();
+  bindEvents();
+  updateSun();
+  loadGeo();
+  loadMarkers();
+  fillCitySelects();
+  buildWorldClock();
+
+  document.getElementById('loading').style.display='none';
+  animate();
+}
+
+function buildStars(){
+  const n = 3500;
+  const pos = new Float32Array(n*3);
+  for (let i=0;i<n;i++){
+    const r = 60 + Math.random()*40;
+    const th = Math.random()*Math.PI*2, ph = Math.acos(2*Math.random()-1);
+    pos[i*3]   = r*Math.sin(ph)*Math.cos(th);
+    pos[i*3+1] = r*Math.cos(ph);
+    pos[i*3+2] = r*Math.sin(ph)*Math.sin(th);
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(pos,3));
+  const m = new THREE.PointsMaterial({color:0xffffff, size:0.35, sizeAttenuation:true, transparent:true, opacity:0.9});
+  starField = new THREE.Points(g, m);
+  scene.add(starField);
+}
+
+/* ============================================================
+   加载国家边界 GeoJSON（带降级）
+   ============================================================ */
+async function loadGeo(){
+  const urls = [
+    "https://cdn.jsdelivr.net/gh/johan/world.geo.json@master/countries.geo.json",
+    "https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json"
+  ];
+  for (const u of urls){
+    try {
+      const res = await fetch(u);
+      if (!res.ok) continue;
+      const data = await res.json();
+      parseGeo(data);
+      drawEarth();
+      return;
+    } catch(e){ /* try next */ }
+  }
+  // 降级：仅经纬网地球
+  const le = document.getElementById('loadErr');
+  le.innerHTML = "未能加载国家边界数据（需要网络）。已降级为纯经纬网地球，其余功能仍可用。";
+  drawEarth();
+}
+function parseGeo(data){
+  geoData = data;
+  countryPolygons = [];
+  const feats = data.features || [];
+  for (const f of feats){
+    const name = (f.properties && (f.properties.name || f.properties.ADMIN)) || "未知";
+    const g = f.geometry; if (!g) continue;
+    const polys = [];
+    if (g.type === "Polygon") polys.push(g.coordinates);
+    else if (g.type === "MultiPolygon") for (const p of g.coordinates) polys.push(p);
+    let latSum=0, n=0;
+    for (const poly of polys) for (const ring of poly) for (const pt of ring){ latSum+=pt[1]; n++; }
+    countryPolygons.push({name, polys, lat: n? latSum/n : 0});
+  }
+}
+
+/* 点在多边形内（射线法），poly=[ [lon,lat], ... ] */
+function pointInRing(pt, ring){
+  let inside=false, x=pt[0], y=pt[1];
+  for (let i=0, j=ring.length-1; i<ring.length; j=i++){
+    const xi=ring[i][0], yi=ring[i][1], xj=ring[j][0], yj=ring[j][1];
+    const inter = ((yi>y)!==(yj>y)) && (x < (xj-xi)*(y-yi)/(yj-yi)+xi);
+    if (inter) inside=!inside;
+  }
+  return inside;
+}
+function countryAt(lat, lon){
+  if (!geoData && countryPolygons.length===0) return "—";
+  for (const cp of countryPolygons){
+    for (const poly of cp.polys){
+      if (pointInRing([lon,lat], poly[0])){
+        // 检查是否有内环（洞）排除
+        let inHole=false;
+        for (let k=1;k<poly.length;k++){ if (pointInRing([lon,lat], poly[k])){ inHole=true; break; } }
+        if (!inHole) return cp.name;
+      }
+    }
+  }
+  return "海洋 / 公海";
+}
+
+/* ============================================================
+   昼夜 & 太阳位置
+   ============================================================ */
+function updateSun(){
+  const now = new Date();
+  const start = new Date(now.getUTCFullYear(),0,0);
+  const N = Math.floor((now - start)/86400000);
+  const decl = -23.44 * Math.cos(DEG * (360/365) * (N+10));   // 太阳赤纬
+  const utcH = now.getUTCHours() + now.getUTCMinutes()/60 + now.getUTCSeconds()/3600;
+  const subLon = -(utcH - 12) * 15;                            // 太阳直射经度
+  const v = latLonToVec3(decl, subLon, R*1.06);
+  sunMarker.position.copy(v);
+  sunLight.position.copy(v.clone().multiplyScalar(10));
+  updateTerminator(v.clone().normalize());
+
+  document.getElementById('iSun').textContent =
+    `${Math.abs(decl).toFixed(1)}°${decl>=0?'N':'S'}, ${fmtLon(subLon)}`;
+  return {decl, subLon};
+}
+function updateTerminator(S){
+  if (!termLine) return;
+  termLine.visible = showTerm;
+  if (!showTerm) return;
+  // 与太阳方向垂直的大圆
+  let axis = Math.abs(S.y) > 0.9 ? new THREE.Vector3(1,0,0) : new THREE.Vector3(0,1,0);
+  const u = new THREE.Vector3().crossVectors(S, axis).normalize();
+  const w = new THREE.Vector3().crossVectors(S, u).normalize();
+  const pts = [];
+  const N = 160;
+  for (let i=0;i<=N;i++){
+    const t = i/N * Math.PI*2;
+    pts.push(new THREE.Vector3()
+      .addScaledVector(u, Math.cos(t))
+      .addScaledVector(w, Math.sin(t))
+      .multiplyScalar(R*1.005));
+  }
+  termLine.geometry.dispose();
+  termLine.geometry = new THREE.BufferGeometry().setFromPoints(pts);
+}
+function fmtLon(lon){
+  lon = ((lon+540)%360)-180;
+  return `${Math.abs(lon).toFixed(1)}°${lon>=0?'E':'W'}`;
+}
+function fmtLat(lat){ return `${Math.abs(lat).toFixed(2)}°${lat>=0?'N':'S'}`; }
+
+/* ============================================================
+   本地时间 / 时区
+   ============================================================ */
+function localInfoAt(lat, lon){
+  const now = new Date();
+  const utcMs = now.getTime() + now.getTimezoneOffset()*60000;
+  const offH = lon/15;
+  const local = new Date(utcMs + offH*3600000);
+  const sign = offH>=0?'+':'-';
+  const ah = Math.abs(offH);
+  const offStr = `UTC${sign}${String(Math.floor(ah)).padStart(2,'0')}:${String(Math.round((ah%1)*60)).padStart(2,'0')}`;
+  const hh = String(local.getUTCHours()).padStart(2,'0');
+  const mm = String(local.getUTCMinutes()).padStart(2,'0');
+  return {offStr, time:`${hh}:${mm}`, date:`${local.getUTCFullYear()}-${String(local.getUTCMonth()+1).padStart(2,'0')}-${String(local.getUTCDate()).padStart(2,'0')}`};
+}
+
+/* ============================================================
+   标记系统
+   ============================================================ */
+function markerSprite(color){
+  const c = document.createElement('canvas'); c.width=c.height=64;
+  const x = c.getContext('2d');
+  x.beginPath(); x.arc(32,24,14,0,Math.PI*2); x.fillStyle=color; x.fill();
+  x.lineWidth=3; x.strokeStyle='#fff'; x.stroke();
+  x.beginPath(); x.moveTo(24,34); x.lineTo(40,34); x.lineTo(32,58); x.closePath();
+  x.fillStyle=color; x.fill(); x.stroke();
+  const t = new THREE.CanvasTexture(c);
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({map:t, depthTest:false, transparent:true}));
+  s.scale.set(0.09,0.09,0.09);
+  return s;
+}
+function labelSprite(text, color){
+  const pad=10, fs=30;
+  const c = document.createElement('canvas');
+  const x = c.getContext('2d');
+  x.font = `bold ${fs}px "Microsoft YaHei",sans-serif`;
+  const w = x.measureText(text).width;
+  c.width = w + pad*2 + 14; c.height = fs + pad*2;
+  const x2 = c.getContext('2d');
+  x2.font = `bold ${fs}px "Microsoft YaHei",sans-serif`;
+  x2.fillStyle = 'rgba(8,12,24,.82)';
+  roundRect(x2, 1, 1, c.width-2, c.height-2, 10); x2.fill();
+  x2.strokeStyle = color; x2.lineWidth = 2; roundRect(x2, 1, 1, c.width-2, c.height-2, 10); x2.stroke();
+  x2.fillStyle = '#fff';
+  x2.textBaseline = 'middle';
+  x2.fillText(text, pad + 7, c.height/2);
+  const t = new THREE.CanvasTexture(c);
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({map:t, depthTest:false, transparent:true}));
+  const sc = 0.0016;
+  s.scale.set(c.width*sc, c.height*sc, 1);
+  return s;
+}
+function roundRect(ctx,x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
+}
+function addMarker(name, lat, lon, save=true, withLabel=false){
+  const colors = ['#ff5d5d','#ffd34d','#7af0c8','#9d7bff','#4ea0ff','#ff9d4d'];
+  const color = colors[markers.length % colors.length];
+  const sp = markerSprite(color);
+  sp.position.copy(latLonToVec3(lat, lon, R*1.02));
+  earthGroup.add(sp);
+  const m = {name, lat, lon, sprite:sp, city:withLabel};
+  if (withLabel){
+    const lb = labelSprite(name, color);
+    lb.position.copy(latLonToVec3(lat, lon, R*1.12));
+    earthGroup.add(lb);
+    m.label = lb;
+  }
+  markers.push(m);
+  if (save) saveMarkers();
+  renderMarkerList();
+  return m;
+}
+function clearMarkers(){ for (const m of markers){ earthGroup.remove(m.sprite); if(m.label) earthGroup.remove(m.label); } markers=[]; saveMarkers(); renderMarkerList(); }
+function saveMarkers(){
+  try{ localStorage.setItem('globe_markers', JSON.stringify(markers.map(m=>({name:m.name,lat:m.lat,lon:m.lon,city:m.city})))); }catch(e){}
+}
+function loadMarkers(){
+  try{
+    const arr = JSON.parse(localStorage.getItem('globe_markers')||'[]');
+    for (const m of arr) addMarker(m.name, m.lat, m.lon, false, m.city);
+  }catch(e){}
+  renderMarkerList();
+}
+function renderMarkerList(){
+  document.getElementById('markCount').textContent = markers.length;
+  const box = document.getElementById('markerList');
+  box.innerHTML = '';
+  markers.forEach((m,i)=>{
+    const d = document.createElement('div'); d.className='m';
+    const nm = document.createElement('span'); nm.className='name'; nm.textContent = `${m.name}  (${fmtLat(m.lat)}, ${fmtLon(m.lon)})`;
+    nm.onclick = ()=>flyTo(m.lat, m.lon);
+    const del = document.createElement('span'); del.className='del'; del.textContent='✕';
+    del.onclick = ()=>{ earthGroup.remove(m.sprite); if(m.label) earthGroup.remove(m.label); markers.splice(i,1); saveMarkers(); renderMarkerList(); };
+    d.appendChild(nm); d.appendChild(del); box.appendChild(d);
+  });
+}
+
+/* ============================================================
+   飞往坐标（四元数对准）
+   ============================================================ */
+let flyTarget = null;
+function flyTo(lat, lon){
+  const p = latLonToVec3(lat, lon, R).normalize();
+  const q = new THREE.Quaternion().setFromUnitVectors(p, new THREE.Vector3(0,0,1));
+  flyTarget = q;
+}
+
+/* ============================================================
+   测距（大圆）
+   ============================================================ */
+function haversine(a, b){
+  const dLat=(b.lat-a.lat)*DEG, dLon=(b.lon-a.lon)*DEG;
+  const la1=a.lat*DEG, la2=b.lat*DEG;
+  const h=Math.sin(dLat/2)**2 + Math.cos(la1)*Math.cos(la2)*Math.sin(dLon/2)**2;
+  return 2*EARTH_RADIUS_KM*Math.asin(Math.sqrt(h));
+}
+function bearing(a,b){
+  const la1=a.lat*DEG, la2=b.lat*DEG, dLon=(b.lon-a.lon)*DEG;
+  const y=Math.sin(dLon)*Math.cos(la2);
+  const x=Math.cos(la1)*Math.sin(la2)-Math.sin(la1)*Math.cos(la2)*Math.cos(dLon);
+  let br=Math.atan2(y,x)/DEG; if(br<0) br+=360; return br;
+}
+function drawDistanceLine(){
+  if (distanceLine){ earthGroup.remove(distanceLine); distanceLine=null; }
+  if (distancePts.length<2) return;
+  const a = latLonToVec3(distancePts[0].lat, distancePts[0].lon, R*1.004).normalize();
+  const b = latLonToVec3(distancePts[1].lat, distancePts[1].lon, R*1.004).normalize();
+  const pts=[]; const N=128;
+  for (let i=0;i<=N;i++){ pts.push(new THREE.Vector3().copy(a).lerp(b, i/N).normalize().multiplyScalar(R*1.006)); }
+  const g = new THREE.BufferGeometry().setFromPoints(pts);
+  const m = new THREE.LineBasicMaterial({color:0x7af0c8});
+  distanceLine = new THREE.Line(g, m);
+  earthGroup.add(distanceLine);
+}
+
+/* ============================================================
+   飞行航线
+   ============================================================ */
+function drawRoute(from, to){
+  // 清除旧
+  for (const r of routes){ earthGroup.remove(r.line); earthGroup.remove(r.dot); }
+  routes = []; routeAnim = null;
+  const a = latLonToVec3(from[1], from[2], R);
+  const b = latLonToVec3(to[1], to[2], R);
+  const mid = a.clone().add(b).multiplyScalar(0.5);
+  const dist = a.distanceTo(b);
+  mid.normalize().multiplyScalar(R + dist*0.5 + 0.15);   // 弧线高度
+  const curve = new THREE.QuadraticBezierCurve3(a, mid, b);
+  const pts = curve.getPoints(120);
+  const g = new THREE.BufferGeometry().setFromPoints(pts);
+  const line = new THREE.Line(g, new THREE.LineBasicMaterial({color:0xffd34d}));
+  const dot = new THREE.Mesh(new THREE.SphereGeometry(0.022,16,16), new THREE.MeshBasicMaterial({color:0xff7b3d}));
+  earthGroup.add(line); earthGroup.add(dot);
+  routes.push({line, dot, curve});
+  routeAnim = {curve:curve, dot:dot, t:0};
+  // 同时飞到航线中点
+  flyTo((from[1]+to[1])/2, (from[2]+to[2])/2);
+}
+
+/* ============================================================
+   交互事件
+   ============================================================ */
+function bindEvents(){
+  const dom = renderer.domElement;
+  dom.addEventListener('pointerdown', e=>{
+    dragging=true; lastX=e.clientX; lastY=e.clientY; velocity.x=0; velocity.y=0;
+    dom.setPointerCapture(e.pointerId);
+  });
+  dom.addEventListener('pointermove', e=>{
+    // 光标坐标
+    pickCoord(e);
+    if (dragging){
+      const dx=e.clientX-lastX, dy=e.clientY-lastY;
+      rotateGlobe(dx, dy);
+      velocity.x = dx*0.005; velocity.y = dy*0.005;
+      lastX=e.clientX; lastY=e.clientY;
+    }
+  });
+  dom.addEventListener('pointerup', e=>{ dragging=false; try{dom.releasePointerCapture(e.pointerId);}catch(_){} });
+  dom.addEventListener('pointerleave', ()=>{ dragging=false; });
+  dom.addEventListener('wheel', e=>{
+    e.preventDefault();
+    camDist = THREE.MathUtils.clamp(camDist + e.deltaY*0.0016, 1.35, 6);
+    camera.position.z = camDist;
+    document.getElementById('bZoom').textContent = (3/camDist).toFixed(1)+'×';
+  }, {passive:false});
+  dom.addEventListener('click', e=>{
+    if (mode==="distance") handleDistanceClick(e);
+    else if (mode==="mark") handleMarkClick(e);
+  });
+  window.addEventListener('resize', onResize);
+}
+function rotateGlobe(dx, dy){
+  earthGroup.rotateOnWorldAxis(new THREE.Vector3(0,1,0), dx*0.005);
+  earthGroup.rotateOnWorldAxis(new THREE.Vector3(1,0,0), dy*0.005);
+}
+function pickCoord(e){
+  mouseNDC.x = (e.clientX/innerWidth)*2-1;
+  mouseNDC.y = -(e.clientY/innerHeight)*2+1;
+  raycaster.setFromCamera(mouseNDC, camera);
+  const hit = raycaster.intersectObject(earthMesh, false)[0];
+  if (hit){
+    const local = earthGroup.worldToLocal(hit.point.clone());
+    const {lat, lon} = vec3ToLatLon(local);
+    hoverLat=lat; hoverLon=lon;
+    document.getElementById('iCoord').textContent = `${fmtLat(lat)}, ${fmtLon(lon)}`;
+    document.getElementById('bLat').textContent = fmtLat(lat);
+    document.getElementById('bLon').textContent = fmtLon(lon);
+    const c = countryAt(lat, lon);
+    document.getElementById('iCountry').textContent = c;
+    document.getElementById('bCountry').textContent = c;
+    const li = localInfoAt(lat, lon);
+    document.getElementById('iTz').textContent = li.offStr;
+    document.getElementById('iLocal').textContent = `${li.time} ${li.date}`;
+  }
+}
+function handleDistanceClick(e){
+  if (!hoverLat && hoverLat!==0) return;
+  distancePts.push({lat:hoverLat, lon:hoverLon});
+  // 临时点
+  const sp = new THREE.Mesh(new THREE.SphereGeometry(0.018,12,12), new THREE.MeshBasicMaterial({color:0x7af0c8}));
+  sp.position.copy(latLonToVec3(hoverLat, hoverLon, R*1.02));
+  earthGroup.add(sp);
+  if (distancePts.length===2){
+    drawDistanceLine();
+    const d = haversine(distancePts[0], distancePts[1]);
+    const br = bearing(distancePts[0], distancePts[1]);
+    document.getElementById('distOut').innerHTML =
+      `距离 <b style="color:var(--accent2)">${d.toFixed(1)} km</b>（≈${(d/earthspeed()).toFixed(1)} 倍赤道半径）<br>初始方位 ${br.toFixed(1)}°`;
+    mode="none"; setModeHint();
+  } else {
+    document.getElementById('distOut').innerHTML = `已选第 1 点，请选择第 2 点…`;
+  }
+}
+function earthspeed(){ return EARTH_RADIUS_KM*2*Math.PI; }
+function handleMarkClick(e){
+  const name = prompt("为标记命名：", "");
+  if (name===null) return;
+  addMarker(name || `标记${markers.length+1}`, hoverLat, hoverLon);
+  mode="none"; setModeHint();
+}
+
+/* ============================================================
+   UI 按钮绑定
+   ============================================================ */
+function bindUI(){
+  document.getElementById('btnRotate').onclick = function(){
+    autoRotate=!autoRotate; this.classList.toggle('active', autoRotate);
+  };
+  document.getElementById('btnReset').onclick = ()=>{
+    flyTarget = new THREE.Quaternion(); // 回到默认朝向
+    camDist=3.0; camera.position.z=camDist;
+  };
+  document.getElementById('spd').oninput = function(){
+    rotSpeed=parseFloat(this.value); document.getElementById('spdVal').textContent=rotSpeed.toFixed(2);
+  };
+  document.getElementById('btnZoomIn').onclick = ()=>{ camDist=Math.max(1.35,camDist-0.4); camera.position.z=camDist; document.getElementById('bZoom').textContent=(3/camDist).toFixed(1)+'×'; };
+  document.getElementById('btnZoomOut').onclick = ()=>{ camDist=Math.min(6,camDist+0.4); camera.position.z=camDist; document.getElementById('bZoom').textContent=(3/camDist).toFixed(1)+'×'; };
+
+  bindToggle('tgGrat', v=>{ showGrat=v; drawEarth(); });
+  bindToggle('tgBord', v=>{ showBord=v; drawEarth(); });
+  bindToggle('tgAtmo', v=>{ showAtmo=v; atmoMesh.visible=v; });
+  bindToggle('tgStars', v=>{ showStars=v; starField.visible=v; });
+  bindToggle('tgDayNight', v=>{ showDayNight=v; applyDayNight(); });
+  bindToggle('tgTerm', v=>{ showTerm=v; updateTerminator(sunMarker.position.clone().normalize()); });
+  bindToggle('tgAnnot', v=>{ searchAnnotate=v; });
+
+  document.getElementById('amb').oninput = function(){
+    ambientLevel=parseFloat(this.value); document.getElementById('ambVal').textContent=ambientLevel.toFixed(2);
+    if(ambientLight && showDayNight) ambientLight.intensity=ambientLevel;
+  };
+
+  document.getElementById('styleSel').onchange = function(){
+    curStyle=this.value; drawEarth();
+  };
+
+  document.getElementById('btnGoto').onclick = ()=>{
+    const la=parseFloat(document.getElementById('latIn').value);
+    const lo=parseFloat(document.getElementById('lonIn').value);
+    if (isFinite(la)&&isFinite(lo)&&la>=-90&&la<=90&&lo>=-180&&lo<=180) flyTo(la,lo);
+    else alert("请输入有效的纬度(-90~90)与经度(-180~180)");
+  };
+  document.getElementById('btnGeo').onclick = ()=>{
+    if (!navigator.geolocation){ alert("当前浏览器不支持定位"); return; }
+    navigator.geolocation.getCurrentPosition(p=>flyTo(p.coords.latitude,p.coords.longitude),
+      ()=>alert("定位失败或被拒绝"));
+  };
+
+  document.getElementById('btnDist').onclick = ()=>{
+    mode = mode==="distance"?"none":"distance";
+    if (mode==="distance"){ distancePts=[]; if(distanceLine){earthGroup.remove(distanceLine);distanceLine=null;} }
+    document.getElementById('distOut').innerHTML = mode? "点击地球上两点以测距" : "";
+    setModeHint();
+  };
+  document.getElementById('btnMark').onclick = ()=>{
+    mode = mode==="mark"?"none":"mark"; setModeHint();
+  };
+  document.getElementById('btnRoute').onclick = ()=>{
+    const f=document.getElementById('fromSel').value, t=document.getElementById('toSel').value;
+    if (f && t) drawRoute(CITIES[f], CITIES[t]);
+  };
+  document.getElementById('btnClear').onclick = ()=>{
+    if(distanceLine){earthGroup.remove(distanceLine);distanceLine=null;}
+    for(const r of routes){earthGroup.remove(r.line);earthGroup.remove(r.dot);}
+    routes=[]; routeAnim=null; distancePts=[];
+    document.getElementById('distOut').innerHTML="";
+  };
+  document.getElementById('btnShot').onclick = ()=>{
+    renderer.render(scene, camera);
+    const a=document.createElement('a');
+    a.download='globe-'+Date.now()+'.png';
+    a.href=renderer.domElement.toDataURL('image/png'); a.click();
+  };
+  document.getElementById('btnFull').onclick = ()=>{
+    if (!document.fullscreenElement) document.documentElement.requestFullscreen?.();
+    else document.exitFullscreen?.();
+  };
+
+  // 搜索
+  const sb=document.getElementById('search'), sr=document.getElementById('searchRes');
+  sb.addEventListener('input', ()=>{
+    const q=sb.value.trim().toLowerCase();
+    if (!q){ sr.style.display='none'; return; }
+    const matches=[];
+    for (let i=0;i<CITIES.length;i++){
+      const c=CITIES[i];
+      if (c[0].toLowerCase().includes(q) || c[3].toLowerCase().includes(q)) matches.push({i, c});
+    }
+    sr.innerHTML='';
+    matches.slice(0,12).forEach(m=>{
+      const d=document.createElement('div');
+      d.innerHTML=`${m.c[0]} <span class="sub">${m.c[3]} · ${fmtLat(m.c[1])} ${fmtLon(m.c[2])}</span>`;
+      d.onclick=()=>{ flyTo(m.c[1], m.c[2]); if(searchAnnotate) addMarker(m.c[0], m.c[1], m.c[2], true, true); sb.value=m.c[0]; sr.style.display='none'; };
+      sr.appendChild(d);
+    });
+    sr.style.display = matches.length? 'block':'none';
+  });
+  sb.addEventListener('keydown', e=>{ if(e.key==='Enter'){ const f=sr.querySelector('div'); if(f) f.click(); } });
+  document.addEventListener('click', e=>{ if(!e.target.closest('#topbar')) sr.style.display='none'; });
+}
+function bindToggle(id, cb){
+  const el=document.getElementById(id);
+  el.onclick=()=>{ const on=!el.classList.contains('on'); el.classList.toggle('on', on); cb(on); };
+}
+function applyDayNight(){
+  if (showDayNight){ sunLight.intensity=1.25; if(ambientLight) ambientLight.intensity=ambientLevel; sunMarker.visible=true; }
+  else { sunLight.intensity=0.0; if(ambientLight) ambientLight.intensity=1.0; sunMarker.visible=false; }
+}
+function setModeHint(){
+  const h=document.getElementById('modeHint');
+  if (mode==="distance"){ h.textContent="测距模式：点击地球选择两点"; h.style.display='block'; }
+  else if (mode==="mark"){ h.textContent="标记模式：点击地球任意位置创建标记"; h.style.display='block'; }
+  else h.style.display='none';
+}
+function fillCitySelects(){
+  const fs=document.getElementById('fromSel'), ts=document.getElementById('toSel');
+  CITIES.forEach((c,i)=>{
+    fs.add(new Option(`${c[0]} (${c[3]})`, i));
+    ts.add(new Option(`${c[0]} (${c[3]})`, i));
+  });
+  fs.value=0; ts.value= CITIES.findIndex(c=>c[0]==="纽约"); if(ts.value<0) ts.value=1;
+}
+function buildWorldClock(){
+  const box=document.getElementById('wcList'); box.innerHTML='';
+  WORLD_CLOCK.forEach(c=>{
+    const d=document.createElement('div'); d.className='wc';
+    const ct=document.createElement('span'); ct.className='ct'; ct.textContent=c[0];
+    const tm=document.createElement('span'); tm.className='tm'; tm.id='wc_'+c[0];
+    d.appendChild(ct); d.appendChild(tm); box.appendChild(d);
+  });
+  updateWorldClock();
+}
+function updateWorldClock(){
+  for (const c of WORLD_CLOCK){
+    const li=localInfoAt(c[1],c[2]);
+    const el=document.getElementById('wc_'+c[0]);
+    if(el) el.textContent=`${li.time}  ${li.offStr}`;
+  }
+}
+function updateScale(){
+  const tanHalf = Math.tan(camera.fov*DEG/2);
+  const worldPerPx = (2*camDist*tanHalf)/innerHeight;
+  const kmPerPx = worldPerPx * EARTH_RADIUS_KM;
+  const target = 150;
+  const nice=[10,20,50,100,200,500,1000,2000,5000,10000,20000,50000,100000];
+  let niceKm = nice.find(v=> v >= target*kmPerPx) || nice[nice.length-1];
+  const barPx = niceKm/kmPerPx;
+  document.getElementById('scaleBar').style.width = barPx.toFixed(0)+'px';
+  document.getElementById('scaleLab').textContent = niceKm.toLocaleString('en-US')+' km';
+}
+
+/* ============================================================
+   渲染循环
+   ============================================================ */
+function animate(){
+  requestAnimationFrame(animate);
+  const now=performance.now();
+  // FPS
+  frames++; if (now-fpsT>=500){ fps=Math.round(frames*1000/(now-fpsT)); frames=0; fpsT=now; document.getElementById('bFps').textContent=fps; }
+
+  if (autoRotate && !dragging) earthGroup.rotateOnWorldAxis(new THREE.Vector3(0,1,0), rotSpeed*0.01);
+  // 惯性
+  if (!dragging && (Math.abs(velocity.x)>1e-4 || Math.abs(velocity.y)>1e-4)){
+    earthGroup.rotateOnWorldAxis(new THREE.Vector3(0,1,0), velocity.x);
+    earthGroup.rotateOnWorldAxis(new THREE.Vector3(1,0,0), velocity.y);
+    velocity.x*=0.94; velocity.y*=0.94;
+  }
+  // 飞往动画
+  if (flyTarget){
+    earthGroup.quaternion.slerp(flyTarget, 0.08);
+    if (earthGroup.quaternion.angleTo(flyTarget) < 0.01) flyTarget=null;
+  }
+  // 航线动画
+  if (routeAnim){
+    routeAnim.t += 0.004;
+    if (routeAnim.t>1) routeAnim.t=0;
+    const p = routeAnim.curve.getPoint(routeAnim.t);
+    routeAnim.dot.position.copy(p);
+  }
+  // 大气与星空随相机一致
+  atmoMesh.position.copy(earthGroup.position);
+  starField.rotation.y += 0.0002;
+
+  updateScale();
+  renderer.render(scene, camera);
+}
+function onResize(){
+  camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+}
+
+/* 实时 UTC 时钟 */
+setInterval(()=>{
+  const n=new Date();
+  const utc=`${String(n.getUTCHours()).padStart(2,'0')}:${String(n.getUTCMinutes()).padStart(2,'0')}:${String(n.getUTCSeconds()).padStart(2,'0')}`;
+  document.getElementById('iUtc').textContent=utc;
+  updateSun();
+  updateWorldClock();
+}, 1000);
+
+/* ============================================================
+   启动
+   ============================================================ */
+window.addEventListener('load', ()=>{
+  if (typeof THREE === 'undefined'){
+    document.getElementById('loadErr').innerHTML="无法加载 Three.js 库（请检查网络后刷新）。";
+    return;
+  }
+  init();
+  bindUI();
+});
+</script>
+</body>
+</html>

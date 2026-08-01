@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>音频剪辑工具 · Audio Studio</title>
+<!-- 本地优先：与本品同一目录下的 lamejs.min.js；缺失时由脚本自动回退到 CDN -->
+<script src="lamejs.min.js"></script>
+<style>
+:root{
+  --bg:#0b0e13; --panel:#141923; --panel2:#1b212d; --line:#262e3b;
+  --txt:#dfe6f2; --muted:#8a93a6; --accent:#4fc3f7; --accent2:#7c4dff;
+  --danger:#ff5252; --ok:#69f0ae; --warn:#ffb74d;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--txt);
+  font-family:-apple-system,"Segoe UI",Roboto,"Microsoft YaHei",sans-serif;font-size:13px}
+body{display:flex;flex-direction:column;height:100vh;overflow:hidden}
+header{display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--panel);border-bottom:1px solid var(--line)}
+header h1{font-size:15px;margin:0;font-weight:600;letter-spacing:.5px}
+header h1 span{color:var(--accent)}
+.spacer{flex:1}
+.toolbar{display:flex;flex-wrap:wrap;gap:6px;padding:8px 14px;background:var(--panel2);border-bottom:1px solid var(--line);align-items:center}
+button,select,input[type=number],input[type=text]{background:var(--panel);color:var(--txt);border:1px solid var(--line);border-radius:6px;padding:6px 10px;cursor:pointer;font-size:12px;outline:none}
+button:hover{border-color:var(--accent);color:#fff}
+button.primary{background:linear-gradient(90deg,var(--accent),var(--accent2));border:none;color:#06121c;font-weight:600}
+button.danger:hover{border-color:var(--danger);color:var(--danger)}
+button:disabled{opacity:.4;cursor:not-allowed}
+label.fld{display:flex;align-items:center;gap:5px;color:var(--muted);font-size:11px}
+.group{display:flex;gap:4px;align-items:center;padding:2px 6px;border:1px solid var(--line);border-radius:8px}
+.group .ttl{color:var(--muted);font-size:10px;text-transform:uppercase;margin-right:2px}
+main{flex:1;display:flex;flex-direction:column;min-height:0;padding:12px 14px;gap:10px;overflow:auto}
+.stage{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px;position:relative}
+.stage.drop{outline:2px dashed var(--accent);outline-offset:-6px}
+#ruler{width:100%;height:22px;display:block;border-radius:6px 6px 0 0;background:#0c0f14;cursor:pointer}
+#wave{width:100%;height:260px;display:block;background:#11151c;border-radius:0 0 6px 6px;cursor:text}
+.transport{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:10px}
+.transport .time{font-variant-numeric:tabular-nums;font-family:monospace;font-size:15px;color:var(--accent)}
+.transport .time small{color:var(--muted);font-size:12px}
+.panels{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px}
+.card h3{margin:0 0 10px;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
+.row{display:flex;align-items:center;gap:8px;margin:7px 0;flex-wrap:wrap}
+.row input[type=number]{width:84px}
+.info{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:12px}
+.info b{color:var(--muted);font-weight:500}
+.info span{font-family:monospace}
+.hint{color:var(--muted);font-size:11px;line-height:1.6;margin-top:8px}
+.status{padding:6px 14px;background:var(--panel2);border-top:1px solid var(--line);font-size:12px;color:var(--muted);min-height:28px;display:flex;align-items:center;gap:10px}
+.status .dot{width:8px;height:8px;border-radius:50%;background:var(--ok);flex:none}
+kbd{background:#000;border:1px solid var(--line);border-radius:4px;padding:1px 5px;font-size:11px;font-family:monospace}
+.swatch{display:inline-block;width:10px;height:10px;border-radius:2px;vertical-align:middle;margin-right:4px}
+.toast{position:fixed;left:50%;bottom:54px;transform:translateX(-50%);background:#000d;color:#fff;padding:8px 14px;border-radius:8px;border:1px solid var(--line);font-size:12px;opacity:0;transition:opacity .25s;pointer-events:none;z-index:50}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+<header>
+  <h1>🎚️ 音频<span>剪辑</span>工作室</h1>
+  <span class="spacer"></span>
+  <label class="fld">主音量 <input type="range" id="volume" min="0" max="200" value="100" style="width:110px"></label>
+  <span id="volLbl" class="fld">100%</span>
+</header>
+
+<div class="toolbar">
+  <div class="group">
+    <span class="ttl">文件</span>
+    <button class="primary" id="btnOpen">📂 打开</button>
+    <button id="btnNew">🆕 新建</button>
+    <button id="btnExportWav">⬇ WAV</button>
+    <button id="btnExportMp3">⬇ MP3</button>
+    <label class="fld"><input type="checkbox" id="expSel"> 仅选区</label>
+    <label class="fld">码率
+      <select id="mp3Kbps">
+        <option value="128">128</option>
+        <option value="192" selected>192</option>
+        <option value="256">256</option>
+        <option value="320">320</option>
+      </select>
+    </label>
+  </div>
+  <div class="group">
+    <span class="ttl">历史</span>
+    <button id="btnUndo" title="撤销 Ctrl+Z">↶ 撤销</button>
+    <button id="btnRedo" title="重做 Ctrl+Y">↷ 重做</button>
+  </div>
+  <div class="group">
+    <span class="ttl">视图</span>
+    <button id="btnZoomIn" title="放大">🔍+</button>
+    <button id="btnZoomOut" title="缩小">🔍−</button>
+    <button id="btnFit" title="全览（适配窗口）">⤢ 全览</button>
+    <button id="btnZoomSel" title="缩放到选区">⊡ 选区</button>
+  </div>
+  <div class="group">
+    <span class="ttl">选择</span>
+    <button id="btnSelAll">全选</button>
+    <button id="btnSelNone">清除</button>
+    <button id="btnDelBefore">◀ 删左</button>
+    <button id="btnDelAfter">删右 ▶</button>
+  </div>
+  <input type="file" id="file" accept="audio/*,.wav,.mp3,.m4a,.aac,.ogg,.flac,.opus,.webm,.wma,.amr" hidden>
+</div>
+
+<main>
+  <div class="stage" id="stage">
+    <canvas id="ruler"></canvas>
+    <canvas id="wave"></canvas>
+    <div class="transport">
+      <button id="btnPlay" class="primary" disabled>▶ 播放</button>
+      <button id="btnStop" disabled>■ 停止</button>
+      <label class="fld"><input type="checkbox" id="loopSel"> 循环选区</label>
+      <label class="fld"><input type="checkbox" id="follow" checked> 自动跟随</label>
+      <label class="fld">速度 ×<input type="range" id="speedPlay" min="0.25" max="2" step="0.05" value="1" style="width:90px"></label>
+      <span id="speedLbl" class="fld">1.00×</span>
+      <label class="fld">跳转 <input type="number" id="jumpTo" value="0" step="0.1" min="0" style="width:70px"> 秒</label>
+      <button id="btnJump">跳转</button>
+      <div class="time"><span id="cur">00:00.000</span> <small>/ <span id="tot">00:00.000</span></small></div>
+      <label class="fld">选区: <span id="selInfo">无</span></label>
+    </div>
+  </div>
+
+  <div class="panels">
+    <div class="card">
+      <h3>剪辑操作</h3>
+      <div class="row">
+        <button id="btnCut" disabled>✂ 剪切</button>
+        <button id="btnCopy" disabled>📋 复制</button>
+        <button id="btnPaste" disabled>📌 粘贴</button>
+        <button id="btnDel" class="danger" disabled>🗑 删除</button>
+        <button id="btnTrim" disabled>✂ 修剪</button>
+      </div>
+      <div class="row">
+        <button id="btnSilence" disabled>🔇 静音选区</button>
+        <button id="btnSplit">✚ 插入静音</button>
+        <button id="btnTone">🎵 生成音调</button>
+      </div>
+      <div class="hint">提示：在波形上 <b>按住拖拽</b> 选择区域；点击标尺可定位播放头；滚轮左右滚动，<kbd>Space</kbd> 播放/暂停，<kbd>Del</kbd> 删除选区，<kbd>Ctrl</kbd>+<kbd>X/C/V</kbd> 剪切/复制/粘贴，<kbd>Ctrl</kbd>+<kbd>A</kbd> 全选，<kbd>Home/End</kbd> 跳到首尾。</div>
+    </div>
+
+    <div class="card">
+      <h3>音频效果</h3>
+      <div class="row">
+        <label class="fld">增益 ×</label>
+        <input type="number" id="gainVal" value="1.5" step="0.1" min="0">
+        <button id="btnGain">应用</button>
+      </div>
+      <div class="row">
+        <label class="fld">淡入 (秒)</label>
+        <input type="number" id="fadeIn" value="1.0" step="0.1" min="0">
+        <button id="btnFadeIn">淡入</button>
+        <label class="fld">淡出 (秒)</label>
+        <input type="number" id="fadeOut" value="1.0" step="0.1" min="0">
+        <button id="btnFadeOut">淡出</button>
+      </div>
+      <div class="row">
+        <button id="btnNorm">📈 归一化</button>
+        <button id="btnRev">↩ 反转</button>
+      </div>
+      <div class="row">
+        <label class="fld">变速变调 ×</label>
+        <input type="number" id="speedVal" value="1.2" step="0.05" min="0.1">
+        <button id="btnSpeed">应用 (变调)</button>
+      </div>
+      <div class="hint">变速为直接重采样，会同时改变音高（类似磁带变速）。工具栏「速度 ×」为播放时的临时变速，不修改数据。</div>
+    </div>
+
+    <div class="card">
+      <h3>文件信息</h3>
+      <div class="info">
+        <b>文件名</b><span id="iName">—</span>
+        <b>时长</b><span id="iDur">—</span>
+        <b>采样率</b><span id="iRate">—</span>
+        <b>声道</b><span id="iCh">—</span>
+        <b>样本数</b><span id="iLen">—</span>
+        <b>大小</b><span id="iSize">—</span>
+      </div>
+      <div class="hint">
+        <span class="swatch" style="background:#4fc3f7"></span>波形 ·
+        <span class="swatch" style="background:rgba(80,160,255,.5)"></span>选区 ·
+        <span class="swatch" style="background:#ff5252"></span>播放头<br>
+        导入兼容浏览器解码格式；导出支持 WAV(16位) 与 MP3（离线编码，无需联网）。
+      </div>
+    </div>
+  </div>
+</main>
+
+<div class="status"><span class="dot" id="stDot"></span><span id="status">正在初始化…</span></div>
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+let audioCtx = null;
+function getCtx(){ if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)(); return audioCtx; }
+
+/* ---------------- 音频数据模型 ---------------- */
+class Clip{
+  constructor(sampleRate, channels){ this.sampleRate=sampleRate; this.channels=channels; }
+  get length(){ return this.channels[0]?this.channels[0].length:0; }
+  get duration(){ return this.length/this.sampleRate; }
+  get numberOfChannels(){ return this.channels.length; }
+  static fromBuffer(buf){
+    const ch=[]; for(let i=0;i<buf.numberOfChannels;i++) ch.push(buf.getChannelData(i).slice());
+    return new Clip(buf.sampleRate, ch);
+  }
+  toBuffer(ctx){
+    const buf=ctx.createBuffer(this.numberOfChannels, this.length, this.sampleRate);
+    for(let i=0;i<this.numberOfChannels;i++) buf.copyToChannel(this.channels[i], i);
+    return buf;
+  }
+  clone(){ return new Clip(this.sampleRate, this.channels.map(c=>c.slice())); }
+  slice(start,end){
+    start=Math.max(0,Math.floor(start)); end=Math.min(this.length,Math.floor(end));
+    if(end<=start) return new Clip(this.sampleRate, this.channels.map(()=>new Float32Array(0)));
+    return new Clip(this.sampleRate, this.channels.map(c=>c.slice(start,end)));
+  }
+  remove(start,end){
+    start=Math.max(0,Math.floor(start)); end=Math.min(this.length,Math.floor(end));
+    if(end<=start) return;
+    const keep=this.length-(end-start);
+    const out=this.channels.map(c=>{ const o=new Float32Array(keep); o.set(c.subarray(0,start),0); o.set(c.subarray(end),start); return o; });
+    this.channels=out;
+  }
+  insert(other, at){
+    at=Math.max(0,Math.min(this.length,Math.floor(at)));
+    let src=other; if(other.sampleRate!==this.sampleRate) src=other.resample(this.sampleRate);
+    const n=Math.max(this.numberOfChannels, src.numberOfChannels);
+    const out=[];
+    for(let i=0;i<n;i++){
+      const a = i<this.numberOfChannels ? this.channels[i] : new Float32Array(this.length);
+      const b = i<src.numberOfChannels ? src.channels[i] : new Float32Array(src.length);
+      const o=new Float32Array(this.length+src.length);
+      o.set(a.subarray(0,at),0); o.set(b,at); o.set(a.subarray(at),at+src.length);
+      out.push(o);
+    }
+    this.channels=out;
+  }
+  applyGain(g){ for(const c of this.channels) for(let i=0;i<c.length;i++) c[i]*=g; }
+  applyFadeIn(sec){
+    const n=Math.floor(sec*this.sampleRate);
+    for(let i=0;i<Math.min(n,this.length);i++){ const g=i/n; for(const c of this.channels) c[i]*=g; }
+  }
+  applyFadeOut(sec){
+    const n=Math.floor(sec*this.sampleRate); const s=Math.max(0,this.length-n);
+    for(let i=s;i<this.length;i++){ const g=(this.length-i)/n; for(const c of this.channels) c[i]*=g; }
+  }
+  normalize(peak=1){
+    let mx=0; for(const c of this.channels) for(let i=0;i<c.length;i++){ const a=Math.abs(c[i]); if(a>mx)mx=a; }
+    if(mx>0) this.applyGain(peak/mx);
+  }
+  reverse(){ for(const c of this.channels) c.reverse(); }
+  resample(newRate){
+    if(newRate===this.sampleRate) return this.clone();
+    const ratio=newRate/this.sampleRate, nl=Math.max(1,Math.floor(this.length*ratio));
+    const out=this.channels.map(()=>new Float32Array(nl));
+    for(let c=0;c<this.channels.length;c++){
+      const s=this.channels[c];
+      for(let i=0;i<nl;i++){ const p=i/ratio, i0=Math.floor(p), i1=Math.min(this.length-1,i0+1), f=p-i0; out[c][i]=s[i0]+(s[i1]-s[i0])*f; }
+    }
+    return new Clip(newRate, out);
+  }
+  static silence(rate, sec){ const n=Math.max(0,Math.floor(rate*sec)); return new Clip(rate,[new Float32Array(n),new Float32Array(n)]); }
+  static tone(rate, freq, sec, type){
+    const n=Math.max(0,Math.floor(rate*sec)); const L=new Float32Array(n), R=new Float32Array(n);
+    for(let i=0;i<n;i++){ const t=i/rate; let v;
+      switch(type){
+        case 'square': v=Math.sign(Math.sin(2*Math.PI*freq*t)); break;
+        case 'saw': v=2*(freq*t-Math.floor(0.5+freq*t)); break;
+        case 'triangle': v=2/Math.PI*Math.asin(Math.sin(2*Math.PI*freq*t)); break;
+        default: v=Math.sin(2*Math.PI*freq*t);
+      }
+      L[i]=v; R[i]=v;
+    }
+    return new Clip(rate,[L,R]);
+  }
+}
+
+/* ---------------- 全局状态 ---------------- */
+let clip=null, fileName='', fileSize=0;
+let history=[], future=[];
+let sel={start:0,end:0,active:false};
+let view={spp:1,start:0};
+let playing=false, loopSel=false, loopActive=false;
+let playOffset=0, regionStart=0, regionEnd=0, playStartCtxTime=0, rafId=null, source=null, masterGain=null;
+let clipboard=null, selecting=false, selMoved=false, selAnchor=0;
+const wave=$('wave'), wctx=wave.getContext('2d');
+const ruler=$('ruler'), rctx=ruler.getContext('2d');
+let off, octx;
+function makeOff(){ off=document.createElement('canvas'); octx=off.getContext('2d'); }
+
+/* ---------------- 峰值金字塔（性能优化：渲染只按像素读取聚合 min/max） ---------------- */
+let peaks=[];
+const PEAK_CAP=16384;      // 最粗层级每桶样本数上限
+const PEAK_BASE=128;       // 最细层级每桶样本数
+function buildPeaks(){
+  peaks=[];
+  if(!clip) return;
+  const ch=clip.numberOfChannels, len=clip.length;
+  let bs=PEAK_BASE;
+  let prevMins=null, prevMaxs=null;
+  while(true){
+    const nB=Math.max(1, Math.ceil(len/bs));
+    const mins=[], maxs=[];
+    for(let c=0;c<ch;c++){
+      const mn=new Float32Array(nB), mx=new Float32Array(nB);
+      if(peaks.length===0){
+        const d=clip.channels[c];
+        for(let b=0;b<nB;b++){ const s0=b*bs, s1=Math.min(len,s0+bs); let lo=1,hi=-1; for(let s=s0;s<s1;s++){ const v=d[s]; if(v<lo)lo=v; if(v>hi)hi=v; } mn[b]=lo; mx[b]=hi; }
+      } else {
+        const pm=prevMins[c], px=prevMaxs[c], pn=pm.length;
+        for(let b=0;b<nB;b++){ const k0=b*2, k1=Math.min(pn-1,k0+1); let lo=1,hi=-1; for(let k=k0;k<=k1;k++){ if(pm[k]<lo)lo=pm[k]; if(px[k]>hi)hi=px[k]; } mn[b]=lo; mx[b]=hi; }
+      }
+      mins.push(mn); maxs.push(mx);
+    }
+    peaks.push({bs, mins, maxs});
+    prevMins=mins; prevMaxs=maxs;
+    if(bs>=len || bs>=PEAK_CAP) break;
+    bs*=2;
+  }
+}
+function levelForSpp(spp){
+  let idx=0;
+  for(let i=0;i<peaks.length;i++){ if(peaks[i].bs<=spp) idx=i; else break; }
+  return idx;
+}
+
+function resizeCanvas(){
+  const w=wave.clientWidth, h=wave.clientHeight;
+  wave.width=w; wave.height=h;
+  if(!off) makeOff();
+  off.width=w; off.height=h;
+  const rw=ruler.clientWidth; ruler.width=rw; ruler.height=ruler.clientHeight;
+  if(clip){ renderOffscreen(); drawRuler(); draw(); }
+}
+
+/* ---------------- 坐标换算 ---------------- */
+function sampleToX(s){ return (s-view.start)/view.spp; }
+function xToSample(x){ return view.start + x*view.spp; }
+function clampView(){
+  if(!clip) return;
+  const cw=wave.width, total=clip.length, fit=total/Math.max(1,cw);
+  if(view.spp<0.05) view.spp=0.05;
+  if(view.spp>fit) view.spp=fit;
+  if(view.start<0) view.start=0;
+  if(view.start>total-cw*view.spp) view.start=Math.max(0,total-cw*view.spp);
+}
+function fitView(){
+  if(!clip) return;
+  if(wave.width<1) resizeCanvas();
+  view.spp=clip.length/Math.max(1,wave.width);
+  view.start=0;
+  clampView();
+}
+function zoomToSelection(){
+  if(!clip||!sel.active||sel.end<=sel.start) return;
+  const len=sel.end-sel.start;
+  view.spp=Math.max(0.05, len/Math.max(1,wave.width));
+  view.start=sel.start;
+  clampView();
+  refresh();
+}
+
+/* ---------------- 绘制 ---------------- */
+function renderOffscreen(){
+  if(!off) makeOff();
+  const cw=off.width, ch=off.height;
+  octx.clearRect(0,0,cw,ch);
+  octx.fillStyle='#11151c'; octx.fillRect(0,0,cw,ch);
+  if(!clip){ return; }
+  clampView();
+  const spp=view.spp, start=Math.floor(view.start), mid=ch/2, amp=ch/2*0.95;
+  if(sel.active){
+    const x1=sampleToX(sel.start), x2=sampleToX(sel.end);
+    octx.fillStyle='rgba(80,160,255,0.20)';
+    octx.fillRect(Math.min(x1,x2),0,Math.abs(x2-x1),ch);
+  }
+  if(spp>=1){
+    // 使用峰值金字塔：每像素仅读取少量聚合桶，复杂度为 O(像素) 而非 O(样本)
+    const li=levelForSpp(spp), lv=peaks[li], bs=lv.bs;
+    const mins=lv.mins, maxs=lv.maxs, nch=clip.numberOfChannels;
+    octx.fillStyle='#4fc3f7';
+    for(let x=0;x<cw;x++){
+      const s0=Math.floor(view.start + x*spp), s1=Math.floor(view.start + (x+1)*spp);
+      if(s1<=0||s0>=clip.length) continue;
+      let mn=1, mx=-1;
+      const b0=Math.max(0, Math.floor(s0/bs)), b1=Math.min(mins[0].length-1, Math.floor((s1-1)/bs));
+      for(let b=b0;b<=b1;b++){
+        for(let c=0;c<nch;c++){ const m0=mins[c][b], m1=maxs[c][b]; if(m0<mn)mn=m0; if(m1>mx)mx=m1; }
+      }
+      if(mn>mx){mn=0;mx=0;}
+      const y1=mid-mx*amp, y2=mid-mn*amp;
+      octx.fillRect(x,y1,1,Math.max(1,y2-y1));
+    }
+  } else {
+    const endS=Math.min(clip.length, start+cw*spp+1);
+    octx.strokeStyle='#4fc3f7'; octx.lineWidth=1;
+    octx.beginPath();
+    for(let s=Math.max(0,start); s<endS; s++){
+      let mn=1,mx=-1; for(const c of clip.channels){ const v=c[s]; if(v<mn)mn=v; if(v>mx)mx=v; }
+      const x=sampleToX(s); octx.moveTo(x,mid-mx*amp); octx.lineTo(x,mid-mn*amp);
+    }
+    octx.stroke(); octx.lineWidth=1;
+  }
+  octx.strokeStyle='rgba(255,255,255,0.12)';
+  octx.beginPath(); octx.moveTo(0,mid); octx.lineTo(cw,mid); octx.stroke();
+}
+function drawRuler(){
+  const cw=ruler.width, ch=ruler.height;
+  rctx.clearRect(0,0,cw,ch); rctx.fillStyle='#0c0f14'; rctx.fillRect(0,0,cw,ch);
+  if(!clip) return;
+  const spp=view.spp, start=view.start;
+  const secPerTick=(100*spp)/clip.sampleRate;
+  const nice=[0.05,0.1,0.2,0.5,1,2,5,10,15,30,60,120,300,600];
+  const step=nice.find(n=>n>=secPerTick)||secPerTick;
+  const tickS=step*clip.sampleRate;
+  const first=Math.ceil(start/tickS)*tickS;
+  rctx.fillStyle='#8aa'; rctx.font='10px monospace'; rctx.strokeStyle='rgba(255,255,255,0.15)';
+  for(let s=first; s<=start+cw*spp; s+=tickS){
+    const x=sampleToX(s); rctx.beginPath(); rctx.moveTo(x,ch-5); rctx.lineTo(x,ch); rctx.stroke();
+    rctx.fillText(fmt(s/clip.sampleRate), x+3, 12);
+  }
+}
+function draw(){
+  if(!clip){
+    wctx.fillStyle='#11151c'; wctx.fillRect(0,0,wave.width,wave.height);
+    wctx.fillStyle='#566'; wctx.font='15px sans-serif'; wctx.fillText('拖入音频文件，或点击「打开 / 新建」', 30, wave.height/2);
+    return;
+  }
+  wctx.drawImage(off,0,0);
+  const x=sampleToX(playOffset);
+  wctx.strokeStyle='#ff5252'; wctx.lineWidth=2;
+  wctx.beginPath(); wctx.moveTo(x,0); wctx.lineTo(x,wave.height); wctx.stroke(); wctx.lineWidth=1;
+}
+function refresh(){ if(!clip) return; renderOffscreen(); drawRuler(); draw(); }
+
+/* ---------------- 时间格式 ---------------- */
+function fmt(sec){
+  if(!isFinite(sec)) sec=0;
+  const m=Math.floor(sec/60), s=sec-m*60;
+  return String(m).padStart(2,'0')+':'+s.toFixed(3).padStart(6,'0');
+}
+
+/* ---------------- 历史 ---------------- */
+function snapshot(){ if(!clip) return; history.push(clip.clone()); if(history.length>80) history.shift(); future.length=0; updHist(); }
+function undo(){ if(!history.length) return; future.push(clip.clone()); clip=history.pop(); afterEdit(); updHist(); }
+function redo(){ if(!future.length) return; history.push(clip.clone()); clip=future.pop(); afterEdit(); updHist(); }
+function updHist(){ $('btnUndo').disabled=!history.length; $('btnRedo').disabled=!future.length; }
+
+/* ---------------- 编辑后处理 ---------------- */
+function afterEdit(){ playOffset=0; sel.active=false; buildPeaks(); fitView(); refresh(); updateInfo(); updateSel(); updateTime(); }
+function setClip(c){
+  clip=c; playOffset=0; sel.active=false;
+  view.spp=1; view.start=0;
+  buildPeaks(); fitView(); refresh(); updateInfo(); updateSel(); updateTime(); enableEdits(true);
+}
+
+/* ---------------- 信息面板 ---------------- */
+function updateInfo(){
+  if(!clip){
+    $('iName').textContent='—'; $('iDur').textContent='—'; $('iRate').textContent='—';
+    $('iCh').textContent='—'; $('iLen').textContent='—'; $('iSize').textContent='—'; return;
+  }
+  $('iName').textContent=fileName||'(已编辑)';
+  $('iDur').textContent=fmt(clip.duration);
+  $('iRate').textContent=clip.sampleRate+' Hz';
+  $('iCh').textContent=clip.numberOfChannels===1?'单声道':clip.numberOfChannels+' 声道';
+  $('iLen').textContent=clip.length.toLocaleString();
+  const bytes=clip.length*clip.numberOfChannels*2;
+  $('iSize').textContent=(bytes/1048576).toFixed(2)+' MB (16-bit 估算)';
+}
+function updateSel(){
+  const on=sel.active && (sel.end-sel.start>0);
+  $('selInfo').textContent = on ? fmt(sel.start/clip.sampleRate)+' → '+fmt(sel.end/clip.sampleRate)+'  ('+((sel.end-sel.start)/clip.sampleRate).toFixed(3)+'s)' : '无';
+  $('btnCut').disabled=!on; $('btnCopy').disabled=!on; $('btnDel').disabled=!on;
+  $('btnTrim').disabled=!on; $('btnSilence').disabled=!on;
+  $('expSel').disabled=!on;
+  if(!on) $('expSel').checked=false;
+}
+function updateTime(){
+  $('cur').textContent=fmt(playOffset/clip.sampleRate);
+  $('tot').textContent=fmt(clip.duration);
+}
+function enableEdits(on){
+  $('btnPlay').disabled=!on; $('btnStop').disabled=!on;
+  $('btnSelAll').disabled=!on; $('btnSelNone').disabled=!on;
+  $('btnPaste').disabled=!(on&&clipboard);
+  $('btnGain').disabled=!on; $('btnFadeIn').disabled=!on; $('btnFadeOut').disabled=!on;
+  $('btnNorm').disabled=!on; $('btnRev').disabled=!on; $('btnSpeed').disabled=!on;
+  $('btnSplit').disabled=!on; $('btnTone').disabled=!on;
+  $('btnDelBefore').disabled=!on; $('btnDelAfter').disabled=!on;
+  ['btnCut','btnCopy','btnDel','btnTrim','btnSilence'].forEach(i=>$(i).disabled=true);
+}
+
+/* ---------------- 播放控制 ---------------- */
+function vol(){ return parseFloat($('volume').value)/100; }
+function curRate(){ return parseFloat($('speedPlay').value)||1; }
+function getPlayStart(){
+  if(loopSel && sel.active){ if(playOffset>=sel.start && playOffset<=sel.end) return playOffset; return sel.start; }
+  return playOffset;
+}
+function beginSource(from){
+  const ctx=getCtx(); const buf=clip.toBuffer(ctx);
+  if(source){ try{source.stop();}catch(e){} }
+  source=ctx.createBufferSource(); source.buffer=buf;
+  source.playbackRate.value=curRate();
+  masterGain=ctx.createGain(); masterGain.gain.value=vol();
+  source.connect(masterGain).connect(ctx.destination);
+  loopActive = loopSel && sel.active;
+  regionStart = loopActive? sel.start : from;
+  regionEnd = loopActive? sel.end : buf.length;
+  source.start(0, regionStart/clip.sampleRate);
+  playStartCtxTime=ctx.currentTime;
+}
+function play(){
+  if(!clip || playing) return;
+  getCtx().resume();
+  beginSource(getPlayStart());
+  playing=true; $('btnPlay').textContent='⏸ 暂停';
+  rafId=requestAnimationFrame(tick);
+}
+function tick(){
+  if(!playing) return;
+  const ctx=getCtx();
+  const rate = source? source.playbackRate.value : 1;
+  let pos = regionStart + (ctx.currentTime-playStartCtxTime)*clip.sampleRate*rate;
+  if(pos>=regionEnd){
+    if(loopActive){ beginSource(regionStart); }
+    else { playOffset=regionEnd; stop(); return; }
+  }
+  pos = regionStart + (ctx.currentTime-playStartCtxTime)*clip.sampleRate*rate;
+  playOffset=Math.min(pos, clip.length);
+  if($('follow').checked) autoFollow();
+  draw(); updateTime();
+  rafId=requestAnimationFrame(tick);
+}
+function autoFollow(){
+  const x=sampleToX(playOffset);
+  if(x<0 || x>wave.width){
+    view.start = playOffset - wave.width/2*view.spp;
+    clampView(); renderOffscreen(); drawRuler(); draw();
+  }
+}
+function pause(){
+  if(!playing) return;
+  playOffset = regionStart + (getCtx().currentTime-playStartCtxTime)*clip.sampleRate*(source?source.playbackRate.value:1);
+  playing=false;
+  if(source) try{source.stop();}catch(e){}
+  cancelAnimationFrame(rafId);
+  $('btnPlay').textContent='▶ 播放'; draw(); updateTime();
+}
+function stop(){
+  playing=false;
+  if(source) try{source.stop();}catch(e){}
+  cancelAnimationFrame(rafId);
+  $('btnPlay').textContent='▶ 播放';
+  playOffset = (loopSel&&sel.active)? sel.start : 0;
+  draw(); updateTime();
+}
+
+/* ---------------- 导入 ---------------- */
+async function loadFile(file){
+  if(!file) return;
+  setStatus('解码中: '+file.name+' …');
+  try{
+    const arr=await file.arrayBuffer();
+    const ctx=getCtx();
+    let buf;
+    try{ buf=await ctx.decodeAudioData(arr.slice(0)); }
+    catch(e1){
+      buf=await new Promise((res,rej)=>ctx.decodeAudioData(arr.slice(0),res,rej));
+    }
+    fileName=file.name; fileSize=file.size;
+    history=[]; future=[]; updHist();
+    setClip(Clip.fromBuffer(buf));
+    setStatus('已加载: '+file.name+'  ('+buf.numberOfChannels+'ch, '+buf.sampleRate+'Hz, '+fmt(buf.duration)+')');
+  }catch(err){
+    setStatus('解码失败：可能浏览器不支持该格式。','err');
+    alert('无法解码该文件。\n浏览器通常支持：WAV / MP3 / M4A(AAC) / OGG / FLAC / OPUS / WebM。\n错误：'+err.message);
+  }
+}
+
+/* ---------------- MP3 编码组件加载（本地优先 + CDN 兜底） ---------------- */
+const MP3_CDN=[
+  'https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.1/lamejs.min.js',
+  'https://cdn.jsdelivr.net/npm/lamejs@1.2.1/lame.min.js',
+  'https://unpkg.com/lamejs@1.2.1/lame.min.js'
+];
+let mp3Loading=false;
+function loadMp3(cb){
+  if(typeof lamejs!=='undefined'){ cb&&cb(true); return; }
+  if(mp3Loading){ cb&&cb(false); return; }
+  mp3Loading=true;
+  let i=0;
+  (function next(){
+    if(i>=MP3_CDN.length){ mp3Loading=false; cb&&cb(false); return; }
+    const s=document.createElement('script');
+    s.src=MP3_CDN[i++];
+    s.onload=()=>{ mp3Loading=false; cb&&cb(typeof lamejs!=='undefined'); };
+    s.onerror=()=>{ next(); };
+    document.head.appendChild(s);
+  })();
+}
+
+/* ---------------- 导出 ---------------- */
+function targetClip(){
+  if($('expSel').checked && sel.active && sel.end>sel.start) return clip.slice(sel.start, sel.end);
+  return clip;
+}
+function baseName(){ return (fileName||'audio').replace(/\.[^.]+$/,'') || 'audio'; }
+function download(blob, name){
+  const url=URL.createObjectURL(blob); const a=document.createElement('a');
+  a.href=url; a.download=name; document.body.appendChild(a); a.click();
+  setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); }, 1000);
+}
+function encodeWAV(c){
+  const numCh=c.numberOfChannels, sr=c.sampleRate, len=c.length;
+  const blockAlign=numCh*2, dataSize=len*blockAlign;
+  const buffer=new ArrayBuffer(44+dataSize), view=new DataView(buffer);
+  const ws=(o,s)=>{ for(let i=0;i<s.length;i++) view.setUint8(o+i,s.charCodeAt(i)); };
+  ws(0,'RIFF'); view.setUint32(4,36+dataSize,true); ws(8,'WAVE'); ws(12,'fmt ');
+  view.setUint32(16,16,true); view.setUint16(20,1,true); view.setUint16(22,numCh,true);
+  view.setUint32(24,sr,true); view.setUint32(28,sr*blockAlign,true); view.setUint16(32,blockAlign,true);
+  view.setUint16(34,16,true); ws(36,'data'); view.setUint32(40,dataSize,true);
+  let off=44;
+  for(let i=0;i<len;i++) for(let ch=0;ch<numCh;ch++){
+    let s=Math.max(-1,Math.min(1,c.channels[ch][i]));
+    view.setInt16(off, s<0? s*0x8000 : s*0x7FFF, true); off+=2;
+  }
+  return new Blob([view],{type:'audio/wav'});
+}
+function exportWav(){
+  if(!clip) return;
+  const c=targetClip();
+  download(encodeWAV(c), baseName()+(c!==clip?'_sel':'')+'.wav');
+  setStatus('已导出 WAV'+(c!==clip?'（仅选区）':''));
+}
+function exportMp3(){
+  if(!clip) return;
+  if(typeof lamejs==='undefined'){
+    setStatus('MP3 编码组件未加载，正在尝试重新加载…','warn');
+    loadMp3(ok=>{
+      if(ok){ exportMp3(); }
+      else {
+        setStatus('MP3 编码组件未能加载：请确认 lamejs.min.js 与本页面同目录，或检查网络后重试。','err');
+        alert('MP3 编码组件未能加载。\n请将 lamejs.min.js 放在本 HTML 同一文件夹，或联网后重试，也可改用 WAV 导出。');
+      }
+    });
+    return;
+  }
+  const c=targetClip();
+  const kbps=parseInt($('mp3Kbps').value)||192;
+  try{
+    const enc=new lamejs.Mp3Encoder(c.numberOfChannels, c.sampleRate, kbps);
+    const bs=1152;
+    const ch16=c.channels.map(ch=>{
+      const a=new Int16Array(ch.length);
+      for(let i=0;i<ch.length;i++){ let v=Math.max(-1,Math.min(1,ch[i])); a[i]=v<0?v*0x8000:v*0x7FFF; }
+      return a;
+    });
+    const blocks=[], len=c.length;
+    for(let i=0;i<len;i+=bs){
+      const l=ch16[0].subarray(i,i+bs);
+      const r=c.numberOfChannels>1?ch16[1].subarray(i,i+bs):undefined;
+      const b=enc.encodeBuffer(l,r);
+      if(b.length) blocks.push(b);
+    }
+    const end=enc.flush();
+    if(end.length) blocks.push(end);
+    download(new Blob(blocks,{type:'audio/mp3'}), baseName()+(c!==clip?'_sel':'')+'.mp3');
+    setStatus('已导出 MP3 ('+kbps+'kbps)'+(c!==clip?'（仅选区）':''));
+  }catch(e){
+    setStatus('MP3 导出失败: '+e.message,'err');
+  }
+}
+
+/* ---------------- 状态栏 / 提示 ---------------- */
+function setStatus(msg, kind){
+  $('status').textContent=msg;
+  $('stDot').style.background = kind==='err'?'var(--danger)':(kind==='warn'?'var(--warn)':'var(--ok)');
+}
+let toastTimer=null;
+function toast(msg){
+  const t=$('toast'); t.textContent=msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),1600);
+}
+
+/* ---------------- 事件绑定 ---------------- */
+$('btnOpen').onclick=()=>$('file').click();
+$('file').onchange=e=>loadFile(e.target.files[0]);
+$('btnNew').onclick=()=>{
+  clip=null; fileName=''; fileSize=0; history=[]; future=[]; updHist(); peaks=[];
+  sel.active=false; playOffset=0;
+  wctx.fillStyle='#11151c'; wctx.fillRect(0,0,wave.width,wave.height);
+  drawRuler(); updateInfo(); updateSel(); updateTime(); enableEdits(false);
+  setStatus('已新建空白工程。拖入或打开音频开始。');
+};
+$('btnExportWav').onclick=exportWav;
+$('btnExportMp3').onclick=exportMp3;
+$('btnUndo').onclick=undo; $('btnRedo').onclick=redo;
+
+$('btnZoomIn').onclick=()=>{ if(!clip)return; const c=view.start+wave.width/2*view.spp; view.spp=Math.max(0.05,view.spp/2); view.start=c-wave.width/2*view.spp; refresh(); };
+$('btnZoomOut').onclick=()=>{ if(!clip)return; const c=view.start+wave.width/2*view.spp; view.spp*=2; view.start=c-wave.width/2*view.spp; refresh(); };
+$('btnFit').onclick=()=>{ if(!clip){ toast('请先打开音频'); return; } fitView(); refresh(); toast('已全览'); };
+$('btnZoomSel').onclick=()=>{ if(!clip){ toast('请先打开音频'); return; } zoomToSelection(); };
+
+$('btnSelAll').onclick=()=>{ if(!clip)return; sel.start=0; sel.end=clip.length; sel.active=true; refresh(); updateSel(); };
+$('btnSelNone').onclick=()=>{ sel.active=false; refresh(); updateSel(); };
+$('btnDelBefore').onclick=()=>{
+  if(!clip)return; const p=Math.floor(playOffset); if(p<=0) return;
+  snapshot(); clip.remove(0,p); sel.active=false; afterEdit(); setStatus('已删除播放头之前');
+};
+$('btnDelAfter').onclick=()=>{
+  if(!clip)return; const p=Math.floor(playOffset); if(p>=clip.length) return;
+  snapshot(); clip.remove(p,clip.length); sel.active=false; afterEdit(); setStatus('已删除播放头之后');
+};
+
+$('btnPlay').onclick=()=>{ playing? pause() : play(); };
+$('btnStop').onclick=stop;
+$('loopSel').onchange=e=>{ loopSel=e.target.checked; };
+$('follow').onchange=()=>{};
+$('speedPlay').oninput=e=>{
+  $('speedLbl').textContent=parseFloat(e.target.value).toFixed(2)+'×';
+  if(masterGain) masterGain.gain.value=vol();
+  if(playing && source){
+    // 重新同步，使变速立即生效且位置准确
+    playOffset = regionStart + (getCtx().currentTime-playStartCtxTime)*clip.sampleRate*(source.playbackRate.value);
+    source.playbackRate.value=parseFloat(e.target.value);
+    playStartCtxTime=getCtx().currentTime;
+  }
+};
+$('btnJump').onclick=()=>{ if(!clip)return; const t=parseFloat($('jumpTo').value)||0; jumpTo(t); };
+$('jumpTo').onkeydown=e=>{ if(e.key==='Enter'){ e.preventDefault(); $('btnJump').click(); } };
+function jumpTo(t){
+  if(!clip)return;
+  playOffset=Math.max(0,Math.min(clip.length, Math.floor(t*clip.sampleRate)));
+  draw(); updateTime();
+}
+
+$('volume').oninput=e=>{ $('volLbl').textContent=e.target.value+'%'; if(masterGain) masterGain.gain.value=vol(); };
+$('btnCut').onclick=()=>{ if(!sel.active)return; snapshot(); clipboard=clip.slice(sel.start,sel.end); clip.remove(sel.start,sel.end); sel.active=false; afterEdit(); setStatus('已剪切'); };
+$('btnCopy').onclick=()=>{ if(!sel.active)return; clipboard=clip.slice(sel.start,sel.end); enableEdits(true); setStatus('已复制'); };
+$('btnPaste').onclick=()=>{ if(!clipboard)return; snapshot(); const at=sel.active?sel.start:playOffset; clip.insert(clipboard,at); afterEdit(); setStatus('已粘贴'); };
+$('btnDel').onclick=()=>{ if(!sel.active)return; snapshot(); clip.remove(sel.start,sel.end); sel.active=false; afterEdit(); setStatus('已删除'); };
+$('btnTrim').onclick=()=>{ if(!sel.active)return; snapshot(); clip=clip.slice(sel.start,sel.end); afterEdit(); setStatus('已修剪到选区'); };
+$('btnSilence').onclick=()=>{ if(!sel.active)return; snapshot(); const s0=Math.floor(sel.start),s1=Math.floor(sel.end); for(const c of clip.channels) for(let i=s0;i<s1;i++) c[i]=0; afterEdit(); setStatus('选区已静音'); };
+$('btnSplit').onclick=()=>{
+  if(!clip){ toast('请先打开音频'); return; }
+  const sec=prompt('插入静音长度（秒）：','1.0'); if(sec==null)return;
+  const s=parseFloat(sec); if(!(s>0))return;
+  snapshot(); clip.insert(Clip.silence(clip.sampleRate,s), playOffset); afterEdit(); setStatus('已插入 '+s+'s 静音');
+};
+$('btnTone').onclick=()=>{
+  if(!clip){ toast('请先打开音频'); return; }
+  const freq=prompt('音调频率 (Hz)：','440'); if(freq==null)return;
+  const dur=prompt('持续时间 (秒)：','1.0'); if(dur==null)return;
+  const type=prompt('波形类型 sine/square/saw/triangle：','sine'); if(type==null)return;
+  const f=parseFloat(freq), d=parseFloat(dur); if(!(f>0&&d>0))return;
+  snapshot(); const t=Clip.tone(clip.sampleRate, f, d, type.trim()); clip.insert(t, playOffset); afterEdit(); setStatus('已生成 '+f+'Hz 音调');
+};
+$('btnGain').onclick=()=>{ const g=parseFloat($('gainVal').value); if(!(g>0))return; snapshot(); clip.applyGain(g); afterEdit(); setStatus('增益 ×'+g); };
+$('btnFadeIn').onclick=()=>{ const s=parseFloat($('fadeIn').value); if(!(s>0))return; snapshot(); clip.applyFadeIn(s); afterEdit(); setStatus('淡入 '+s+'s'); };
+$('btnFadeOut').onclick=()=>{ const s=parseFloat($('fadeOut').value); if(!(s>0))return; snapshot(); clip.applyFadeOut(s); afterEdit(); setStatus('淡出 '+s+'s'); };
+$('btnNorm').onclick=()=>{ snapshot(); clip.normalize(1); afterEdit(); setStatus('已归一化'); };
+$('btnRev').onclick=()=>{ snapshot(); clip.reverse(); afterEdit(); setStatus('已反转'); };
+$('btnSpeed').onclick=()=>{ const f=parseFloat($('speedVal').value); if(!(f>0))return; snapshot(); clip=clip.resample(Math.round(clip.sampleRate*f)); afterEdit(); setStatus('变速 ×'+f+' (变调)'); };
+
+/* 画布交互 */
+wave.addEventListener('mousedown',e=>{ if(!clip)return; selecting=true; selMoved=false; selAnchor=xToSample(e.offsetX); sel.start=selAnchor; sel.end=selAnchor; });
+wave.addEventListener('mousemove',e=>{
+  if(!selecting)return; selMoved=true;
+  const x=Math.max(0,Math.min(wave.width,e.offsetX)); const s=xToSample(x);
+  sel.start=Math.min(selAnchor,s); sel.end=Math.max(selAnchor,s); sel.active=true;
+  renderOffscreen(); drawRuler(); draw(); updateSel();
+});
+window.addEventListener('mouseup',()=>{
+  if(!selecting)return; selecting=false;
+  if(!selMoved){ playOffset=Math.max(0,Math.min(clip.length,selAnchor)); sel.active=false; draw(); updateTime(); }
+  updateSel();
+});
+wave.addEventListener('wheel',e=>{ if(!clip)return; e.preventDefault(); const d=(Math.abs(e.deltaX)>Math.abs(e.deltaY)?e.deltaX:e.deltaY); view.start+=d*view.spp*0.5; refresh(); },{passive:false});
+ruler.addEventListener('mousedown',e=>{ if(!clip)return; const s=Math.max(0,Math.min(clip.length,Math.floor(xToSample(e.offsetX)))); playOffset=s; draw(); updateTime(); });
+
+/* 拖拽导入 */
+const stage=$('stage');
+['dragenter','dragover'].forEach(ev=>stage.addEventListener(ev,e=>{ e.preventDefault(); stage.classList.add('drop'); }));
+['dragleave','drop'].forEach(ev=>stage.addEventListener(ev,e=>{ e.preventDefault(); stage.classList.remove('drop'); }));
+stage.addEventListener('drop',e=>{ const f=e.dataTransfer.files[0]; if(f) loadFile(f); });
+window.addEventListener('dragover',e=>e.preventDefault());
+window.addEventListener('drop',e=>e.preventDefault());
+
+/* 键盘快捷键 */
+window.addEventListener('keydown',e=>{
+  if(e.target.tagName==='INPUT'||e.target.tagName==='SELECT') return;
+  if(e.code==='Space'){ e.preventDefault(); playing?pause():play(); }
+  else if(e.key==='Delete'||e.key==='Backspace'){ if(sel.active){ e.preventDefault(); $('btnDel').click(); } }
+  else if(e.key==='Home'){ if(clip){ playOffset=0; draw(); updateTime(); } }
+  else if(e.key==='End'){ if(clip){ playOffset=clip.length; draw(); updateTime(); } }
+  else if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){ e.preventDefault(); e.shiftKey?redo():undo(); }
+  else if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='y'){ e.preventDefault(); redo(); }
+  else if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='x'){ e.preventDefault(); if(sel.active)$('btnCut').click(); }
+  else if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='c'){ e.preventDefault(); if(sel.active)$('btnCopy').click(); }
+  else if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='v'){ e.preventDefault(); if(clipboard)$('btnPaste').click(); }
+  else if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='a'){ e.preventDefault(); $('btnSelAll').click(); }
+});
+
+window.addEventListener('resize',resizeCanvas);
+makeOff(); resizeCanvas(); updateInfo(); enableEdits(false);
+
+/* 初始化：检查 MP3 编码组件 */
+setStatus('正在检查 MP3 编码组件…','warn');
+loadMp3(ok=>{
+  if(ok) setStatus('就绪。MP3 编码组件已加载，可离线导出。拖入或打开音频开始。','ok');
+  else setStatus('就绪（MP3 编码组件未加载，仅 WAV 导出可用；请将 lamejs.min.js 放在同目录或联网后重试）。','warn');
+});
+</script>
+</body>
+</html>

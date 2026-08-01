@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>行李重量 / 尺寸合规检查器</title>
+<style>
+  :root{
+    --bg:#f4f6fb; --panel:#ffffff; --panel-2:#f0f3fa; --ink:#1d2330; --ink-soft:#5a6477;
+    --line:#e3e8f2; --brand:#3b6ef5; --brand-soft:#e8f0ff; --ok:#16a34a; --ok-soft:#e7f8ee;
+    --warn:#d97706; --warn-soft:#fdf2e0; --bad:#dc2626; --bad-soft:#fdeaea; --shadow:0 6px 24px rgba(30,40,80,.08);
+    --radius:14px;
+  }
+  html[data-theme="dark"]{
+    --bg:#0f141f; --panel:#171e2c; --panel-2:#1f2838; --ink:#e8edf6; --ink-soft:#9aa6bd;
+    --line:#2a3447; --brand:#5b8bff; --brand-soft:#1b2b4d; --ok:#3ddc84; --ok-soft:#14321f;
+    --warn:#f5b544; --warn-soft:#332713; --bad:#ff6b6b; --bad-soft:#3a1c1c; --shadow:0 8px 28px rgba(0,0,0,.45);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    background:var(--bg);color:var(--ink);line-height:1.55;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1320px;margin:0 auto;padding:20px 22px 64px}
+  header.top{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:14px}
+  .logo{width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,var(--brand),#7aa2ff);
+    display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:var(--shadow)}
+  h1{font-size:21px;margin:0;font-weight:700;letter-spacing:.2px}
+  .sub{color:var(--ink-soft);font-size:13px;margin-top:2px}
+  .spacer{flex:1}
+  .icon-btn{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:10px;
+    padding:8px 12px;cursor:pointer;font-size:13px;transition:.15s}
+  .icon-btn:hover{border-color:var(--brand);color:var(--brand)}
+  .disclaimer{background:var(--warn-soft);border:1px solid color-mix(in srgb,var(--warn) 35%,transparent);
+    color:var(--ink);border-radius:12px;padding:10px 14px;font-size:12.5px;margin-bottom:16px;display:flex;gap:8px}
+  .disclaimer b{color:var(--warn)}
+  .grid{display:grid;grid-template-columns:minmax(370px,400px) minmax(0,1fr);gap:18px;align-items:start}
+  @media(max-width:1080px){.grid{grid-template-columns:1fr}}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;min-height:120px}
+  .card h2{font-size:14px;margin:0 0 12px;font-weight:700;display:flex;align-items:center;gap:8px}
+  .card h2 .tag{font-size:11px;font-weight:600;color:var(--brand);background:var(--brand-soft);padding:2px 8px;border-radius:20px}
+  .seg{display:flex;background:var(--panel-2);border-radius:10px;padding:4px;gap:4px;margin-bottom:12px}
+  .seg button{flex:1;border:0;background:transparent;color:var(--ink-soft);padding:8px 6px;border-radius:8px;
+    cursor:pointer;font-size:13px;font-weight:600;transition:.15s}
+  .seg button.on{background:var(--panel);color:var(--brand);box-shadow:0 1px 4px rgba(0,0,0,.08)}
+  .field{margin-bottom:12px}
+  .field label{display:block;font-size:12.5px;color:var(--ink-soft);margin-bottom:5px;font-weight:600}
+  select,input[type=number]{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;
+    background:var(--panel);color:var(--ink);font-size:14px;outline:none;transition:.15s}
+  select:focus,input:focus{border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-soft)}
+  .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+  .hint{font-size:11.5px;color:var(--ink-soft);margin-top:4px}
+  .airline-pick{margin-top:6px}
+  .airline-pick select{margin-bottom:8px}
+  .chips{display:flex;flex-wrap:wrap;gap:6px}
+  .chip{border:1px solid var(--line);background:var(--panel-2);color:var(--ink-soft);border-radius:20px;
+    padding:5px 11px;font-size:12px;cursor:pointer;transition:.15s;user-select:none}
+  .chip.on{background:var(--brand);border-color:var(--brand);color:#fff}
+  .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  .btn{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:10px;padding:9px 14px;
+    cursor:pointer;font-size:13px;font-weight:600;transition:.15s}
+  .btn:hover{border-color:var(--brand);color:var(--brand)}
+  .btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+  .btn.primary:hover{filter:brightness(1.05);color:#fff}
+  .result-head{display:flex;align-items:center;gap:12px;margin-bottom:6px;flex-wrap:wrap}
+  .badge{font-size:13px;font-weight:700;padding:6px 14px;border-radius:20px}
+  .badge.ok{background:var(--ok-soft);color:var(--ok)}
+  .badge.warn{background:var(--warn-soft);color:var(--warn)}
+  .badge.bad{background:var(--bad-soft);color:var(--bad)}
+  .airline-name{font-size:17px;font-weight:700}
+  .bars{margin:14px 0}
+  .bar-row{margin-bottom:12px}
+  .bar-label{display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:5px;color:var(--ink-soft)}
+  .bar-label b{color:var(--ink)}
+  .track{height:10px;background:var(--panel-2);border-radius:20px;overflow:hidden;position:relative}
+  .fill{height:100%;border-radius:20px;transition:width .4s ease}
+  .fill.ok{background:var(--ok)} .fill.warn{background:var(--warn)} .fill.bad{background:var(--bad)}
+  .detail{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+  @media(max-width:520px){.detail{grid-template-columns:1fr}}
+  .dcell{background:var(--panel-2);border-radius:10px;padding:10px 12px;font-size:12.5px}
+  .dcell .k{color:var(--ink-soft)}
+  .dcell .v{font-weight:700;font-size:14px;margin-top:2px}
+  .dcell.full{grid-column:1 / -1}
+  .note{margin-top:12px;font-size:12.5px;color:var(--ink-soft);background:var(--panel-2);
+    border-radius:10px;padding:10px 12px;border-left:3px solid var(--brand)}
+  .note.bad{border-left-color:var(--bad)} .note.ok{border-left-color:var(--ok)} .note.warn{border-left-color:var(--warn)}
+  .tbl-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+  .tbl-tools .grow{flex:1}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{padding:9px 10px;text-align:left;border-bottom:1px solid var(--line)}
+  th{color:var(--ink-soft);font-weight:600;font-size:12px;cursor:pointer;user-select:none;white-space:nowrap}
+  th:hover{color:var(--brand)}
+  tbody tr:hover{background:var(--panel-2)}
+  .pill{font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:20px;white-space:nowrap}
+  .pill.ok{background:var(--ok-soft);color:var(--ok)} .pill.warn{background:var(--warn-soft);color:var(--warn)}
+  .pill.bad{background:var(--bad-soft);color:var(--bad)}
+  .reco{margin-top:14px}
+  .reco h3{font-size:13px;margin:0 0 8px}
+  .reco .chips .chip.on{background:var(--ok);border-color:var(--ok)}
+  .empty{color:var(--ink-soft);font-size:13px;padding:24px;text-align:center}
+  .hist{margin-top:12px}
+  .hist .chip{cursor:pointer}
+  .foot{margin-top:26px;font-size:11.5px;color:var(--ink-soft);text-align:center;line-height:1.7}
+  .mini{font-size:11px;color:var(--ink-soft)}
+  .viz{margin:14px 0;background:var(--panel-2);border-radius:12px;padding:12px;text-align:center}
+  .viz svg{width:100%;max-width:420px;height:auto}
+  .adv{border-top:1px dashed var(--line);margin-top:14px;padding-top:12px}
+  .adv summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--brand);list-style:none}
+  .adv summary::-webkit-details-marker{display:none}
+  .adv summary::before{content:"⚙️ ";}
+  @media print{.no-print{display:none!important}body{background:#fff}.card{box-shadow:none;border:1px solid #ddd}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top no-print">
+    <div class="logo">🧳</div>
+    <div>
+      <h1>行李重量 / 尺寸合规检查器</h1>
+      <div class="sub">输入重量与三边和（或长宽高），一键比对各大航司随身 / 托运标准</div>
+    </div>
+    <div class="spacer"></div>
+    <button class="icon-btn" id="themeBtn" title="切换明暗主题">🌙 暗色</button>
+  </header>
+
+  <div class="disclaimer no-print">
+    <span>⚠️</span>
+    <div><b>免责声明：</b>本工具内置标准为各航司公开规则的常见值，仅供出行前快速参考。廉价航空、特殊航线、联程票、会员等级、行李类型（如运动器材）等可能有差异，
+    <b>实际以航司官网与机票条款为准</b>。建议你将结果截图与官方页面核对。</div>
+  </div>
+
+  <div class="grid">
+    <!-- ===== 输入面板（左） ===== -->
+    <section class="card no-print">
+      <h2>📋 行李信息 <span class="tag">STEP 1</span></h2>
+
+      <div class="seg" id="typeSeg">
+        <button data-v="carryon" class="on">随身行李</button>
+        <button data-v="checked">托运行李</button>
+      </div>
+
+      <div class="field">
+        <label>航线类型</label>
+        <select id="route">
+          <option value="domestic">国内航线</option>
+          <option value="intl">国际航线（非美洲）</option>
+          <option value="americas">国际航线（美洲：美/加/巴西等）</option>
+        </select>
+        <div class="hint">随身行李标准多数航司与航线无关；托运标准差异主要在「国内重量制」与「国际计件制」。</div>
+      </div>
+
+      <div class="field">
+        <label>舱位等级</label>
+        <select id="cabin">
+          <option value="economy">经济舱</option>
+          <option value="premium">超级经济舱</option>
+          <option value="business">公务 / 商务舱</option>
+          <option value="first">头等舱</option>
+        </select>
+      </div>
+
+      <div class="seg" id="modeSeg">
+        <button data-v="simple" class="on">简略输入</button>
+        <button data-v="detail">详细尺寸</button>
+      </div>
+
+      <div id="simpleMode">
+        <div class="field">
+          <label id="lblWeight">行李重量（kg）</label>
+          <input type="number" id="weight" min="0" step="0.1" value="7" />
+        </div>
+        <div class="field">
+          <label id="lblSum">三边之和 = 长 + 宽 + 高（cm）</label>
+          <input type="number" id="sum3" min="0" step="1" value="115" />
+          <div class="hint">例：55×40×20 = 115cm。许多航司随身限 115cm，托运限 158cm（62英寸）。</div>
+        </div>
+      </div>
+
+      <div id="detailMode" style="display:none">
+        <div class="field">
+          <label id="lblWeight2">行李重量（kg）</label>
+          <input type="number" id="weight2" min="0" step="0.1" value="7" />
+        </div>
+        <div class="row3">
+          <div class="field"><label id="lblLen">长 (cm)</label><input type="number" id="len" min="0" step="1" value="55"></div>
+          <div class="field"><label id="lblWid">宽 (cm)</label><input type="number" id="wid" min="0" step="1" value="40"></div>
+          <div class="field"><label id="lblHei">高 (cm)</label><input type="number" id="hei" min="0" step="1" value="20"></div>
+        </div>
+        <div class="hint">系统将自动计算：三边和 = <b id="autoSum">115</b> <span id="autoSumU">cm</span>，最长边 = <b id="autoMax">55</b> <span id="autoMaxU">cm</span>。</div>
+      </div>
+
+      <h2 style="margin-top:18px">✈️ 选择航司 <span class="tag">STEP 2</span></h2>
+      <div class="airline-pick">
+        <select id="singleAirline"></select>
+        <div class="chips" id="airlineChips"></div>
+        <div class="hint">点击「对比全部」可一次性比对所有航司，并自动推荐合规航司。</div>
+      </div>
+
+      <details class="adv">
+        <summary>高级选项（单位 / 会员 / 费用 / 多件）</summary>
+        <div class="field" style="margin-top:10px">
+          <label>计量单位</label>
+          <div class="seg" id="unitSeg">
+            <button data-v="metric" class="on">公制 (kg / cm)</button>
+            <button data-v="imperial">英制 (lb / in)</button>
+          </div>
+        </div>
+        <div class="field">
+          <label>会员 / 精英等级加成</label>
+          <select id="member">
+            <option value="none">无（普通旅客）</option>
+            <option value="silver">银卡（重量制 +5kg）</option>
+            <option value="gold">金卡（计件 +1 件 / 重量制 +10kg）</option>
+            <option value="platinum">白金卡（计件 +1 件 / 重量制 +20kg）</option>
+          </select>
+          <div class="hint">仅作估算：实际加成依航司与联盟会籍而定。</div>
+        </div>
+        <div class="field">
+          <label>超重费率（用于费用估算，¥/kg）</label>
+          <input type="number" id="feeRate" min="0" step="1" value="80" />
+          <div class="hint">航司现场超重费通常远高于此，仅作参考。</div>
+        </div>
+        <div class="field">
+          <label>多件合计：行李件数</label>
+          <input type="number" id="bags" min="1" step="1" value="1" />
+          <div class="hint">按「主行李重量 × 件数」估算总重是否在免费额度内。</div>
+        </div>
+      </details>
+
+      <div class="actions">
+        <button class="btn primary" id="checkBtn">🔍 立即检查</button>
+        <button class="btn" id="compareAllBtn">📊 对比全部航司</button>
+        <button class="btn" id="sampleBtn">🎲 随机示例</button>
+      </div>
+
+      <div class="hist">
+        <div class="hint" style="margin-bottom:6px">近期查询（点击回填）：</div>
+        <div class="chips" id="histChips"><span class="mini">暂无记录</span></div>
+      </div>
+    </section>
+
+    <!-- ===== 结果区（右） ===== -->
+    <section>
+      <div class="card" id="resultCard">
+        <div class="empty">在左侧填写行李信息并点击「立即检查」或「对比全部航司」。</div>
+      </div>
+      <div class="card reco" id="recoCard" style="display:none">
+        <h3>✅ 推荐：以下航司对该行李合规（点击切换对比）</h3>
+        <div class="chips" id="recoChips"></div>
+      </div>
+    </section>
+  </div>
+
+  <div class="foot no-print">
+    数据来源：各航司公开行李额度规则（常见值）。功能：简略/详细双输入 · 公制/英制单位 · 随身/托运 · 国内/国际/美洲 · 四档舱位 · 会员等级加成 ·
+    重量/三边和/最长边/件数多维判定 · 行李外形可视化 · 多件合计 · 超重费用估算 · 智能建议 · 单航司明细 · 全航司对比 · 合规推荐 · 明暗主题 · 本地历史 · 复制/打印。<br>
+    © 出行前请务必与航司官方核对。
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   航司合规标准库（常见值，仅供出行前参考）
+   carryon / checked 下按舱位给出限制：
+     p    : 免费件数（null 表示按总重量制，不按件；0 表示无免费额度需购买）
+     w    : 单件重量上限(kg)（domestic 的 p=null 时表示免费总重）
+     sum  : 三边之和上限(cm)
+     side : 最长单边上限(cm)（可选）
+   ============================================================ */
+const AIRLINES = [
+  { code:'CA', name:'中国国际航空', region:'中国大陆',
+    carryon:{ economy:{p:1,w:5,sum:115,side:55}, premium:{p:1,w:5,sum:115,side:55}, business:{p:2,w:5,sum:115,side:55}, first:{p:2,w:5,sum:115,side:55} },
+    checked:{ domestic:{ economy:{p:null,w:20,sum:158}, premium:{p:null,w:30,sum:158}, business:{p:null,w:30,sum:158}, first:{p:null,w:40,sum:158} },
+              intl:{ economy:{p:1,w:23,sum:158}, premium:{p:1,w:23,sum:158}, business:{p:2,w:32,sum:158}, first:{p:2,w:32,sum:158} },
+              americas:{ economy:{p:2,w:23,sum:158}, premium:{p:2,w:23,sum:158}, business:{p:2,w:32,sum:158}, first:{p:2,w:32,sum:158} } },
+    note:'国内按重量制免费托运；美洲线经济舱 2 件×23kg。金卡/星盟精英会员通常额外 +1 件或 +10~20kg。' },
+
+  { code:'MU', name:'中国东方航空', region:'中国大陆',
+    carryon:{ economy:{p:1,w:10,sum:115,side:55}, premium:{p:1,w:10,sum:115,side:55}, business:{p:2,w:10,sum:115,side:55}, first:{p:2,w:10,sum:115,side:55} },
+    checked:{ domestic:{ economy:{p:null,w:20,sum:158}, premium:{p:null,w:30,sum:158}, business:{p:null,w:30,sum:158}, first:{p:null,w:40,sum:158} },
+              intl:{ economy:{p:1,w:23,sum:158}, premium:{p:1,w:23,sum:158}, business:{p:2,w:32,sum:158}, first:{p:2,w:32,sum:158} },
+              americas:{ economy:{p:2,w:23,sum:158}, premium:{p:2,w:23,sum:158}, business:{p:2,w:32,sum:158}, first:{p:2,w:32,sum:158} } },
+    note:'经济舱随身可带 1 件 10kg（体积 55×40×20）。实际以客票舱位与航线为准。' },
+
+  { code:'CZ', name:'中国南方航空', region:'中国大陆',
+    carryon:{ economy:{p:1,w:8,sum:115,side:55}, premium:{p:1,w:8,sum:115,side:55}, business:{p:2,w:8,sum:115,side:55}, first:{p:2,w:8,sum:115,side:55} },
+    checked:{ domestic:{ economy:{p:null,w:20,sum:158}, premium:{p:null,w:30,sum:158}, business:{p:null,w:30,sum:158}, first:{p:null,w:40,sum:158} },
+              intl:{ economy:{p:1,w:23,sum:158}, premium:{p:1,w:23,sum:158}, business:{p:2,w:32,sum:158}, first:{p:2,w:32,sum:158} },
+              americas:{ economy:{p:2,w:23,sum:158}, premium:{p:2,w:23,sum:158}, business:{p:2,w:32,sum:158}, first:{p:2,w:32,sum:158} } },
+    note:'明珠金/银卡会员免费额度提升；部分国际航线经济舱为 2 件×23kg。' },
+
+  { code:'HU', name:'海南航空', region:'中国大陆',
+    carryon:{ economy:{p:1,w:10,sum:115,side:55}, premium:{p:1,w:10,sum:115,side:55}, business:{p:2,w:10,sum:115,side:55}, first:{p:2,w:10,sum:115,side:55} },
+    checked:{ domestic:{ economy:{p:null,w:20,sum:158}, premium:{p:null,w:30,sum:158}, business:{p:null,w:30,sum:158}, first:{p:null,w:40,sum:158} },
+              intl:{ economy:{p:1,w:23,sum:158}, premium:{p:1,w:23,sum:158}, business:{p:2,w:32,sum:158}, first:{p:2,w:32,sum:158} },
+              americas:{ economy:{p:2,w:23,sum:158}, premium:{p:2,w:23,sum:158}, business:{p:2,w:32,sum:158}, first:{p:2,w:32,sum:158} } },
+    note:'金鹏会员、高端经济等另有加享额度。' },
+
+  { code:'ZH', name:'深圳航空', region:'中国大陆',
+    carryon:{ economy:{p:1,w:5,sum:115,side:55}, premium:{p:1,w:5,sum:115,side:55}, business:{p:2,w:5,sum:115,side:55}, first:{p:2,w:5,sum:115,side:55} },
+    checked:{ domestic:{ economy:{p:null,w:20,sum:158}, premium:{p:null,w:30,sum:158}, business:{p:null,w:30,sum:158}, first:{p:null,w:40,sum:158} },
+              intl:{ economy:{p:1,w:23,sum:158}, premium:{p:1,w:23,sum:158}, business:{p:2,w:32,sum:158}, first:{p:2,w:32,sum:158} },
+              americas:{ economy:{p:2,w:23,sum:158}, premium:{p:2,w:23,sum:158}, business:{p:2,w:32,sum:158}, first:{p:2,w:32,sum:158} } },
+    note:'国航系成员，规则与国航基本一致。' },
+
+  { code:'MF', name:'厦门航空', region:'中国大陆',
+    carryon:{ economy:{p:1,w:5,sum:115,side:55}, premium:{p:1,w:5,sum:115,side:55}, business:{p:2,w:5,sum:115,side:55}, first:{p:2,w:5,sum:115,side:55} },
+    checked:{ domestic:{ economy:{p:null,w:20,sum:158}, premium:{p:null,w:30,sum:158}, business:{p:null,w:30,sum:158}, first:{p:null,w:40,sum:158} },
+              intl:{ economy:{p:1,w:23,sum:158}, premium:{p:1,w:23,sum:158}, business:{p:2,w:32,sum:158}, first:{p:2,w:32,sum:158} },
+              americas:{ economy:{p:2,w:23,sum:158}, premium:{p:2,w:23,sum:158}, business:{p:2,w:32,sum:158}, first:{p:2,w:32,sum:158} } },
+    note:'天合联盟成员；部分洲际线经济舱 2 件×23kg。' },
+
+  { code:'HO', name:'吉祥航空', region:'中国大陆',
+    carryon:{ economy:{p:1,w:10,sum:115,side:55}, premium:{p:1,w:10,sum:115,side:55}, business:{p:2,w:10,sum:115,side:55}, first:{p:2,w:10,sum:115,side:55} },
+    checked:{ domestic:{ economy:{p:null,w:20,sum:158}, premium:{p:null,w:30,sum:158}, business:{p:null,w:30,sum:158}, first:{p:null,w:40,sum:158} },
+              intl:{ economy:{p:1,w:23,sum:158}, premium:{p:1,w:23,sum:158}, business:{p:2,w:32,sum:158}, first:{p:2,w:32,sum:158} },
+              americas:{ economy:{p:2,w:23,sum:158}, premium:{p:2,w:23,sum:158}, business:{p:2,w:32,sum:158}, first:{p:2,w:32,sum:158} } },
+    note:'国内线经济舱常含 20kg 免费托运。' },
+
+  { code:'9C', name:'春秋航空', region:'中国大陆（低成本）',
+    carryon:{ economy:{p:1,w:7,sum:90,side:40}, premium:{p:1,w:7,sum:90,side:40}, business:{p:1,w:10,sum:115,side:55}, first:{p:1,w:10,sum:115,side:55} },
+    checked:{ domestic:{ economy:{p:0,w:0,sum:158}, premium:{p:1,w:15,sum:158}, business:{p:1,w:20,sum:158}, first:{p:1,w:30,sum:158} },
+              intl:{ economy:{p:1,w:15,sum:158}, premium:{p:1,w:20,sum:158}, business:{p:2,w:23,sum:158}, first:{p:2,w:23,sum:158} },
+              americas:{ economy:{p:1,w:15,sum:158}, premium:{p:1,w:20,sum:158}, business:{p:2,w:23,sum:158}, first:{p:2,w:23,sum:158} } },
+    note:'低成本航司：国内经济舱通常「无免费托运」，需单独购买额度；随身免费额 1 件 7kg、体积≤20×30×40（三边和 90cm）。' },
+
+  { code:'JD', name:'首都航空', region:'中国大陆（低成本）',
+    carryon:{ economy:{p:1,w:7,sum:115,side:55}, premium:{p:1,w:7,sum:115,side:55}, business:{p:2,w:7,sum:115,side:55}, first:{p:2,w:7,sum:115,side:55} },
+    checked:{ domestic:{ economy:{p:0,w:0,sum:158}, premium:{p:1,w:20,sum:158}, business:{p:1,w:30,sum:158}, first:{p:1,w:40,sum:158} },
+              intl:{ economy:{p:1,w:23,sum:158}, premium:{p:1,w:23,sum:158}, business:{p:2,w:32,sum:158}, first:{p:2,w:32,sum:158} },
+              americas:{ economy:{p:2,w:23,sum:158}, premium:{p:2,w:23,sum:158}, business:{p:2,w:32,sum:158}, first:{p:2,w:32,sum:158} } },
+    note:'海航系低成本航司，国内经济舱多需另购托运额度。' },
+
+  { code:'CX', name:'国泰航空（中国香港）', region:'中国香港',
+    carryon:{ economy:{p:1,w:7,sum:115,side:56}, premium:{p:1,w:10,sum:118,side:56}, business:{p:2,w:10,sum:118,side:56}, first:{p:2,w:15,sum:128,side:56} },
+    checked:{ domestic:{ economy:{p:1,w:23,sum:158}, premium:{p:1,w:25,sum:158}, business:{p:2,w:32,sum:158}, first:{p:3,w:32,sum:158} },
+              intl:{ economy:{p:1,w:23,sum:158}, premium:{p:1,w:25,sum:158}, business:{p:2,w:32,sum:158}, first:{p:3,w:32,sum:158} },
+              americas:{ economy:{p:2,w:23,sum:158}, premium:{p:2,w:25,sum:158}, business:{p:2,w:32,sum:158}, first:{p:3,w:32,sum:158} } },
+    note:'经济舱 1 件随身 7kg + 1 件小型物品；长途经济舱通常 2 件×23kg 托运。' },
+
+  { code:'BR', name:'长荣航空（中国台湾）', region:'中国台湾',
+    carryon:{ economy:{p:1,w:7,sum:115,side:56}, premium:{p:1,w:7,sum:115,side:56}, business:{p:2,w:7,sum:115,side:56}, first:{p:2,w:7,sum:115,side:56} },
+    checked:{ domestic:{ economy:{p:1,w:20,sum:158}, premium:{p:1,w:23,sum:158}, business:{p:2,w:32,sum:158}, first:{p:2,w:32,sum:158} },
+              intl:{ economy:{p:1,w:23,sum:158}, premium:{p:1,w:23,sum:158}, business:{p:2,w:32,sum:158}, first:{p:2,w:32,sum:158} },
+              americas:{ economy:{p:2,w:23,sum:158}, premium:{p:2,w:23,sum:158}, business:{p:2,w:32,sum:158}, first:{p:2,w:32,sum:158} } },
+    note:'波音 777/787 长途线经济舱多为 2 件×23kg。' },
+
+  { code:'SQ', name:'新加坡航空', region:'新加坡',
+    carryon:{ economy:{p:1,w:7,sum:115,side:55}, premium:{p:1,w:7,sum:115,side:55}, business:{p:2,w:7,sum:115,side:55}, first:{p:2,w:7,sum:115,side:55} },
+    checked:{ domestic:{ economy:{p:1,w:30,sum:158}, premium:{p:1,w:35,sum:158}, business:{p:2,w:32,sum:158}, first:{p:2,w:32,sum:158} },
+              intl:{ economy:{p:1,w:30,sum:158}, premium:{p:1,w:35,sum:158}, business:{p:2,w:32,sum:158}, first:{p:2,w:32,sum:158} },
+              americas:{ economy:{p:2,w:23,sum:158}, premium:{p:2,w:23,sum:158}, business:{p:2,w:32,sum:158}, first:{p:2,w:32,sum:158} } },
+    note:'多数航线按重量制（经济 30kg）；美洲线计件 2×23kg。' },
+
+  { code:'EK', name:'阿联酋航空', region:'阿联酋',
+    carryon:{ economy:{p:1,w:7,sum:118,side:55}, premium:{p:1,w:7,sum:118,side:55}, business:{p:2,w:7,sum:118,side:55}, first:{p:2,w:7,sum:118,side:55} },
+    checked:{ domestic:{ economy:{p:1,w:30,sum:158}, premium:{p:1,w:35,sum:158}, business:{p:2,w:32,sum:158}, first:{p:2,w:32,sum:158} },
+              intl:{ economy:{p:1,w:30,sum:158}, premium:{p:1,w:35,sum:158}, business:{p:2,w:32,sum:158}, first:{p:2,w:32,sum:158} },
+              americas:{ economy:{p:2,w:23,sum:158}, premium:{p:2,w:23,sum:158}, business:{p:2,w:32,sum:158}, first:{p:2,w:32,sum:158} } },
+    note:'经济舱随身 1 件 7kg（尺寸≤55×38×20）。' },
+
+  { code:'QR', name:'卡塔尔航空', region:'卡塔尔',
+    carryon:{ economy:{p:1,w:7,sum:115,side:55}, premium:{p:1,w:7,sum:115,side:55}, business:{p:2,w:15,sum:115,side:55}, first:{p:2,w:15,sum:115,side:55} },
+    checked:{ domestic:{ economy:{p:1,w:25,sum:158}, premium:{p:1,w:30,sum:158}, business:{p:2,w:32,sum:158}, first:{p:2,w:32,sum:158} },
+              intl:{ economy:{p:1,w:25,sum:158}, premium:{p:1,w:30,sum:158}, business:{p:2,w:32,sum:158}, first:{p:2,w:32,sum:158} },
+              americas:{ economy:{p:2,w:23,sum:158}, premium:{p:2,w:23,sum:158}, business:{p:2,w:32,sum:158}, first:{p:2,w:32,sum:158} } },
+    note:'商务/头等随身可带 2 件，共 15kg。' },
+
+  { code:'NH', name:'全日空 ANA', region:'日本',
+    carryon:{ economy:{p:1,w:10,sum:115,side:55}, premium:{p:1,w:10,sum:115,side:55}, business:{p:2,w:10,sum:115,side:55}, first:{p:2,w:10,sum:115,side:55} },
+    checked:{ domestic:{ economy:{p:null,w:20,sum:158}, premium:{p:null,w:20,sum:158}, business:{p:null,w:30,sum:158}, first:{p:null,w:40,sum:158} },
+              intl:{ economy:{p:1,w:23,sum:158}, premium:{p:1,w:23,sum:158}, business:{p:2,w:32,sum:158}, first:{p:3,w:32,sum:158} },
+              americas:{ economy:{p:2,w:23,sum:158}, premium:{p:2,w:23,sum:158}, business:{p:2,w:32,sum:158}, first:{p:3,w:32,sum:158} } },
+    note:'日本国内按重量制；美洲线经济 2×23kg。' },
+
+  { code:'JL', name:'日本航空 JAL', region:'日本',
+    carryon:{ economy:{p:1,w:10,sum:115,side:55}, premium:{p:1,w:10,sum:115,side:55}, business:{p:2,w:10,sum:115,side:55}, first:{p:2,w:10,sum:115,side:55} },
+    checked:{ domestic:{ economy:{p:null,w:20,sum:158}, premium:{p:null,w:20,sum:158}, business:{p:null,w:30,sum:158}, first:{p:null,w:40,sum:158} },
+              intl:{ economy:{p:1,w:23,sum:158}, premium:{p:1,w:23,sum:158}, business:{p:2,w:32,sum:158}, first:{p:3,w:32,sum:158} },
+              americas:{ economy:{p:2,w:23,sum:158}, premium:{p:2,w:23,sum:158}, business:{p:2,w:32,sum:158}, first:{p:3,w:32,sum:158} } },
+    note:'里程/寰宇一家精英会员另有加享。' },
+
+  { code:'KE', name:'大韩航空', region:'韩国',
+    carryon:{ economy:{p:1,w:12,sum:115,side:55}, premium:{p:1,w:12,sum:115,side:55}, business:{p:2,w:18,sum:115,side:55}, first:{p:2,w:18,sum:115,side:55} },
+    checked:{ domestic:{ economy:{p:null,w:20,sum:158}, premium:{p:null,w:20,sum:158}, business:{p:null,w:30,sum:158}, first:{p:null,w:40,sum:158} },
+              intl:{ economy:{p:1,w:23,sum:158}, premium:{p:1,w:23,sum:158}, business:{p:2,w:32,sum:158}, first:{p:2,w:32,sum:158} },
+              americas:{ economy:{p:2,w:23,sum:158}, premium:{p:2,w:23,sum:158}, business:{p:2,w:32,sum:158}, first:{p:2,w:32,sum:158} } },
+    note:'经济舱随身 1 件 12kg；美洲线 2×23kg。' },
+
+  { code:'OZ', name:'韩亚航空', region:'韩国',
+    carryon:{ economy:{p:1,w:10,sum:115,side:55}, premium:{p:1,w:10,sum:115,side:55}, business:{p:2,w:10,sum:115,side:55}, first:{p:2,w:10,sum:115,side:55} },
+    checked:{ domestic:{ economy:{p:null,w:20,sum:158}, premium:{p:null,w:20,sum:158}, business:{p:null,w:30,sum:158}, first:{p:null,w:40,sum:158} },
+              intl:{ economy:{p:1,w:23,sum:158}, premium:{p:1,w:23,sum:158}, business:{p:2,w:32,sum:158}, first:{p:2,w:32,sum:158} },
+              americas:{ economy:{p:2,w:23,sum:158}, premium:{p:2,w:23,sum:158}, business:{p:2,w:32,sum:158}, first:{p:2,w:32,sum:158} } },
+    note:'星空联盟成员。' },
+
+  { code:'UA', name:'美联航 United', region:'美国',
+    carryon:{ economy:{p:1,w:0,sum:113,side:56}, premium:{p:1,w:0,sum:113,side:56}, business:{p:1,w:0,sum:118,side:56}, first:{p:1,w:0,sum:118,side:56} },
+    checked:{ domestic:{ economy:{p:0,w:0,sum:158}, premium:{p:1,w:23,sum:158}, business:{p:2,w:32,sum:158}, first:{p:3,w:32,sum:158} },
+              intl:{ economy:{p:1,w:23,sum:158}, premium:{p:1,w:23,sum:158}, business:{p:2,w:32,sum:158}, first:{p:3,w:32,sum:158} },
+              americas:{ economy:{p:1,w:23,sum:158}, premium:{p:1,w:23,sum:158}, business:{p:2,w:32,sum:158}, first:{p:3,w:32,sum:158} } },
+    note:'基础经济(Basic)通常不含免费托运与免费随身（仅 1 件个人物品）；随身尺寸≤56×35×22。' },
+
+  { code:'DL', name:'达美航空 Delta', region:'美国',
+    carryon:{ economy:{p:1,w:0,sum:113,side:56}, premium:{p:1,w:0,sum:113,side:56}, business:{p:1,w:0,sum:118,side:56}, first:{p:1,w:0,sum:118,side:56} },
+    checked:{ domestic:{ economy:{p:0,w:0,sum:158}, premium:{p:1,w:23,sum:158}, business:{p:2,w:32,sum:158}, first:{p:3,w:32,sum:158} },
+              intl:{ economy:{p:1,w:23,sum:158}, premium:{p:1,w:23,sum:158}, business:{p:2,w:32,sum:158}, first:{p:3,w:32,sum:158} },
+              americas:{ economy:{p:1,w:23,sum:158}, premium:{p:1,w:23,sum:158}, business:{p:2,w:32,sum:158}, first:{p:3,w:32,sum:158} } },
+    note:'跨太平洋经济舱通常含 1 件 23kg 免费托运。' },
+
+  { code:'BA', name:'英国航空 British Airways', region:'英国',
+    carryon:{ economy:{p:1,w:23,sum:115,side:56}, premium:{p:1,w:23,sum:115,side:56}, business:{p:2,w:23,sum:115,side:56}, first:{p:2,w:23,sum:115,side:56} },
+    checked:{ domestic:{ economy:{p:1,w:23,sum:158}, premium:{p:1,w:23,sum:158}, business:{p:2,w:32,sum:158}, first:{p:3,w:32,sum:158} },
+              intl:{ economy:{p:1,w:23,sum:158}, premium:{p:1,w:23,sum:158}, business:{p:2,w:32,sum:158}, first:{p:3,w:32,sum:158} },
+              americas:{ economy:{p:1,w:23,sum:158}, premium:{p:1,w:23,sum:158}, business:{p:2,w:32,sum:158}, first:{p:3,w:32,sum:158} } },
+    note:'经济舱随身可带 1 件 23kg 登机箱 + 1 件个人物品；托运经济 1×23kg。' },
+
+  { code:'AF', name:'法国航空 Air France', region:'法国',
+    carryon:{ economy:{p:1,w:12,sum:118,side:55}, premium:{p:1,w:12,sum:118,side:55}, business:{p:2,w:18,sum:118,side:55}, first:{p:2,w:18,sum:118,side:55} },
+    checked:{ domestic:{ economy:{p:1,w:23,sum:158}, premium:{p:1,w:23,sum:158}, business:{p:2,w:32,sum:158}, first:{p:3,w:32,sum:158} },
+              intl:{ economy:{p:1,w:23,sum:158}, premium:{p:1,w:23,sum:158}, business:{p:2,w:32,sum:158}, first:{p:3,w:32,sum:158} },
+              americas:{ economy:{p:1,w:23,sum:158}, premium:{p:1,w:23,sum:158}, business:{p:2,w:32,sum:158}, first:{p:3,w:32,sum:158} } },
+    note:'经济舱随身 1 件 12kg + 1 件配件（40×30×15）。' },
+
+  { code:'LH', name:'汉莎航空 Lufthansa', region:'德国',
+    carryon:{ economy:{p:1,w:8,sum:118,side:55}, premium:{p:1,w:8,sum:118,side:55}, business:{p:2,w:8,sum:118,side:55}, first:{p:2,w:8,sum:118,side:55} },
+    checked:{ domestic:{ economy:{p:null,w:23,sum:158}, premium:{p:null,w:23,sum:158}, business:{p:2,w:32,sum:158}, first:{p:3,w:32,sum:158} },
+              intl:{ economy:{p:1,w:23,sum:158}, premium:{p:1,w:23,sum:158}, business:{p:2,w:32,sum:158}, first:{p:3,w:32,sum:158} },
+              americas:{ economy:{p:1,w:23,sum:158}, premium:{p:1,w:23,sum:158}, business:{p:2,w:32,sum:158}, first:{p:3,w:32,sum:158} } },
+    note:'欧洲境内经济常按重量制 23kg；洲际经济 1×23kg。' },
+
+  { code:'TK', name:'土耳其航空 Turkish', region:'土耳其',
+    carryon:{ economy:{p:1,w:8,sum:115,side:55}, premium:{p:1,w:8,sum:115,side:55}, business:{p:2,w:8,sum:115,side:55}, first:{p:2,w:8,sum:115,side:55} },
+    checked:{ domestic:{ economy:{p:null,w:20,sum:158}, premium:{p:null,w:25,sum:158}, business:{p:null,w:30,sum:158}, first:{p:null,w:40,sum:158} },
+              intl:{ economy:{p:1,w:23,sum:158}, premium:{p:1,w:23,sum:158}, business:{p:2,w:32,sum:158}, first:{p:2,w:32,sum:158} },
+              americas:{ economy:{p:2,w:23,sum:158}, premium:{p:2,w:23,sum:158}, business:{p:2,w:32,sum:158}, first:{p:2,w:32,sum:158} } },
+    note:'国际线经济常 1×23kg（部分 2×23kg）；美洲线 2×23kg。' },
+
+  { code:'AC', name:'加拿大航空 Air Canada', region:'加拿大',
+    carryon:{ economy:{p:1,w:0,sum:113,side:55}, premium:{p:1,w:0,sum:113,side:55}, business:{p:1,w:0,sum:118,side:55}, first:{p:1,w:0,sum:118,side:55} },
+    checked:{ domestic:{ economy:{p:1,w:23,sum:158}, premium:{p:1,w:23,sum:158}, business:{p:2,w:32,sum:158}, first:{p:3,w:32,sum:158} },
+              intl:{ economy:{p:2,w:23,sum:158}, premium:{p:2,w:23,sum:158}, business:{p:2,w:32,sum:158}, first:{p:3,w:32,sum:158} },
+              americas:{ economy:{p:2,w:23,sum:158}, premium:{p:2,w:23,sum:158}, business:{p:2,w:32,sum:158}, first:{p:3,w:32,sum:158} } },
+    note:'跨太平洋经济舱通常 2 件×23kg 免费托运；随身含 1 件登机箱 + 1 件个人物品。' }
+];
+
+/* ===================== 状态 ===================== */
+const CABIN_LABEL = {economy:'经济舱', premium:'超级经济舱', business:'公务/商务舱', first:'头等舱'};
+const ROUTE_LABEL = {domestic:'国内', intl:'国际(非美洲)', americas:'美洲线'};
+const TYPE_LABEL  = {carryon:'随身行李', checked:'托运行李'};
+const MEMBER_LABEL = {none:'', silver:'银卡加成', gold:'金卡加成', platinum:'白金卡加成'};
+const MEMBER_BONUS = {none:0, silver:5, gold:10, platinum:20};
+let state = { type:'carryon', route:'domestic', cabin:'economy', mode:'simple',
+  selected:['CA'], unit:'metric', member:'none', feeRate:80, bags:1 };
+
+/* ===================== 单位换算 ===================== */
+const LB=2.20462, IN=0.393701;
+function wUnit(){ return state.unit==='imperial'?'lb':'kg'; }
+function dUnit(){ return state.unit==='imperial'?'in':'cm'; }
+function toW(kg){ return state.unit==='imperial'? kg*LB : kg; }
+function toD(cm){ return state.unit==='imperial'? cm*IN : cm; }
+function fmtW(kg){ return (state.unit==='imperial'? toW(kg).toFixed(1) : kg.toFixed(0)) + ' ' + wUnit(); }
+function fmtD(cm){ return (state.unit==='imperial'? toD(cm).toFixed(1) : cm.toFixed(0)) + ' ' + dUnit(); }
+
+/* ===================== 工具 ===================== */
+const $ = id => document.getElementById(id);
+function num(v, d=0){ const x = parseFloat(v); return isNaN(x)? d : x; }
+function getRule(a, type, route, cabin){
+  if(type==='carryon') return a.carryon[cabin] || a.carryon.economy;
+  const cat = (route==='domestic') ? 'domestic' : (route==='americas' ? 'americas' : 'intl');
+  const base = a.checked[cat];
+  return base[cabin] || base.economy;
+}
+function applyMember(rule){
+  if(state.member==='none') return rule;
+  const r = Object.assign({}, rule);
+  if(r.p===null){ r.w += MEMBER_BONUS[state.member]; }
+  else if(r.p>0){ if(state.member==='gold'||state.member==='platinum') r.p += 1; else r.w += MEMBER_BONUS[state.member]; }
+  return r;
+}
+function evaluate(a, type, route, cabin, weight, sum, maxSide){
+  const r = applyMember(getRule(a, type, route, cabin));
+  const res = { code:a.code, name:a.name, rule:r, items:[] };
+  if(r.p===0){
+    res.items.push({label:'免费托运额度', ok:false, val:'无免费额度', limit:'需另行购买', ratio:2, kind:'pieces'});
+  } else if(r.p===null){
+    res.items.push({label:'免费额度', ok:true, val:`重量制 ${fmtW(r.w)}`, limit:`${fmtW(r.w)}`, ratio:weight/r.w, kind:'pieces'});
+  } else {
+    const ok = 1 <= r.p;
+    res.items.push({label:'免费件数', ok, val:`本件计 1 件`, limit:`共 ${r.p} 件免费`, ratio:1, kind:'pieces'});
+  }
+  if(r.w>0){
+    const ratio = weight / r.w;
+    res.items.push({label:'单件重量', ok: weight<=r.w, val:fmtW(weight), limit:`≤ ${fmtW(r.w)}`, ratio, kind:'weight'});
+  }
+  if(r.sum>0){
+    const ratio = sum / r.sum;
+    res.items.push({label:'三边之和', ok: sum<=r.sum, val:fmtD(sum), limit:`≤ ${fmtD(r.sum)}`, ratio, kind:'sum'});
+  }
+  if(r.side>0 && maxSide>0){
+    const ratio = maxSide / r.side;
+    res.items.push({label:'最长边', ok: maxSide<=r.side, val:fmtD(maxSide), limit:`≤ ${fmtD(r.side)}`, ratio, kind:'side'});
+  }
+  const ratios = res.items.map(i=>i.ratio).filter(x=>isFinite(x));
+  const maxRatio = ratios.length? Math.max(...ratios) : 1;
+  const allOk = res.items.every(i=>i.ok);
+  let status = allOk ? 'ok' : (maxRatio<=1.05 ? 'warn' : 'bad');
+  if(r.p===0) status='bad';
+  res.status = status;
+  res.maxRatio = maxRatio;
+  return res;
+}
+function statusText(s){ return s==='ok'?'✅ 合规': s==='warn'?'⚠️ 临界（接近上限）':'❌ 不合规'; }
+function statusClass(s){ return s==='ok'?'ok': s==='warn'?'warn':'bad'; }
+
+/* ===================== 读取输入 ===================== */
+function readInput(){
+  const u = state.unit;
+  let weight, sum, maxSide=0;
+  if(state.mode==='simple'){
+    if(u==='metric'){ weight=num($('weight').value); sum=num($('sum3').value); }
+    else { weight=num($('weight').value)/LB; sum=num($('sum3').value)/IN; }
+  } else {
+    let l,w,h;
+    if(u==='metric'){ l=num($('len').value); w=num($('wid').value); h=num($('hei').value); }
+    else { l=num($('len').value)/IN; w=num($('wid').value)/IN; h=num($('hei').value)/IN; }
+    weight = u==='metric'? num($('weight2').value) : num($('weight2').value)/LB;
+    sum = l+w+h; maxSide = Math.max(l,w,h);
+  }
+  return {weight, sum, maxSide};
+}
+
+/* ===================== 行李外形可视化 ===================== */
+function drawViz(res, inp){
+  if(inp.maxSide<=0) return ''; // 简略模式无最长边，不画外形
+  const r = res.rule;
+  const limW = Math.max(1, r.sum - r.side), limH = r.side;
+  const bagW = Math.max(1, inp.sum - inp.maxSide), bagH = inp.maxSide;
+  const s = 150 / Math.max(limW, limH, bagW, bagH, 1);
+  const cx=210, cy=95;
+  const lx = cx - limW*s/2, ly = cy - limH*s/2;
+  const bx = cx - bagW*s/2, by = cy - bagH*s/2;
+  const col = res.status==='ok'? 'var(--ok)' : (res.status==='warn'? 'var(--warn)':'var(--bad)');
+  return `<div class="viz">
+    <svg viewBox="0 0 420 200" role="img" aria-label="行李外形对比">
+      <rect x="${lx}" y="${ly}" width="${limW*s}" height="${limH*s}" fill="none" stroke="var(--brand)" stroke-width="2" stroke-dasharray="6 4" rx="6"/>
+      <text x="${cx}" y="${ly-6}" fill="var(--brand)" font-size="11" text-anchor="middle">航司限制框 ${fmtD(r.sum)}</text>
+      <rect x="${bx}" y="${by}" width="${bagW*s}" height="${bagH*s}" fill="${col}" fill-opacity="0.28" stroke="${col}" stroke-width="2.5" rx="6"/>
+      <text x="${cx}" y="${by + bagH*s/2 + 4}" fill="${col}" font-size="11" text-anchor="middle" font-weight="700">你的行李 ${fmtD(inp.sum)}</text>
+    </svg>
+    <div class="mini">虚线框为航司限值轮廓，实色框为你的行李轮廓（同比例）。框体超出虚线即代表超尺寸。</div>
+  </div>`;
+}
+
+/* ===================== 智能建议 ===================== */
+function advice(res, a, inp){
+  if(res.status==='ok') return `✅ 该行李符合 ${a.name} 的${TYPE_LABEL[state.type]}标准，可放心携带${MEMBER_LABEL[state.member]?'(已含'+MEMBER_LABEL[state.member]+')':''}。`;
+  const tips=[];
+  res.items.filter(i=>!i.ok).forEach(i=>{
+    if(i.kind==='weight'){ const over=inp.weight-res.rule.w; tips.push(`减重约 ${over.toFixed(1)} kg（或拆分行李）使单件≤${fmtW(res.rule.w)}`); }
+    else if(i.kind==='sum'){ const over=inp.sum-res.rule.sum; tips.push(`压缩三边和至 ≤ ${fmtD(res.rule.sum)}（需减少约 ${(over).toFixed(0)} ${dUnit()}）`); }
+    else if(i.kind==='side'){ const over=inp.maxSide-res.rule.side; tips.push(`最长边 ≤ ${fmtD(res.rule.side)}（需减少约 ${(over).toFixed(0)} ${dUnit()}）`); }
+    else if(i.kind==='pieces' && res.rule.p===0){ tips.push('该航司此舱位无免费托运额度，请提前在官网购买行李额'); }
+  });
+  return '💡 建议：' + tips.join('；') + '。';
+}
+
+/* ===================== 渲染：单航司 ===================== */
+function renderSingle(){
+  const inp = readInput();
+  const a = AIRLINES.find(x=>x.code===state.selected[0]); if(!a) return;
+  const res = evaluate(a, state.type, state.route, state.cabin, inp.weight, inp.sum, inp.maxSide);
+  const r = res.rule;
+  const allowTxt = (r.p===0)?'无免费额度（需购买）': (r.p===null? `免费总重 ${fmtW(r.w)}` : `免费 ${r.p} 件`);
+  const bars = res.items.filter(i=>i.kind!=='pieces').map(i=>{
+    const pct = Math.min(100, (i.ratio||0)*100);
+    const cls = i.ok ? (i.ratio>0.85?'warn':'ok') : 'bad';
+    return `<div class="bar-row"><div class="bar-label"><span>${i.label}</span><b>${i.val} / ${i.limit}</b></div>
+      <div class="track"><div class="fill ${cls}" style="width:${pct}%"></div></div></div>`;
+  }).join('');
+  // 多件合计
+  const total = state.bags * inp.weight;
+  let mb;
+  if(r.p===null){ const diff = total - r.w; mb = `多件合计 ${state.bags} 件 × ${fmtW(inp.weight)} = <b>${fmtW(total)}</b> ｜ 免费总重 ${fmtW(r.w)} → ${diff<=0? '剩余 '+fmtW(-diff):'超出 <span style="color:var(--bad)">'+fmtW(diff)+'</span>'}`; }
+  else if(r.p>0){ const diff = state.bags - r.p; mb = `多件合计 <b>${state.bags}</b> 件 ｜ 免费 ${r.p} 件 → ${state.bags<=r.p? '在免费件数内':'超出 <span style="color:var(--bad)">'+(state.bags-r.p)+' 件</span>'}`; }
+  else { mb = `该航司此舱位无免费托运额度，多件均需另行购买。`; }
+  // 费用估算
+  const overW = Math.max(0, inp.weight - (r.w>0?r.w:0));
+  const fee = overW * state.feeRate;
+  const feeHtml = overW>0
+    ? `预计超重费 ≈ <b style="color:var(--bad)">¥${Math.round(fee)}</b>（按 ¥${state.feeRate}/${wUnit()} 估算，实际以航司现场为准）${res.items.some(i=>i.kind==='sum'&&!i.ok)?'；另有超尺寸费风险':''}`
+    : `无超重费（若三边和与最长边亦合规）`;
+  const memTag = MEMBER_LABEL[state.member]? ` · ${MEMBER_LABEL[state.member]}` : '';
+  $('resultCard').innerHTML = `
+    <h2>📊 合规结果 <span class="tag">${TYPE_LABEL[state.type]} · ${ROUTE_LABEL[state.route]} · ${CABIN_LABEL[state.cabin]}${memTag}</span></h2>
+    <div class="result-head">
+      <div class="airline-name">${a.name}</div>
+      <div class="badge ${statusClass(res.status)}">${statusText(res.status)}</div>
+    </div>
+    <div class="mini" style="margin:-4px 0 10px">免费额度：${allowTxt} ｜ 单件重量限 ${r.w>0?fmtW(r.w):'—'} ｜ 三边和限 ${fmtD(r.sum)} ｜ 最长边限 ${r.side?fmtD(r.side):'—'}</div>
+    <div class="bars">${bars || '<div class="mini">该类别无尺寸/重量限制可比对</div>'}</div>
+    ${drawViz(res, inp)}
+    <div class="detail">
+      <div class="dcell"><div class="k">你的行李</div><div class="v">${fmtW(inp.weight)} · 三边和 ${fmtD(inp.sum)}${inp.maxSide?` · 最长边 ${fmtD(inp.maxSide)}`:''}</div></div>
+      <div class="dcell"><div class="k">最大占用比</div><div class="v">${Math.round(res.maxRatio*100)}%</div></div>
+      <div class="dcell"><div class="k">多件合计估算</div><div class="v" style="font-size:12.5px;font-weight:600">${mb}</div></div>
+      <div class="dcell"><div class="k">超重费用估算</div><div class="v" style="font-size:12.5px;font-weight:600">${feeHtml}</div></div>
+    </div>
+    <div class="note ${res.status==='ok'?'ok':res.status==='bad'?'bad':'warn'}">${advice(res, a, inp)}<br><span class="mini" style="color:var(--ink-soft)">${a.note}</span></div>
+    <div class="actions no-print" style="margin-top:14px">
+      <button class="btn" onclick="copyResult()">📋 复制结果</button>
+      <button class="btn" onclick="window.print()">🖨️ 打印</button>
+    </div>`;
+  $('recoCard').style.display='none';
+  saveHistory();
+}
+
+/* ===================== 渲染：全部对比 ===================== */
+let compareData = [];
+function renderCompare(){
+  const inp = readInput();
+  compareData = AIRLINES.map(a=>evaluate(a, state.type, state.route, state.cabin, inp.weight, inp.sum, inp.maxSide));
+  compareData.sort((x,y)=> (x.status==='ok'?-1:(x.status==='warn'?0:1)) - (y.status==='ok'?-1:(y.status==='warn'?0:1)) || x.maxRatio-y.maxRatio);
+  const onlyOk = $('onlyOk') && $('onlyOk').checked;
+  const rows = compareData.filter(d=>!onlyOk || d.status==='ok');
+  const body = rows.map(d=>{
+    const r=d.rule;
+    const allow = (r.p===0)?'需购买':(r.p===null?`${fmtW(r.w)}`:`${r.p}件`);
+    return `<tr><td><b>${d.name}</b></td><td>${allow}</td><td>${r.w>0?fmtW(r.w):'—'}</td>
+      <td>${fmtD(r.sum)}</td><td>${r.side?fmtD(r.side):'—'}</td>
+      <td><span class="pill ${statusClass(d.status)}">${d.status==='ok'?'合规':d.status==='warn'?'临界':'不合规'}</span></td></tr>`;
+  }).join('');
+  $('resultCard').innerHTML = `
+    <h2>📊 全航司对比 <span class="tag">${TYPE_LABEL[state.type]} · ${ROUTE_LABEL[state.route]} · ${CABIN_LABEL[state.cabin]}${MEMBER_LABEL[state.member]?' · '+MEMBER_LABEL[state.member]:''}</span></h2>
+    <div class="mini" style="margin:-4px 0 10px">你的行李：${fmtW(inp.weight)} · 三边和 ${fmtD(inp.sum)}${inp.maxSide?` · 最长边 ${fmtD(inp.maxSide)}`:''} ｜ 共 ${AIRLINES.length} 家，合规 ${compareData.filter(d=>d.status==='ok').length} 家</div>
+    <div class="tbl-tools no-print">
+      <label style="font-size:12.5px;color:var(--ink-soft);display:flex;align-items:center;gap:6px">
+        <input type="checkbox" id="onlyOk" onchange="renderCompare()" style="width:auto"> 只看合规
+      </label>
+      <div class="grow"></div>
+      <button class="btn" onclick="copyTable()">📋 复制表格</button>
+      <button class="btn" onclick="window.print()">🖨️ 打印</button>
+    </div>
+    <div style="overflow-x:auto"><table>
+      <thead><tr><th>航司</th><th>免费额度</th><th>单件重量</th><th>三边和</th><th>最长边</th><th>结果</th></tr></thead>
+      <tbody>${body || '<tr><td colspan=6 class="empty">没有合规的航司，试试轻一点/小一点的行李</td></tr>'}</tbody>
+    </table></div>`;
+  const okList = compareData.filter(d=>d.status==='ok');
+  if(okList.length){ $('recoChips').innerHTML = okList.map(d=>`<span class="chip on" onclick="pickFromReco('${d.code}')">${d.name}</span>`).join(''); $('recoCard').style.display='block'; }
+  else $('recoCard').style.display='none';
+  saveHistory();
+}
+function pickFromReco(code){ state.selected=[code]; syncAirlineUI(); renderSingle(); }
+
+/* ===================== 历史 ===================== */
+const HKEY='lugg_hist_v1';
+function saveHistory(){
+  try{
+    const inp=readInput();
+    const rec={type:state.type,route:state.route,cabin:state.cabin,mode:state.mode,weight:inp.weight,sum:inp.sum,maxSide:inp.maxSide,
+      sel:state.selected.slice(),unit:state.unit,member:state.member,feeRate:state.feeRate,bags:state.bags,ts:Date.now()};
+    let arr=JSON.parse(localStorage.getItem(HKEY)||'[]'); arr.unshift(rec); arr=arr.slice(0,8);
+    localStorage.setItem(HKEY, JSON.stringify(arr)); renderHist();
+  }catch(e){}
+}
+function renderHist(){
+  let arr=[]; try{arr=JSON.parse(localStorage.getItem(HKEY)||'[]');}catch(e){}
+  const box=$('histChips');
+  if(!arr.length){ box.innerHTML='<span class="mini">暂无记录</span>'; return; }
+  box.innerHTML = arr.map((r,i)=>`<span class="chip" onclick="loadHist(${i})" title="点击回填">${TYPE_LABEL[r.type]}·${CABIN_LABEL[r.cabin]} ${r.weight.toFixed(0)}kg/${r.sum.toFixed(0)}cm</span>`).join('');
+  window._hist=arr;
+}
+function loadHist(i){
+  const r=window._hist[i]; if(!r) return;
+  state=Object.assign(state,{type:r.type,route:r.route,cabin:r.cabin,mode:r.mode,unit:r.unit,member:r.member,feeRate:r.feeRate,bags:r.bags,selected:r.sel});
+  $('typeSeg').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.v===r.type));
+  $('modeSeg').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.v===r.mode));
+  $('unitSeg').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.v===r.unit));
+  $('route').value=r.route; $('cabin').value=r.cabin; $('member').value=r.member; $('feeRate').value=r.feeRate; $('bags').value=r.bags;
+  $('simpleMode').style.display=r.mode==='simple'?'block':'none';
+  $('detailMode').style.display=r.mode==='simple'?'none':'block';
+  if(r.mode==='simple'){ $('weight').value=r.weight; $('sum3').value=r.sum; }
+  else { $('weight2').value=r.weight; }
+  updateLabels(); syncAirlineUI();
+  (state.selected.length>1)? renderCompare() : renderSingle();
+}
+
+/* ===================== 航司选择 UI ===================== */
+function buildAirlineUI(){
+  $('singleAirline').innerHTML = AIRLINES.map(a=>`<option value="${a.code}">${a.name}</option>`).join('');
+  $('airlineChips').innerHTML = AIRLINES.map(a=>`<span class="chip" data-code="${a.code}" onclick="toggleAirline('${a.code}')">${a.name}</span>`).join('');
+}
+function syncAirlineUI(){
+  if(state.selected.length===1){ $('singleAirline').value=state.selected[0]; }
+  highlightChips();
+}
+function highlightChips(){
+  const multi=state.selected.length>1;
+  $('airlineChips').querySelectorAll('.chip').forEach(c=>c.classList.toggle('on', multi && state.selected.includes(c.dataset.code)));
+}
+function toggleAirline(code){
+  if(state.selected.length<=1){ state.selected=[code]; }
+  else { const i=state.selected.indexOf(code); if(i>=0){ state.selected.splice(i,1); if(state.selected.length===0) state.selected=[code]; } else state.selected.push(code); }
+  syncAirlineUI(); (state.selected.length>1)? renderCompare() : renderSingle();
+}
+
+/* ===================== 复制 ===================== */
+function copyResult(){
+  const inp=readInput(); const a=AIRLINES.find(x=>x.code===state.selected[0]);
+  const res=evaluate(a,state.type,state.route,state.cabin,inp.weight,inp.sum,inp.maxSide); const r=res.rule;
+  let txt=`行李合规检查 - ${a.name}\n类型:${TYPE_LABEL[state.type]} 航线:${ROUTE_LABEL[state.route]} 舱位:${CABIN_LABEL[state.cabin]}${MEMBER_LABEL[state.member]?' 等级:'+MEMBER_LABEL[state.member]:''}\n`;
+  txt+=`你的行李: ${fmtW(inp.weight)}, 三边和 ${fmtD(inp.sum)}${inp.maxSide?`, 最长边 ${fmtD(inp.maxSide)}`:''}\n结果: ${statusText(res.status)}\n`;
+  res.items.forEach(i=>txt+=`- ${i.label}: ${i.val} / ${i.limit}\n`);
+  txt+=`免费额度: ${r.p===0?'无(需购买)':(r.p===null?fmtW(r.w):r.p+'件')}\n提示: ${a.note}`;
+  navigator.clipboard.writeText(txt).then(()=>toast('已复制结果到剪贴板'));
+}
+function copyTable(){
+  let txt=`全航司行李合规对比 (${TYPE_LABEL[state.type]}/${ROUTE_LABEL[state.route]}/${CABIN_LABEL[state.cabin]})\n`;
+  const inp=readInput();
+  txt+=`行李: ${fmtW(inp.weight)}, 三边和 ${fmtD(inp.sum)}\n航司\t免费额度\t单件重量\t三边和\t最长边\t结果\n`;
+  compareData.forEach(d=>{const r=d.rule;txt+=`${d.name}\t${r.p===0?'需购买':(r.p===null?fmtW(r.w):r.p+'件')}\t${r.w>0?fmtW(r.w):'—'}\t${fmtD(r.sum)}\t${r.side?fmtD(r.side):'—'}\t${d.status==='ok'?'合规':d.status==='warn'?'临界':'不合规'}\n`;});
+  navigator.clipboard.writeText(txt).then(()=>toast('已复制对比表到剪贴板'));
+}
+let toastTimer;
+function toast(msg){
+  let t=$('toast'); if(!t){ t=document.createElement('div'); t.id='toast';
+    t.style.cssText='position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:24px;font-size:13px;z-index:99;box-shadow:var(--shadow)';
+    document.body.appendChild(t);}
+  t.textContent=msg; t.style.display='block'; clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.style.display='none',1800);
+}
+
+/* ===================== 标签单位 ===================== */
+function updateLabels(){
+  const wu=wUnit(), du=dUnit();
+  $('lblWeight').textContent=`行李重量（${wu}）`;
+  $('lblWeight2').textContent=`行李重量（${wu}）`;
+  $('lblSum').textContent=`三边之和 = 长 + 宽 + 高（${du}）`;
+  $('lblLen').textContent=`长 (${du})`; $('lblWid').textContent=`宽 (${du})`; $('lblHei').textContent=`高 (${du})`;
+  $('autoSumU').textContent=du; $('autoMaxU').textContent=du;
+}
+
+/* ===================== 事件 ===================== */
+function bind(){
+  $('typeSeg').querySelectorAll('button').forEach(b=>b.onclick=()=>{
+    state.type=b.dataset.v; $('typeSeg').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));
+    (state.selected.length>1)?renderCompare():renderSingle();
+  });
+  $('modeSeg').querySelectorAll('button').forEach(b=>b.onclick=()=>{
+    state.mode=b.dataset.v; $('modeSeg').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));
+    $('simpleMode').style.display=b.dataset.v==='simple'?'block':'none';
+    $('detailMode').style.display=b.dataset.v==='simple'?'none':'block';
+    if(b.dataset.v==='detail') updateAuto();
+  });
+  $('unitSeg').querySelectorAll('button').forEach(b=>b.onclick=()=>{
+    state.unit=b.dataset.v; $('unitSeg').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));
+    updateLabels(); if(state.mode==='detail') updateAuto();
+    (state.selected.length>1)?renderCompare():renderSingle();
+  });
+  $('route').onchange=e=>{state.route=e.target.value;(state.selected.length>1)?renderCompare():renderSingle();};
+  $('cabin').onchange=e=>{state.cabin=e.target.value;(state.selected.length>1)?renderCompare():renderSingle();};
+  $('member').onchange=e=>{state.member=e.target.value;(state.selected.length>1)?renderCompare():renderSingle();};
+  $('feeRate').oninput=e=>{state.feeRate=num(e.target.value,80);(state.selected.length>1)?renderCompare():renderSingle();};
+  $('bags').oninput=e=>{state.bags=Math.max(1,num(e.target.value,1));(state.selected.length>1)?renderCompare():renderSingle();};
+  $('singleAirline').onchange=e=>{ state.selected=[e.target.value]; syncAirlineUI(); renderSingle(); };
+  ['weight','sum3','weight2','len','wid','hei'].forEach(id=>$(id).addEventListener('input', ()=>{
+    if(state.mode==='detail') updateAuto();
+    (state.selected.length>1)?renderCompare():renderSingle();
+  }));
+  $('checkBtn').onclick=()=>{ if(state.selected.length>1) state.selected=[state.selected[0]]; syncAirlineUI(); renderSingle(); };
+  $('compareAllBtn').onclick=()=>{ state.selected=AIRLINES.map(a=>a.code); syncAirlineUI(); renderCompare(); };
+  $('sampleBtn').onclick=fillSample;
+  $('themeBtn').onclick=toggleTheme;
+}
+function updateAuto(){
+  const l=num($('len').value),w=num($('wid').value),h=num($('hei').value);
+  const du=dUnit();
+  $('autoSum').textContent=(state.unit==='metric'? l+w+h : (l+w+h)/IN).toFixed(0);
+  $('autoMax').textContent=(state.unit==='metric'? Math.max(l,w,h) : Math.max(l,w,h)/IN).toFixed(0);
+  $('autoSumU').textContent=du; $('autoMaxU').textContent=du;
+}
+function fillSample(){
+  const s=[
+    {type:'carryon',route:'intl',cabin:'economy',mode:'simple',weight:9,sum:120},
+    {type:'carryon',route:'domestic',cabin:'economy',mode:'detail',weight:6,len:56,wid:36,hei:23},
+    {type:'checked',route:'americas',cabin:'economy',mode:'simple',weight:25,sum:160},
+    {type:'checked',route:'domestic',cabin:'business',mode:'simple',weight:32,sum:158},
+    {type:'checked',route:'intl',cabin:'economy',mode:'detail',weight:24,len:70,wid:50,hei:40}
+  ];
+  const r=s[Math.floor(Math.random()*s.length)];
+  state.type=r.type;state.route=r.route;state.cabin=r.cabin;state.mode=r.mode;
+  $('typeSeg').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.v===r.type));
+  $('modeSeg').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.v===r.mode));
+  $('route').value=r.route;$('cabin').value=r.cabin;
+  $('simpleMode').style.display=r.mode==='simple'?'block':'none';
+  $('detailMode').style.display=r.mode==='simple'?'none':'block';
+  if(r.mode==='simple'){$('weight').value=r.weight;$('sum3').value=r.sum;}
+  else{$('weight2').value=r.weight;$('len').value=r.len;$('wid').value=r.wid;$('hei').value=r.hei;}
+  updateLabels(); if(r.mode==='detail') updateAuto();
+  syncAirlineUI();
+  (state.selected.length>1)?renderCompare():renderSingle();
+  toast('已填入随机示例');
+}
+function toggleTheme(){
+  const cur=document.documentElement.getAttribute('data-theme');
+  const next=cur==='dark'?'light':'dark';
+  document.documentElement.setAttribute('data-theme',next);
+  $('themeBtn').textContent=next==='dark'?'☀️ 亮色':'🌙 暗色';
+  try{localStorage.setItem('lugg_theme',next);}catch(e){}
+}
+function initTheme(){
+  let t='light'; try{t=localStorage.getItem('lugg_theme')||'light';}catch(e){}
+  document.documentElement.setAttribute('data-theme',t);
+  $('themeBtn').textContent=t==='dark'?'☀️ 亮色':'🌙 暗色';
+}
+
+/* ===================== 启动 ===================== */
+initTheme();
+buildAirlineUI();
+bind();
+updateLabels();
+syncAirlineUI();
+renderHist();
+renderSingle();
+</script>
+</body>
+</html>

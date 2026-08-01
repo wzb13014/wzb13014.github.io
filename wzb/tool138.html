@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>登山海拔与含氧量查询 · 高原助手</title>
+<style>
+  :root{
+    --bg:#0f1419; --bg2:#161d26; --card:#1c2530; --card2:#222d3a;
+    --line:#2c3a4a; --txt:#e6edf3; --muted:#9fb0c0; --faint:#6b7d8f;
+    --accent:#ff8c42; --accent2:#3fb6c4; --green:#5fcf80; --yellow:#f5c451;
+    --orange:#ff8c42; --red:#ff5d5d; --purple:#b58cff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:radial-gradient(1200px 600px at 80% -10%, #1b2735 0%, var(--bg) 55%);
+    color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    line-height:1.5;min-height:100vh;padding:0 0 60px}
+  header{position:sticky;top:0;z-index:20;backdrop-filter:blur(10px);
+    background:linear-gradient(180deg,rgba(15,20,25,.95),rgba(15,20,25,.78));
+    border-bottom:1px solid var(--line);padding:14px 20px;display:flex;align-items:center;
+    gap:14px;flex-wrap:wrap}
+  header h1{font-size:19px;font-weight:700;letter-spacing:.5px;display:flex;align-items:center;gap:10px}
+  .logo{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--accent2));
+    display:grid;place-items:center;font-size:18px;box-shadow:0 4px 14px rgba(255,140,66,.35)}
+  .tag{font-size:11px;color:var(--muted);background:var(--card2);padding:3px 9px;border-radius:20px;border:1px solid var(--line)}
+  .spacer{flex:1}
+  .unit-toggle{display:flex;background:var(--card2);border:1px solid var(--line);border-radius:9px;overflow:hidden}
+  .unit-toggle button{background:transparent;border:none;color:var(--muted);padding:7px 14px;cursor:pointer;font-size:13px;font-weight:600}
+  .unit-toggle button.active{background:var(--accent);color:#1a1206}
+  main{max-width:1180px;margin:22px auto;padding:0 18px;display:grid;gap:20px}
+  .grid2{display:grid;grid-template-columns:1.05fr .95fr;gap:20px}
+  @media(max-width:880px){.grid2{grid-template-columns:1fr}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;
+    box-shadow:0 8px 30px rgba(0,0,0,.25)}
+  .card h2{font-size:15px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:9px;color:#fff}
+  .card h2 .ic{width:26px;height:26px;border-radius:8px;background:var(--card2);display:grid;place-items:center;font-size:15px}
+  .sub{font-size:12px;color:var(--faint);margin:-9px 0 14px}
+  /* input */
+  .alt-display{display:flex;align-items:baseline;gap:10px;margin-bottom:6px}
+  .alt-big{font-size:46px;font-weight:800;line-height:1;color:var(--accent);
+    font-variant-numeric:tabular-nums;letter-spacing:-1px}
+  .alt-unit{font-size:16px;color:var(--muted);font-weight:600}
+  .numinput{display:flex;gap:8px;margin-bottom:14px}
+  .numinput input{flex:1;background:var(--bg2);border:1px solid var(--line);color:var(--txt);
+    border-radius:10px;padding:11px 13px;font-size:16px;font-weight:600;font-variant-numeric:tabular-nums}
+  .numinput input:focus{outline:none;border-color:var(--accent)}
+  input[type=range]{width:100%;-webkit-appearance:none;height:6px;border-radius:6px;
+    background:linear-gradient(90deg,var(--accent2),var(--accent));outline:none;margin:8px 0 4px}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;
+    background:#fff;border:3px solid var(--accent);cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.4)}
+  input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:#fff;border:3px solid var(--accent);cursor:pointer}
+  .range-scale{display:flex;justify-content:space-between;font-size:10px;color:var(--faint);margin-bottom:16px}
+  /* metrics */
+  .metrics{display:grid;grid-template-columns:repeat(2,1fr);gap:11px}
+  .metric{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:12px 13px;position:relative;overflow:hidden}
+  .metric .k{font-size:11.5px;color:var(--muted);margin-bottom:5px;display:flex;align-items:center;gap:6px}
+  .metric .v{font-size:23px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.5px}
+  .metric .u{font-size:12px;color:var(--faint);font-weight:600;margin-left:3px}
+  .metric .bar{position:absolute;left:0;bottom:0;height:3px;background:var(--accent2)}
+  .metric.warn .v{color:var(--yellow)} .metric.danger .v{color:var(--red)} .metric.good .v{color:var(--green)}
+  /* oxygen slider */
+  .ox-row{display:flex;align-items:center;gap:12px;margin-top:4px}
+  .ox-row input[type=range]{flex:1}
+  .ox-val{font-weight:800;color:var(--accent2);min-width:62px;text-align:right;font-variant-numeric:tabular-nums}
+  /* chart */
+  .chart-wrap{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:8px;margin-top:6px}
+  .chart-tabs{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap}
+  .chart-tabs button{background:var(--card2);border:1px solid var(--line);color:var(--muted);
+    padding:5px 11px;border-radius:8px;font-size:12px;cursor:pointer;font-weight:600}
+  .chart-tabs button.active{background:var(--accent2);color:#08222a;border-color:var(--accent2)}
+  svg{display:block;width:100%;height:auto}
+  /* risk */
+  .risk-box{border-radius:13px;padding:16px;margin-bottom:14px;border:1px solid var(--line);position:relative;overflow:hidden}
+  .risk-box .lv{font-size:20px;font-weight:800;display:flex;align-items:center;gap:9px}
+  .risk-box .dot{width:13px;height:13px;border-radius:50%}
+  .risk-box .desc{font-size:13px;color:var(--muted);margin-top:7px}
+  .risk-box.low{background:rgba(95,207,128,.10)} .risk-box.low .dot{background:var(--green)}
+  .risk-box.mid{background:rgba(245,196,81,.10)} .risk-box.mid .dot{background:var(--yellow)}
+  .risk-box.high{background:rgba(255,140,66,.12)} .risk-box.high .dot{background:var(--orange)}
+  .risk-box.ext{background:rgba(255,93,93,.13)} .risk-box.ext .dot{background:var(--red)}
+  .symptoms{display:grid;gap:8px;margin-top:4px}
+  .sym{display:flex;gap:10px;font-size:13px;color:var(--muted);align-items:flex-start}
+  .sym .b{flex:0 0 auto;width:7px;height:7px;border-radius:2px;background:var(--accent2);margin-top:6px}
+  .advice{background:var(--bg2);border:1px dashed var(--line);border-radius:11px;padding:13px 15px;margin-top:13px;font-size:12.5px;color:var(--muted)}
+  .advice b{color:var(--accent2)}
+  /* peaks table */
+  .search{display:flex;gap:9px;margin-bottom:13px;flex-wrap:wrap}
+  .search input,.search select{flex:1;min-width:120px;background:var(--bg2);border:1px solid var(--line);
+    color:var(--txt);border-radius:9px;padding:9px 12px;font-size:13px}
+  .search input:focus,.search select:focus{outline:none;border-color:var(--accent2)}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{padding:9px 10px;text-align:left;border-bottom:1px solid var(--line)}
+  th{color:var(--muted);font-weight:600;cursor:pointer;user-select:none;white-space:nowrap;font-size:12px}
+  th:hover{color:var(--accent2)}
+  tbody tr{cursor:pointer;transition:background .15s}
+  tbody tr:hover{background:var(--card2)}
+  td .alt-pill{font-weight:700;font-variant-numeric:tabular-nums}
+  .scroll{max-height:380px;overflow:auto;border-radius:10px}
+  .scroll::-webkit-scrollbar{width:8px} .scroll::-webkit-scrollbar-thumb{background:var(--line);border-radius:8px}
+  /* planner */
+  .wp-form{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+  .wp-form input{flex:1;min-width:90px;background:var(--bg2);border:1px solid var(--line);color:var(--txt);
+    border-radius:9px;padding:9px 11px;font-size:13px;font-variant-numeric:tabular-nums}
+  .btn{background:var(--accent);color:#1a1206;border:none;border-radius:9px;padding:9px 16px;
+    font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
+  .btn.ghost{background:var(--card2);color:var(--txt);border:1px solid var(--line)}
+  .btn:hover{filter:brightness(1.08)}
+  .wp-list{display:grid;gap:9px}
+  .wp{display:flex;align-items:center;gap:12px;background:var(--bg2);border:1px solid var(--line);
+    border-radius:11px;padding:11px 13px;font-size:13px}
+  .wp .idx{width:26px;height:26px;border-radius:50%;background:var(--card);display:grid;place-items:center;font-weight:700;font-size:12px;color:var(--accent2);flex:0 0 auto}
+  .wp .info{flex:1}
+  .wp .info b{font-variant-numeric:tabular-nums}
+  .wp .sat{font-weight:800;font-variant-numeric:tabular-nums;min-width:54px;text-align:right}
+  .wp .del{background:transparent;border:none;color:var(--faint);cursor:pointer;font-size:16px;padding:2px 6px}
+  .wp .del:hover{color:var(--red)}
+  .wp .warn{color:var(--red);font-size:11.5px;margin-top:3px}
+  .planner-summary{background:var(--bg2);border:1px solid var(--line);border-radius:11px;padding:13px;margin-top:13px;font-size:12.5px;color:var(--muted)}
+  .planner-summary b{color:var(--accent)}
+  /* self check */
+  .check-item{display:flex;align-items:center;gap:12px;background:var(--bg2);border:1px solid var(--line);
+    border-radius:11px;padding:11px 13px;margin-bottom:9px}
+  .check-item .q{flex:1;font-size:13.5px}
+  .sev{display:flex;gap:5px}
+  .sev button{width:30px;height:30px;border-radius:8px;border:1px solid var(--line);background:var(--card2);
+    color:var(--muted);font-weight:700;cursor:pointer;font-size:13px}
+  .sev button.on{background:var(--accent);color:#1a1206;border-color:var(--accent)}
+  .ll-score{display:flex;align-items:center;gap:14px;margin:8px 0 14px;background:var(--bg2);
+    border:1px solid var(--line);border-radius:12px;padding:13px 16px}
+  .ll-score .num{font-size:34px;font-weight:800;color:var(--accent);font-variant-numeric:tabular-nums}
+  .ll-score .lbl{font-size:13px;color:var(--muted)}
+  .footer-note{font-size:11px;color:var(--faint);text-align:center;margin-top:30px;padding:0 18px}
+  .pill{display:inline-block;font-size:10.5px;padding:2px 8px;border-radius:20px;background:var(--card2);color:var(--muted);border:1px solid var(--line);margin-left:6px}
+  .copy-btn{margin-top:12px}
+  a{color:var(--accent2)}
+  /* toolbox */
+  .toolbox{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  @media(max-width:880px){.toolbox{grid-template-columns:1fr}}
+  .tool-row{display:flex;gap:9px;margin-bottom:9px;flex-wrap:wrap;align-items:center}
+  .tool-row label{flex:0 0 auto;width:92px;font-size:12px;color:var(--muted)}
+  .tool-row input,.tool-row select{flex:1;min-width:78px;background:var(--bg2);border:1px solid var(--line);
+    color:var(--txt);border-radius:8px;padding:8px 10px;font-size:13px;font-variant-numeric:tabular-nums}
+  .tool-row input:focus,.tool-row select:focus{outline:none;border-color:var(--accent2)}
+  .tool-out{background:var(--card);border:1px solid var(--line);border-radius:11px;padding:11px 13px;margin-top:6px;font-size:13px}
+  .tool-out .line{display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px dashed var(--line)}
+  .tool-out .line:last-child{border-bottom:none}
+  .tool-out .val{font-weight:800;font-variant-numeric:tabular-nums}
+  .tool-note{font-size:11.5px;color:var(--faint);margin-top:9px;line-height:1.5}
+  .mini-btn{background:var(--card2);border:1px solid var(--line);color:var(--accent2);border-radius:8px;
+    padding:6px 10px;font-size:11.5px;cursor:pointer;font-weight:600;white-space:nowrap}
+  .mini-btn:hover{border-color:var(--accent2)}
+  .frz{font-weight:800}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">⛰️</div>
+  <h1>登山海拔与含氧量查询 <span class="tag">高原助手 Pro</span></h1>
+  <div class="spacer"></div>
+  <div class="unit-toggle" id="unitToggle">
+    <button data-unit="m" class="active">米 (m)</button>
+    <button data-unit="ft">英尺 (ft)</button>
+  </div>
+</header>
+
+<main>
+  <!-- 主查询 -->
+  <section class="grid2">
+    <div class="card">
+      <h2><span class="ic">📍</span>海拔查询</h2>
+      <div class="sub">拖动滑块或直接输入，实时计算该海拔下的含氧量、气压、温度与缺氧风险</div>
+      <div class="alt-display">
+        <span class="alt-big" id="altBig">0</span>
+        <span class="alt-unit" id="altUnit">米</span>
+      </div>
+      <div class="numinput">
+        <input type="number" id="altInput" value="0" min="0" max="9000" step="10">
+      </div>
+      <input type="range" id="altRange" min="0" max="9000" value="0" step="10">
+      <div class="range-scale"><span>0</span><span>2000</span><span>4000</span><span>6000</span><span>8000</span><span>9000m</span></div>
+
+      <div class="sub" style="margin:18px 0 8px">吸入氧浓度 (FiO₂) 模拟 — 可模拟吸氧 / 补氧</div>
+      <div class="ox-row">
+        <input type="range" id="oxRange" min="21" max="100" value="21" step="1">
+        <span class="ox-val" id="oxVal">21%</span>
+      </div>
+      <div class="sub" id="oxHint" style="margin-top:6px">正常空气 ≈ 21%。拖动可调高，模拟佩戴氧气面罩后的效果。</div>
+    </div>
+
+    <div class="card">
+      <h2><span class="ic">🫁</span>实时指标</h2>
+      <div class="sub">基于国际标准大气 (ISA) 与肺泡气体方程估算</div>
+      <div class="metrics" id="metrics"></div>
+      <div class="chart-wrap" style="margin-top:16px">
+        <div class="chart-tabs" id="chartTabs">
+          <button data-m="SaO2" class="active">血氧饱和度</button>
+          <button data-m="relO2">相对含氧量</button>
+          <button data-m="P">大气压</button>
+          <button data-m="boil">水的沸点</button>
+        </div>
+        <svg id="chart" viewBox="0 0 600 280" preserveAspectRatio="xMidYMid meet"></svg>
+      </div>
+    </div>
+  </section>
+
+  <!-- 风险与症状 -->
+  <section class="grid2">
+    <div class="card">
+      <h2><span class="ic">⚠️</span>高原反应风险评估</h2>
+      <div class="sub" id="riskSub">根据该海拔自动判定风险等级与典型症状</div>
+      <div class="risk-box low" id="riskBox">
+        <div class="lv"><span class="dot"></span><span id="riskLv">—</span></div>
+        <div class="desc" id="riskDesc"></div>
+      </div>
+      <div class="symptoms" id="symptoms"></div>
+      <div class="advice" id="advice"></div>
+    </div>
+
+    <div class="card">
+      <h2><span class="ic">🧭</span>高原适应建议</h2>
+      <div class="sub">通用预防原则（不替代专业医疗建议）</div>
+      <div class="symptoms" id="genAdvice"></div>
+      <div class="advice">
+        <b>黄金法则：</b>上升要慢，睡眠海拔每日增加不超过 300–500 米；超过 3000 米后，每上升约 1000 米安排 1 个适应休息日。一旦出现持续加重的高原反应，<b>下降是最有效、最优先的治疗手段</b>。
+      </div>
+    </div>
+  </section>
+
+  <!-- 名山参考 -->
+  <section class="card">
+    <h2><span class="ic">🏔️</span>世界名山海拔参考表</h2>
+    <div class="sub">点击任意一行，可将该山峰海拔载入上方查询；点击表头可排序</div>
+    <div class="search">
+      <input type="text" id="peakSearch" placeholder="🔍 搜索山峰 / 山脉 / 国家…">
+      <select id="peakFilter">
+        <option value="">全部地区</option>
+        <option value="中国">中国</option>
+        <option value="尼泊尔">尼泊尔</option>
+        <option value="欧洲">欧洲</option>
+        <option value="非洲">非洲</option>
+        <option value="美洲">美洲</option>
+        <option value="其他">其他洲</option>
+      </select>
+    </div>
+    <div class="scroll">
+      <table id="peakTable">
+        <thead><tr>
+          <th data-k="name">山峰</th>
+          <th data-k="alt">海拔 (m) ▼</th>
+          <th data-k="range">山脉</th>
+          <th data-k="country">国家/地区</th>
+          <th data-k="cont">洲</th>
+        </tr></thead>
+        <tbody id="peakBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 行程规划 -->
+  <section class="card">
+    <h2><span class="ic">🗺️</span>登山行程规划器</h2>
+    <div class="sub">逐站添加海拔与停留夜数，自动评估每站缺氧风险并校验上升速度</div>
+    <div class="wp-form">
+      <input type="number" id="wpAlt" placeholder="海拔 (m)" min="0" max="9000">
+      <input type="number" id="wpNights" placeholder="停留夜数" min="0" max="30" value="1">
+      <input type="text" id="wpName" placeholder="地点名 (可选)">
+      <button class="btn" id="wpAdd">+ 添加站点</button>
+    </div>
+    <div class="wp-list" id="wpList"></div>
+    <div class="planner-summary" id="plannerSummary">尚未添加站点。从大本营到顶峰，逐站规划你的海拔曲线。</div>
+  </section>
+
+  <!-- 自评 -->
+  <section class="card">
+    <h2><span class="ic">🩺</span>急性高山病 (AMS) 自我评估</h2>
+    <div class="sub">简易版 Lake Louise 评分 — 在高原出现不适时自评，仅供参考，异常请及时就医 / 下降</div>
+    <div class="ll-score">
+      <span class="num" id="llNum">0</span>
+      <div class="lbl"><div id="llLbl">无症状</div><div style="font-size:11px;color:var(--faint)">总分 0–15（每项 0–3）</div></div>
+    </div>
+    <div id="checkList"></div>
+    <div class="advice" id="llAdvice"></div>
+  </section>
+
+  <!-- 实用工具箱 -->
+  <section class="card">
+    <h2><span class="ic">🧰</span>实用户外工具箱</h2>
+    <div class="sub">针对真实登山场景的辅助计算：补氧规划、风寒冻伤、徒步耗时、紫外线</div>
+    <div class="toolbox">
+      <!-- 补氧瓶 -->
+      <div class="card" style="background:var(--bg2)">
+        <h2 style="font-size:14px"><span class="ic">🛢️</span>补氧钢瓶需求估算</h2>
+        <div class="sub">用于 7000m+ 山峰或需医疗补氧的行程规划</div>
+        <div class="tool-row"><label>计划海拔(m)</label><input type="number" id="oxA_alt" value="8000" min="0" max="9000"><button class="mini-btn" data-imp="alt">用当前</button></div>
+        <div class="tool-row"><label>流量(L/min)</label><input type="number" id="oxA_flow" value="2" min="0.5" max="15" step="0.5"></div>
+        <div class="tool-row"><label>每日(h)</label><input type="number" id="oxA_hpd" value="8" min="0" max="24"></div>
+        <div class="tool-row"><label>天数</label><input type="number" id="oxA_days" value="1" min="1" max="30"></div>
+        <div class="tool-row"><label>钢瓶容积(L)</label><select id="oxA_vol"><option>2</option><option selected>4</option><option>6</option><option>12</option></select></div>
+        <div class="tool-row"><label>钢瓶压力(bar)</label><input type="number" id="oxA_pres" value="200" min="1" max="300"></div>
+        <div class="tool-out" id="oxA_out"></div>
+        <div class="tool-note" id="oxA_note"></div>
+      </div>
+      <!-- 风寒 -->
+      <div class="card" style="background:var(--bg2)">
+        <h2 style="font-size:14px"><span class="ic">🌬️</span>风寒体感 &amp; 冻伤风险</h2>
+        <div class="sub">基于 NOAA 风寒指数（气温 + 风速）</div>
+        <div class="tool-row"><label>气温(°C)</label><input type="number" id="wc_temp" value="-10"><button class="mini-btn" data-imp="temp">用当前海拔气温</button></div>
+        <div class="tool-row"><label>风速(km/h)</label><input type="number" id="wc_wind" value="25" min="0" max="200"></div>
+        <div class="tool-out" id="wc_out"></div>
+        <div class="tool-note">体感温度仅作参考；实际冻伤还取决于暴露时间、湿度与个体循环状况。</div>
+      </div>
+      <!-- 徒步时间 -->
+      <div class="card" style="background:var(--bg2)">
+        <h2 style="font-size:14px"><span class="ic">🥾</span>徒步登顶时间估算</h2>
+        <div class="sub">改进 Naismith 规则（含爬升/下降/负重修正）</div>
+        <div class="tool-row"><label>水平距离(km)</label><input type="number" id="hk_dist" value="6" min="0" max="200" step="0.5"></div>
+        <div class="tool-row"><label>累计爬升(m)</label><input type="number" id="hk_asc" value="1200" min="0" max="4000"></div>
+        <div class="tool-row"><label>累计下降(m)</label><input type="number" id="hk_des" value="0" min="0" max="4000"></div>
+        <div class="tool-row"><label>负重(kg)</label><input type="number" id="hk_load" value="8" min="0" max="40"></div>
+        <div class="tool-row"><label>体力系数</label><select id="hk_fit"><option value="0.75">弱 (0.75)</option><option value="1" selected>正常 (1.0)</option><option value="1.25">强 (1.25)</option></select></div>
+        <div class="tool-out" id="hk_out"></div>
+        <div class="tool-note">含约 10 分钟休息估算；高海拔需额外预留缺氧减速与适应时间。</div>
+      </div>
+      <!-- 紫外线 -->
+      <div class="card" style="background:var(--bg2)">
+        <h2 style="font-size:14px"><span class="ic">☀️</span>紫外线强度 (海拔修正)</h2>
+        <div class="sub">海拔每升高 1000m，UV 约增强 10–12%</div>
+        <div class="tool-row"><label>基准UV指数</label><input type="number" id="uv_base" value="8" min="0" max="15" step="0.5"><span class="pill">如基地海拔</span></div>
+        <div class="tool-row"><label>目标海拔(m)</label><input type="number" id="uv_alt" value="5000" min="0" max="9000"><button class="mini-btn" data-imp="alt2">用当前</button></div>
+        <div class="tool-row"><label>雪面反射</label><select id="uv_snow"><option value="1" selected>无 / 岩石</option><option value="1.8">有雪 (×1.8)</option><option value="2">厚雪原 (×2)</option></select></div>
+        <div class="tool-out" id="uv_out"></div>
+        <div class="tool-note">UV 指数还受季节、纬度、时段影响；高山雪地易致雪盲，务必佩戴 UV400 雪镜与防晒。</div>
+      </div>
+    </div>
+  </section>
+
+  <button class="btn ghost copy-btn" id="copyBtn">📋 复制当前查询结果</button>
+  <div class="footer-note">
+    数据为基于标准大气模型与简化生理方程的<b>估算值</b>，个体差异、天气、湿度、运动状态均会影响实际含氧与血氧。本工具仅供学习参考，<b>不用于医疗诊断或紧急决策</b>。真实登山请遵循专业向导与医疗机构指导。
+  </div>
+</main>
+
+<script>
+/* ============ 物理 / 生理模型 ============ */
+const T0=288.15, P0=101325, L=0.0065, g=9.80665, M=0.0289644, R=8.31446;
+const EXP=g*M/(R*L);                 // ≈5.2558
+const FT=0.3048;
+
+function atmo(h){                     // h: 米
+  const T=T0-L*h;
+  const P=P0*Math.pow(T/T0,EXP);
+  return {T,P};
+}
+function density(P,T){return P/(287.05*T);}
+function boiling(P){                  // P:Pa -> °C
+  const Rv=461.5,Lv=2.257e6,T0b=373.15,P0b=101325;
+  return 1/(1/T0b-(Rv/Lv)*Math.log(P/P0b))-273.15;
+}
+function oxygen(h,fi){                // fi: 吸入氧浓度(小数)
+  fi=fi||0.2095;
+  const {T,P}=atmo(h);
+  const Pm=P/133.322;                 // mmHg
+  const PiO2=(Pm-47)*fi;              // 47 = 体温下饱和水蒸气压
+  const PaCO2=40*Math.pow(Pm/760,0.75); // 高原过度通气代偿
+  const PAO2=PiO2-PaCO2/0.8;          // 呼吸商 0.8
+  const p50=26.6,hill=2.7;
+  const SaO2=PAO2<=0?0:100*Math.pow(PAO2,hill)/(Math.pow(PAO2,hill)+Math.pow(p50,hill));
+  const relO2=100*Math.pow(T/T0,EXP); // = P/P0
+  const FiO2eq=PiO2/713*100;          // 等效海平面氧浓度
+  return {T,P,Pm,PiO2,PaCO2,PAO2,SaO2,relO2,FiO2eq,
+          dens:density(P,T),boil:boiling(P)};
+}
+
+/* ============ 状态 ============ */
+let unit='m';
+let curAlt=0;          // 米
+let curFi=0.21;        // 吸入氧浓度
+let chartMetric='SaO2';
+let sortKey='alt', sortDir=-1;
+
+/* ============ 工具 ============ */
+const $=id=>document.getElementById(id);
+const fmt=(x,d=1)=>Number(x).toFixed(d);
+
+/* ============ 渲染指标 ============ */
+function renderMetrics(){
+  const o=oxygen(curAlt,curFi);
+  const cells=[
+    {k:'动脉血氧饱和度 SaO₂',v:fmt(o.SaO2,0),u:'%',cls:(o.SaO2>=90?'good':o.SaO2>=75?'warn':'danger'),bar:o.SaO2},
+    {k:'相对含氧量 (vs 海平面)',v:fmt(o.relO2,0),u:'%',cls:(o.relO2>=90?'good':o.relO2>=60?'warn':'danger'),bar:o.relO2},
+    {k:'大气压',v:fmt(o.P/1000,1),u:'kPa',cls:'',bar:o.P/101325*100},
+    {k:'大气压',v:fmt(o.Pm,0),u:'mmHg',cls:'',bar:o.Pm/760*100},
+    {k:'吸入气氧分压 PiO₂',v:fmt(o.PiO2,0),u:'mmHg',cls:'',bar:o.PiO2/149*100},
+    {k:'肺泡气氧分压 PAO₂',v:fmt(o.PAO2,0),u:'mmHg',cls:(o.PAO2>=80?'good':o.PAO2>=60?'warn':'danger'),bar:o.PAO2/100*100},
+    {k:'气温 (标准大气)',v:fmt(o.T-273.15,1),u:'°C',cls:'',bar:(o.T-223)/(308-223)*100},
+    {k:'空气密度',v:fmt(o.dens,3),u:'kg/m³',cls:'',bar:o.dens/1.225*100},
+    {k:'水的沸点',v:fmt(o.boil,1),u:'°C',cls:'',bar:o.boil/100*100},
+    {k:'等效海平面氧浓度',v:fmt(o.FiO2eq,1),u:'%',cls:'',bar:o.FiO2eq/21*100},
+  ];
+  const wrap=$('metrics');
+  wrap.innerHTML=cells.map(c=>`
+    <div class="metric ${c.cls}">
+      <div class="k">${c.k}</div>
+      <div class="v">${c.v}<span class="u">${c.u}</span></div>
+      <div class="bar" style="width:${Math.max(4,Math.min(100,c.bar))}%"></div>
+    </div>`).join('');
+}
+
+/* ============ 风险 ============ */
+function riskOf(h){
+  if(h<2500) return {lv:'低风险',cls:'low',desc:'多数人无明显症状，剧烈运动时可能稍感气短。'};
+  if(h<3500) return {lv:'轻中度风险',cls:'mid',desc:'急性高山病 (AMS) 风险开始上升，部分人出现头痛、乏力、睡眠变差。'};
+  if(h<5500) return {lv:'高风险',cls:'high',desc:'明显缺氧，AMS 概率高，需警惕高原肺水肿 (HAPE) 与脑水肿 (HACE)。'};
+  if(h<8000) return {lv:'极高风险',cls:'ext',desc:'身体持续处于缺氧应激，判断力、体力急剧下降，需严格适应与补氧。'};
+  return {lv:'死亡地带 (Death Zone)',cls:'ext',desc:'超过 8000 米人体无法长期存活，细胞与器官持续受损，停留时间越短越好。'};
+}
+function renderRisk(){
+  const r=riskOf(curAlt);
+  const box=$('riskBox'); box.className='risk-box '+r.cls;
+  $('riskLv').textContent=r.lv; $('riskDesc').textContent=r.desc;
+  const syms={
+    low:['静息无明显不适','运动或快走时呼吸略加快','食欲、睡眠基本正常'],
+    mid:['头痛（最常见首发症状）','乏力、头晕、失眠','食欲下降、轻微恶心','运动耐力明显下降'],
+    high:['持续头痛、恶心甚至呕吐','心率加快、呼吸困难（静息）','平衡与协调能力变差','需警惕咳嗽伴粉红泡沫痰 (HAPE) 征兆'],
+    ext:['严重乏力、判断力下降','视物模糊、共济失调','可能无声进展为 HACE/HAPE','静息也明显气促，需补氧']
+  }[r.cls==='low'?'low':r.cls==='mid'?'mid':r.cls==='high'?'high':'ext'];
+  $('symptoms').innerHTML=syms.map(s=>`<div class="sym"><span class="b"></span>${s}</div>`).join('');
+  const o=oxygen(curAlt,curFi);
+  let adv=`<b>当前海拔 ${fmt(curAlt,0)} 米：</b>`;
+  if(curAlt<2500) adv+='正常活动即可，注意补水。';
+  else if(curAlt<3500) adv+='放慢节奏，第一天避免剧烈运动，多饮水、禁酒。';
+  else if(curAlt<5500) adv+='保证适应，出现持续呕吐/气短/失衡应立即下撤；可考虑乙酰唑胺（遵医嘱）。';
+  else adv+='必须配合补氧与严格适应；任何症状加重立即下撤，生命优先于登顶。';
+  if(curFi>0.21) adv+=` 当前已模拟补氧至 ${fmt(curFi*100,0)}%，可显著提升血氧。`;
+  $('advice').innerHTML=adv;
+}
+const GEN=[
+  ['循序渐进','“爬高睡低”(climb high, sleep low)，让身体逐步产生更多红细胞与呼吸代偿。'],
+  [' hydration','每日饮水 3–4 升，尿液呈淡黄色为佳；脱水会加重高原反应。'],
+  ['饮食与药物','高碳水饮食、避免酒精；乙酰唑胺/地塞米松等须在医生指导下使用。'],
+  ['识别危险信号','静息气促、粉红泡沫痰、共济失调、意识模糊 = 立即下撤并求救。'],
+  ['保险与报备','高海拔登山务必购买高山救援保险，并向当地管理方报备行程。']
+];
+function renderGen(){
+  $('genAdvice').innerHTML=GEN.map(([t,d])=>`<div class="sym"><span class="b"></span><div><b style="color:var(--txt)">${t}：</b>${d}</div></div>`).join('');
+}
+
+/* ============ 图表 ============ */
+const METRICS={
+  SaO2:{label:'动脉血氧饱和度 (%)',unit:'%',min:0,max:100,fn:h=>oxygen(h,curFi).SaO2},
+  relO2:{label:'相对含氧量 (%)',unit:'%',min:0,max:100,fn:h=>oxygen(h,curFi).relO2},
+  P:{label:'大气压 (kPa)',unit:'kPa',min:0,max:105,fn:h=>oxygen(h,curFi).P/1000},
+  boil:{label:'水的沸点 (°C)',unit:'°C',min:0,max:105,fn:h=>oxygen(h,curFi).boil}
+};
+function renderChart(){
+  const m=METRICS[chartMetric];
+  const W=600,H=280,pl=46,pr=14,pt=18,pb=30;
+  const x=h=>pl+(h/9000)*(W-pl-pr);
+  const y=v=>pt+(1-(v-m.min)/(m.max-m.min))*(H-pt-pb);
+  let path='',pts=[];
+  for(let h=0;h<=9000;h+=150){const v=m.fn(h);pts.push([x(h),y(v)]);}
+  path=pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ');
+  // grid
+  let grid='';
+  for(let i=0;i<=4;i++){const yy=pt+i*(H-pt-pb)/4;const val=m.max-(m.max-m.min)*i/4;
+    grid+=`<line x1="${pl}" y1="${yy}" x2="${W-pr}" y2="${yy}" stroke="#2c3a4a" stroke-width="1"/>`;
+    grid+=`<text x="${pl-6}" y="${yy+4}" fill="#6b7d8f" font-size="10" text-anchor="end">${fmt(val,0)}</text>`;}
+  for(let h=0;h<=9000;h+=1500){const xx=x(h);
+    grid+=`<line x1="${xx}" y1="${pt}" x2="${xx}" y2="${H-pb}" stroke="#222d3a" stroke-width="1"/>`;
+    grid+=`<text x="${xx}" y="${H-pb+16}" fill="#6b7d8f" font-size="10" text-anchor="middle">${h}</text>`;}
+  // marker
+  const mv=m.fn(curAlt), mx=x(curAlt), my=y(mv);
+  const col=chartMetric==='SaO2'?(mv>=90?'#5fcf80':mv>=75?'#f5c451':'#ff5d5d'):
+            chartMetric==='relO2'?(mv>=90?'#5fcf80':mv>=60?'#f5c451':'#ff5d5d'):'#3fb6c4';
+  const svg=`<svg viewBox="0 0 600 280" preserveAspectRatio="xMidYMid meet">
+    ${grid}
+    <path d="${path}" fill="none" stroke="${col}" stroke-width="2.5"/>
+    <circle cx="${mx.toFixed(1)}" cy="${my.toFixed(1)}" r="6" fill="${col}" stroke="#0f1419" stroke-width="2"/>
+    <line x1="${mx.toFixed(1)}" y1="${pt}" x2="${mx.toFixed(1)}" y2="${H-pb}" stroke="${col}" stroke-width="1" stroke-dasharray="4 3" opacity="0.6"/>
+    <text x="${mx.toFixed(1)}" y="${my-12}" fill="${col}" font-size="11" font-weight="700" text-anchor="middle">${fmt(mv,0)}${m.unit=='%'?'%':''}</text>
+    <text x="${pl}" y="12" fill="#9fb0c0" font-size="11">${m.label}</text>
+    <text x="${W-pr}" y="${H-4}" fill="#6b7d8f" font-size="10" text-anchor="end">海拔 (m)</text>
+  </svg>`;
+  $('chart').outerHTML=svg;
+  $('chart')||($('chartTabs').insertAdjacentHTML('afterend',''));
+  // 恢复引用
+  const old=document.querySelector('svg'); old.id='chart';
+}
+
+/* ============ 名山 ============ */
+const PEAKS=[
+  {name:'珠穆朗玛峰',alt:8848.86,range:'喜马拉雅',country:'中国/尼泊尔',cont:'亚洲',note:'世界最高峰'},
+  {name:'乔戈里峰 (K2)',alt:8611,range:'喀喇昆仑',country:'中国/巴基斯坦',cont:'亚洲',note:'攀登难度最高'},
+  {name:'干城章嘉峰',alt:8586,range:'喜马拉雅',country:'印度/尼泊尔',cont:'亚洲'},
+  {name:'洛子峰',alt:8516,range:'喜马拉雅',country:'中国/尼泊尔',cont:'亚洲'},
+  {name:'马卡鲁峰',alt:8485,range:'喜马拉雅',country:'中国/尼泊尔',cont:'亚洲'},
+  {name:'卓奥友峰',alt:8201,range:'喜马拉雅',country:'中国/尼泊尔',cont:'亚洲'},
+  {name:'道拉吉里峰',alt:8167,range:'喜马拉雅',country:'尼泊尔',cont:'亚洲'},
+  {name:'马纳斯鲁峰',alt:8163,range:'喜马拉雅',country:'尼泊尔',cont:'亚洲'},
+  {name:'南迦帕尔巴特峰',alt:8125,range:'喜马拉雅',country:'巴基斯坦',cont:'亚洲'},
+  {name:'安纳普尔纳峰',alt:8091,range:'喜马拉雅',country:'尼泊尔',cont:'亚洲',note:'死亡率极高'},
+  {name:'加舒尔布鲁木I峰',alt:8080,range:'喀喇昆仑',country:'中国/巴基斯坦',cont:'亚洲'},
+  {name:'布洛阿特峰',alt:8051,range:'喀喇昆仑',country:'中国/巴基斯坦',cont:'亚洲'},
+  {name:'希夏邦马峰',alt:8027,range:'喜马拉雅',country:'中国',cont:'亚洲',note:'唯一全境在中国的8000m峰'},
+  {name:'格重康峰',alt:7952,range:'喜马拉雅',country:'中国/尼泊尔',cont:'亚洲'},
+  {name:'念青唐古拉峰',alt:7162,range:'念青唐古拉',country:'中国',cont:'亚洲'},
+  {name:'梅里雪山·卡瓦格博',alt:6740,range:'横断山',country:'中国',cont:'亚洲',note:'未登顶神山'},
+  {name:'四姑娘山·幺妹峰',alt:6250,range:'横断山',country:'中国',cont:'亚洲'},
+  {name:'麦金利峰 (迪纳利)',alt:6190,range:'阿拉斯加',country:'美国',cont:'美洲',note:'北美洲最高'},
+  {name:'昆仑山·玉珠峰',alt:6178,range:'昆仑山',country:'中国',cont:'亚洲'},
+  {name:'阿空加瓜峰',alt:6961,range:'安第斯',country:'阿根廷',cont:'美洲',note:'南美洲最高'},
+  {name:'乞力马扎罗山',alt:5895,range:'乞力马扎罗',country:'坦桑尼亚',cont:'非洲',note:'非洲最高'},
+  {name:'厄尔布鲁士峰',alt:5642,range:'高加索',country:'俄罗斯',cont:'欧洲',note:'欧洲（惯例）最高'},
+  {name:'玉龙雪山',alt:5596,range:'横断山',country:'中国',cont:'亚洲'},
+  {name:'勃朗峰',alt:4808,range:'阿尔卑斯',country:'法国/意大利',cont:'欧洲',note:'阿尔卑斯最高'},
+  {name:'查亚峰',alt:4884,range:'苏迪曼',country:'印尼',cont:'其他',note:'大洋洲最高'},
+  {name:'文森峰',alt:4892,range:'埃尔斯沃思',country:'南极洲',cont:'其他',note:'南极洲最高'},
+  {name:'贡嘎山',alt:7556,range:'横断山',country:'中国',cont:'亚洲',note:'蜀山之王'},
+  {name:'富士山',alt:3776,range:'富士火山',country:'日本',cont:'亚洲'},
+  {name:'长白山',alt:2691,range:'长白山',country:'中国',cont:'亚洲'},
+  {name:'峨眉山',alt:3099,range:'邛崃山',country:'中国',cont:'亚洲'},
+  {name:'黄山·莲花峰',alt:1864,range:'黄山',country:'中国',cont:'亚洲'},
+  {name:'华山',alt:2154,range:'秦岭',country:'中国',cont:'亚洲'},
+  {name:'泰山',alt:1545,range:'泰山',country:'中国',cont:'亚洲'},
+  {name:'庐山',alt:1474,range:'庐山',country:'中国',cont:'亚洲'}
+];
+function regionOf(c){return c==='亚洲'?'亚洲':c==='欧洲'?'欧洲':c==='非洲'?'非洲':c==='美洲'?'美洲':'其他';}
+function renderPeaks(){
+  const q=$('peakSearch').value.trim().toLowerCase();
+  const f=$('peakFilter').value;
+  let list=PEAKS.filter(p=>{
+    if(f && regionOf(p.cont)!==f) return false;
+    if(q && !(p.name.toLowerCase().includes(q)||p.range.toLowerCase().includes(q)||p.country.toLowerCase().includes(q))) return false;
+    return true;
+  });
+  list.sort((a,b)=>{let x=a[sortKey],y=b[sortKey];
+    if(typeof x==='string'){return sortDir*x.localeCompare(y,'zh');} return sortDir*(x-y);});
+  $('peakBody').innerHTML=list.map(p=>`
+    <tr data-alt="${p.alt}">
+      <td>${p.name}${p.note?`<span class="pill">${p.note}</span>`:''}</td>
+      <td><span class="alt-pill" style="color:${p.alt>=8000?'#ff5d5d':p.alt>=5500?'#ff8c42':p.alt>=3500?'#f5c451':'#5fcf80'}">${fmt(p.alt,0)}</span></td>
+      <td style="color:var(--muted)">${p.range}</td>
+      <td style="color:var(--muted)">${p.country}</td>
+      <td style="color:var(--muted)">${p.cont}</td>
+    </tr>`).join('');
+  document.querySelectorAll('#peakBody tr').forEach(tr=>{
+    tr.onclick=()=>{setAlt(parseFloat(tr.dataset.alt));window.scrollTo({top:0,behavior:'smooth'});};
+  });
+}
+
+/* ============ 行程规划 ============ */
+let waypoints=[];
+function addWP(){
+  const a=parseFloat($('wpAlt').value);
+  const n=parseInt($('wpNights').value||'1');
+  const nm=$('wpName').value.trim();
+  if(isNaN(a)||a<0||a>9000){alert('请输入 0–9000 之间的有效海拔');return;}
+  waypoints.push({alt:a,nights:isNaN(n)?1:n,name:nm});
+  $('wpAlt').value='';$('wpName').value='';$('wpNights').value='1';
+  renderWP();
+}
+function renderWP(){
+  const body=$('wpList');
+  if(!waypoints.length){body.innerHTML='';$('plannerSummary').textContent='尚未添加站点。从大本营到顶峰，逐站规划你的海拔曲线。';return;}
+  body.innerHTML=waypoints.map((w,i)=>{
+    const o=oxygen(w.alt,0.21);
+    let warn='';
+    if(i>0){const gain=w.alt-waypoints[i-1].alt;
+      if(gain>500) warn=`⚠ 较上一站睡眠海拔骤升 ${fmt(gain,0)} 米（建议 ≤500 米/日）`;
+      else if(gain>0 && w.nights<1) warn='⚠ 上升日未安排停留，注意适应';
+    }
+    const col=o.SaO2>=90?'#5fcf80':o.SaO2>=75?'#f5c451':'#ff5d5d';
+    return `<div class="wp">
+      <div class="idx">${i+1}</div>
+      <div class="info">
+        <b>${w.name||'站点'+(i+1)}</b> · ${fmt(w.alt,0)} m · 停留 ${w.nights} 夜
+        <div style="color:var(--faint);font-size:11px">含氧量 ${(o.relO2).toFixed(0)}% · 风险 ${riskOf(w.alt).lv}</div>
+        ${warn?`<div class="warn">${warn}</div>`:''}
+      </div>
+      <div class="sat" style="color:${col}">${o.SaO2.toFixed(0)}%</div>
+      <button class="del" data-i="${i}">✕</button>
+    </div>`;
+  }).join('');
+  body.querySelectorAll('.del').forEach(b=>b.onclick=()=>{waypoints.splice(+b.dataset.i,1);renderWP();});
+  // summary
+  const top=Math.max(...waypoints.map(w=>w.alt));
+  const totalNights=waypoints.reduce((s,w)=>s+w.nights,0);
+  const maxRisk=waypoints.reduce((m,w)=>{const r=riskOf(w.alt);
+    const rank={'低风险':0,'轻中度风险':1,'高风险':2,'极高风险':3,'死亡地带 (Death Zone)':4};
+    return rank[r.lv]>rank[m]?r.lv:m;},'低风险');
+  $('plannerSummary').innerHTML=`共 <b>${waypoints.length}</b> 站 · 最高海拔 <b>${fmt(top,0)} m</b> · 总停留 <b>${totalNights}</b> 夜 · 最高风险等级：<b>${maxRisk}</b>。${maxRisk.includes('极高')||maxRisk.includes('死亡')?'建议充分适应并准备补氧与下撤预案。':''}`;
+}
+
+/* ============ 自评 ============ */
+const CHECKS=[
+  {q:'头痛程度',k:'head'},
+  {q:'胃肠道症状（恶心 / 呕吐）',k:'gi'},
+  {q:'乏力 / 虚弱',k:'weak'},
+  {q:'头晕 / 眩晕',k:'diz'},
+  {q:'睡眠障碍（入睡难 / 易醒）',k:'sleep'},
+  {q:'静息时呼吸困难',k:'dys'}
+];
+let scores={};
+function renderChecks(){
+  $('checkList').innerHTML=CHECKS.map(c=>`
+    <div class="check-item">
+      <div class="q">${c.q}</div>
+      <div class="sev">
+        ${[0,1,2,3].map(v=>`<button data-k="${c.k}" data-v="${v}" class="${scores[c.k]===v?'on':''}">${v}</button>`).join('')}
+      </div>
+    </div>`).join('');
+  document.querySelectorAll('#checkList .sev button').forEach(b=>b.onclick=()=>{
+    scores[b.dataset.k]=+b.dataset.v;renderChecks();renderScore();
+  });
+}
+function renderScore(){
+  const total=Object.values(scores).reduce((s,v)=>s+v,0);
+  $('llNum').textContent=total;
+  let lbl,adv;
+  if(total<=2){lbl='基本正常（轻度）';adv='症状轻微，多为正常适应反应。继续观察，保持补水与休息，避免快速上升。';}
+  else if(total<=5){lbl='可疑 AMS（中度）';adv='疑似急性高山病。停止上升、充分休息 24h；若无缓解或加重，应下撤。避免继续登高。';}
+  else if(total<=9){lbl='明确 AMS（重度）';adv='较明确的急性高山病。立即下撤至少 500–1000 米，吸氧，并尽快就医。禁止继续上升。';}
+  else{lbl='极重度 / 危及生命';adv='高分提示可能已进展为 HAPE/HACE。立即下撤、高浓度吸氧、紧急救援，争分夺秒！';}
+  $('llLbl').textContent=lbl;
+  const col=total<=2?'var(--green)':total<=5?'var(--yellow)':total<=9?'var(--orange)':'var(--red)';
+  $('llNum').style.color=col;
+  $('llAdvice').innerHTML=`<b>建议：</b>${adv}`;
+}
+
+/* ============ 输入联动 ============ */
+function setAlt(m){
+  curAlt=Math.max(0,Math.min(9000,m));
+  $('altRange').value=curAlt;
+  $('altInput').value=unit==='m'?Math.round(curAlt):Math.round(curAlt/FT);
+  $('altBig').textContent=unit==='m'?Math.round(curAlt):Math.round(curAlt/FT);
+  $('altUnit').textContent=unit==='m'?'米':'英尺';
+  updateAll();
+}
+function updateAll(){renderMetrics();renderRisk();renderChart();}
+
+$('altRange').oninput=e=>{curAlt=+e.target.value;
+  $('altInput').value=unit==='m'?curAlt:Math.round(curAlt/FT);
+  $('altBig').textContent=unit==='m'?curAlt:Math.round(curAlt/FT);updateAll();};
+$('altInput').oninput=e=>{let v=parseFloat(e.target.value)||0;
+  if(unit==='ft')v=v*FT; setAlt(v);};
+$('oxRange').oninput=e=>{curFi=(+e.target.value)/100;
+  $('oxVal').textContent=e.target.value+'%';
+  $('oxHint').textContent=curFi>0.21?`已模拟补氧至 ${e.target.value}%：吸入气氧分压升高，血氧将明显提升。`:'正常空气 ≈ 21%。拖动可调高，模拟佩戴氧气面罩后的效果。';
+  updateAll();};
+
+$('unitToggle').querySelectorAll('button').forEach(b=>b.onclick=()=>{
+  unit=b.dataset.unit;
+  $('unitToggle').querySelectorAll('button').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active');
+  setAlt(curAlt);
+});
+
+/* chart tabs */
+$('chartTabs').querySelectorAll('button').forEach(b=>b.onclick=()=>{
+  chartMetric=b.dataset.m;
+  $('chartTabs').querySelectorAll('button').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active');renderChart();
+});
+
+/* peaks events */
+$('peakSearch').oninput=renderPeaks;
+$('peakFilter').onchange=renderPeaks;
+document.querySelectorAll('#peakTable th').forEach(th=>th.onclick=()=>{
+  const k=th.dataset.k;
+  if(sortKey===k)sortDir*=-1;else{sortKey=k;sortDir=(k==='alt'||k==='cont')?-1:1;}
+  // 更新表头箭头
+  document.querySelectorAll('#peakTable th').forEach(t=>{if(t.dataset.k!==k)t.textContent=t.textContent.replace(/[▼▲]/g,'').trim();});
+  th.textContent=th.textContent.replace(/[▼▲]/g,'').trim()+(sortDir<0?' ▼':' ▲');
+  renderPeaks();
+});
+
+/* planner */
+$('wpAdd').onclick=addWP;
+$('wpAlt').addEventListener('keydown',e=>{if(e.key==='Enter')addWP();});
+
+/* self check init */
+renderChecks();renderScore();
+
+/* copy */
+$('copyBtn').onclick=()=>{
+  const o=oxygen(curAlt,curFi);
+  const r=riskOf(curAlt);
+  const txt=`【登山海拔与含氧量查询结果】
+海拔：${fmt(curAlt,0)} 米（≈${fmt(curAlt/FT,0)} 英尺）
+吸入氧浓度：${fmt(curFi*100,0)}%
+──────────────
+动脉血氧饱和度 SaO₂：${fmt(o.SaO2,0)}%
+相对含氧量：${fmt(o.relO2,0)}%
+大气压：${fmt(o.P/1000,1)} kPa (${fmt(o.Pm,0)} mmHg)
+吸入气氧分压 PiO₂：${fmt(o.PiO2,0)} mmHg
+肺泡气氧分压 PAO₂：${fmt(o.PAO2,0)} mmHg
+气温(标准大气)：${fmt(o.T-273.15,1)} °C
+空气密度：${fmt(o.dens,3)} kg/m³
+水的沸点：${fmt(o.boil,1)} °C
+等效海平面氧浓度：${fmt(o.FiO2eq,1)}%
+──────────────
+风险等级：${r.lv}
+${r.desc}
+（数据为标准大气模型估算，仅供参考）`;
+  navigator.clipboard.writeText(txt).then(()=>{
+    const b=$('copyBtn');const t=b.textContent;b.textContent='✓ 已复制';setTimeout(()=>b.textContent=t,1500);
+  });
+};
+
+/* init */
+renderGen();renderPeaks();renderWP();setAlt(0);
+</script>
+
+<!-- 实用工具箱逻辑（依赖主脚本中的 $、fmt、oxygen、curAlt、curFi） -->
+<script>
+/* 补氧钢瓶需求 */
+function calcOxygen(){
+  const alt=+$('oxA_alt').value||0, flow=+$('oxA_flow').value||0, hpd=+$('oxA_hpd').value||0,
+        days=+$('oxA_days').value||0, vol=+$('oxA_vol').value||0, pres=+$('oxA_pres').value||0;
+  if(flow<=0||vol<=0||pres<=0){$('oxA_out').innerHTML='请输入有效数值';return;}
+  const perBottle=vol*pres;                 // 单瓶总气量 (L @1bar)
+  const durH=perBottle/(flow*60);           // 单瓶可用小时
+  const need=flow*60*hpd*days;              // 全程需气量 (L @1bar)
+  const bottles=Math.max(1,Math.ceil(need/perBottle));
+  $('oxA_out').innerHTML=`
+    <div class="line"><span>单瓶可用时间</span><span class="val">${fmt(durH,1)} 小时</span></div>
+    <div class="line"><span>全程需氧量</span><span class="val">${fmt(need,0)} L</span></div>
+    <div class="line"><span>建议携带钢瓶</span><span class="val" style="color:var(--accent)">${bottles} 瓶</span></div>`;
+  const rec = alt<6000?'1–2':alt<7200?'2–3':alt<8000?'3–4':'4+';
+  $('oxA_note').innerHTML=`<b>海拔 ${fmt(alt,0)}m 典型建议流量：</b>${rec} L/min（越高需越大流量维持肺泡氧分压）。高海拔建议额外预留 20–30% 余量并结伴管理氧气。`;
+}
+
+/* 风寒体感 + 冻伤风险 (NOAA) */
+function windChill(T,v){ if(v<4.8) return T; return 13.12+0.6215*T-11.37*Math.pow(v,0.16)+0.3965*T*Math.pow(v,0.16); }
+function frostbite(WC){
+  if(WC>0)  return ['低风险','var(--green)','暴露无明显冻伤风险，但高海拔仍需注意防晒与失温。'];
+  if(WC>=-10) return ['注意','var(--yellow)','面部/手指等暴露部位 30 分钟以上可能不适，注意保暖。'];
+  if(WC>=-28) return ['较高风险','var(--orange)','暴露 15–30 分钟可出现冻伤，须覆盖所有皮肤。'];
+  if(WC>=-40) return ['高风险','var(--red)','暴露 10–15 分钟即可能冻伤，限制户外时间。'];
+  if(WC>=-55) return ['极高风险','var(--red)','暴露 2–10 分钟即冻伤，严禁裸露皮肤。'];
+  return ['致命风险','var(--red)','数分钟内可冻伤，必须待在庇护所内。'];
+}
+function calcWind(){
+  const T=+$('wc_temp').value, v=+$('wc_wind').value||0;
+  const WC=windChill(T,v), f=frostbite(WC);
+  $('wc_out').innerHTML=`
+    <div class="line"><span>体感温度</span><span class="val" style="color:${WC<=0?'var(--accent2)':'var(--txt)'}">${fmt(WC,1)} °C</span></div>
+    <div class="line"><span>冻伤风险</span><span class="val frz" style="color:${f[1]}">${f[0]}</span></div>
+    <div class="tool-note" style="margin-top:8px">${f[2]}</div>`;
+}
+
+/* 徒步时间 (改进 Naismith) */
+function calcHike(){
+  const D=+$('hk_dist').value||0, A=+$('hk_asc').value||0, Des=+$('hk_des').value||0,
+        load=+$('hk_load').value||0, fit=+$('hk_fit').value||1;
+  const flatH=D/5, ascH=A/(600*fit), desH=Des/(900*fit), loadH=A*load/(600*8), rest=0.17;
+  const total=flatH+ascH+desH+loadH+rest;
+  const h=Math.floor(total), m=Math.round((total-h)*60), speed=D/total;
+  $('hk_out').innerHTML=`
+    <div class="line"><span>预计耗时</span><span class="val" style="color:var(--accent)">${h} 小时 ${m} 分</span></div>
+    <div class="line"><span>有效速度</span><span class="val">${fmt(speed,1)} km/h</span></div>
+    <div class="line"><span>其中爬升耗时</span><span class="val">${fmt(ascH,1)} h</span></div>`;
+}
+
+/* 紫外线 (海拔修正) */
+function calcUV(){
+  const base=+$('uv_base').value||0, alt=+$('uv_alt').value||0, snow=+$('uv_snow').value||1;
+  const uv=base*(1+0.11*(alt/1000))*snow;
+  const burn= uv>0 ? 200/uv : 999;
+  const lvl = uv<3?'低':uv<6?'中等':uv<8?'高':uv<11?'很高':'极高';
+  $('uv_out').innerHTML=`
+    <div class="line"><span>海拔处 UV 指数</span><span class="val" style="color:var(--accent)">${fmt(uv,1)} (${lvl})</span></div>
+    <div class="line"><span>无防护晒伤</span><span class="val">约 ${burn>=999?'—':fmt(burn,0)+' 分钟'}</span></div>`;
+}
+
+['oxA_alt','oxA_flow','oxA_hpd','oxA_days','oxA_vol','oxA_pres'].forEach(id=>$(id).addEventListener('input',calcOxygen));
+['wc_temp','wc_wind'].forEach(id=>$(id).addEventListener('input',calcWind));
+['hk_dist','hk_asc','hk_des','hk_load','hk_fit'].forEach(id=>$(id).addEventListener('input',calcHike));
+['uv_base','uv_alt','uv_snow'].forEach(id=>$(id).addEventListener('input',calcUV));
+
+document.querySelectorAll('[data-imp]').forEach(b=>b.onclick=()=>{
+  if(b.dataset.imp==='alt'){ $('oxA_alt').value=Math.round(curAlt); calcOxygen(); }
+  else if(b.dataset.imp==='alt2'){ $('uv_alt').value=Math.round(curAlt); calcUV(); }
+  else if(b.dataset.imp==='temp'){ const o=oxygen(curAlt,curFi); $('wc_temp').value=Math.round(o.T-273.15); calcWind(); }
+});
+
+calcOxygen();calcWind();calcHike();calcUV();
+</script>
+</body>
+</html>
