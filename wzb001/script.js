@@ -791,7 +791,7 @@ const websiteData = [{
         { name: "二维工坊", url: "https://tools.2weima.com/ciyun", desc: "词云" },
         { name: "造字侠词云", url: "http://wordcloud.reeji.com/", desc: "词云" },
         { name: "WORD ART", url: "https://wordart.com/", desc: "词云" },
-        { name: "Diffchecker", url: "https://wordart.com/", desc: "文本/图像/文档/excel/文件夹对比" },    
+        { name: "Diffchecker", url: "https://www.diffchecker.com/zh-Hans/", desc: "文本/图像/文档/excel/文件夹对比" },    
         { name: "chatexcel", url: "https://chatexcel.com/#/", desc: "AI excel" },
         { name: "Smallpdf", url: "https://smallpdf.com/cn/unlock-pdf", desc: "PDF工具" },
         { name: "ALL TO ALL", url: "https://www.alltoall.net/", desc: "PDF工具" },
