@@ -669,6 +669,7 @@ const websiteData = [{
         { name: "智能随机分组", url: "https://wzb13014.github.io/wzb/tool46", desc: "工具" },
         { name: "PDF预览器", url: "https://wzb13014.github.io/wzb/tool47", desc: "工具" },
         { name: "PDF合并拆分", url: "https://wzb13014.github.io/wzb/tool49", desc: "工具" },
+        { name: "excel合并", url: "https://wzb13014.github.io/wzb/tool145", desc: "合并工作表" },      
         { name: "PDF加水印", url: "https://wzb13014.github.io/wzb/tool133", desc: "工具" },    
         { name: "PDF去除水印", url: "https://wzb13014.github.io/wzb/tool134", desc: "工具" },   
         { name: "文字转语音", url: "https://wzb13014.github.io/wzb/tool56", desc: "工具" },
