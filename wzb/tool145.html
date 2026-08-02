@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Excel 批量合并工具</title>
+
+<!-- 依赖库改为页面渲染后异步加载，避免 CDN 阻塞导致一直“处理中” -->
+<style>
+:root{
+  --bg:#eef1f7; --surface:#ffffff; --surface2:#f6f8fc; --border:#e3e8f0;
+  --text:#1f2733; --text2:#5b6675; --muted:#9aa6b6;
+  --primary:#5b7cfa; --primary-d:#3f5fe0; --primary-l:#eef2ff;
+  --danger:#ef4444; --danger-l:#fef2f2; --danger-b:#fecaca;
+  --success:#10b981; --warning:#f59e0b; --radius:14px; --radius-s:9px;
+  --shadow:0 6px 18px rgba(31,39,51,.06), 0 2px 6px rgba(31,39,51,.04);
+  --shadow-l:0 18px 50px rgba(31,39,51,.18);
+}
+body.dark{
+  --bg:#0e1320; --surface:#171d2b; --surface2:#1d2433; --border:#2a3344;
+  --text:#e8ecf4; --text2:#aab4c5; --muted:#6b7689;
+  --primary:#7c93ff; --primary-d:#5b7cfa; --primary-l:#20283c;
+  --danger:#f87171; --danger-l:#3a1518; --danger-b:#5b2329;
+  --success:#34d399; --warning:#fbbf24; --shadow:0 6px 18px rgba(0,0,0,.35);
+  --shadow-l:0 18px 50px rgba(0,0,0,.55);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;
+  background:var(--bg); color:var(--text); line-height:1.55; min-height:100vh;
+  transition:background .3s,color .3s;
+}
+.app{max-width:1080px;margin:0 auto;padding:26px 20px 56px}
+
+/* Header */
+.header{
+  display:flex;align-items:center;justify-content:space-between;gap:16px;
+  margin-bottom:22px;flex-wrap:wrap;
+}
+.brand{display:flex;align-items:center;gap:14px}
+.brand .logo{
+  width:50px;height:50px;border-radius:15px;display:flex;align-items:center;justify-content:center;
+  font-size:26px;color:#fff;background:linear-gradient(135deg,#5b7cfa,#8b5cf6);
+  box-shadow:0 8px 20px rgba(91,124,250,.4);
+}
+.brand h1{font-size:1.5rem;font-weight:700;letter-spacing:.2px}
+.brand .sub{font-size:.82rem;color:var(--text2)}
+.theme-toggle{
+  display:flex;gap:4px;background:var(--surface2);border:1px solid var(--border);
+  border-radius:30px;padding:5px;cursor:pointer;user-select:none;
+}
+.theme-toggle span{
+  width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:17px;transition:.2s;color:var(--muted);
+}
+.theme-toggle span.active{background:var(--primary);color:#fff;box-shadow:0 2px 8px rgba(91,124,250,.4)}
+
+/* Card */
+.card{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:22px;box-shadow:var(--shadow);margin-bottom:20px;transition:.3s;
+}
+.card-title{font-size:1rem;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+
+/* Upload */
+.upload-zone{
+  border:2px dashed var(--border);border-radius:var(--radius);padding:30px 22px;text-align:center;
+  background:var(--surface2);transition:.2s;position:relative;
+}
+.upload-zone.drag{border-color:var(--primary);background:var(--primary-l);transform:translateY(-2px);box-shadow:0 10px 26px rgba(91,124,250,.16)}
+.upload-zone .up-icon{font-size:38px;margin-bottom:8px}
+.upload-zone p{color:var(--text2);font-size:.92rem}
+.upload-zone .hint{font-size:.8rem;color:var(--muted);margin-top:4px}
+.upload-btns{display:flex;gap:12px;justify-content:center;margin-top:16px;flex-wrap:wrap}
+
+/* Buttons */
+.btn{
+  padding:9px 16px;border-radius:22px;font-size:.86rem;font-weight:600;cursor:pointer;
+  border:1.5px solid var(--border);background:var(--surface);color:var(--text);
+  display:inline-flex;align-items:center;gap:6px;transition:.18s;white-space:nowrap;
+}
+.btn:hover{background:var(--surface2);border-color:#c4d0e6}
+body.dark .btn:hover{border-color:#3a475c}
+.btn.primary{background:var(--primary);border-color:var(--primary);color:#fff}
+.btn.primary:hover{background:var(--primary-d)}
+.btn.danger{color:var(--danger);border-color:var(--danger-b)}
+.btn.danger:hover{background:var(--danger-l)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.ghost{background:transparent}
+
+/* Settings grid */
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-top:16px}
+.field label{display:block;font-size:.74rem;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px}
+.field input,.field select{
+  width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:var(--radius-s);
+  background:var(--surface);color:var(--text);font-size:.88rem;outline:none;transition:.18s;
+}
+.field input:focus,.field select:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(91,124,250,.13)}
+.check-row{display:flex;align-items:center;gap:8px;margin-top:18px;font-size:.86rem;color:var(--text2)}
+.check-row input{width:16px;height:16px;accent-color:var(--primary)}
+
+/* Stats toolbar */
+.toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:18px 0 12px}
+.stats{display:flex;gap:18px;flex-wrap:wrap;font-size:.85rem;color:var(--text2)}
+.stat{display:flex;align-items:center;gap:6px}
+.dot{width:9px;height:9px;border-radius:50%}
+.dot.f{background:var(--primary)}.dot.s{background:var(--success)}.dot.r{background:var(--warning)}
+.actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.search{padding:8px 14px;border:1.5px solid var(--border);border-radius:22px;background:var(--surface);color:var(--text);font-size:.85rem;width:190px;outline:none}
+.search:focus{border-color:var(--primary)}
+
+/* File list */
+.list-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.list-head h3{font-size:1rem;font-weight:700}
+.file-list{display:flex;flex-direction:column;gap:9px;max-height:520px;overflow-y:auto;padding-right:6px}
+.file-list::-webkit-scrollbar{width:6px}
+.file-list::-webkit-scrollbar-thumb{background:var(--muted);border-radius:10px}
+
+.file-item{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-s);
+  padding:11px 14px;display:flex;align-items:center;gap:12px;transition:.18s;
+}
+.file-item:hover{border-color:var(--primary);box-shadow:var(--shadow)}
+.file-item.off{opacity:.5;background:var(--surface2)}
+.file-item.err{border-color:var(--danger-b);background:var(--danger-l)}
+.file-item.dragging{opacity:.4}
+.handle{cursor:grab;color:var(--muted);font-size:18px;user-select:none;padding:0 2px}
+.order{flex-shrink:0;width:24px;height:24px;border-radius:7px;background:var(--primary-l);color:var(--primary-d);
+  font-size:.78rem;font-weight:700;display:flex;align-items:center;justify-content:center}
+body.dark .order{color:var(--primary)}
+.check{flex-shrink:0;width:16px;height:16px;accent-color:var(--primary)}
+.ficon{flex-shrink:0;width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.2rem}
+.ficon.xlsx{background:#e3f2fd;color:#1565c0}
+.ficon.xls{background:#e8f5e9;color:#2e7d32}
+.ficon.csv{background:#fff3e0;color:#e65100}
+.ficon.err{background:#fee2e2;color:#b91c1c}
+.finfo{flex:1;min-width:0}
+.fname{display:flex;align-items:center;gap:8px;font-weight:600;font-size:.9rem}
+.fname input{
+  background:transparent;border:none;border-bottom:1.5px dashed var(--primary);
+  font-size:.9rem;font-weight:600;color:var(--text);padding:2px 4px;width:230px;outline:none;
+}
+.fmeta{font-size:.74rem;color:var(--muted);margin-top:2px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.forig{color:var(--text2)}
+.fact{display:flex;align-items:center;gap:4px;flex-shrink:0}
+.mini{width:30px;height:30px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2);font-size:.85rem;transition:.15s}
+.mini:hover{color:var(--text);border-color:var(--primary)}
+.mini.del:hover{background:var(--danger-l);color:var(--danger);border-color:var(--danger-b)}
+.mini.toggle:hover{background:var(--primary-l);color:var(--primary)}
+.mini.move{font-size:.9rem}
+.mini.on{background:var(--primary-l);color:var(--primary);border-color:var(--primary)}
+
+/* Modal */
+.overlay{position:fixed;inset:0;background:rgba(15,20,30,.5);display:flex;align-items:center;justify-content:center;z-index:1000;animation:fade .2s}
+.modal{background:var(--surface);border-radius:var(--radius);padding:24px;max-width:560px;width:92%;box-shadow:var(--shadow-l);max-height:86vh;overflow-y:auto}
+.modal h3{margin-bottom:6px;font-size:1.05rem}
+.modal .desc{color:var(--text2);font-size:.85rem;margin-bottom:16px}
+.seg{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.seg button{flex:1;min-width:120px;padding:9px;border:1.5px solid var(--border);border-radius:var(--radius-s);background:var(--surface);color:var(--text2);font-size:.84rem;cursor:pointer;font-weight:600;transition:.15s}
+.seg button.active{background:var(--primary-l);border-color:var(--primary);color:var(--primary-d)}
+body.dark .seg button.active{color:var(--primary)}
+.r-row{display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.r-row .field{flex:1;min-width:120px}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.hidden{display:none !important}
+
+.toast-box{position:fixed;top:18px;right:18px;z-index:2000;display:flex;flex-direction:column;gap:8px}
+.toast{padding:12px 18px;border-radius:11px;color:#fff;font-size:.85rem;box-shadow:var(--shadow-l);animation:slide .3s}
+.toast.ok{background:#059669}.toast.err{background:#dc2626}.toast.info{background:#3b5998}
+@keyframes slide{from{opacity:0;transform:translateX(70px)}to{opacity:1;transform:translateX(0)}}
+
+.foot{display:flex;gap:12px;margin-top:20px;justify-content:flex-end}
+.empty{text-align:center;padding:38px;color:var(--muted)}
+.empty .e-ico{font-size:46px;margin-bottom:8px}
+
+@media(max-width:640px){
+  .grid{grid-template-columns:1fr}
+  .fname input{width:140px}
+  .search{width:140px}
+  .file-item{flex-wrap:wrap}
+}
+</style>
+</head>
+<body class="light">
+
+<div class="app">
+  <div id="libBar" class="lib-bar">⏳ 正在加载 Excel 处理库（ExcelJS / SheetJS）…</div>
+  <div class="header">
+    <div class="brand">
+      <div class="logo">📊</div>
+      <div>
+        <h1>Excel 批量合并工具</h1>
+        <div class="sub">文件名即工作表名 · 保留格式与图片 · 支持文件夹与拖拽</div>
+      </div>
+    </div>
+    <div class="theme-toggle" id="themeToggle" title="切换主题">
+      <span id="sun" class="active">☀️</span>
+      <span id="moon">🌙</span>
+    </div>
+  </div>
+
+  <!-- 上传卡片 -->
+  <div class="card">
+    <div class="upload-zone" id="dropZone">
+      <div class="up-icon">📥</div>
+      <p><strong>将文件或文件夹拖拽到此处</strong></p>
+      <p class="hint">支持 .xlsx（保留样式与图片）· .xls · .csv</p>
+      <div class="upload-btns">
+        <button class="btn primary" id="btnFolder">📁 选择文件夹</button>
+        <button class="btn" id="btnFiles">📄 选择文件</button>
+      </div>
+      <input type="file" id="folderInput" webkitdirectory directory multiple hidden>
+      <input type="file" id="fileInput" multiple hidden>
+    </div>
+  </div>
+
+  <!-- 设置卡片 -->
+  <div class="card">
+    <div class="card-title">⚙️ 合并设置</div>
+    <div class="grid">
+      <div class="field">
+        <label>合并模式</label>
+        <select id="mergeMode">
+          <option value="allSheets" selected>保留所有工作表</option>
+          <option value="onePerFile">每个文件只取首个表</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>工作表命名方式</label>
+        <select id="nameMode">
+          <option value="filename" selected>用文件名（推荐）</option>
+          <option value="filename_sheet">文件名 + 原表名</option>
+          <option value="original">保留原表名</option>
+          <option value="numeric">纯数字自动排序</option>
+          <option value="textnum">文字 + 纯数字自动排序</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>名称分隔符</label>
+        <input type="text" id="sep" value="_" maxlength="3">
+      </div>
+      <div class="field">
+        <label>编号位数（数字模式）</label>
+        <input type="number" id="nameDigits" value="3" min="1" max="6">
+      </div>
+      <div class="field">
+        <label>工作表名前缀</label>
+        <input type="text" id="prefix" placeholder="可选，如 2026Q1_">
+      </div>
+      <div class="field">
+        <label>输出文件名</label>
+        <input type="text" id="outName" value="合并工作簿.xlsx">
+      </div>
+    </div>
+    <label class="check-row"><input type="checkbox" id="skipEmpty"> 跳过完全空白的工作表</label>
+  </div>
+
+  <!-- 列表卡片 -->
+  <div class="card">
+    <div class="toolbar">
+      <div class="stats">
+        <span class="stat"><span class="dot f"></span>文件 <strong id="stF">0</strong></span>
+        <span class="stat"><span class="dot s"></span>工作表 <strong id="stS">0</strong></span>
+        <span class="stat"><span class="dot r"></span>数据行 <strong id="stR">0</strong></span>
+      </div>
+      <div class="actions">
+        <input type="text" class="search" id="search" placeholder="🔍 搜索文件名">
+        <button class="btn" id="btnSelAll">✅ 全选</button>
+        <button class="btn" id="btnDesel">⬜ 取消</button>
+        <button class="btn" id="btnRename">✏️ 批量改名</button>
+        <button class="btn danger" id="btnClear">🗑️ 清空</button>
+      </div>
+    </div>
+
+    <div class="list-head">
+      <h3>📑 文件列表（合并顺序即显示顺序，可拖拽或上下调整）</h3>
+    </div>
+    <div class="file-list" id="fileList">
+      <div class="empty"><div class="e-ico">📭</div><p>请选择或拖入包含 Excel 文件的文件夹 / 文件</p></div>
+    </div>
+
+    <div class="foot">
+      <button class="btn ghost" id="btnReset">🔄 重置</button>
+      <button class="btn primary" id="btnMerge" disabled>🚀 合并并下载</button>
+    </div>
+  </div>
+</div>
+
+<!-- 批量改名弹窗 -->
+<div class="overlay hidden" id="renameModal">
+  <div class="modal">
+    <h3>✏️ 批量改名（文件名将作为工作表名）</h3>
+    <p class="desc">应用范围：<strong id="rnScope">已选中 0 个</strong></p>
+
+    <div class="seg" id="rnSeg">
+      <button data-m="custom" class="active">自定义文字+序号</button>
+      <button data-m="numeric">纯数字</button>
+      <button data-m="original">还原原文件名</button>
+      <button data-m="prefix">加前缀</button>
+      <button data-m="suffix">加后缀</button>
+      <button data-m="replace">查找替换</button>
+    </div>
+
+    <div id="rnFields"></div>
+
+    <div class="field" style="margin-bottom:6px">
+      <label>排序依据（决定序号/数字的分配顺序）</label>
+      <select id="rnSort">
+        <option value="order" selected>当前显示顺序</option>
+        <option value="name">文件名升序</option>
+        <option value="nameDesc">文件名降序</option>
+        <option value="size">文件大小</option>
+      </select>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn" id="rnCancel">取消</button>
+      <button class="btn primary" id="rnApply">应用</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-box" id="toasts"></div>
+<div class="overlay hidden" id="loading" style="background:rgba(15,20,30,.45)">
+  <div style="background:var(--surface);padding:24px 30px;border-radius:14px;text-align:center;box-shadow:var(--shadow-l)">
+    <div style="width:38px;height:38px;border:4px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px"></div>
+    <p id="loadText">处理中…</p>
+  </div>
+</div>
+<style>@keyframes spin{to{transform:rotate(360deg)}}
+.lib-bar{position:fixed;top:0;left:0;right:0;z-index:1500;text-align:center;padding:8px;font-size:.82rem;font-weight:600;
+  background:#fff7ed;color:#c2410c;border-bottom:1px solid #fed7aa}
+body.dark .lib-bar{background:#3a2410;color:#fdba74;border-color:#5b3410}
+.lib-bar.ok{display:none}
+.lib-bar.err{background:#fef2f2;color:#b91c1c;border-color:#fecaca}
+body.dark .lib-bar.err{background:#3a1518;color:#f87171;border-color:#5b2329}</style>
+
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  const body=document.body;
+  const fileList=$('fileList');
+  const toasts=$('toasts');
+
+  let entries=[]; let uid=0; const selected=new Set();
+  let libsReady=false;
+
+  // ---------- 依赖库动态加载（不阻塞页面） ----------
+  function libBar(state,msg){const b=$('libBar');if(!b)return;
+    b.className='lib-bar'+(state==='ok'?' ok':(state==='err'?' err':''));if(msg)b.textContent=msg;}
+  function loadOne(src,ms){return new Promise((res,rej)=>{const s=document.createElement('script');
+    s.src=src;s.onload=()=>res();s.onerror=()=>rej(new Error('load fail: '+src));
+    const t=setTimeout(()=>rej(new Error('timeout: '+src)),ms);
+    s.onload=()=>{clearTimeout(t);res();};s.onerror=()=>{clearTimeout(t);rej(new Error('load fail: '+src));};
+    document.head.appendChild(s);});}
+  async function loadFirst(urls,ms){let last;for(const u of urls){try{await loadOne(u,ms);return;}catch(e){last=e;}}throw last;}
+  async function initLibs(){
+    libBar('loading','⏳ 正在加载 Excel 处理库（ExcelJS / SheetJS）…');
+    try{
+      await Promise.all([
+        loadFirst(['https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js','https://unpkg.com/exceljs@4.4.0/dist/exceljs.min.js'],15000),
+        loadFirst(['https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js','https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js'],15000)
+      ]);
+      if(typeof ExcelJS==='undefined'||typeof XLSX==='undefined') throw new Error('库未定义');
+      libsReady=true; libBar('ok'); toast('依赖库已就绪','ok');
+    }catch(e){ libBar('err','⚠️ Excel 处理库加载失败，请检查网络后刷新页面（合并功能暂不可用）'); }
+  }
+  // 兜底：任何未捕获错误 / 按 Esc 都关掉遮罩，避免一直“处理中”
+  window.addEventListener('error',()=>hideLoad());
+  window.addEventListener('unhandledrejection',()=>hideLoad());
+  window.addEventListener('keydown',e=>{if(e.key==='Escape'){hideLoad();$('renameModal').classList.add('hidden');}});
+  function needLibs(){if(!libsReady){toast('依赖库尚未加载完成，请稍候或刷新页面','err');return false;}return true;}
+
+  // ---------- 主题 ----------
+  function setTheme(d){body.classList.toggle('dark',d);body.classList.toggle('light',!d);
+    $('sun').classList.toggle('active',!d);$('moon').classList.toggle('active',d);
+    localStorage.setItem('xls-merge-theme',d?'dark':'light');}
+  setTheme((localStorage.getItem('xls-merge-theme')||'light')==='dark');
+  $('themeToggle').onclick=()=>setTheme(!body.classList.contains('dark'));
+
+  // ---------- 工具 ----------
+  function toast(m,t='info'){const d=document.createElement('div');d.className='toast '+t;d.textContent=m;
+    toasts.appendChild(d);setTimeout(()=>{d.style.opacity='0';setTimeout(()=>d.remove(),300);},2800);}
+  function showLoad(t){$('loadText').textContent=t||'处理中…';$('loading').classList.remove('hidden');}
+  function hideLoad(){if($('loading'))$('loading').classList.add('hidden');}
+  function fmt(b){if(!b)return '0 B';if(b<1024)return b+' B';if(b<1048576)return (b/1024).toFixed(1)+' KB';return (b/1048576).toFixed(2)+' MB';}
+  function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+  function baseNoExt(n){return n.replace(/\.[^.]+$/,'');}
+  function readBuf(f){return new Promise((res,rej)=>{const r=new FileReader();r.onload=e=>res(new Uint8Array(e.target.result));r.onerror=()=>rej(new Error('读取失败'));r.readAsArrayBuffer(f);});}
+
+  async function parseInfo(buf,name){
+    const ext=name.split('.').pop().toLowerCase();
+    if(ext==='xlsx'){
+      const wb=new ExcelJS.Workbook();await wb.xlsx.load(buf);
+      const sheets=[];let rows=0;
+      wb.eachSheet(s=>{const rc=s.rowCount;const dr=Math.max(0,rc-1);sheets.push({name:s.name,rows:rc,dataRows:dr});rows+=dr;});
+      return {sheets,totalRows:rows,sheetCount:sheets.length,type:'xlsx'};
+    }
+    if(ext==='xls'||ext==='csv'){
+      const wb=XLSX.read(buf,{type:'array'});const sheets=[];let rows=0;
+      wb.SheetNames.forEach(n=>{const sh=wb.Sheets[n];const rg=XLSX.utils.decode_range(sh['!ref']||'A1:A1');const rc=rg.e.r-rg.s.r+1;const dr=Math.max(0,rc-1);sheets.push({name:n,rows:rc,dataRows:dr});rows+=dr;});
+      return {sheets,totalRows:rows,sheetCount:sheets.length,type:ext};
+    }
+    throw new Error('不支持的格式');
+  }
+
+  // ---------- 上传 ----------
+  $('btnFolder').onclick=()=>$('folderInput').click();
+  $('btnFiles').onclick=()=>$('fileInput').click();
+  $('folderInput').onchange=e=>{if(e.target.files.length)addFiles(e.target.files);e.target.value='';};
+  $('fileInput').onchange=e=>{if(e.target.files.length)addFiles(e.target.files);e.target.value='';};
+
+  const dz=$('dropZone');
+  ['dragenter','dragover'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.add('drag');}));
+  ['dragleave','drop'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.remove('drag');}));
+  dz.addEventListener('drop',async e=>{
+    if(e.dataTransfer.items&&e.dataTransfer.items[0]&&e.dataTransfer.items[0].webkitGetAsEntry){
+      const fs=[];const items=[...e.dataTransfer.items];
+      for(const it of items){const en=it.webkitGetAsEntry();if(en)await walk(en,fs);}
+      if(fs.length)addFiles(fs);
+    }else if(e.dataTransfer.files.length){addFiles(e.dataTransfer.files);}
+  });
+  function walk(entry,out){return new Promise(res=>{
+    if(entry.isFile)entry.file(f=>{out.push(f);res();});
+    else if(entry.isDirectory){const r=entry.createReader();const all=[];
+      const batch=()=>r.readEntries(es=>{if(!es.length)Promise.all(all.map(x=>walk(x,out))).then(res);else{all.push(...es);batch();}});
+      batch();
+    }else res();
+  });}
+
+  async function addFiles(files){
+    if(!needLibs())return;
+    const exts=['.xlsx','.xls','.csv'];
+    const list=Array.from(files).filter(f=>exts.includes('.'+f.name.split('.').pop().toLowerCase()));
+    if(!list.length){toast('未找到支持的 Excel 文件','err');return;}
+    showLoad('正在读取 '+list.length+' 个文件…');
+    let ok=0;
+    try{
+      for(const f of list){
+        const e={id:++uid,file:f,name:f.name,originalName:f.name,size:f.size,buf:null,
+          sheets:[],totalRows:0,sheetCount:0,on:false,type:'err',err:'解析中…',custom:baseNoExt(f.name)};
+        entries.push(e);render();
+        try{const b=await readBuf(f);const info=await parseInfo(b,f.name);
+          e.buf=b;e.sheets=info.sheets;e.totalRows=info.totalRows;e.sheetCount=info.sheetCount;
+          e.on=true;e.type=info.type;e.err=null;ok++;
+        }catch(err){e.err='解析失败';e.on=false;}
+        render();updateStats();updateBtn();
+      }
+    }catch(err){console.error(err);toast('处理出错：'+(err&&err.message||err),'err');}
+    finally{hideLoad();}
+    toast('已添加 '+ok+' / '+list.length+' 个文件',ok?'ok':'err');
+  }
+
+  // ---------- 渲染 ----------
+  function render(){
+    const term=$('search').value.toLowerCase();
+    const vis=entries.filter(e=>e.name.toLowerCase().includes(term)||e.custom.toLowerCase().includes(term));
+    if(!vis.length){
+      fileList.innerHTML='<div class="empty"><div class="e-ico">🔍</div><p>'+(entries.length?'没有匹配的文件':'请选择或拖入包含 Excel 文件的文件夹 / 文件')+'</p></div>';
+      return;
+    }
+    fileList.innerHTML='';
+    vis.forEach(e=>{
+      const idx=entries.indexOf(e)+1;
+      const ext=e.name.split('.').pop().toLowerCase();
+      const ic=e.err?'err':(ext==='xls'?'xls':(ext==='csv'?'csv':'xlsx'));
+      const ico=e.err?'⚠️':(ext==='csv'?'📄':'📊');
+      const meta=e.err?'解析失败':`${fmt(e.size)} · ${e.sheetCount} 表 · ${e.totalRows} 行`;
+      const div=document.createElement('div');
+      div.className='file-item'+(e.err?' err':(e.on?'':' off'));
+      div.dataset.id=e.id;div.draggable=true;
+      div.innerHTML=`
+        <span class="handle" title="拖拽排序">⠿</span>
+        <span class="order">${idx}</span>
+        <input type="checkbox" class="check" ${selected.has(e.id)?'checked':''}>
+        <div class="ficon ${ic}">${ico}</div>
+        <div class="finfo">
+          <div class="fname">
+            <input type="text" value="${esc(e.custom)}" maxlength="29" title="此处名称即为合并后的工作表名">
+            ${!e.err?'<span class="mini toggle '+(e.on?'on':'')+'" data-act="toggle" title="启用/禁用">'+(e.on?'✅':'⬜')+'</span>':'<span></span>'}
+          </div>
+          <div class="fmeta">
+            <span>${meta}</span>
+            ${e.custom!==baseNoExt(e.originalName)?`<span class="forig">原名：${esc(e.originalName)}</span>`:''}
+          </div>
+        </div>
+        <div class="fact">
+          <span class="mini move" data-act="up" title="上移">↑</span>
+          <span class="mini move" data-act="down" title="下移">↓</span>
+          <span class="mini del" data-act="del" title="删除">🗑️</span>
+        </div>`;
+      fileList.appendChild(div);
+    });
+  }
+
+  // 事件委托
+  fileList.addEventListener('change',e=>{if(e.target.classList.contains('check')){
+    const id=+e.target.closest('.file-item').dataset.id;
+    e.target.checked?selected.add(id):selected.delete(id);
+  }});
+  fileList.addEventListener('input',e=>{if(e.target.tagName==='INPUT'&&e.target.type==='text'){
+    const id=+e.target.closest('.file-item').dataset.id;const en=entries.find(x=>x.id===id);
+    if(en)en.custom=e.target.value;render();
+  }});
+  fileList.addEventListener('click',e=>{
+    const b=e.target.closest('[data-act]');if(!b)return;
+    const id=+b.closest('.file-item').dataset.id;const en=entries.find(x=>x.id===id);if(!en)return;
+    const act=b.dataset.act;
+    if(act==='del'){if(confirm('移除该文件？')){entries=entries.filter(x=>x.id!==id);selected.delete(id);render();updateStats();updateBtn();}}
+    else if(act==='toggle'){en.on=!en.on;render();updateStats();updateBtn();}
+    else if(act==='up'){move(id,-1);}
+    else if(act==='down'){move(id,1);}
+  });
+  function move(id,dir){
+    const i=entries.findIndex(x=>x.id===id);const j=i+dir;
+    if(j<0||j>=entries.length)return;
+    [entries[i],entries[j]]=[entries[j],entries[i]];render();updateStats();
+  }
+  // 拖拽排序
+  let dragId=null;
+  fileList.addEventListener('dragstart',e=>{const it=e.target.closest('.file-item');if(!it)return;dragId=+it.dataset.id;it.classList.add('dragging');e.dataTransfer.effectAllowed='move';});
+  fileList.addEventListener('dragover',e=>{e.preventDefault();});
+  fileList.addEventListener('drop',e=>{e.preventDefault();const it=e.target.closest('.file-item');if(!it||dragId==null)return;
+    const tId=+it.dataset.id;if(tId===dragId)return;
+    const from=entries.findIndex(x=>x.id===dragId);const to=entries.findIndex(x=>x.id===tId);
+    const [m]=entries.splice(from,1);entries.splice(to,0,m);dragId=null;render();updateStats();});
+  fileList.addEventListener('dragend',()=>{dragId=null;render();});
+
+  // ---------- 统计 ----------
+  function updateStats(){
+    const en=entries.filter(e=>e.on&&!e.err);const mode=$('mergeMode').value;
+    let s=0,r=0;
+    en.forEach(e=>{if(mode==='onePerFile'){s+=1;r+=e.sheets.length?e.sheets[0].dataRows:0;}
+      else{s+=e.sheetCount;r+=e.totalRows;}});
+    $('stF').textContent=en.length;$('stS').textContent=s;$('stR').textContent=r;
+  }
+  function updateBtn(){$('btnMerge').disabled=entries.filter(e=>e.on&&!e.err).length===0;}
+  $('mergeMode').onchange=updateStats;
+  $('search').oninput=render;
+
+  // ---------- 批量操作 ----------
+  $('btnSelAll').onclick=()=>{entries.forEach(e=>{if(!e.err)selected.add(e.id);});render();};
+  $('btnDesel').onclick=()=>{selected.clear();render();};
+  $('btnClear').onclick=()=>{if(entries.length&&confirm('清空所有文件？')){entries=[];selected.clear();render();updateStats();updateBtn();}};
+  $('btnReset').onclick=()=>{if(confirm('重置全部？')){entries=[];selected.clear();
+    $('outName').value='合并工作簿.xlsx';$('prefix').value='';$('sep').value='_';
+    $('mergeMode').value='allSheets';$('nameMode').value='filename';$('skipEmpty').checked=false;
+    $('nameDigits').value='3';
+    render();updateStats();updateBtn();}};
+
+  // ---------- 批量改名 ----------
+  let rnMode='custom';
+  const rnFields=$('rnFields');
+  function rnFieldHTML(){
+    if(rnMode==='custom')return `
+      <div class="r-row">
+        <div class="field"><label>自定义文字</label><input id="rnText" value="报表" placeholder="如 报表"></div>
+        <div class="field"><label>起始序号</label><input id="rnStart" type="number" value="1" min="0"></div>
+      </div>
+      <div class="r-row">
+        <div class="field"><label>编号位数</label><input id="rnDigits" type="number" value="3" min="1" max="6"></div>
+        <div class="field"><label>分隔符</label><input id="rnSep" value="_" maxlength="3"></div>
+      </div>`;
+    if(rnMode==='numeric')return `
+      <div class="r-row">
+        <div class="field"><label>起始数字</label><input id="rnStart" type="number" value="1" min="0"></div>
+        <div class="field"><label>位数</label><input id="rnDigits" type="number" value="3" min="1" max="6"></div>
+      </div>`;
+    if(rnMode==='prefix')return `<div class="r-row"><div class="field"><label>前缀文字</label><input id="rnText" value="前缀_" placeholder="添加到名称前"></div></div>`;
+    if(rnMode==='suffix')return `<div class="r-row"><div class="field"><label>后缀文字</label><input id="rnText" value="_备份" placeholder="添加到名称后"></div></div>`;
+    if(rnMode==='replace')return `
+      <div class="r-row">
+        <div class="field"><label>查找</label><input id="rnFind" placeholder="要替换的文字"></div>
+        <div class="field"><label>替换为</label><input id="rnText" placeholder="新文字（可空=删除）"></div>
+      </div>`;
+    if(rnMode==='original')return `<p class="desc">将所有文件名还原为原始文件名（去掉扩展名）。</p>`;
+    return '';
+  }
+  function openRename(){
+    const scope=selected.size?selected.size:entries.length;
+    if(!scope){toast('请先勾选文件或清空后再操作','info');return;}
+    $('rnScope').textContent=selected.size?('已选中 '+selected.size+' 个'):('全部 '+entries.length+' 个');
+    rnFields.innerHTML=rnFieldHTML();
+    $('renameModal').classList.remove('hidden');
+  }
+  $('btnRename').onclick=openRename;
+  $('rnSeg').addEventListener('click',e=>{const b=e.target.closest('button[data-m]');if(!b)return;
+    [...$('rnSeg').children].forEach(x=>x.classList.remove('active'));b.classList.add('active');
+    rnMode=b.dataset.m;rnFields.innerHTML=rnFieldHTML();});
+  $('rnCancel').onclick=()=>$('renameModal').classList.add('hidden');
+  $('rnApply').onclick=()=>{
+    const targets=(selected.size?entries.filter(e=>selected.has(e.id)):entries.slice());
+    const sortBy=$('rnSort').value;
+    const arr=targets.slice().sort((a,b)=>{
+      if(sortBy==='name')return a.name.localeCompare(b.name,'zh');
+      if(sortBy==='nameDesc')return b.name.localeCompare(a.name,'zh');
+      if(sortBy==='size')return a.size-b.size;
+      return entries.indexOf(a)-entries.indexOf(b);
+    });
+    const g=id=>$(id).value;
+    arr.forEach((e,i)=>{
+      if(rnMode==='custom'){
+        const txt=g('rnText')||'';const st=parseInt(g('rnStart')||'1');const dig=Math.max(1,parseInt(g('rnDigits')||'3'));
+        const sep=g('rnSep')||'_';const num=String(st+i).padStart(dig,'0');
+        e.custom=txt+sep+num;
+      }else if(rnMode==='numeric'){
+        const st=parseInt(g('rnStart')||'1');const dig=Math.max(1,parseInt(g('rnDigits')||'3'));
+        e.custom=String(st+i).padStart(dig,'0');
+      }else if(rnMode==='original'){
+        e.custom=baseNoExt(e.originalName);
+      }else if(rnMode==='prefix'){
+        e.custom=(g('rnText')||'')+e.custom;
+      }else if(rnMode==='suffix'){
+        e.custom=e.custom+(g('rnText')||'');
+      }else if(rnMode==='replace'){
+        const f=g('rnFind');const r=g('rnText')||'';
+        if(f)e.custom=e.custom.split(f).join(r);
+      }
+    });
+    $('renameModal').classList.add('hidden');render();toast('批量改名已应用','ok');
+  };
+
+  // ---------- 合并 ----------
+  function uniqueName(name,used){
+    let n=(name||'Sheet').replace(/[\\\/\*\?\[\]:]/g,'').substring(0,31)||'Sheet';
+    let f=n,i=1;
+    while(used.has(f))f=n.substring(0,31-('_'+i).length)+'_'+i++;
+    used.add(f);return f;
+  }
+  function sheetName(e,sheet,i,gIdx,strategy,pre,sep,digits){
+    let base;
+    if(strategy==='numeric'){
+      base=String(gIdx).padStart(digits,'0');
+    }else if(strategy==='textnum'){
+      const t=pre||'';base=t+(t?sep:'')+String(gIdx).padStart(digits,'0');
+    }else if(strategy==='filename'){
+      base=e.sheetCount>1?`${e.custom}${sep}${i+1}`:e.custom;
+    }else if(strategy==='filename_sheet'){
+      base=`${e.custom}${sep}${sheet.name}`;
+    }else{
+      base=sheet.name;
+    }
+    if(strategy==='filename'||strategy==='filename_sheet'||strategy==='original'){
+      if(pre)base=pre+base;
+    }
+    return base;
+  }
+  function isEmpty(sheet){
+    if(sheet.rowCount>1)return false;
+    if(sheet.model&&sheet.model.merges&&sheet.model.merges.length)return false;
+    if(sheet.getImages&&sheet.getImages().length)return false;
+    const r=sheet.getRow(1);let has=false;r.eachCell({includeEmpty:true},c=>{if(c.value!=null&&c.value!=='')has=true;});
+    return !has;
+  }
+
+  $('btnMerge').onclick=async()=>{
+    if(!needLibs())return;
+    const en=entries.filter(e=>e.on&&!e.err);
+    if(!en.length){toast('没有可合并的文件','err');return;}
+    const mode=$('mergeMode').value;
+    const strategy=$('nameMode').value;
+    const pre=$('prefix').value.trim();
+    const sep=$('sep').value||'_';
+    const dv=parseInt($('nameDigits').value,10);
+    const digits=(isNaN(dv)||dv<1)?3:dv;
+    const skip=$('skipEmpty').checked;
+    let out=$('outName').value.trim()||'合并工作簿.xlsx';
+    if(!out.toLowerCase().endsWith('.xlsx'))out+='.xlsx';
+
+    showLoad('正在合并，保留格式与图片…');
+    try{
+      const dest=new ExcelJS.Workbook();const used=new Set();let gIdx=0;
+      async function clone(srcWb,srcSheet,destName){
+        const ns=dest.addWorksheet(destName);
+        srcSheet.columns.forEach((c,idx)=>{if(c.width)ns.getColumn(idx+1).width=c.width;});
+        srcSheet.eachRow({includeEmpty:true},(row,rn)=>{
+          const nr=ns.getRow(rn);nr.height=row.height;
+          row.eachCell({includeEmpty:true},(cell,cn)=>{
+            const nc=nr.getCell(cn);
+            if(cell.value!=null&&cell.value!==undefined)nc.value=cell.value;
+            if(cell.style)nc.style=JSON.parse(JSON.stringify(cell.style));
+            if(cell.note)nc.note=cell.note;
+          });
+        });
+        if(srcSheet.model&&srcSheet.model.merges)ns.model.merges=srcSheet.model.merges.slice();
+        const imgs=srcSheet.getImages?srcSheet.getImages():[];
+        for(const img of imgs){const si=srcWb.getImage(img.imageId);
+          if(si){const nid=dest.addImage({buffer:si.buffer,extension:si.extension});ns.addImage(nid,img.range);}}
+      }
+      for(const e of en){
+        const ext=e.name.split('.').pop().toLowerCase();
+        if(ext==='xlsx'){
+          const swb=new ExcelJS.Workbook();await swb.xlsx.load(e.buf);
+          const sheets=mode==='onePerFile'?(swb.worksheets[0]?[swb.worksheets[0]]:[]):swb.worksheets;
+          sheets.forEach((sh,i)=>{if(skip&&isEmpty(sh))return;
+            const nm=uniqueName(sheetName(e,sh,i,gIdx,strategy,pre,sep,digits),used);
+            clone(swb,sh,nm);gIdx++;});
+        }else{
+          const wb=XLSX.read(e.buf,{type:'array'});
+          const names=mode==='onePerFile'?(wb.SheetNames[0]?[wb.SheetNames[0]]:[]):wb.SheetNames;
+          names.forEach((nm,i)=>{const sh=wb.Sheets[nm];
+            const rg=XLSX.utils.decode_range(sh['!ref']||'A1:A1');
+            if(skip&&rg.e.r-rg.s.r<1&&!sh['!merges'])return;
+            const data=XLSX.utils.sheet_to_json(sh,{header:1,defval:''});
+            const ns=dest.addWorksheet(uniqueName(sheetName(e,{name:nm},i,gIdx,strategy,pre,sep,digits),used));
+            data.forEach(r=>ns.addRow(r));gIdx++;
+          });
+        }
+      }
+      const buf=await dest.xlsx.writeBuffer();
+      const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+      const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=out;
+      document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
+      toast('✅ 合并完成：'+out,'ok');
+    }catch(err){toast('合并失败：'+(err&&err.message||err),'err');}
+    finally{hideLoad();}
+  };
+
+  render();updateStats();updateBtn();
+  initLibs();
+})();
+</script>
+</body>
+</html>
