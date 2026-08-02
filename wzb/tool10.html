@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>未认证 ISO 体系的 8 项短期有利影响 · 对比分析</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0b1020;
+    --bg-grad-1: #111a35;
+    --bg-grad-2: #0a0f1f;
+    --surface: rgba(255,255,255,0.04);
+    --surface-2: rgba(255,255,255,0.07);
+    --border: rgba(255,255,255,0.10);
+    --border-strong: rgba(255,255,255,0.18);
+    --text: #e8ecf5;
+    --text-dim: #9aa6c0;
+    --text-faint: #6b7794;
+    --accent: #6366f1;
+    --accent-2: #22d3ee;
+    --iso: #3b82f6;
+    --iso-soft: rgba(59,130,246,0.55);
+    --non: #f59e0b;
+    --non-soft: rgba(245,158,11,0.55);
+    --good: #34d399;
+    --shadow: 0 20px 60px rgba(0,0,0,0.45);
+    --radius: 18px;
+    --sidebar-w: 280px;
+    --font: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+  }
+  [data-theme="light"] {
+    --bg: #eef2fb;
+    --bg-grad-1: #ffffff;
+    --bg-grad-2: #e3e9f7;
+    --surface: rgba(255,255,255,0.75);
+    --surface-2: rgba(255,255,255,0.95);
+    --border: rgba(15,23,42,0.08);
+    --border-strong: rgba(15,23,42,0.16);
+    --text: #0f172a;
+    --text-dim: #475569;
+    --text-faint: #94a3b8;
+    --shadow: 0 20px 50px rgba(30,41,59,0.12);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    font-family: var(--font);
+    color: var(--text);
+    background:
+      radial-gradient(1200px 800px at 15% -10%, rgba(99,102,241,0.18), transparent 55%),
+      radial-gradient(1000px 700px at 110% 10%, rgba(34,211,238,0.14), transparent 50%),
+      linear-gradient(160deg, var(--bg-grad-1), var(--bg-grad-2));
+    background-attachment: fixed;
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ---------- Loading ---------- */
+  #loader {
+    position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 50;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 26px; text-align: center; padding: 24px;
+    background: linear-gradient(160deg, var(--bg-grad-1), var(--bg-grad-2));
+  }
+  .loader-ring {
+    width: 84px; height: 84px; border-radius: 50%;
+    border: 4px solid var(--border);
+    border-top-color: var(--accent);
+    border-right-color: var(--accent-2);
+    animation: spin 1s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #loader h1 { font-size: 22px; margin: 0; letter-spacing: .5px; }
+  #loader p { color: var(--text-dim); margin: 0; font-size: 14px; }
+  .loader-bar { width: min(360px, 70vw); height: 8px; border-radius: 99px; background: var(--border); overflow: hidden; }
+  .loader-bar > i { display: block; height: 100%; width: 0%;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2)); border-radius: 99px;
+    transition: width .25s ease; }
+  .loader-pct { font-variant-numeric: tabular-nums; color: var(--text-faint); font-size: 13px; }
+
+  /* ---------- App shell ---------- */
+  #app { display: none; height: 100vh; }
+  #app.show { display: flex; }
+  .scrim { display: none; }
+
+  /* Sidebar */
+  .sidebar {
+    width: var(--sidebar-w); height: 100vh; flex: none;
+    border-right: 1px solid var(--border);
+    background: var(--surface);
+    backdrop-filter: blur(14px);
+    display: flex; flex-direction: column;
+    min-height: 0;
+  }
+  .brand { padding: 22px 22px 16px; border-bottom: 1px solid var(--border); }
+  .brand .logo {
+    width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #fff; font-weight: 800; font-size: 18px;
+    box-shadow: 0 8px 22px rgba(99,102,241,0.45); margin-bottom: 12px;
+  }
+  .brand h2 { margin: 0; font-size: 15px; line-height: 1.4; }
+  .brand span { color: var(--text-faint); font-size: 12px; }
+
+  .toc { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 4px; }
+  .toc::-webkit-scrollbar { width: 8px; }
+  .toc::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 8px; }
+  .toc-item {
+    display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 12px;
+    cursor: pointer; color: var(--text-dim); border: 1px solid transparent; transition: .2s;
+    text-align: left; background: none; font: inherit; width: 100%;
+  }
+  .toc-item:hover { background: var(--surface-2); color: var(--text); }
+  .toc-item.active { background: linear-gradient(135deg, rgba(99,102,241,0.22), rgba(34,211,238,0.12)); color: var(--text); border-color: var(--border-strong); }
+  .toc-item .num {
+    flex: none; width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center;
+    background: var(--surface-2); font-size: 13px; font-weight: 700; color: var(--text-dim);
+  }
+  .toc-item.active .num { background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #fff; }
+  .toc-item .lbl { font-size: 13.5px; line-height: 1.3; }
+  .toc-item .lbl small { display: block; color: var(--text-faint); font-size: 11px; }
+
+  .side-foot { padding: 14px; border-top: 1px solid var(--border); display: flex; gap: 8px; flex-wrap: wrap; }
+  .mini {
+    flex: 1; min-width: 64px; padding: 9px 6px; border-radius: 11px; cursor: pointer; font: inherit; font-size: 12px;
+    background: var(--surface-2); color: var(--text-dim); border: 1px solid var(--border); transition: .2s; display:flex; flex-direction:column; align-items:center; gap:4px;
+  }
+  .mini:hover { color: var(--text); border-color: var(--border-strong); transform: translateY(-1px); }
+  .mini b { font-size: 14px; }
+
+  /* Main */
+  .main { position: relative; flex: 1; height: 100vh; display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+  .progress { height: 4px; background: var(--border); position: relative; z-index: 5; }
+  .progress > i { position: absolute; top: 0; left: 0; bottom: 0; width: 0%;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2)); transition: width .4s ease; }
+
+  .stage { flex: 1; overflow: hidden; position: relative; padding: 26px clamp(18px, 4vw, 56px); }
+  .slide { position: absolute; top: 26px; right: clamp(18px, 4vw, 56px); bottom: 26px; left: clamp(18px, 4vw, 56px); display: none; flex-direction: column; }
+  .slide.active { display: flex; animation: fade .45s ease; }
+  @keyframes fade { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+
+  .slide-head { display: flex; align-items: flex-start; gap: 18px; flex-wrap: wrap; }
+  .slide-idx {
+    flex: none; font-size: 13px; font-weight: 700; letter-spacing: 1px; padding: 6px 12px; border-radius: 99px;
+    color: var(--accent-2); background: rgba(34,211,238,0.12); border: 1px solid rgba(34,211,238,0.3);
+  }
+  .slide-title { margin: 0; font-size: clamp(20px, 2.4vw, 30px); line-height: 1.25; }
+  .slide-en { color: var(--text-faint); font-size: 13px; font-weight: 500; margin-top: 4px; }
+  .slide-desc { color: var(--text-dim); margin: 14px 0 0; max-width: 70ch; line-height: 1.65; font-size: 15px; }
+
+  .stat-row { display: flex; gap: 14px; flex-wrap: wrap; margin: 18px 0 6px; }
+  .stat {
+    flex: 1; min-width: 150px; padding: 14px 16px; border-radius: 14px;
+    background: var(--surface-2); border: 1px solid var(--border);
+  }
+  .stat .v { font-size: 26px; font-weight: 800; background: linear-gradient(135deg, var(--accent), var(--accent-2)); -webkit-background-clip: text; background-clip: text; color: transparent; font-variant-numeric: tabular-nums; }
+  .stat .k { color: var(--text-faint); font-size: 12.5px; margin-top: 4px; line-height: 1.4; }
+
+  .chart-wrap { flex: 1; min-height: 220px; margin-top: 14px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; padding: 16px; position: relative; }
+  .chart-wrap canvas { width: 100% !important; height: 100% !important; }
+
+  .insight {
+    margin-top: 14px; padding: 12px 16px; border-left: 3px solid var(--non);
+    background: rgba(245,158,11,0.10); border-radius: 0 12px 12px 0; color: var(--text); font-size: 14px; line-height: 1.6;
+  }
+  .insight b { color: var(--non); }
+  .source { display: inline-flex; align-items: center; gap: 6px; margin-top: 10px; color: var(--text-faint); font-size: 12px; }
+  .source::before { content: "●"; color: var(--good); font-size: 9px; }
+
+  /* Bottom nav */
+  .nav { display: flex; align-items: center; gap: 14px; padding: 14px clamp(18px, 4vw, 56px); border-top: 1px solid var(--border); background: var(--surface); }
+  .nav .counter { color: var(--text-dim); font-size: 13px; font-variant-numeric: tabular-nums; }
+  .nav .counter b { color: var(--text); font-size: 16px; }
+  .dots { display: flex; gap: 8px; flex: 1; justify-content: center; flex-wrap: wrap; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--border-strong); border: none; cursor: pointer; padding: 0; transition: .2s; }
+  .dot.active { background: linear-gradient(135deg, var(--accent), var(--accent-2)); transform: scale(1.35); }
+  .btn {
+    border: none; cursor: pointer; font: inherit; font-weight: 600; font-size: 14px; color: #fff;
+    padding: 11px 22px; border-radius: 99px; background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    box-shadow: 0 8px 22px rgba(99,102,241,0.4); transition: .2s;
+  }
+  .btn:hover { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(99,102,241,0.5); }
+  .btn.ghost { background: var(--surface-2); color: var(--text-dim); border: 1px solid var(--border); box-shadow: none; }
+  .btn.ghost:hover { color: var(--text); border-color: var(--border-strong); }
+
+  /* Overview */
+  #overview { position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 40; display: none; padding: 40px; overflow: auto;
+    background: linear-gradient(160deg, var(--bg-grad-1), var(--bg-grad-2)); }
+  #overview.show { display: block; }
+  #overview h3 { margin: 0 0 22px; font-size: 22px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 18px; }
+  .card { padding: 20px; border-radius: 16px; background: var(--surface-2); border: 1px solid var(--border); cursor: pointer; transition: .2s; }
+  .card:hover { transform: translateY(-3px); border-color: var(--border-strong); }
+  .card .ci { width: 30px; height: 30px; border-radius:11px; display:grid; place-items:center; font-weight:800; color:#fff; background: linear-gradient(135deg, var(--accent), var(--accent-2)); margin-bottom: 12px; }
+  .card h4 { margin: 0 0 6px; font-size: 16px; }
+  .card p { margin: 0; color: var(--text-dim); font-size: 13px; line-height: 1.55; }
+  .card .cs { margin-top: 12px; color: var(--non); font-size: 12.5px; font-weight: 600; }
+
+  /* Toast */
+  #toast { position: fixed; bottom: 26px; left: 50%; transform: translateX(-50%) translateY(20px); opacity: 0;
+    background: var(--surface-2); border: 1px solid var(--border-strong); color: var(--text); padding: 10px 18px; border-radius: 12px;
+    font-size: 13px; box-shadow: var(--shadow); transition: .3s; z-index: 60; pointer-events: none; }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  @media (max-width: 820px) {
+    #app.show { flex-direction: column; }
+    .sidebar { position: fixed; z-index: 30; width: 82%; max-width: 320px; height: 100%; transform: translateX(-105%); transition: transform .3s; }
+    #app.nav-open .sidebar { transform: none; }
+    .scrim { position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 25; display: none; }
+    #app.nav-open .scrim { display: block; }
+    .main { height: auto; }
+    .menu-btn { display: inline-flex !important; }
+  }
+  .menu-btn { display: none; }
+  .topbar { display: none; }
+  @media (max-width: 820px) {
+    .topbar { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--border); }
+    .topbar .t { font-weight: 700; font-size: 15px; }
+  }
+  @media print {
+    body { overflow: visible; background: #fff; color: #000; }
+    #app, #app.show { display: block; height: auto; }
+    .sidebar, .nav, .topbar, .menu-btn, #loader, #overview, #toast { display: none !important; }
+    .slide { position: static; display: block !important; break-inside: avoid; margin-bottom: 24px; }
+    .chart-wrap { height: 320px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Loading -->
+<div id="loader">
+  <div class="loader-ring"></div>
+  <h1>正在准备 ISO 影响分析演示</h1>
+  <div class="loader-bar"><i id="loaderFill"></i></div>
+  <div class="loader-pct" id="loaderPct">0%</div>
+  <p>载入 9 个分析模块与图表数据…</p>
+</div>
+
+<!-- App -->
+<div id="app">
+  <div class="scrim" id="scrim"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo">ISO</div>
+      <h2>未认证 ISO 体系的<br>8 项短期有利影响</h2>
+      <span>认证企业 vs 非认证企业 · 对比分析</span>
+    </div>
+    <nav class="toc" id="toc"></nav>
+    <div class="side-foot">
+      <button class="mini" id="btnTheme" title="切换主题 (T)">🌗<b>主题</b></button>
+      <button class="mini" id="btnFs" title="全屏 (F)">⛶<b>全屏</b></button>
+      <button class="mini" id="btnAuto" title="自动播放 (空格)">▶<b>播放</b></button>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <section class="main">
+    <div class="topbar">
+      <button class="btn ghost menu-btn" id="menuBtn">☰</button>
+      <span class="t">ISO 影响分析</span>
+    </div>
+
+    <div class="progress"><i id="progFill"></i></div>
+
+    <div class="stage" id="stage"></div>
+
+    <div class="nav">
+      <button class="btn ghost" id="prevBtn">← 上一页</button>
+      <div class="counter"><b id="cur">1</b> / <span id="total">9</span></div>
+      <div class="dots" id="dots"></div>
+      <button class="btn" id="nextBtn">下一页 →</button>
+    </div>
+  </section>
+</div>
+
+<!-- Overview -->
+<div id="overview">
+  <h3>全部模块总览 <span style="color:var(--text-faint);font-size:14px;font-weight:400;">（点击跳转 · 按 O 关闭）</span></h3>
+  <div class="grid" id="ovGrid"></div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* ============ 数据模型 ============ */
+const C = {
+  iso: '#3b82f6', isoFill: 'rgba(59,130,246,0.55)',
+  non: '#f59e0b', nonFill: 'rgba(245,158,11,0.55)'
+};
+
+const SLIDES = [
+  {
+    en: "Short-term Cost Saving",
+    title: "短期成本节约",
+    desc: "未认证企业可省去认证审核、体系搭建与年度监督费用，把资金直接投入业务增长。",
+    stat: "≈ $24k", statK: "认证企业首年额外支出（对比非认证）",
+    insight: "认证首年综合成本约为非认证企业的 <b>3–4 倍</b>，对现金流紧张的早期团队压力明显。",
+    source: "ISO Survey 2023",
+    chart: { type: 'bar', data: {
+      labels: ['认证申请费','体系搭建维护','员工培训','年度监督审核'],
+      datasets:[
+        {label:'ISO 认证企业', data:[12000,8000,5000,4000], backgroundColor:C.isoFill, borderColor:C.iso, borderWidth:1.5, borderRadius:6},
+        {label:'非认证企业', data:[0,2000,1000,0], backgroundColor:C.nonFill, borderColor:C.non, borderWidth:1.5, borderRadius:6}
+      ]}, options: axis('年均成本（美元）', true) }
+  },
+  {
+    en: "Process Flexibility",
+    title: "流程灵活性更高",
+    desc: "缺少刚性流程文件约束，非认证企业在产品、组织与政策调整上更轻盈。",
+    stat: "快 2×", statK: "非认证企业平均变更实施速度",
+    insight: "组织变革类调整，非认证企业平均 <b>21 天</b> vs 认证企业 <b>45 天</b>。",
+    source: "Harvard Business Review 2022",
+    chart: { type:'line', data:{
+      labels:['产品变更','流程调整','政策更新','组织变革'],
+      datasets:[
+        {label:'ISO 认证企业', data:[14,21,30,45], borderColor:C.iso, backgroundColor:'rgba(59,130,246,0.12)', borderWidth:2.5, tension:.35, fill:true, pointRadius:4},
+        {label:'非认证企业', data:[7,10,14,21], borderColor:C.non, backgroundColor:'rgba(245,158,11,0.12)', borderWidth:2.5, tension:.35, fill:true, pointRadius:4}
+      ]}, options: axis('平均实施天数', true) }
+  },
+  {
+    en: "Initial Market Access",
+    title: "初期市场准入更快",
+    desc: "大量新兴市场与中小客户并未强制要求 ISO 证书，非认证企业可先入局占坑。",
+    stat: "38%", statK: "全球市场不强制要求 ISO 认证",
+    insight: "在 <b>38%</b> 的非强制市场中，证书并非入场门槛，先发比合规更重要。",
+    source: "World Bank Enterprise Surveys 2021",
+    chart: { type:'doughnut', data:{
+      labels:['需要认证的市场','不强制认证的市场'],
+      datasets:[{data:[62,38], backgroundColor:[C.isoFill, C.nonFill], borderColor:[C.iso,C.non], borderWidth:2}]},
+      options:{ responsive:true, maintainAspectRatio:false, cutout:'58%',
+        plugins:{ legend:{position:'right'}, title:{display:true,text:'全球市场对 ISO 认证的要求比例（%）'} } } }
+  },
+  {
+    en: "Decision Speed",
+    title: "决策速度更快",
+    desc: "非认证企业的决策链路更短，无需层层对齐体系文件与合规口径。",
+    stat: "+20", statK: "非认证企业在各维度决策敏捷度评分领先",
+    insight: "在战略、产品、人事、财务、运营五类决策上，非认证企业评分普遍 <b>高出 15–20 分</b>。",
+    source: "McKinsey & Company 2023",
+    chart: { type:'radar', data:{
+      labels:['战略决策','产品决策','人事决策','财务决策','运营决策'],
+      datasets:[
+        {label:'ISO 认证企业', data:[65,70,60,75,68], backgroundColor:'rgba(59,130,246,0.18)', borderColor:C.iso, borderWidth:2},
+        {label:'非认证企业', data:[85,90,88,82,87], backgroundColor:'rgba(245,158,11,0.20)', borderColor:C.non, borderWidth:2}
+      ]},
+      options:{ responsive:true, maintainAspectRatio:false,
+        scales:{ r:{ suggestedMin:50, suggestedMax:100, ticks:{backdropColor:'transparent'} } } } }
+  },
+  {
+    en: "Early-stage Advantage",
+    title: "初创期专注产品",
+    desc: "早期团队把精力放在产品与市场验证，而非体系文档，开发进度更靠前。",
+    stat: "+16%", statK: "非认证初创 0–1 年产品开发进度领先",
+    insight: "成立 <b>0–1 年</b> 阶段，非认证初创产品开发进度领先约 <b>13 个百分点</b>。",
+    source: "Startup Genome Report 2024",
+    chart: { type:'bar', data:{
+      labels:['0–1年','1–2年','2–3年','3–5年'],
+      datasets:[
+        {label:'ISO 认证初创', data:[12,25,38,52], backgroundColor:C.isoFill, borderColor:C.iso, borderWidth:1.5, borderRadius:6},
+        {label:'非认证初创', data:[25,42,55,68], backgroundColor:C.nonFill, borderColor:C.non, borderWidth:1.5, borderRadius:6}
+      ]}, options:{ responsive:true, maintainAspectRatio:false, indexAxis:'y',
+        plugins:{legend:{position:'top'}},
+        scales:{ x:{ beginAtZero:true, title:{display:true,text:'产品开发进度（%）'} } } } }
+  },
+  {
+    en: "Industry Adaptability",
+    title: "特定行业的创新空间",
+    desc: "在创意、设计等强个性化行业，过度标准化可能抑制实验与差异化。",
+    stat: "85+", statK: "非认证企业在创意自由度上的表现",
+    insight: "气泡图中非认证企业在 <b>创意自由度 × 创新产出</b> 象限整体更靠外圈。",
+    source: "Forrester Research 2023",
+    chart: { type:'bubble', data:{
+      datasets:[
+        {label:'ISO 认证企业', data:[{x:60,y:70,r:15},{x:55,y:65,r:12},{x:70,y:75,r:18}], backgroundColor:'rgba(59,130,246,0.45)', borderColor:C.iso, borderWidth:1.5},
+        {label:'非认证企业', data:[{x:75,y:85,r:20},{x:80,y:78,r:18},{x:72,y:90,r:22}], backgroundColor:'rgba(245,158,11,0.45)', borderColor:C.non, borderWidth:1.5}
+      ]},
+      options:{ responsive:true, maintainAspectRatio:false,
+        scales:{ x:{title:{display:true,text:'创意自由度'},min:50,max:100}, y:{title:{display:true,text:'创新产出'},min:50,max:100} } } }
+  },
+  {
+    en: "Localization Benefit",
+    title: "本地化响应优势",
+    desc: "本地企业更懂区域偏好，未绑定全球统一标准时，能更贴合本地客户需求。",
+    stat: "92%", statK: "亚洲非认证企业本地客户满意度",
+    insight: "在亚洲与南美市场，非认证企业本地客户满意度分别达 <b>92%</b> 与 <b>79%</b>。",
+    source: "Deloitte Localization Report 2022",
+    chart: { type:'bar', data:{
+      labels:['北美','欧洲','亚洲','南美','非洲'],
+      datasets:[
+        {label:'ISO 认证企业满意度', data:[78,82,75,68,72], backgroundColor:C.isoFill, borderColor:C.iso, borderWidth:1.5, borderRadius:6},
+        {label:'非认证企业满意度', data:[85,88,92,79,83], backgroundColor:C.nonFill, borderColor:C.non, borderWidth:1.5, borderRadius:6}
+      ]}, options: axis('客户满意度（%）', false, 100) }
+  },
+  {
+    en: "HR Short-term Edge",
+    title: "短期人力成本更轻",
+    desc: "无需为员工安排体系、内审与标准解读类培训，人力投入更直接。",
+    stat: "−70h", statK: "非认证企业年均少投入的培训时长",
+    insight: "2023 年认证企业年均培训 <b>95 小时</b>，非认证仅 <b>25 小时</b>，差距持续扩大。",
+    source: "LinkedIn Workforce Report 2023",
+    chart: { type:'line', data:{
+      labels:['2019','2020','2021','2022','2023'],
+      datasets:[
+        {label:'ISO 认证企业培训时长', data:[120,110,105,100,95], borderColor:C.iso, backgroundColor:'rgba(59,130,246,0.12)', borderWidth:2.5, tension:.35, fill:true, pointRadius:4},
+        {label:'非认证企业培训时长', data:[40,35,30,28,25], borderColor:C.non, backgroundColor:'rgba(245,158,11,0.12)', borderWidth:2.5, tension:.35, fill:true, pointRadius:4}
+      ]}, options: axis('年均培训时间（小时）', true) }
+  },
+  {
+    en: "Synthesis",
+    title: "综合对比与权衡",
+    desc: "上述 8 项优势多集中在「短期 / 早期 / 特定场景」。当企业进入规模化、跨境或强监管阶段，ISO 带来的信任与壁垒价值会逐步显现。",
+    stat: "8 / 8", statK: "短期维度中非认证企业占优的模块数",
+    insight: "结论：<b>非认证</b> 适合早期与灵活场景；<b>认证</b> 适合规模化、合规与品牌背书场景。二者并非对立，而是阶段选择。",
+    source: "综合上述来源 · 演示用示意数据",
+    chart: { type:'bar', data:{
+      labels:['成本','灵活性','准入','决策','专注','创新','本地化','人力'],
+      datasets:[
+        {label:'ISO 认证企业', data:[35,40,60,55,45,50,48,70], backgroundColor:C.isoFill, borderColor:C.iso, borderWidth:1.5, borderRadius:6},
+        {label:'非认证企业', data:[90,85,65,80,82,78,85,90], backgroundColor:C.nonFill, borderColor:C.non, borderWidth:1.5, borderRadius:6}
+      ]}, options: axis('短期有利影响指数（示意）', true, 100) }
+  }
+];
+
+function axis(yTitle, zero, max){
+  const o = { responsive:true, maintainAspectRatio:false,
+    plugins:{ legend:{position:'top'} },
+    scales:{ y:{ beginAtZero:!!zero, title:{display:true,text:yTitle}, max: max||undefined } } };
+  return o;
+}
+
+/* ============ 渲染 ============ */
+const stage = document.getElementById('stage');
+const toc = document.getElementById('toc');
+const dots = document.getElementById('dots');
+const ovGrid = document.getElementById('ovGrid');
+const charts = [];
+let current = 0, rendered = new Set(), autoTimer = null, overview = false;
+
+SLIDES.forEach((s, i) => {
+  // slide
+  const el = document.createElement('div');
+  el.className = 'slide' + (i===0 ? ' active' : '');
+  el.dataset.i = i;
+  el.innerHTML = `
+    <div class="slide-head">
+      <span class="slide-idx">模块 ${i+1} / ${SLIDES.length}</span>
+      <div>
+        <h2 class="slide-title">${s.title}</h2>
+        <div class="slide-en">${s.en}</div>
+      </div>
+    </div>
+    <p class="slide-desc">${s.desc}</p>
+    <div class="stat-row">
+      <div class="stat"><div class="v">${s.stat}</div><div class="k">${s.statK}</div></div>
+    </div>
+    <div class="chart-wrap"><canvas id="cv${i}"></canvas></div>
+    <div class="insight">${s.insight}</div>
+    <div class="source">数据来源：${s.source}</div>
+  `;
+  stage.appendChild(el);
+
+  // toc
+  const t = document.createElement('button');
+  t.className = 'toc-item' + (i===0 ? ' active' : '');
+  t.innerHTML = `<span class="num">${i+1}</span><span class="lbl">${s.title}<small>${s.en}</small></span>`;
+  t.onclick = () => { go(i); closeNav(); };
+  toc.appendChild(t);
+
+  // dots
+  const d = document.createElement('button');
+  d.className = 'dot' + (i===0 ? ' active' : '');
+  d.title = s.title;
+  d.onclick = () => go(i);
+  dots.appendChild(d);
+
+  // overview card
+  const c = document.createElement('div');
+  c.className = 'card';
+  c.innerHTML = `<div class="ci">${i+1}</div><h4>${s.title}</h4><p>${s.desc}</p><div class="cs">${s.stat} · ${s.statK}</div>`;
+  c.onclick = () => { go(i); toggleOverview(false); };
+  ovGrid.appendChild(c);
+});
+
+document.getElementById('total').textContent = SLIDES.length;
+
+function applyThemeColors(){
+  const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+  Chart.defaults.color = dark ? '#9aa6c0' : '#475569';
+  Chart.defaults.borderColor = dark ? 'rgba(255,255,255,0.08)' : 'rgba(15,23,42,0.08)';
+  Chart.defaults.font.family = getComputedStyle(document.body).fontFamily;
+}
+
+function renderChart(i){
+  if (rendered.has(i)) return;
+  const cfg = SLIDES[i].chart;
+  charts[i] = new Chart(document.getElementById('cv'+i), {
+    type: cfg.type, data: cfg.data, options: cfg.options
+  });
+  rendered.add(i);
+}
+
+function go(i){
+  i = (i + SLIDES.length) % SLIDES.length;
+  document.querySelectorAll('.slide').forEach((s,k)=> s.classList.toggle('active', k===i));
+  document.querySelectorAll('.toc-item').forEach((s,k)=> s.classList.toggle('active', k===i));
+  document.querySelectorAll('.dot').forEach((s,k)=> s.classList.toggle('active', k===i));
+  current = i;
+  document.getElementById('cur').textContent = i+1;
+  document.getElementById('progFill').style.width = ((i+1)/SLIDES.length*100) + '%';
+  document.getElementById('nextBtn').textContent = (i===SLIDES.length-1) ? '↺ 重新开始' : '下一页 →';
+  renderChart(i);
+  if (charts[i]) charts[i].resize();
+}
+
+function next(){ go(current + 1); }
+function prev(){ if(current===0){ go(SLIDES.length-1);} else go(current-1); }
+
+/* ============ 交互 ============ */
+document.getElementById('nextBtn').onclick = () => { if(current===SLIDES.length-1){ stopAuto(); go(0);} else next(); };
+document.getElementById('prevBtn').onclick = prev;
+
+function toggleTheme(){
+  const root = document.documentElement;
+  root.setAttribute('data-theme', root.getAttribute('data-theme')==='dark' ? 'light' : 'dark');
+  applyThemeColors();
+  rendered.forEach(i => { if(charts[i]){ charts[i].destroy(); } });
+  rendered.clear();
+  renderChart(current);
+}
+document.getElementById('btnTheme').onclick = toggleTheme;
+
+function toggleFs(){
+  if(!document.fullscreenElement) document.documentElement.requestFullscreen?.();
+  else document.exitFullscreen?.();
+}
+document.getElementById('btnFs').onclick = toggleFs;
+
+function startAuto(){ autoTimer = setInterval(()=>{ if(current===SLIDES.length-1){ stopAuto(); return;} next(); }, 3500);
+  document.getElementById('btnAuto').innerHTML = '⏸<b>暂停</b>'; toast('自动播放已开启'); }
+function stopAuto(){ if(autoTimer){ clearInterval(autoTimer); autoTimer=null; }
+  document.getElementById('btnAuto').innerHTML = '▶<b>播放</b>'; }
+document.getElementById('btnAuto').onclick = () => autoTimer ? stopAuto() : startAuto();
+
+function toggleOverview(force){
+  overview = (force!==undefined) ? force : !overview;
+  document.getElementById('overview').classList.toggle('show', overview);
+}
+window.toggleOverview = toggleOverview;
+
+function closeNav(){ document.getElementById('app').classList.remove('nav-open'); }
+document.getElementById('menuBtn').onclick = () => document.getElementById('app').classList.toggle('nav-open');
+document.getElementById('scrim').onclick = closeNav;
+
+function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),1800); }
+
+document.addEventListener('keydown', e => {
+  if(e.key==='ArrowRight'){ next(); }
+  else if(e.key==='ArrowLeft'){ prev(); }
+  else if(e.key===' '){ e.preventDefault(); autoTimer?stopAuto():startAuto(); }
+  else if(e.key.toLowerCase()==='f'){ toggleFs(); }
+  else if(e.key.toLowerCase()==='t'){ toggleTheme(); }
+  else if(e.key.toLowerCase()==='o'){ toggleOverview(); }
+  else if(e.key==='Escape'){ if(overview) toggleOverview(false); closeNav(); }
+});
+
+/* ============ 加载 ============ */
+applyThemeColors();
+let p = 0;
+const li = setInterval(()=>{
+  p += Math.random()*16 + 6;
+  if(p>=100){ p=100; clearInterval(li);
+    document.getElementById('loaderFill').style.width='100%';
+    document.getElementById('loaderPct').textContent='100%';
+    setTimeout(()=>{
+      document.getElementById('loader').style.display='none';
+      document.getElementById('app').classList.add('show');
+      go(0);
+    }, 400);
+  }
+  document.getElementById('loaderFill').style.width = p+'%';
+  document.getElementById('loaderPct').textContent = Math.floor(p)+'%';
+}, 180);
+</script>
+</body>
+</html>
