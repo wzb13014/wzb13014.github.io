@@ -1,0 +1,765 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>文本对比 Diff Studio</title>
+<style id="pageStyle">
+  :root{
+    --bg:#1e1e24; --panel:#27272e; --panel2:#2f2f38; --border:#3a3a45;
+    --text:#e6e6ed; --muted:#9a9ab0; --accent:#5b8cff; --accent2:#7c5cff;
+    --add:#2e7d4f; --add-bg:#16331f; --add-fg:#7ee2a8;
+    --del:#a23b3b; --del-bg:#3a1d1d; --del-fg:#ff9d9d;
+    --chg:#b07a1f; --chg-bg:#3a2e15; --chg-fg:#ffd479;
+    --eq:#1b1b21; --mark:#ffd54a; --code:#d7d7e0;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  }
+  body.light{
+    --bg:#f5f6f8; --panel:#ffffff; --panel2:#f0f1f4; --border:#d8dae0;
+    --text:#1f2430; --muted:#6b7280; --accent:#3b6ef5; --accent2:#7c5cff;
+    --add:#1f7a47; --add-bg:#e6f6ee; --add-fg:#107a47;
+    --del:#c0392b; --del-bg:#fdecea; --del-fg:#c0392b;
+    --chg:#b9770e; --chg-bg:#fdf3e0; --chg-fg:#a8650a;
+    --eq:#ffffff; --mark:#ffce3a; --code:#2a2f3a;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0}
+  body{
+    background:var(--bg); color:var(--text);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;
+    display:flex; flex-direction:column; font-size:14px;
+  }
+  header{display:flex; align-items:center; justify-content:space-between; padding:10px 16px; background:var(--panel); border-bottom:1px solid var(--border)}
+  .brand{font-weight:700; font-size:16px; letter-spacing:.3px; display:flex; gap:8px; align-items:center}
+  .brand .dot{width:10px;height:10px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2))}
+  button,select{font:inherit; color:var(--text); background:var(--panel2); border:1px solid var(--border); border-radius:7px; padding:6px 10px; cursor:pointer; transition:.12s}
+  button:hover{border-color:var(--accent)}
+  button:active{transform:translateY(1px)}
+  button.primary{background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#fff; border:none; font-weight:600}
+  .controls{display:flex; flex-wrap:wrap; gap:14px; align-items:center; padding:10px 16px; background:var(--panel); border-bottom:1px solid var(--border)}
+  .control-group{display:flex; align-items:center; gap:6px}
+  .control-group>label{color:var(--muted); font-size:12px}
+  .seg{display:inline-flex; border:1px solid var(--border); border-radius:7px; overflow:hidden}
+  .seg button{border:none; border-radius:0; background:var(--panel2); padding:6px 12px}
+  .seg button.active{background:var(--accent); color:#fff}
+  .chk{display:inline-flex; align-items:center; gap:6px; color:var(--muted); font-size:12px; cursor:pointer; user-select:none}
+  .chk input{accent-color:var(--accent)}
+  .editors{display:grid; grid-template-columns:1fr 1fr; gap:1px; background:var(--border); height:32vh; min-height:180px}
+  .editor-pane{display:flex; flex-direction:column; background:var(--panel); overflow:hidden}
+  .pane-head{display:flex; align-items:center; justify-content:space-between; padding:6px 10px; border-bottom:1px solid var(--border); background:var(--panel2)}
+  .pane-head .t{font-weight:600; font-size:13px}
+  .pane-head .count{color:var(--muted); font-size:11px; margin-left:8px}
+  .pane-head .mini{font-size:11px; padding:3px 8px}
+  textarea{flex:1; resize:none; border:none; outline:none; padding:10px; background:var(--panel); color:var(--code); font-family:var(--mono); font-size:13px; line-height:1.5}
+  .toolbar{display:flex; flex-wrap:wrap; gap:8px; align-items:center; padding:10px 16px; background:var(--panel); border-bottom:1px solid var(--border)}
+  .toolbar .spacer{flex:1}
+  .toolbar input[type=text]{background:var(--panel2); border:1px solid var(--border); color:var(--text); border-radius:7px; padding:6px 10px; outline:none; width:160px}
+  #search{width:160px}
+  .stats{display:flex; gap:18px; align-items:center; padding:8px 16px; background:var(--panel2); border-bottom:1px solid var(--border); flex-wrap:wrap}
+  .stat{display:flex; flex-direction:column; align-items:center; min-width:54px}
+  .stat .num{font-size:18px; font-weight:700; line-height:1}
+  .stat span:last-child{font-size:11px; color:var(--muted); margin-top:3px}
+  .num.add{color:var(--add-fg)} .num.del{color:var(--del-fg)} .num.chg{color:var(--chg-fg)} .num.eq{color:var(--muted)}
+  .stat.sim{flex-direction:row; gap:8px; align-items:center}
+  .bar{width:140px; height:8px; background:var(--panel); border-radius:6px; overflow:hidden; border:1px solid var(--border)}
+  .bar .fill{height:100%; background:linear-gradient(90deg,var(--accent),var(--accent2)); width:0}
+  .legend{display:flex; gap:14px; padding:6px 16px; background:var(--panel); border-bottom:1px solid var(--border); font-size:12px; color:var(--muted); flex-wrap:wrap}
+  .lg{display:inline-flex; align-items:center; gap:6px}
+  .lg::before{content:""; width:12px; height:12px; border-radius:3px; display:inline-block}
+  .lg.add::before{background:var(--add-bg); border:1px solid var(--add)}
+  .lg.del::before{background:var(--del-bg); border:1px solid var(--del)}
+  .lg.chg::before{background:var(--chg-bg); border:1px solid var(--chg)}
+  .lg.eq::before{background:var(--eq); border:1px solid var(--border)}
+  .exp-legend{display:flex; gap:16px; align-items:center; padding:10px 16px; background:var(--panel); border-bottom:1px solid var(--border); font-size:13px; flex-wrap:wrap}
+  .exp-legend strong{color:var(--text)}
+  .exp-item{display:inline-flex; align-items:center; gap:6px; color:var(--text)}
+  .exp-item i{width:14px; height:14px; border-radius:3px; display:inline-block}
+  .modal-mask{position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,.5); z-index:60; padding:24px}
+  .modal-mask[hidden]{display:none}
+  .modal{display:flex; flex-direction:column; width:min(900px,96vw); height:min(86vh,860px); background:var(--panel); border:1px solid var(--border); border-radius:12px; box-shadow:0 18px 60px rgba(0,0,0,.5); overflow:hidden}
+  .modal-head{display:flex; align-items:center; justify-content:space-between; padding:12px 16px; border-bottom:1px solid var(--border); font-weight:600}
+  .modal-head .x{background:transparent; border:none; font-size:18px; cursor:pointer; color:var(--muted)}
+  .modal-body{flex:1; overflow:auto; background:var(--bg)}
+  .modal-body .exp-iframe{width:100%; height:100%; border:none; background:#fff}
+  .modal-body .exp-pre{margin:0; padding:14px; white-space:pre-wrap; word-break:break-all; font-family:var(--mono); font-size:12.5px; line-height:1.5; color:var(--code)}
+  .modal-foot{display:flex; gap:10px; justify-content:flex-end; padding:12px 16px; border-top:1px solid var(--border); background:var(--panel2)}
+  .dl-pick{max-width:440px; height:auto; max-height:84vh}
+  .dl-pick-body{display:flex; flex-direction:column; gap:10px; padding:16px}
+  .dl-opt{display:flex; flex-direction:column; align-items:flex-start; gap:3px; text-align:left; padding:12px 14px; border-radius:10px; background:var(--panel2); border:1px solid var(--border); cursor:pointer; color:var(--text)}
+  .dl-opt:hover{border-color:var(--accent); background:var(--accent); color:#fff}
+  .dl-opt b{font-size:14px}
+  .dl-opt span{font-size:12px; color:var(--muted)}
+  .dl-opt:hover span{color:rgba(255,255,255,.85)}
+  .output{flex:1; overflow:auto; padding:0; background:var(--eq); position:relative}
+  .output.nowrap .code{white-space:pre}
+  .output .code{white-space:pre-wrap; word-break:break-word}
+  .diff-split .row{display:grid; grid-template-columns:52px 1fr 52px 1fr; border-bottom:1px solid var(--border); font-family:var(--mono); font-size:13px; line-height:1.5}
+  .diff-split .ln{color:var(--muted); text-align:right; padding:2px 8px; user-select:none; background:var(--panel2); border-right:1px solid var(--border)}
+  .diff-split .ln.right{border-right:none; border-left:1px solid var(--border)}
+  .diff-split .code{padding:2px 10px; color:var(--code)}
+  .diff-split .row.eq .code{background:transparent}
+  .diff-split .row.del .code.left{background:var(--del-bg)}
+  .diff-split .row.del .ln.left{color:var(--del-fg)}
+  .diff-split .row.ins .code.right{background:var(--add-bg)}
+  .diff-split .row.ins .ln.right{color:var(--add-fg)}
+  .diff-split .row.chg .code.left{background:var(--del-bg)}
+  .diff-split .row.chg .code.right{background:var(--add-bg)}
+  .diff-split .row.chg .ln.left{color:var(--del-fg)} .diff-split .row.chg .ln.right{color:var(--add-fg)}
+  /* click-linked comparison */
+  .diff-split .row.linked{outline:2px solid var(--accent); outline-offset:-2px; border-radius:4px}
+  .diff-split .code.peer-hl{box-shadow:inset 0 0 0 2px var(--accent); border-radius:4px}
+  .diff-split .code.self-hl{background:rgba(127,127,127,.12)}
+  .tk-del{background:var(--del); color:#fff; border-radius:3px; padding:0 1px}
+  .tk-add{background:var(--add); color:#fff; border-radius:3px; padding:0 1px}
+  .diff-unified .urow{display:grid; grid-template-columns:30px 52px 1fr; border-bottom:1px solid var(--border); font-family:var(--mono); font-size:13px; line-height:1.5}
+  .diff-unified .sign{text-align:center; color:var(--muted); user-select:none; background:var(--panel2)}
+  .diff-unified .ln{color:var(--muted); text-align:right; padding:2px 8px; user-select:none; background:var(--panel2); border-right:1px solid var(--border)}
+  .diff-unified .code{padding:2px 10px; color:var(--code)}
+  .diff-unified .urow.del{background:var(--del-bg)} .diff-unified .urow.del .sign{color:var(--del-fg)}
+  .diff-unified .urow.ins{background:var(--add-bg)} .diff-unified .urow.ins .sign{color:var(--add-fg)}
+  .diff-unified.track .urow{display:block; padding:2px 10px}
+  .diff-unified.track .tk-del{background:var(--del-bg); color:var(--del-fg); text-decoration:line-through}
+  .diff-unified.track .tk-add{background:var(--add-bg); color:var(--add-fg)}
+  .diff-unified.track .tk-eq{color:var(--code)}
+  mark.search-hit{background:var(--mark); color:#000; border-radius:2px; padding:0 1px}
+  .empty-msg{padding:40px; text-align:center; color:var(--muted)}
+  .render-footer{position:sticky; bottom:0; display:flex; gap:10px; align-items:center; justify-content:center; padding:8px; background:var(--panel2); border-top:1px solid var(--border); font-size:12px; color:var(--muted)}
+  .render-footer button{padding:4px 10px; font-size:12px}
+  .overlay{position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,.4); z-index:40; flex-direction:column; gap:12px; color:var(--text)}
+  .overlay .msg{font-size:13px}
+  .spinner{width:42px;height:42px;border:4px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .toast{position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:var(--panel2); border:1px solid var(--border); padding:10px 18px; border-radius:10px; box-shadow:0 6px 24px rgba(0,0,0,.4); opacity:0; transition:.25s; pointer-events:none; z-index:50}
+  .toast.show{opacity:1}
+  /* layout show/hide */
+  body.layout-result .editors{display:none}
+  body.layout-result .tb-edit{display:none}
+  body.layout-edit .tb-result{display:none}
+  body.layout-edit .stats{display:none}
+  body.layout-edit .legend{display:none}
+  body.layout-edit .output{display:none}
+  body.layout-edit .editors{ height:auto; flex:1 1 0; min-height:220px; }
+  /* download */
+  .dl-wrap{position:relative}
+  @media(max-width:780px){ .editors{grid-template-columns:1fr; height:auto} .diff-split .row{grid-template-columns:40px 1fr 40px 1fr} }
+</style>
+</head>
+<body class="layout-all">
+<header>
+  <div class="brand"><span class="dot"></span> 文本对比 · Diff Studio</div>
+  <div><button id="themeBtn">🌓 主题</button></div>
+</header>
+
+<section class="controls">
+  <div class="control-group">
+    <label>视图</label>
+    <div class="seg" id="viewSeg">
+      <button data-view="split" class="active">并排</button>
+      <button data-view="unified">统一</button>
+    </div>
+  </div>
+  <div class="control-group">
+    <label>显示</label>
+    <div class="seg" id="layoutSeg">
+      <button data-layout="all" class="active">全部</button>
+      <button data-layout="result">仅结果</button>
+      <button data-layout="edit">仅编辑</button>
+      <button data-layout="full">全屏</button>
+    </div>
+  </div>
+  <div class="control-group">
+    <label>粒度</label>
+    <select id="granularity">
+      <option value="lines">行 (默认)</option>
+      <option value="words">词</option>
+      <option value="chars">字符</option>
+    </select>
+  </div>
+  <label class="chk"><input type="checkbox" id="ignoreWs"> 忽略空白</label>
+  <label class="chk"><input type="checkbox" id="ignoreCase"> 忽略大小写</label>
+  <label class="chk"><input type="checkbox" id="wordWrap" checked> 自动换行</label>
+  <label class="chk"><input type="checkbox" id="lineNums" checked> 行号</label>
+  <label class="chk"><input type="checkbox" id="onlyDiff"> 仅看差异</label>
+  <label class="chk"><input type="checkbox" id="realtime"> 实时对比</label>
+  <label class="chk"><input type="checkbox" id="linkClick"> 点击联动对比</label>
+</section>
+
+<section class="editors">
+  <div class="editor-pane">
+    <div class="pane-head">
+      <span class="t">原文本 <span class="count" id="countA"></span></span>
+      <span><button class="mini" id="upA">上传</button></span>
+    </div>
+    <textarea id="textA" placeholder="在此粘贴或输入原文本…（支持 Ctrl+Enter 对比）" spellcheck="false"></textarea>
+    <input type="file" id="fileA" hidden accept=".txt,.md,.csv,.json,.html,.xml,.log,.css,.js,.ts,.py,.java,.c,.cpp,.go,.rs,.sql,.yaml,.toml">
+  </div>
+  <div class="editor-pane">
+    <div class="pane-head">
+      <span class="t">新文本 <span class="count" id="countB"></span></span>
+      <span><button class="mini" id="upB">上传</button></span>
+    </div>
+    <textarea id="textB" placeholder="在此粘贴或输入新文本…" spellcheck="false"></textarea>
+    <input type="file" id="fileB" hidden accept=".txt,.md,.csv,.json,.html,.xml,.log,.css,.js,.ts,.py,.java,.c,.cpp,.go,.rs,.sql,.yaml,.toml">
+  </div>
+</section>
+
+<section class="toolbar">
+  <span class="tb-edit" style="display:inline-flex;gap:8px;align-items:center;flex-wrap:wrap">
+    <button id="compareBtn" class="primary">对比 (Ctrl+Enter)</button>
+    <button id="swapBtn">⇄ 交换</button>
+    <button id="clearBtn">清空</button>
+    <button id="sampleBtn">示例</button>
+    <span class="spacer"></span>
+  </span>
+  <span class="tb-result" style="display:inline-flex;gap:8px;align-items:center;flex-wrap:wrap">
+    <input id="search" type="text" placeholder="搜索结果…">
+    <button id="searchPrev" title="上一个">↑</button>
+    <button id="searchNext" title="下一个">↓</button>
+    <span id="searchCount" style="color:var(--muted);font-size:12px"></span>
+    <button id="copyBtn">复制</button>
+    <span class="dl-wrap">
+      <button id="dlBtn">下载 ▾</button>
+    </span>
+  </span>
+</section>
+
+<section class="stats" id="stats"></section>
+<section class="legend">
+  <span class="lg add">新增</span>
+  <span class="lg del">删除</span>
+  <span class="lg chg">修改</span>
+  <span class="lg eq">未变更</span>
+  <span style="margin-left:auto;color:var(--muted)" id="modeHint"></span>
+</section>
+
+<section class="output" id="output"><div class="empty-msg">输入两段文本后点击「对比」，或加载「示例」。</div></section>
+
+<div class="toast" id="toast"></div>
+
+<div class="modal-mask" id="expMask" hidden>
+  <div class="modal">
+    <div class="modal-head">
+      <span id="expTitle">导出</span>
+      <button class="x" id="expClose" title="关闭">✕</button>
+    </div>
+    <div class="modal-body" id="expBody"></div>
+    <div class="modal-foot">
+      <button id="expCancel">关闭</button>
+      <button id="expDownload" class="primary">下载文件</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-mask" id="dlModal" hidden>
+  <div class="modal dl-pick">
+    <div class="modal-head">
+      <span>选择下载格式</span>
+      <button class="x" id="dlClose" title="关闭">✕</button>
+    </div>
+    <div class="modal-body dl-pick-body">
+      <button class="dl-opt" data-dl="html"><b>HTML 网页</b><span>带样式的独立网页（含颜色图例）</span></button>
+      <button class="dl-opt" data-dl="csv"><b>CSV 表格</b><span>Excel 兼容（UTF-8 BOM）</span></button>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const textA=$('textA'), textB=$('textB'), output=$('output'), stats=$('stats');
+const BATCH=800, MAX_INNER=2000;
+
+const state={ view:'split', granularity:'lines', ignoreWs:false, ignoreCase:false,
+  wordWrap:true, lineNums:true, onlyDiff:false, realtime:false, linkClick:false };
+
+/* ============ diff engine (Hirschberg, linear space) ============ */
+function makeEq(opts){ return (x,y)=>{ let a=x,b=y;
+  if(opts.ignoreCase){ a=a.toLowerCase(); b=b.toLowerCase(); }
+  if(opts.ignoreWs){ a=a.replace(/\s+/g,' ').trim(); b=b.replace(/\s+/g,' ').trim(); }
+  return a===b; }; }
+function lcsFront(a,b,loA,hiA,loB,hiB,eq){ const m=hiB-loB;
+  let prev=new Int32Array(m+1), cur=new Int32Array(m+1);
+  for(let i=loA;i<hiA;i++){ const ai=a[i];
+    for(let j=0;j<m;j++){ if(eq(ai,b[loB+j])) cur[j+1]=prev[j]+1; else cur[j+1]=Math.max(prev[j+1],cur[j]); }
+    const t=prev; prev=cur; cur=t; }
+  return prev; }
+function lcsBack(a,b,loA,hiA,loB,hiB,eq){ const m=hiB-loB;
+  let prev=new Int32Array(m+1), cur=new Int32Array(m+1);
+  for(let i=hiA-1;i>=loA;i--){ const ai=a[i];
+    for(let j=m-1;j>=0;j--){ if(eq(ai,b[loB+j])) cur[j]=prev[j+1]+1; else cur[j]=Math.max(prev[j],cur[j+1]); }
+    const t=prev; prev=cur; cur=t; }
+  return prev; }
+function hirschberg(a,b,eq,loA,hiA,loB,hiB){
+  const result=[]; const stack=[{loA,hiA,loB,hiB}];
+  while(stack.length){
+    const t=stack.pop(); const la=t.loA,ha=t.hiA,lb=t.loB,hb=t.hiB;
+    const n=ha-la,m=hb-lb;
+    if(n===0){ for(let j=lb;j<hb;j++) result.push({type:'insert',a:-1,b:j}); }
+    else if(m===0){ for(let i=la;i<ha;i++) result.push({type:'delete',a:i,b:-1}); }
+    else if(n===1){
+      let mt=-1; for(let j=lb;j<hb;j++) if(eq(a[la],b[j])){ mt=j; break; }
+      if(mt>=0){ for(let j=lb;j<mt;j++) result.push({type:'insert',a:-1,b:j});
+        result.push({type:'equal',a:la,b:mt}); for(let j=mt+1;j<hb;j++) result.push({type:'insert',a:-1,b:j}); }
+      else { result.push({type:'delete',a:la,b:-1}); for(let j=lb;j<hb;j++) result.push({type:'insert',a:-1,b:j}); }
+    } else if(m===1){
+      let mt=-1; for(let i=la;i<ha;i++) if(eq(a[i],b[lb])){ mt=i; break; }
+      if(mt>=0){ for(let i=la;i<mt;i++) result.push({type:'delete',a:i,b:-1});
+        result.push({type:'equal',a:mt,b:lb}); for(let i=mt+1;i<ha;i++) result.push({type:'delete',a:i,b:-1}); }
+      else { for(let i=la;i<ha;i++) result.push({type:'delete',a:i,b:-1}); result.push({type:'insert',a:-1,b:lb}); }
+    } else {
+      const midA=(la+ha)>>1;
+      const L1=lcsFront(a,b,la,midA,lb,hb,eq);
+      const L2=lcsBack(a,b,midA,ha,lb,hb,eq);
+      let bestJ=lb,best=-1;
+      for(let k=0;k<=m;k++){ const v=L1[k]+L2[k]; if(v>best){ best=v; bestJ=lb+k; } }
+      stack.push({loA:midA,hiA:ha,loB:bestJ,hiB:hb});
+      stack.push({loA:la,hiA:midA,loB:lb,hiB:bestJ});
+    }
+  }
+  return result;
+}
+function diffLines(a,b,eq){
+  let loA=0,hiA=a.length,loB=0,hiB=b.length;
+  while(loA<hiA&&loB<hiB&&eq(a[loA],b[loB])){ loA++; loB++; }
+  while(loA<hiA&&loB<hiB&&eq(a[hiA-1],b[hiB-1])){ hiA--; hiB--; }
+  const ops=[];
+  for(let i=0;i<loA;i++) ops.push({type:'equal',a:i,b:i});
+  if(loA<hiA||loB<hiB){ for(const op of hirschberg(a,b,eq,loA,hiA,loB,hiB)) ops.push(op); }
+  for(let i=hiA,j=hiB;i<a.length&&j<b.length;i++,j++) ops.push({type:'equal',a:i,b:j});
+  return ops;
+}
+/* worker (off main thread) with sync fallback */
+const workerSrc = [
+  makeEq.toString(), lcsFront.toString(), lcsBack.toString(),
+  hirschberg.toString(), diffLines.toString(),
+  'self.onmessage=function(e){var d=e.data;var eq=makeEq({ignoreWs:d.ignoreWs,ignoreCase:d.ignoreCase});'
+  +'var ops=diffLines(d.linesA,d.linesB,eq);self.postMessage({ops:ops});};'
+].join('\n');
+let worker=null;
+try{ const blob=new Blob([workerSrc],{type:'application/javascript'}); worker=new Worker(URL.createObjectURL(blob)); }
+catch(e){ worker=null; }
+
+/* ============ pairing + tokenizers ============ */
+let A_lines=[], B_lines=[], lastOps=null, lastEq=null;
+function pairOps(ops){
+  const rows=[]; let i=0;
+  while(i<ops.length){
+    const op=ops[i];
+    if(op.type==='equal'){ rows.push({left:{kind:'equal',text:A_lines[op.a]},right:{kind:'equal',text:B_lines[op.b]}}); i++; }
+    else if(op.type==='delete'){
+      const dels=[],inss=[]; let j=i;
+      while(j<ops.length&&ops[j].type==='delete'){ dels.push(A_lines[ops[j].a]); j++; }
+      while(j<ops.length&&ops[j].type==='insert'){ inss.push(B_lines[ops[j].b]); j++; }
+      const max=Math.max(dels.length,inss.length);
+      for(let k=0;k<max;k++)
+        rows.push({ left:k<dels.length?{kind:'del',text:dels[k]}:{kind:'empty'},
+                    right:k<inss.length?{kind:'ins',text:inss[k]}:{kind:'empty'} });
+      i=j;
+    } else {
+      const inss=[]; let j=i;
+      while(j<ops.length&&ops[j].type==='insert'){ inss.push(B_lines[ops[j].b]); j++; }
+      for(const t of inss) rows.push({left:{kind:'empty'},right:{kind:'ins',text:t}});
+      i=j;
+    }
+  }
+  return rows;
+}
+const tokLines = t => t.split('\n');
+const tokWords = t => t.match(/\S+|\s+/g) || [];
+const tokChars = t => Array.from(t);
+const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+/* small-scope token diff for changed lines / track view (bounded by MAX_INNER) */
+function diffOpsTokens(a,b,eq){
+  const n=a.length,m=b.length;
+  const dp=Array.from({length:n+1},()=>new Uint32Array(m+1));
+  for(let i=n-1;i>=0;i--) for(let j=m-1;j>=0;j--)
+    dp[i][j] = eq(a[i],b[j]) ? dp[i+1][j+1]+1 : Math.max(dp[i+1][j],dp[i][j+1]);
+  const ops=[]; let i=0,j=0;
+  while(i<n&&j<m){ if(eq(a[i],b[j])){ ops.push({type:'equal',a:i,b:j}); i++; j++; }
+    else if(dp[i+1][j]>=dp[i][j+1]){ ops.push({type:'delete',a:i,b:-1}); i++; }
+    else { ops.push({type:'insert',a:-1,b:j}); j++; } }
+  while(i<n){ ops.push({type:'delete',a:i,b:-1}); i++; }
+  while(j<m){ ops.push({type:'insert',a:-1,b:j}); j++; }
+  return ops;
+}
+function innerHTML(text,other,gran,side,eq){
+  const tk1 = gran==='words'?tokWords(text):tokChars(text);
+  const tk2 = gran==='words'?tokWords(other):tokChars(other);
+  if(tk1.length>1000 || tk2.length>1000) return esc(side==='left'?text:other);
+  const ops = diffOpsTokens(tk1,tk2,eq);
+  let out='';
+  for(const op of ops){
+    if(op.type==='equal') out += esc(op.a>=0?tk1[op.a]:tk2[op.b]);
+    else if(op.type==='delete'){ if(side==='left') out+='<span class="tk-del">'+esc(tk1[op.a])+'</span>'; }
+    else if(op.type==='insert'){ if(side==='right') out+='<span class="tk-add">'+esc(tk2[op.b])+'</span>'; }
+  }
+  return out;
+}
+
+/* ============ rendering (batched) ============ */
+let renderRows=[], renderedCount=0, ctr={l:1,r:1}, diffBody=null, footer=null;
+function urow(cls,sign,no,code){ return `<div class="urow ${cls}"><span class="sign">${sign}</span><span class="ln">${state.lineNums?no:''}</span><span class="code">${code||'&nbsp;'}</span></div>`; }
+function rowHTMLSplit(r,i){
+  const eq=lastEq, innerGran=state.granularity==='lines'?'words':state.granularity;
+  let cls='row', lNo='', rNo='', lCode='', rCode='';
+  if(r.left.kind==='equal'&&r.right.kind==='equal'){ cls+=' eq'; lNo=ctr.l++; rNo=ctr.r++; lCode=esc(r.left.text); rCode=esc(r.right.text); }
+  else if(r.left.kind==='empty'&&r.right.kind==='ins'){ cls+=' ins'; rNo=ctr.r++; rCode=esc(r.right.text); }
+  else if(r.left.kind==='del'&&r.right.kind==='empty'){ cls+=' del'; lNo=ctr.l++; lCode=esc(r.left.text); }
+  else {
+    cls+=' chg'; lNo=ctr.l++; rNo=ctr.r++;
+    const lt=r.left.kind==='del'?r.left.text:'', rt=r.right.kind==='ins'?r.right.text:'';
+    lCode = lt.length>MAX_INNER?esc(lt):innerHTML(lt,rt,innerGran,'left',eq);
+    rCode = rt.length>MAX_INNER?esc(rt):innerHTML(lt,rt,innerGran,'right',eq);
+  }
+  return `<div class="${cls}" data-idx="${i}"><div class="ln left">${state.lineNums?lNo:''}</div>`
+    +`<div class="code left ${r.left.kind}">${lCode||'&nbsp;'}</div>`
+    +`<div class="ln right">${state.lineNums?rNo:''}</div>`
+    +`<div class="code right ${r.right.kind}">${rCode||'&nbsp;'}</div></div>`;
+}
+function rowHTMLUnified(r){
+  if(r.left.kind==='equal'&&r.right.kind==='equal'){ const no=ctr.l++; return urow('eq',' ',no,esc(r.left.text)); }
+  if(r.left.kind==='del'&&r.right.kind==='empty'){ const no=ctr.l++; return urow('del','-',no,esc(r.left.text)); }
+  if(r.left.kind==='empty'&&r.right.kind==='ins'){ const no=ctr.r++; return urow('ins','+',no,esc(r.right.text)); }
+  let h='';
+  if(r.left.kind==='del'){ const no=ctr.l++; h+=urow('del','-',no,esc(r.left.text)); }
+  if(r.right.kind==='ins'){ const no=ctr.r++; h+=urow('ins','+',no,esc(r.right.text)); }
+  return h;
+}
+function trackHTMLString(){
+  const tk1 = state.granularity==='words'?tokWords(textA.value):tokChars(textA.value);
+  const tk2 = state.granularity==='words'?tokWords(textB.value):tokChars(textB.value);
+  const tops = diffOpsTokens(tk1,tk2,lastEq);
+  let h='<div class="diff-unified track">';
+  for(const op of tops){
+    if(op.type==='equal') h+='<span class="tk-eq">'+esc(op.a>=0?tk1[op.a]:tk2[op.b])+'</span>';
+    else if(op.type==='delete') h+='<span class="tk-del">'+esc(tk1[op.a])+'</span>';
+    else if(op.type==='insert') h+='<span class="tk-add">'+esc(tk2[op.b])+'</span>';
+  }
+  return h+'</div>';
+}
+function renderAllToString(rows){
+  if(state.view==='split'){ let h='<div class="diff-split">', c={l:1,r:1};
+    for(const r of rows) h+=rowHTMLSplitWith(r,c); return h+'</div>'; }
+  if(state.granularity==='lines'||textA.value.length>100000||textB.value.length>100000){
+    let h='<div class="diff-unified">', c={l:1,r:1};
+    for(const r of rows) h+=rowHTMLUnifiedWith(r,c); return h+'</div>'; }
+  return trackHTMLString();
+}
+/* variants with explicit counter (for full export) */
+function rowHTMLSplitWith(r,c){ const eq=lastEq, innerGran=state.granularity==='lines'?'words':state.granularity;
+  let cls='row',lNo='',rNo='',lCode='',rCode='';
+  if(r.left.kind==='equal'&&r.right.kind==='equal'){cls+=' eq';lNo=c.l++;rNo=c.r++;lCode=esc(r.left.text);rCode=esc(r.right.text);}
+  else if(r.left.kind==='empty'&&r.right.kind==='ins'){cls+=' ins';rNo=c.r++;rCode=esc(r.right.text);}
+  else if(r.left.kind==='del'&&r.right.kind==='empty'){cls+=' del';lNo=c.l++;lCode=esc(r.left.text);}
+  else{cls+=' chg';lNo=c.l++;rNo=c.r++;const lt=r.left.kind==='del'?r.left.text:'',rt=r.right.kind==='ins'?r.right.text:'';
+    lCode=lt.length>MAX_INNER?esc(lt):innerHTML(lt,rt,innerGran,'left',eq);
+    rCode=rt.length>MAX_INNER?esc(rt):innerHTML(lt,rt,innerGran,'right',eq);}
+  return `<div class="${cls}"><div class="ln left">${state.lineNums?lNo:''}</div><div class="code left ${r.left.kind}">${lCode||'&nbsp;'}</div><div class="ln right">${state.lineNums?rNo:''}</div><div class="code right ${r.right.kind}">${rCode||'&nbsp;'}</div></div>`;
+}
+function rowHTMLUnifiedWith(r,c){
+  if(r.left.kind==='equal'&&r.right.kind==='equal'){const no=c.l++;return urow('eq',' ',no,esc(r.left.text));}
+  if(r.left.kind==='del'&&r.right.kind==='empty'){const no=c.l++;return urow('del','-',no,esc(r.left.text));}
+  if(r.left.kind==='empty'&&r.right.kind==='ins'){const no=c.r++;return urow('ins','+',no,esc(r.right.text));}
+  let h=''; if(r.left.kind==='del'){const no=c.l++;h+=urow('del','-',no,esc(r.left.text));}
+  if(r.right.kind==='ins'){const no=c.r++;h+=urow('ins','+',no,esc(r.right.text));} return h;
+}
+
+function startRender(){
+  if(!lastOps){ return; }
+  renderRows = pairOps(lastOps);
+  if(state.onlyDiff) renderRows = renderRows.filter(r=> !(r.left.kind==='equal'&&r.right.kind==='equal'));
+  output.classList.toggle('nowrap', !state.wordWrap);
+  if(renderRows.length===0){ output.innerHTML='<div class="empty-msg">两段文本完全相同 🎉</div>'; return; }
+  const big = textA.value.length>100000 || textB.value.length>100000;
+  const useTrack = (state.view==='unified' && state.granularity!=='lines' && !big);
+  output.innerHTML=''; diffBody=null; footer=null;
+  diffBody=document.createElement('div');
+  if(state.view==='split'){ diffBody.className='diff-split'; }
+  else { diffBody.className = (state.granularity==='lines'||big) ? 'diff-unified' : 'diff-unified track'; }
+  output.appendChild(diffBody);
+  if(useTrack){ diffBody.innerHTML = trackHTMLString(); highlightSearch(); return; }
+  if(state.view==='unified' && state.granularity!=='lines' && big){ toast('文本过大，词/字符级已降级为行级对比'); }
+  footer=document.createElement('div'); footer.className='render-footer'; output.appendChild(footer);
+  renderedCount=0; ctr={l:1,r:1};
+  appendBatch();
+}
+function appendBatch(){
+  if(renderedCount>=renderRows.length){ updateFooter(); highlightSearch(); return; }
+  const end=Math.min(renderedCount+BATCH, renderRows.length);
+  let html='';
+  for(let i=renderedCount;i<end;i++) html += state.view==='split'?rowHTMLSplit(renderRows[i],i):rowHTMLUnified(renderRows[i]);
+  diffBody.insertAdjacentHTML('beforeend', html);
+  renderedCount=end;
+  if(renderedCount>=renderRows.length){ highlightSearch(); }
+  updateFooter();
+}
+function loadAll(){
+  if(!footer) return;
+  footer.innerHTML='<span>加载中…</span>';
+  function step(){
+    if(renderedCount>=renderRows.length){ highlightSearch(); updateFooter(); return; }
+    const end=Math.min(renderedCount+2000, renderRows.length);
+    let html='';
+    for(let i=renderedCount;i<end;i++) html += state.view==='split'?rowHTMLSplit(renderRows[i],i):rowHTMLUnified(renderRows[i]);
+    diffBody.insertAdjacentHTML('beforeend', html);
+    renderedCount=end; updateFooter();
+    if(renderedCount<renderRows.length) requestAnimationFrame(step); else highlightSearch();
+  }
+  requestAnimationFrame(step);
+}
+function updateFooter(){
+  if(!footer) return;
+  const total=renderRows.length;
+  if(renderedCount>=total){ footer.innerHTML = total?`<span>共 ${total} 行（已全显示）</span>`:''; return; }
+  footer.innerHTML = `<span>已显示 ${renderedCount} / ${total} 行</span>`
+    +`<button id="fMore">加载更多</button><button id="fAll">加载全部</button>`;
+  footer.querySelector('#fMore').onclick=appendBatch;
+  footer.querySelector('#fAll').onclick=loadAll;
+}
+
+/* ============ stats ============ */
+function updateStats(ops){
+  const rows = pairOps(ops);
+  let add=0,del=0,chg=0,eqc=0;
+  for(const r of rows){
+    if(r.left.kind==='equal') eqc++;
+    else if(r.left.kind==='empty'&&r.right.kind==='ins') add++;
+    else if(r.left.kind==='del'&&r.right.kind==='empty') del++;
+    else chg++;
+  }
+  const total=add+del+chg+eqc;
+  const sim = total? Math.round(eqc/total*100) : 100;
+  const wA=textA.value.trim()?textA.value.trim().split(/\s+/).length:0;
+  const wB=textB.value.trim()?textB.value.trim().split(/\s+/).length:0;
+  stats.innerHTML =
+    `<div class="stat"><span class="num chg">${chg}</span><span>修改</span></div>`
+    +`<div class="stat"><span class="num add">${add}</span><span>新增</span></div>`
+    +`<div class="stat"><span class="num del">${del}</span><span>删除</span></div>`
+    +`<div class="stat"><span class="num eq">${eqc}</span><span>未变更</span></div>`
+    +`<div class="stat"><span style="font-size:12px;color:var(--muted)">词</span><span>${wA} → ${wB}</span></div>`
+    +`<div class="stat sim"><div class="bar"><div class="fill" style="width:${sim}%"></div></div><span>${sim}%</span></div>`;
+}
+
+/* ============ search ============ */
+function escapeReg(s){ return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
+let searchHits=[], curHit=-1;
+function clearMarks(){ output.querySelectorAll('mark.search-hit').forEach(m=>m.replaceWith(document.createTextNode(m.textContent))); output.normalize(); }
+function highlightSearch(){
+  clearMarks();
+  const q=$('search').value.trim(); $('searchCount').textContent=''; searchHits=[]; curHit=-1;
+  if(!q) return;
+  const walker=document.createTreeWalker(output,NodeFilter.SHOW_TEXT,null);
+  const nodes=[]; while(walker.nextNode()) nodes.push(walker.currentNode);
+  const re=new RegExp(escapeReg(q),'gi'); let count=0;
+  for(const node of nodes){
+    const txt=node.nodeValue; if(!txt) continue;
+    re.lastIndex=0; if(!re.test(txt)) continue; re.lastIndex=0;
+    const frag=document.createDocumentFragment(); let last=0,m,hit=false;
+    while((m=re.exec(txt))){ hit=true; count++;
+      frag.appendChild(document.createTextNode(txt.slice(last,m.index)));
+      const mk=document.createElement('mark'); mk.className='search-hit'; mk.textContent=m[0];
+      frag.appendChild(mk); last=m.index+m[0].length; if(m.index===re.lastIndex) re.lastIndex++; }
+    if(hit){ frag.appendChild(document.createTextNode(txt.slice(last))); node.parentNode.replaceChild(frag,node); }
+  }
+  searchHits=[...output.querySelectorAll('mark.search-hit')];
+  if(searchHits.length){ curHit=0; scrollHit(); $('searchCount').textContent=count+' 处'; }
+  else $('searchCount').textContent='无匹配';
+}
+function scrollHit(){ if(!searchHits[curHit]) return;
+  searchHits.forEach(h=>h.style.outline=''); const el=searchHits[curHit];
+  el.style.outline='2px solid var(--accent)'; el.scrollIntoView({block:'center'});
+  $('searchCount').textContent=(curHit+1)+'/'+searchHits.length; }
+
+/* ============ io ============ */
+function toast(msg){ const t=$('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),1800); }
+function copyText(s){ navigator.clipboard.writeText(s).then(()=>toast('已复制')).catch(()=>toast('复制失败')); }
+function download(name,content,type){ const blob=new Blob([content],{type}); const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download=name; a.click(); setTimeout(()=>URL.revokeObjectURL(url),1000); }
+function buildPlain(rows){ let s='';
+  for(const r of rows){
+    if(r.left.kind==='equal'&&r.right.kind==='equal') s+='  '+r.left.text+'\n';
+    else if(r.left.kind==='empty'&&r.right.kind==='ins') s+='+ '+r.right.text+'\n';
+    else if(r.left.kind==='del'&&r.right.kind==='empty') s+='- '+r.left.text+'\n';
+    else { if(r.left.kind==='del') s+='- '+r.left.text+'\n'; if(r.right.kind==='ins') s+='+ '+r.right.text+'\n'; }
+  } return s; }
+function dlHtml(){
+  if(!lastOps){ toast('请先对比'); return; }
+  const rows = pairOps(lastOps);
+  const body = (state.view==='unified'&&state.granularity!=='lines'&&textA.value.length<=100000&&textB.value.length<=100000)
+    ? trackHTMLString() : renderAllToString(rows);
+  const css=document.getElementById('pageStyle').textContent;
+  const legend = `<div class="exp-legend"><strong>颜色说明：</strong>`
+    + `<span class="exp-item"><i style="background:var(--add-bg);border:1px solid var(--add)"></i>新增</span>`
+    + `<span class="exp-item"><i style="background:var(--del-bg);border:1px solid var(--del)"></i>删除</span>`
+    + `<span class="exp-item"><i style="background:var(--chg-bg);border:1px solid var(--chg)"></i>修改</span>`
+    + `<span class="exp-item"><i style="background:var(--eq);border:1px solid var(--border)"></i>未变更</span></div>`;
+  const doc=`<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>Diff 结果</title><style>${css}</style></head><body>${legend}<section class="output">${body}</section></body></html>`;
+  showExportDialog('HTML 网页', doc, 'text/html', 'diff-result.html');
+}
+/* CSV (UTF-8 BOM so Excel reads Chinese correctly) */
+function csvCell(v){ v=v==null?'':String(v);
+  return /[",\n\r]/.test(v) ? '"'+v.replace(/"/g,'""')+'"' : v; }
+function dlCsv(){
+  if(!lastOps){ toast('请先对比'); return; }
+  const rows=pairOps(lastOps);
+  const lines=[['状态','原行号','新行号','原内容','新内容'].map(csvCell).join(',')];
+  let ri=0;
+  for(const r of rows){ ri++;
+    let s='',oNo='',nNo='',ot='',nt='';
+    if(r.left.kind==='equal'&&r.right.kind==='equal'){ s='未变更'; oNo=ri; nNo=ri; ot=r.left.text; nt=r.right.text; }
+    else if(r.left.kind==='empty'&&r.right.kind==='ins'){ s='新增'; nNo=ri; nt=r.right.text; }
+    else if(r.left.kind==='del'&&r.right.kind==='empty'){ s='删除'; oNo=ri; ot=r.left.text; }
+    else { s='修改'; oNo=ri; nNo=ri; ot=r.left.kind==='del'?r.left.text:''; nt=r.right.kind==='ins'?r.right.text:''; }
+    lines.push([s,oNo,nNo,ot,nt].map(csvCell).join(','));
+  }
+  showExportDialog('CSV 表格', '\uFEFF'+lines.join('\r\n'), 'text/csv;charset=utf-8', 'diff-result.csv');
+}
+
+/* ============ compare flow ============ */
+let compDone=false;
+function showComputing(b){ let o=$('overlay');
+  if(b){ if(!o){ o=document.createElement('div'); o.id='overlay'; o.className='overlay';
+    o.innerHTML='<div class="spinner"></div><div class="msg">正在后台对比…</div>'; document.body.appendChild(o); } }
+  else if(o){ o.remove(); } }
+function compare(){
+  if(worker) showComputing(true);
+  A_lines=tokLines(textA.value); B_lines=tokLines(textB.value);
+  lastEq=makeEq({ignoreWs:state.ignoreWs,ignoreCase:state.ignoreCase});
+  compDone=false;
+  const job={linesA:A_lines, linesB:B_lines, ignoreWs:state.ignoreWs, ignoreCase:state.ignoreCase};
+  if(worker){
+    worker.onmessage=(e)=>{ if(compDone) return; compDone=true; lastOps=e.data.ops; showComputing(false); updateStats(lastOps); startRender(); };
+    worker.onerror=()=>{ if(compDone) return; compDone=true; try{ lastOps=diffLines(A_lines,B_lines,lastEq); }catch(_){ showComputing(false); toast('对比失败'); return; } showComputing(false); updateStats(lastOps); startRender(); };
+    worker.postMessage(job);
+  } else {
+    setTimeout(()=>{ try{ lastOps=diffLines(A_lines,B_lines,lastEq); updateStats(lastOps); startRender(); }catch(err){ toast('对比失败'); } },0);
+  }
+}
+function rerender(){ if(!lastOps){ compare(); return; } updateStats(lastOps); startRender(); }
+
+/* ============ events ============ */
+$('viewSeg').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return;
+  state.view=b.dataset.view; [...$('viewSeg').children].forEach(x=>x.classList.toggle('active',x===b)); rerender(); });
+$('granularity').addEventListener('change',e=>{ state.granularity=e.target.value; rerender(); });
+$('ignoreWs').addEventListener('change',e=>{ state.ignoreWs=e.target.checked; compare(); });
+$('ignoreCase').addEventListener('change',e=>{ state.ignoreCase=e.target.checked; compare(); });
+$('wordWrap').addEventListener('change',e=>{ state.wordWrap=e.target.checked; output.classList.toggle('nowrap',!state.wordWrap); if(diffBody) rerender(); });
+$('lineNums').addEventListener('change',e=>{ state.lineNums=e.target.checked; rerender(); });
+$('onlyDiff').addEventListener('change',e=>{ state.onlyDiff=e.target.checked; rerender(); });
+/* click-linked comparison: click a line in split view to highlight its counterpart + show inline diff */
+function clearLinkHighlights(){ output.querySelectorAll('.row.linked').forEach(r=>r.classList.remove('linked'));
+  output.querySelectorAll('.code.peer-hl').forEach(c=>c.classList.remove('peer-hl'));
+  output.querySelectorAll('.code.self-hl').forEach(c=>c.classList.remove('self-hl')); }
+$('linkClick').addEventListener('change',e=>{ state.linkClick=e.target.checked; if(!state.linkClick) clearLinkHighlights(); });
+output.addEventListener('click',e=>{
+  if(!state.linkClick || state.view!=='split') return;
+  if(e.target.closest('.render-footer')) return;
+  const row=e.target.closest('.diff-split .row');
+  clearLinkHighlights();
+  if(!row) return;
+  const idx=+row.dataset.idx, r=renderRows[idx];
+  const leftCell=row.querySelector('.code.left'), rightCell=row.querySelector('.code.right');
+  const onLeft=!!e.target.closest('.code.left') || !!e.target.closest('.ln.left');
+  row.classList.add('linked');
+  if(onLeft){ rightCell.classList.add('peer-hl'); leftCell.classList.add('self-hl'); }
+  else { leftCell.classList.add('peer-hl'); rightCell.classList.add('self-hl'); }
+  if(r && r.left.kind==='del' && r.right.kind==='ins'){
+    const lt=r.left.text||'', rt=r.right.text||'', g=state.granularity==='chars'?'chars':'words';
+    if(lt.length<=MAX_INNER && rt.length<=MAX_INNER){
+      leftCell.innerHTML = lt? innerHTML(lt,rt,g,'left',lastEq):'&nbsp;';
+      rightCell.innerHTML = rt? innerHTML(lt,rt,g,'right',lastEq):'&nbsp;';
+    }
+  }
+});
+
+let rtTimer=null;
+function realtimeCompare(){ if(rtTimer) clearTimeout(rtTimer); rtTimer=setTimeout(compare,250); }
+$('compareBtn').addEventListener('click',compare);
+$('swapBtn').addEventListener('click',()=>{ const t=textA.value; textA.value=textB.value; textB.value=t; updateCounts(); compare(); });
+$('clearBtn').addEventListener('click',()=>{ textA.value=''; textB.value=''; updateCounts(); lastOps=null; output.innerHTML='<div class="empty-msg">已清空，输入文本后对比。</div>'; stats.innerHTML=''; });
+$('sampleBtn').addEventListener('click',()=>{
+  textA.value = `功能清单：
+- 用户登录
+- 数据导出为 CSV
+- 暗色主题
+- 搜索功能`;
+  textB.value = `功能清单：
+- 用户登录（支持 OAuth）
+- 数据导出为 CSV / Excel
+- 暗色主题与亮色主题
+- 全文搜索功能
+- 操作审计日志`;
+  updateCounts(); compare();
+});
+$('themeBtn').addEventListener('click',()=>{ document.body.classList.toggle('light'); $('themeBtn').textContent=document.body.classList.contains('light')?'🌙 暗色':'🌓 主题'; });
+function bindFile(btnId,inputId,ta){ $(btnId).addEventListener('click',()=>$(inputId).click());
+  $(inputId).addEventListener('change',e=>{ const f=e.target.files[0]; if(!f) return; const r=new FileReader();
+    r.onload=()=>{ ta.value=r.result; updateCounts(); compare(); }; r.readAsText(f); e.target.value=''; }); }
+bindFile('upA','fileA',textA); bindFile('upB','fileB',textB);
+[textA,textB].forEach(ta=>{ ta.addEventListener('input',()=>{ updateCounts(); if(state.realtime) realtimeCompare(); });
+  ta.addEventListener('keydown',e=>{ if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){ e.preventDefault(); compare(); } }); });
+$('search').addEventListener('input',highlightSearch);
+$('searchNext').addEventListener('click',()=>{ if(!searchHits.length)return; curHit=(curHit+1)%searchHits.length; scrollHit(); });
+$('searchPrev').addEventListener('click',()=>{ if(!searchHits.length)return; curHit=(curHit-1+searchHits.length)%searchHits.length; scrollHit(); });
+$('copyBtn').addEventListener('click',()=>{ if(!lastOps){toast('请先对比');return;} copyText(buildPlain(pairOps(lastOps))); });
+/* download: open a centered modal to pick format, then preview-download dialog */
+const dlBtn=$('dlBtn'), dlModal=$('dlModal');
+dlBtn.addEventListener('click',e=>{ e.stopPropagation(); dlModal.hidden=!dlModal.hidden; });
+$('dlClose').addEventListener('click',()=>dlModal.hidden=true);
+dlModal.addEventListener('click',e=>{ if(e.target===dlModal) dlModal.hidden=true; });
+dlModal.querySelectorAll('button[data-dl]').forEach(b=>b.addEventListener('click',()=>{
+  dlModal.hidden=true;
+  const t=b.dataset.dl;
+  if(t==='html') dlHtml(); else if(t==='csv') dlCsv();
+}));
+/* export dialog: preview + download in a centered screen popup */
+let expUrl=null;
+function showExportDialog(title, content, mime, filename){
+  $('expTitle').textContent='导出 · '+title;
+  const body=$('expBody'); body.innerHTML='';
+  if(mime.includes('text/html')){
+    const f=document.createElement('iframe'); f.className='exp-iframe'; f.srcdoc=content; body.appendChild(f);
+  } else {
+    const preview = content.length>300000 ? content.slice(0,300000)+'\n…（预览已截断，完整内容请下载文件）' : content;
+    const pre=document.createElement('pre'); pre.className='exp-pre'; pre.textContent=preview; body.appendChild(pre);
+  }
+  if(expUrl) URL.revokeObjectURL(expUrl);
+  expUrl=URL.createObjectURL(new Blob([content],{type:mime}));
+  $('expDownload').onclick=()=>{ const a=document.createElement('a'); a.href=expUrl; a.download=filename; a.click(); };
+  $('expMask').hidden=false;
+}
+function closeExportDialog(){ $('expMask').hidden=true; if(expUrl){ URL.revokeObjectURL(expUrl); expUrl=null; } }
+$('expClose').addEventListener('click',closeExportDialog);
+$('expCancel').addEventListener('click',closeExportDialog);
+$('expMask').addEventListener('click',e=>{ if(e.target===$('expMask')) closeExportDialog(); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ if(!$('expMask').hidden) closeExportDialog(); else if(!$('dlModal').hidden) $('dlModal').hidden=true; } });
+/* layout view (全部 / 仅结果 / 仅编辑) + 全屏 toggle */
+function toggleFullscreen(){
+  try{
+    if(!document.fullscreenElement){ const el=document.documentElement;
+      (el.requestFullscreen||el.webkitRequestFullscreen||el.msRequestFullscreen).call(el); }
+    else { (document.exitFullscreen||document.webkitExitFullscreen||document.msExitFullscreen).call(document); }
+  }catch(err){ toast('当前环境不支持全屏，请用浏览器打开本文件'); }
+}
+const fullBtn=()=>document.querySelector('#layoutSeg [data-layout=full]');
+document.addEventListener('fullscreenchange',()=>{
+  const on=!!document.fullscreenElement;
+  fullBtn().classList.toggle('active',on);
+  fullBtn().textContent = on?'退出全屏':'全屏';
+});
+$('layoutSeg').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return;
+  if(b.dataset.layout==='full'){ toggleFullscreen(); return; }
+  const lay=b.dataset.layout;
+  document.body.className=document.body.className.replace(/layout-\w+/g,'').trim()+' layout-'+lay;
+  [...$('layoutSeg').children].forEach(x=>{ if(x.dataset.layout!=='full') x.classList.toggle('active',x===b); });
+});
+
+function updateCounts(){
+  const c=v=>{ const lines=v? v.split('\n').length:0; return `${lines} 行 · ${v.length} 字符`; };
+  $('countA').textContent=c(textA.value); $('countB').textContent=c(textB.value);
+}
+updateCounts();
+</script>
+</body>
+</html>
