@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>岗位胜任力模型搭建器</title>
+<style>
+  :root{
+    --bg:#f4f6fa; --panel:#ffffff; --panel2:#f8fafc; --border:#e3e8ef;
+    --text:#1f2733; --muted:#6b7686; --primary:#3b6ef5; --primary-d:#2f57c9;
+    --accent:#7c5cff; --ok:#19a974; --warn:#e8a33d; --danger:#e0564f;
+    --shadow:0 2px 10px rgba(20,30,60,.06); --radius:10px; --chip:#eef2fb;
+  }
+  html[data-theme="dark"]{
+    --bg:#0f141c; --panel:#171e29; --panel2:#1d2632; --border:#2a3543;
+    --text:#e7edf5; --muted:#93a1b3; --primary:#5b86ff; --primary-d:#4470f0;
+    --accent:#9b7bff; --ok:#2ec78c; --warn:#f0b456; --danger:#ff6b62;
+    --shadow:0 2px 12px rgba(0,0,0,.35); --chip:#22303f;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{font-family:"Segoe UI","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+    background:var(--bg);color:var(--text);font-size:14px;line-height:1.5;}
+  button{font-family:inherit;cursor:pointer}
+  input,textarea,select{font-family:inherit;font-size:14px;color:var(--text);
+    background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:7px 9px;outline:none;width:100%}
+  input:focus,textarea:focus,select:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(59,110,245,.15)}
+  textarea{resize:vertical;min-height:34px}
+  .btn{display:inline-flex;align-items:center;gap:6px;background:var(--panel);border:1px solid var(--border);
+    color:var(--text);padding:7px 12px;border-radius:8px;font-size:13px;transition:.15s;white-space:nowrap}
+  .btn:hover{border-color:var(--primary);color:var(--primary)}
+  .btn.primary{background:var(--primary);border-color:var(--primary);color:#fff}
+  .btn.primary:hover{background:var(--primary-d);color:#fff}
+  .btn.ghost{background:transparent}
+  .btn.danger{color:var(--danger);border-color:transparent}
+  .btn.danger:hover{border-color:var(--danger);background:rgba(224,86,79,.08)}
+  .btn.sm{padding:4px 8px;font-size:12px;border-radius:6px}
+  .btn.icon{padding:6px 9px}
+  .tag{display:inline-block;font-size:11px;padding:2px 8px;border-radius:20px;background:var(--chip);color:var(--muted)}
+  .muted{color:var(--muted)}
+  .row{display:flex;gap:10px;align-items:center}
+  .wrap{display:flex;height:100vh;overflow:hidden}
+
+  /* Sidebar */
+  .sidebar{width:268px;min-width:268px;background:var(--panel);border-right:1px solid var(--border);
+    display:flex;flex-direction:column}
+  .brand{padding:16px 16px 12px;border-bottom:1px solid var(--border)}
+  .brand h1{font-size:16px;margin:0;display:flex;align-items:center;gap:8px}
+  .brand .sub{font-size:11px;color:var(--muted);margin-top:3px}
+  .side-search{padding:12px 12px 6px}
+  .side-search input{padding-left:30px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%236b7686' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='M21 21l-4-4'/%3E%3C/svg%3E") no-repeat 9px center}
+  .side-filter{padding:0 12px 8px;display:flex;gap:6px}
+  .side-filter select{padding:5px 7px;font-size:12px}
+  .side-list{flex:1;overflow:auto;padding:6px 8px}
+  .model-card{padding:9px 10px;border-radius:9px;cursor:pointer;margin-bottom:5px;border:1px solid transparent}
+  .model-card:hover{background:var(--panel2)}
+  .model-card.active{background:var(--chip);border-color:var(--primary)}
+  .model-card .nm{font-weight:600;font-size:13px;display:flex;justify-content:space-between;align-items:center}
+  .model-card .meta{font-size:11px;color:var(--muted);margin-top:2px}
+  .model-card .acts{display:none;gap:4px;margin-top:6px}
+  .model-card:hover .acts{display:flex}
+  .side-foot{padding:10px 12px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:8px}
+  .empty{padding:30px 14px;text-align:center;color:var(--muted);font-size:13px}
+
+  /* Main */
+  .main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+  .topbar{padding:10px 18px;border-bottom:1px solid var(--border);background:var(--panel);
+    display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .tabs{display:flex;gap:4px}
+  .tab{padding:7px 14px;border-radius:8px;font-size:13px;color:var(--muted);cursor:pointer;border:1px solid transparent}
+  .tab:hover{color:var(--text);background:var(--panel2)}
+  .tab.active{color:var(--primary);background:var(--chip);font-weight:600}
+  .top-actions{display:flex;gap:8px;align-items:center}
+  .content{flex:1;overflow:auto;padding:18px}
+  .panel{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow)}
+  .panel .ph{padding:12px 16px;border-bottom:1px solid var(--border);font-weight:600;display:flex;justify-content:space-between;align-items:center}
+  .panel .pb{padding:16px}
+  .grid2{display:grid;grid-template-columns:1fr 340px;gap:16px;align-items:start}
+  @media(max-width:1100px){.grid2{grid-template-columns:1fr}}
+  .field{margin-bottom:12px}
+  .field label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px;font-weight:600}
+  .field .hint{font-size:11px;color:var(--muted);margin-top:3px}
+
+  /* cluster / comp */
+  .cluster{border:1px solid var(--border);border-radius:10px;margin-bottom:14px;background:var(--panel2)}
+  .cluster-h{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--border)}
+  .cluster-h .dot{width:14px;height:14px;border-radius:50%;flex:none;border:2px solid #fff;box-shadow:0 0 0 1px var(--border)}
+  .cluster-h input.name{min-width:160px;max-width:240px;font-weight:600}
+  .cluster-body{padding:12px 14px}
+  .comp{border:1px solid var(--border);border-radius:9px;padding:12px;margin-bottom:10px;background:var(--panel)}
+  .comp-h{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+  .comp-h input.cname{min-width:150px;font-weight:600}
+  .comp-grid{display:grid;grid-template-columns:1fr 120px;gap:10px}
+  @media(max-width:760px){.comp-grid{grid-template-columns:1fr}}
+  .anchors{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-top:10px}
+  .anchor{border:1px dashed var(--border);border-radius:8px;padding:7px 8px;background:var(--panel2)}
+  .anchor .lv{font-size:11px;font-weight:700;color:var(--primary);margin-bottom:3px;display:flex;justify-content:space-between}
+  .anchor textarea{min-height:46px;font-size:12px;background:var(--panel)}
+
+  /* charts */
+  .chart-box{display:flex;justify-content:center;padding:8px}
+  .legend{display:flex;flex-wrap:wrap;gap:8px;padding:8px 14px;font-size:12px}
+  .legend .li{display:flex;align-items:center;gap:5px}
+  .legend .sw{width:11px;height:11px;border-radius:3px}
+  .stat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;padding:14px}
+  .stat{background:var(--panel2);border:1px solid var(--border);border-radius:9px;padding:10px 12px}
+  .stat .v{font-size:20px;font-weight:700;color:var(--primary)}
+  .stat .l{font-size:11px;color:var(--muted)}
+
+  /* tables */
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border)}
+  th{color:var(--muted);font-weight:600;font-size:12px;background:var(--panel2)}
+  td .bar{height:7px;border-radius:4px;background:var(--primary);display:inline-block;vertical-align:middle}
+  .pill{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:14px;font-size:11px;font-weight:600}
+  .pill.ok{background:rgba(25,169,116,.14);color:var(--ok)}
+  .pill.warn{background:rgba(232,163,61,.16);color:var(--warn)}
+  .pill.bad{background:rgba(224,86,79,.14);color:var(--danger)}
+
+  .template-card{border:1px solid var(--border);border-radius:10px;padding:14px;background:var(--panel)}
+  .template-card h3{margin:0 0 4px;font-size:14px}
+  .template-card .tags{display:flex;flex-wrap:wrap;gap:5px;margin:8px 0}
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:center}
+  .section-title{font-size:15px;font-weight:700;margin:0 0 4px}
+  .heat td,.heat th{text-align:center;padding:6px 5px}
+  .heat .cell{display:inline-block;width:26px;height:22px;border-radius:5px;line-height:22px;font-size:11px;font-weight:700;color:#fff}
+  .score-input{width:70px;text-align:center;font-weight:600}
+  .modal-bg{position:fixed;inset:0;background:rgba(10,16,28,.45);display:none;align-items:center;justify-content:center;z-index:50}
+  .modal-bg.show{display:flex}
+  .modal{background:var(--panel);border-radius:12px;width:min(440px,92vw);box-shadow:0 20px 60px rgba(0,0,0,.3)}
+  .modal .mh{padding:14px 16px;border-bottom:1px solid var(--border);font-weight:700}
+  .modal .mb{padding:16px}
+  .modal .mf{padding:12px 16px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px}
+  .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:#222d3d;color:#fff;
+    padding:10px 18px;border-radius:10px;font-size:13px;z-index:80;opacity:0;transition:.25s;pointer-events:none;box-shadow:0 8px 30px rgba(0,0,0,.3)}
+  .toast.show{opacity:1}
+  .kv{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+  .kv .tag{background:var(--chip)}
+  .divider{height:1px;background:var(--border);margin:14px 0}
+  .small{font-size:12px}
+  ::-webkit-scrollbar{width:9px;height:9px}
+  ::-webkit-scrollbar-thumb{background:var(--border);border-radius:6px}
+  @media print{
+    .sidebar,.topbar,.toolbar,.no-print{display:none!important}
+    .content{overflow:visible;padding:0}
+    body{background:#fff}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <aside class="sidebar">
+    <div class="brand">
+      <h1>🧭 胜任力模型搭建器</h1>
+      <div class="sub">Competency Model Builder · 单文件离线版</div>
+    </div>
+    <div class="side-search"><input id="search" placeholder="搜索岗位 / 胜任力…" oninput="App.search(this.value)"></div>
+    <div class="side-filter">
+      <select id="filterDept" onchange="App.filterDept(this.value)"><option value="">全部部门</option></select>
+      <select id="filterLevel" onchange="App.filterLevel(this.value)">
+        <option value="">全部层级</option><option>基层</option><option>中层</option><option>高层</option>
+      </select>
+    </div>
+    <div class="side-list" id="modelList"></div>
+    <div class="side-foot">
+      <button class="btn primary" onclick="App.newModel()">＋ 新建模型</button>
+      <button class="btn" onclick="App.goTab('templates')">📚 模板中心</button>
+      <button class="btn ghost sm" onclick="App.goTab('data')">⚙ 数据管理</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="tabs" id="tabs">
+        <div class="tab active" data-t="build" onclick="App.goTab('build')">🛠 模型搭建</div>
+        <div class="tab" data-t="viz" onclick="App.goTab('viz')">📊 可视化分析</div>
+        <div class="tab" data-t="assess" onclick="App.goTab('assess')">🎯 人才评估</div>
+        <div class="tab" data-t="templates" onclick="App.goTab('templates')">📚 模板中心</div>
+        <div class="tab" data-t="data" onclick="App.goTab('data')">⚙ 数据管理</div>
+      </div>
+      <div class="top-actions">
+        <button class="btn sm" onclick="App.exportJSON()" title="导出全部数据">⬇ 导出</button>
+        <button class="btn sm" onclick="App.importJSON()" title="导入 JSON">⬆ 导入</button>
+        <button class="btn sm" onclick="App.toggleTheme()" id="themeBtn" title="切换主题">🌗</button>
+      </div>
+    </div>
+    <div class="content" id="main"></div>
+  </main>
+</div>
+
+<div class="modal-bg" id="modalBg"><div class="modal" id="modal"></div></div>
+<div class="toast" id="toast"></div>
+<input type="file" id="fileInput" accept="application/json,.json" style="display:none" onchange="App.onFile(event)">
+
+<script>
+"use strict";
+/* ============================ 工具函数 ============================ */
+const LS_KEY = "competency_model_builder_v1";
+const CLUSTER_COLORS = ["#3b6ef5","#7c5cff","#19a974","#e8a33d","#e0564f","#1aa7c4","#d36bd0","#5c8a3b","#c4642e","#4f6bd3"];
+function uid(p){return (p||"id")+"_"+Math.random().toString(36).slice(2,9)+Date.now().toString(36).slice(-4);}
+function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
+function round(n,d){const f=Math.pow(10,d||0);return Math.round(n*f)/f;}
+function fmtPct(n){return round(n,1)+"%";}
+
+/* ============================ 数据层 ============================ */
+const DICTIONARY = [
+  {name:"沟通表达",def:"清晰、有逻辑地传递信息，倾听并促成共识。",cluster:"通用能力"},
+  {name:"团队协作",def:"主动配合他人，建立信任，推动团队目标达成。",cluster:"通用能力"},
+  {name:"问题解决",def:"识别根因，结构化分析并提出可行方案。",cluster:"通用能力"},
+  {name:"学习能力",def:"快速吸收新知识、新方法并转化为能力。",cluster:"通用能力"},
+  {name:"执行力",def:"把目标拆解为动作，按时保质交付结果。",cluster:"通用能力"},
+  {name:"抗压韧性",def:"在压力与不确定下保持稳定与投入。",cluster:"通用能力"},
+  {name:"创新思维",def:"突破惯性，提出新思路、新方案。",cluster:"通用能力"},
+  {name:"责任心",def:"对结果与影响主动担责、闭环到底。",cluster:"通用能力"},
+  {name:"数据分析",def:"用数据发现问题、验证假设、支撑决策。",cluster:"专业能力"},
+  {name:"专业深度",def:"掌握岗位核心技术/知识并持续精进。",cluster:"专业能力"},
+  {name:"流程优化",def:"识别并改进流程瓶颈，提升效率与质量。",cluster:"专业能力"},
+  {name:"项目管理",def:"统筹范围、进度、资源与风险达成目标。",cluster:"专业能力"},
+  {name:"客户导向",def:"洞察客户需求，创造并交付客户价值。",cluster:"专业能力"},
+  {name:"产品思维",def:"从用户与商业视角定义与打磨产品。",cluster:"专业能力"},
+  {name:"业务理解",def:"理解行业、市场与公司商业模式。",cluster:"专业能力"},
+  {name:"团队领导",def:"凝聚团队、分配任务、激发成员潜能。",cluster:"领导力"},
+  {name:"目标管理",def:"制定并拆解目标，追踪达成路径。",cluster:"领导力"},
+  {name:"决策判断",def:"在复杂信息下做出及时、合理的决策。",cluster:"领导力"},
+  {name:"人才培养",def:"识别与发展人才，建设梯队。",cluster:"领导力"},
+  {name:"跨部门协同",def:"跨团队整合资源、推动横向协作。",cluster:"领导力"},
+  {name:"战略思维",def:"洞察趋势，进行中长期布局。",cluster:"领导力"},
+  {name:"价值观践行",def:"认同并身体力行组织核心价值观。",cluster:"价值观"},
+  {name:"保密合规",def:"严守保密要求与合规底线。",cluster:"价值观"},
+  {name:"敬业度",def:"投入热情、主动付出额外努力。",cluster:"价值观"}
+];
+
+function makeComp(name,def){
+  return {id:uid("c"),name:name||"",def:def||"",weight:5,target:5,anchors:["","","","","",""]};
+}
+function makeCluster(name,color){
+  return {id:uid("k"),name:name||"新胜任力簇",color:color||CLUSTER_COLORS[0],weight:1,comps:[]};
+}
+function newModel(name,dept,level){
+  return {
+    id:uid("m"),name:name||"未命名岗位模型",department:dept||"",jobLevel:level||"基层",
+    description:"",maxLevel:5,
+    levelNames:["入门","了解","熟悉","熟练","精通","专家"].slice(0,5),
+    clusters:[],assessments:[],createdAt:Date.now(),updatedAt:Date.now()
+  };
+}
+
+const App = {
+  state:{ models:[], dict:DICTIONARY.slice(), settings:{theme:"light", lastModel:null} },
+  tab:"build", curModel:null, searchQ:"", fDept:"", fLevel:"",
+  assessSel:null, compareIds:[],
+
+  /* ---------- 持久化 ---------- */
+  load(){
+    try{
+      const raw=localStorage.getItem(LS_KEY);
+      if(raw){const d=JSON.parse(raw);this.state.models=d.models||[];this.state.dict=d.dict||DICTIONARY.slice();this.state.settings=d.settings||{theme:"light"};}
+    }catch(e){console.warn(e);}
+    if(!this.state.models.length){ this.state.models=[sampleModel()]; }
+    if(!this.state.settings.theme) this.state.settings.theme="light";
+    document.documentElement.setAttribute("data-theme",this.state.settings.theme);
+    this.curModel=this.state.models[0]?this.state.models[0].id:null;
+    this.state.settings.lastModel=this.curModel;
+  },
+  save(){
+    try{localStorage.setItem(LS_KEY,JSON.stringify(this.state));}catch(e){this.toast("保存失败："+e.message);}
+  },
+  getModel(id){return this.state.models.find(m=>m.id===id);},
+  cur(){return this.getModel(this.curModel);},
+  flatten(m){const out=[];m.clusters.forEach(k=>k.comps.forEach(c=>out.push({comp:c,cluster:k})));return out;},
+  effWeight(m,c){ // 有效权重 = 簇权重 * 胜任力权重
+    const k=m.clusters.find(x=>x.comps.some(cc=>cc.id===c.id));
+    return (k?k.weight:1)*c.weight;
+  },
+  totalEff(m){let t=0;this.flatten(m).forEach(({comp})=>t+=this.effWeight(m,comp));return t;},
+
+  /* ---------- 渲染外壳 ---------- */
+  render(){
+    document.documentElement.setAttribute("data-theme",this.state.settings.theme);
+    document.getElementById("themeBtn").textContent=this.state.settings.theme==="dark"?"☀":"🌗";
+    this.renderSidebar();
+    this.renderMain();
+  },
+  renderSidebar(){
+    const list=document.getElementById("modelList");
+    const all=this.state.models;
+    const q=this.searchQ.trim().toLowerCase();
+    let items=all.filter(m=>{
+      if(this.fDept && m.department!==this.fDept) return false;
+      if(this.fLevel && m.jobLevel!==this.fLevel) return false;
+      if(q){const hay=(m.name+" "+(m.department||"")+" "+this.flatten(m).map(x=>x.comp.name).join(" ")).toLowerCase();
+        if(!hay.includes(q)) return false;}
+      return true;
+    });
+    // 部门下拉
+    const depts=[...new Set(all.map(m=>m.department).filter(Boolean))];
+    const fsel=document.getElementById("filterDept");
+    const cur=fsel.value; fsel.innerHTML='<option value="">全部部门</option>'+depts.map(d=>`<option ${d===cur?"selected":""}>${esc(d)}</option>`).join("");
+    if(items.length===0){
+      list.innerHTML='<div class="empty">没有匹配的模型<br>点击左下角「新建模型」开始</div>';return;
+    }
+    list.innerHTML=items.map(m=>{
+      const comps=this.flatten(m).length;
+      const active=m.id===this.curModel?"active":"";
+      return `<div class="model-card ${active}" onclick="App.selectModel('${m.id}')">
+        <div class="nm"><span>${esc(m.name)}</span><span class="tag">${comps}项</span></div>
+        <div class="meta">${esc(m.department||"未分部门")} · ${esc(m.jobLevel)}</div>
+        <div class="acts">
+          <button class="btn sm" onclick="event.stopPropagation();App.duplicateModel('${m.id}')">复制</button>
+          <button class="btn sm danger" onclick="event.stopPropagation();App.deleteModel('${m.id}')">删除</button>
+        </div>
+      </div>`;
+    }).join("");
+  },
+  renderMain(){
+    const m=this.cur();
+    const main=document.getElementById("main");
+    if(!m && this.tab!=="templates" && this.tab!=="data"){
+      main.innerHTML='<div class="empty panel" style="padding:60px;text-align:center">尚未选择模型，请从左侧选择或新建。</div>';return;
+    }
+    document.querySelectorAll("#tabs .tab").forEach(t=>t.classList.toggle("active",t.dataset.t===this.tab));
+    if(this.tab==="build") main.innerHTML=this.buildHTML(m);
+    else if(this.tab==="viz") main.innerHTML=this.vizHTML(m);
+    else if(this.tab==="assess") main.innerHTML=this.assessHTML(m);
+    else if(this.tab==="templates") main.innerHTML=this.templatesHTML();
+    else if(this.tab==="data") main.innerHTML=this.dataHTML();
+    this.afterRender();
+  },
+  afterRender(){
+    if(this.tab==="build") this.bindBuild();
+    if(this.tab==="viz") this.bindViz();
+    if(this.tab==="assess") this.bindAssess();
+  },
+
+  /* ---------- 模型搭建 ---------- */
+  buildHTML(m){
+    const lvCount=m.maxLevel;
+    let clustersHTML=m.clusters.map(k=>this.clusterHTML(k,m)).join("");
+    const stat=this.modelStats(m);
+    return `<div class="grid2">
+      <div>
+        <div class="panel" style="margin-bottom:16px">
+          <div class="ph">① 岗位基本信息</div>
+          <div class="pb">
+            <div class="row" style="gap:12px">
+              <div class="field" style="flex:2"><label>岗位名称</label><input id="m_name" value="${esc(m.name)}" oninput="App.meta('name',this.value)"></div>
+              <div class="field" style="flex:1"><label>所属部门</label><input id="m_dept" value="${esc(m.department)}" oninput="App.meta('department',this.value)" placeholder="如：产品部"></div>
+              <div class="field" style="flex:1"><label>岗位层级</label><select id="m_level" onchange="App.meta('jobLevel',this.value)">
+                ${["基层","中层","高层"].map(l=>`<option ${m.jobLevel===l?"selected":""}>${l}</option>`).join("")}</select></div>
+            </div>
+            <div class="field"><label>岗位说明</label><textarea id="m_desc" oninput="App.meta('description',this.value)" placeholder="职责概述、定位…">${esc(m.description)}</textarea></div>
+          </div>
+        </div>
+
+        <div class="panel" style="margin-bottom:16px">
+          <div class="ph">② 等级体系配置 <span class="tag">行为锚定等级法 (BARS)</span></div>
+          <div class="pb">
+            <div class="row" style="gap:14px;flex-wrap:wrap">
+              <div class="field" style="margin:0"><label>等级数量</label>
+                <select id="m_maxlv" onchange="App.setMaxLevel(parseInt(this.value))" style="width:120px">
+                  ${[3,4,5,6].map(n=>`<option ${m.maxLevel===n?"selected":""}>${n}</option>`).join("")}</select></div>
+              <div style="flex:1;min-width:260px">
+                <label style="font-size:12px;color:var(--muted);font-weight:600">各级名称（从低到高）</label>
+                <div class="row" id="lvNames" style="gap:6px;margin-top:4px">
+                  ${Array.from({length:m.maxLevel}).map((_,i)=>`<input style="min-width:64px" value="${esc(m.levelNames[i]||("L"+(i+1)))}" oninput="App.lvName(${i},this.value)">`).join("")}
+                </div>
+              </div>
+            </div>
+            <div class="hint">提示：每一等级的「行为锚定描述」在各胜任力项中编辑（见下方）。</div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="ph">③ 胜任力簇与胜任力项
+            <button class="btn sm primary" onclick="App.addCluster()">＋ 新增胜任力簇</button>
+          </div>
+          <div class="pb" id="clustersBox">
+            ${clustersHTML || '<div class="empty">暂无胜任力簇，点击右上角新增。</div>'}
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="panel" style="position:sticky;top:0">
+          <div class="ph">实时概览</div>
+          <div class="stat-grid">
+            <div class="stat"><div class="v">${stat.clusters}</div><div class="l">胜任力簇</div></div>
+            <div class="stat"><div class="v">${stat.comps}</div><div class="l">胜任力项</div></div>
+            <div class="stat"><div class="v">${stat.weightNorm}</div><div class="l">权重合计(归一)</div></div>
+            <div class="stat"><div class="v">${stat.avgTarget}</div><div class="l">平均目标等级</div></div>
+          </div>
+          <div class="chart-box" id="radarBox"></div>
+          <div class="legend" id="radarLegend"></div>
+          <div class="divider"></div>
+          <div class="ph" style="border:0;padding:0 14px 6px">权重分布（按簇）</div>
+          <div class="chart-box" id="donutBox"></div>
+        </div>
+      </div>
+    </div>`;
+  },
+  clusterHTML(k,m){
+    const compsHTML=k.comps.map(c=>this.compHTML(c,k,m)).join("");
+    return `<div class="cluster" data-k="${k.id}">
+      <div class="cluster-h">
+        <span class="dot" style="background:${k.color}"></span>
+        <input class="name" value="${esc(k.name)}" oninput="App.clusterMeta('${k.id}','name',this.value)">
+        <input type="color" value="${k.color}" style="width:34px;height:30px;padding:2px" oninput="App.clusterMeta('${k.id}','color',this.value)">
+        <div class="row" style="gap:4px;margin-left:auto">
+          <label class="small muted" title="簇权重（用于加权汇总）">簇权重</label>
+          <input class="score-input" style="width:56px" type="number" min="0" step="0.5" value="${k.weight}" oninput="App.clusterMeta('${k.id}','weight',parseFloat(this.value)||0)">
+        </div>
+        <button class="btn sm danger" onclick="App.delCluster('${k.id}')">删除簇</button>
+      </div>
+      <div class="cluster-body" id="comps_${k.id}">
+        ${compsHTML}
+        <button class="btn sm" onclick="App.addComp('${k.id}')">＋ 添加胜任力项</button>
+      </div>
+    </div>`;
+  },
+  compHTML(c,k,m){
+    const anchors=c.anchors.slice(0,m.maxLevel).map((a,i)=>`
+      <div class="anchor">
+        <div class="lv"><span>${esc(m.levelNames[i]||("L"+(i+1)))}</span><span class="muted">${i+1}</span></div>
+        <textarea placeholder="该等级的行为描述…" oninput="App.anchor('${c.id}',${i},this.value)">${esc(a)}</textarea>
+      </div>`).join("");
+    const opts=Array.from({length:m.maxLevel}).map((_,i)=>`<option value="${i+1}" ${c.target===(i+1)?"selected":""}>${esc(m.levelNames[i]||("L"+(i+1)))}</option>`).join("");
+    return `<div class="comp" data-c="${c.id}">
+      <div class="comp-h">
+        <input class="cname" value="${esc(c.name)}" placeholder="胜任力名称" oninput="App.compMeta('${c.id}','name',this.value)">
+        <div class="row" style="gap:4px;margin-left:auto">
+          <label class="small muted">权重</label>
+          <input class="score-input" type="number" min="0" step="1" value="${c.weight}" oninput="App.compMeta('${c.id}','weight',parseFloat(this.value)||0)">
+          <label class="small muted">目标等级</label>
+          <select class="score-input" style="width:92px" onchange="App.compMeta('${c.id}','target',parseInt(this.value))">${opts}</select>
+          <button class="btn sm danger" onclick="App.delComp('${c.id}')">✕</button>
+        </div>
+      </div>
+      <div class="comp-grid">
+        <textarea placeholder="胜任力定义…" oninput="App.compMeta('${c.id}','def',this.value)">${esc(c.def)}</textarea>
+        <div class="row" style="gap:6px;align-items:flex-start">
+          <button class="btn sm" onclick="App.openDict('${c.id}')" title="从能力词典添加">📖 词典</button>
+          <button class="btn sm ghost" onclick="App.duplicateComp('${c.id}')" title="复制此项">⧉</button>
+        </div>
+      </div>
+      <div class="anchors">${anchors}</div>
+    </div>`;
+  },
+  bindBuild(){this.updateDerived();},
+  updateDerived(){
+    const m=this.cur();if(!m)return;
+    // 簇雷达：按有效权重对目标等级归一
+    const labels=m.clusters.map(k=>k.name);
+    const values=m.clusters.map(k=>{
+      const cs=k.comps;if(!cs.length)return 0;
+      let num=0,den=0;cs.forEach(c=>{const ew=k.weight*c.weight;num+=ew*((c.target||0)/m.maxLevel);den+=ew;});
+      return den?num/den:0;
+    });
+    document.getElementById("radarBox").innerHTML=radarSVG([{name:"目标画像",color:"#3b6ef5",values}],labels,{size:300});
+    document.getElementById("radarLegend").innerHTML=labels.map((l,i)=>`<span class="li"><span class="sw" style="background:${m.clusters[i].color}"></span>${esc(l)}</span>`).join("");
+    // 权重环
+    const wlabels=m.clusters.map(k=>k.name);
+    const wvals=m.clusters.map(k=>{let s=0;k.comps.forEach(c=>s+=k.weight*c.weight);return s;});
+    document.getElementById("donutBox").innerHTML=donutSVG(wvals,wlabels,m.clusters.map(k=>k.color),{size:240});
+  },
+  modelStats(m){
+    const flat=this.flatten(m);
+    const tot=this.totalEff(m)||1;
+    const avgT=flat.length?flat.reduce((s,{comp})=>s+comp.target,0)/flat.length:0;
+    return {clusters:m.clusters.length,comps:flat.length,weightNorm:fmtPct(tot/tot*100),avgTarget:round(avgT,1)};
+  },
+
+  /* ---------- 编辑动作 ---------- */
+  meta(field,val){const m=this.cur();if(!m)return;m[field]=val;m.updatedAt=Date.now();this.save();
+    if(field==="name"||field==="department"||field==="jobLevel")this.renderSidebar();},
+  lvName(i,val){const m=this.cur();m.levelNames[i]=val;m.updatedAt=Date.now();this.save();
+    // 刷新等级名称显示（重渲簇即可，保留输入）
+    document.getElementById("clustersBox").innerHTML=m.clusters.map(k=>this.clusterHTML(k,m)).join("")||'<div class="empty">暂无胜任力簇</div>';
+    this.updateDerived();},
+  setMaxLevel(n){const m=this.cur();m.maxLevel=n;m.levelNames=m.levelNames.slice(0,n);while(m.levelNames.length<n)m.levelNames.push("L"+(m.levelNames.length+1));
+    m.clusters.forEach(k=>k.comps.forEach(c=>{c.anchors=c.anchors.slice(0,n);while(c.anchors.length<n)c.anchors.push("");c.target=clamp(c.target||n,1,n);}));
+    m.updatedAt=Date.now();this.save();this.renderMain();},
+  clusterMeta(id,f,v){const m=this.cur();const k=m.clusters.find(x=>x.id===id);if(!k)return;k[f]=v;m.updatedAt=Date.now();this.save();this.updateDerived();},
+  compMeta(id,f,v){const m=this.cur();const c=this.flatten(m).find(x=>x.comp.id===id);if(!c)return;c.comp[f]=v;m.updatedAt=Date.now();this.save();this.updateDerived();},
+  anchor(id,i,v){const m=this.cur();const c=this.flatten(m).find(x=>x.comp.id===id);if(!c)return;c.comp.anchors[i]=v;m.updatedAt=Date.now();this.save();},
+  addCluster(){const m=this.cur();const k=makeCluster("新胜任力簇",CLUSTER_COLORS[m.clusters.length%CLUSTER_COLORS.length]);m.clusters.push(k);m.updatedAt=Date.now();this.save();this.renderMain();},
+  delCluster(id){const m=this.cur();m.clusters=m.clusters.filter(k=>k.id!==id);m.updatedAt=Date.now();this.save();this.renderMain();},
+  addComp(kid){const m=this.cur();const k=m.clusters.find(x=>x.id===kid);if(!k)return;const c=makeComp();c.anchors=Array.from({length:m.maxLevel},()=>"");c.target=m.maxLevel;k.comps.push(c);m.updatedAt=Date.now();this.save();this.renderMain();},
+  delComp(id){const m=this.cur();m.clusters.forEach(k=>k.comps=k.comps.filter(c=>c.id!==id));m.updatedAt=Date.now();this.save();this.renderMain();},
+  duplicateComp(id){const m=this.cur();m.clusters.forEach(k=>{const i=k.comps.findIndex(c=>c.id===id);if(i>=0){const copy=JSON.parse(JSON.stringify(k.comps[i]));copy.id=uid("c");copy.name=copy.name+" 副本";k.comps.splice(i+1,0,copy);}});this.save();this.renderMain();},
+
+  /* ---------- 能力词典 ---------- */
+  openDict(cid){const items=this.state.dict;
+    const html=`<div class="mh">📖 能力词典（点击添加）</div><div class="mb">
+      <input id="dictSearch" placeholder="搜索词典…" oninput="App.renderDictList('${cid}',this.value)" style="margin-bottom:10px">
+      <div id="dictList" style="max-height:50vh;overflow:auto">${this.dictListHTML(cid,"")}</div>
+    </div><div class="mf"><button class="btn" onclick="App.closeModal()">关闭</button></div>`;
+    this.showModal(html);
+  },
+  dictListHTML(cid,q){const items=this.state.dict.filter(d=>!q||(d.name+d.def+d.cluster).toLowerCase().includes(q.toLowerCase()));
+    if(!items.length)return '<div class="empty">无匹配词条</div>';
+    return items.map((d,i)=>`<div class="row" style="justify-content:space-between;padding:8px;border:1px solid var(--border);border-radius:8px;margin-bottom:6px">
+      <div><b>${esc(d.name)}</b> <span class="tag">${esc(d.cluster)}</span><div class="small muted">${esc(d.def)}</div></div>
+      <button class="btn sm primary" onclick="App.addFromDict('${cid}',${i})">添加</button></div>`).join("");
+  },
+  renderDictList(cid,q){document.getElementById("dictList").innerHTML=this.dictListHTML(cid,q);},
+  addFromDict(cid,idx){const m=this.cur();const d=this.state.dict[idx];const c=this.flatten(m).find(x=>x.comp.id===cid);if(!c||!d)return;
+    c.comp.name=d.name;c.comp.def=d.def;m.updatedAt=Date.now();this.save();
+    // 重渲该 comp
+    document.getElementById("clustersBox").innerHTML=m.clusters.map(k=>this.clusterHTML(k,m)).join("")||'<div class="empty">暂无胜任力簇</div>';
+    this.updateDerived();this.closeModal();this.toast("已从词典填入："+d.name);},
+
+  /* ---------- 可视化 ---------- */
+  vizHTML(m){
+    const modeOpts=[["cluster","按胜任力簇"],["comp","按胜任力项"]];
+    const cmp=this.state.models.filter(x=>x.id!==m.id);
+    const cmpOpts=cmp.map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join("");
+    return `<div class="toolbar">
+      <b>分析对象：</b><span class="tag">${esc(m.name)}</span>
+      <span style="margin-left:8px">维度</span>
+      <select id="vizMode" onchange="App.renderViz()" style="width:130px">
+        ${modeOpts.map(o=>`<option value="${o[0]}">${o[1]}</option>`).join("")}</select>
+      <span style="margin-left:8px">叠加对比模型</span>
+      <select id="vizCmp" onchange="App.renderViz()" style="width:200px"><option value="">（无）</option>${cmpOpts}</select>
+      <button class="btn sm" onclick="App.exportVizPNG()">⬇ 导出当前图</button>
+    </div>
+    <div class="grid2">
+      <div class="panel"><div class="ph">胜任力雷达图</div><div class="pb"><div class="chart-box" id="vizRadar"></div>
+        <div class="legend" id="vizLegend"></div></div></div>
+      <div class="panel"><div class="ph">权重分布</div><div class="pb"><div class="chart-box" id="vizDonut"></div></div></div>
+    </div>
+    <div class="panel" style="margin-top:16px"><div class="ph">胜任力—等级热力矩阵</div><div class="pb" id="vizHeat"></div></div>
+    <div class="panel" style="margin-top:16px"><div class="ph">权重明细表</div><div class="pb" id="vizTable"></div></div>`;
+  },
+  bindViz(){this.renderViz();},
+  renderViz(){
+    const m=this.cur();if(!m)return;
+    const mode=document.getElementById("vizMode").value;
+    const cmpId=document.getElementById("vizCmp").value;
+    const cmp=cmpId?this.getModel(cmpId):null;
+    let labels,series,legend=[];
+    if(mode==="cluster"){
+      labels=m.clusters.map(k=>k.name);
+      const v1=m.clusters.map(k=>{const cs=k.comps;if(!cs.length)return 0;let n=0,d=0;cs.forEach(c=>{const ew=k.weight*c.weight;n+=ew*(c.target/m.maxLevel);d+=ew;});return d?n/d:0;});
+      series=[{name:m.name,color:"#3b6ef5",values:v1}];legend.push({c:"#3b6ef5",t:m.name});
+      if(cmp){const l2=cmp.clusters.map(k=>k.name);const used=labels.slice();const v2=cmp.clusters.map(k=>{const cs=k.comps;if(!cs.length)return 0;let n=0,d=0;cs.forEach(c=>{const ew=k.weight*c.weight;n+=ew*(c.target/cmp.maxLevel);d+=ew;});return d?n/d:0;});
+        // 合并标签
+        const allLabels=[...new Set([...labels,...l2])];
+        const v1full=allLabels.map(l=>{const i=labels.indexOf(l);return i<0?0:v1[i];});
+        const v2full=allLabels.map(l=>{const i=l2.indexOf(l);return i<0?0:v2[i];});
+        labels=allLabels;series=[{name:m.name,color:"#3b6ef5",values:v1full},{name:cmp.name,color:"#e0564f",values:v2full}];
+        legend=[{c:"#3b6ef5",t:m.name},{c:"#e0564f",t:cmp.name}];}
+    }else{
+      const f=this.flatten(m);labels=f.map(x=>x.comp.name);
+      series=[{name:m.name,color:"#3b6ef5",values:f.map(x=>x.comp.target/m.maxLevel)}];legend=[{c:"#3b6ef5",t:m.name}];
+      if(cmp){const f2=this.flatten(cmp);const allLabels=[...new Set([...labels,...f2.map(x=>x.comp.name)])];
+        const v1full=allLabels.map(l=>{const i=labels.indexOf(l);return i<0?0:f[i].comp.target/m.maxLevel;});
+        const v2full=allLabels.map(l=>{const i=f2.findIndex(x=>x.comp.name===l);return i<0?0:f2[i].comp.target/cmp.maxLevel;});
+        labels=allLabels;series=[{name:m.name,color:"#3b6ef5",values:v1full},{name:cmp.name,color:"#e0564f",values:v2full}];
+        legend=[{c:"#3b6ef5",t:m.name},{c:"#e0564f",t:cmp.name}];}
+    }
+    document.getElementById("vizRadar").innerHTML=radarSVG(series,labels,{size:380,labelSize:11});
+    document.getElementById("vizLegend").innerHTML=legend.map(l=>`<span class="li"><span class="sw" style="background:${l.c}"></span>${esc(l.t)}</span>`).join("");
+    // donut
+    const wlabels=m.clusters.map(k=>k.name);const wvals=m.clusters.map(k=>{let s=0;k.comps.forEach(c=>s+=k.weight*c.weight);return s;});
+    document.getElementById("vizDonut").innerHTML=donutSVG(wvals,wlabels,m.clusters.map(k=>k.color),{size:280});
+    // heat
+    document.getElementById("vizHeat").innerHTML=this.heatHTML(m);
+    // table
+    document.getElementById("vizTable").innerHTML=this.weightTableHTML(m);
+  },
+  heatHTML(m){const max=m.maxLevel;
+    const head=`<th>胜任力 \\ 等级</th>`+Array.from({length:max}).map((_,i)=>`<th>${esc(m.levelNames[i]||("L"+(i+1)))}</th>`).join("")+`<th>权重</th>`;
+    const rows=this.flatten(m).map(({comp,cluster})=>{
+      const cells=Array.from({length:max}).map((_,i)=>{
+        const on=i<(comp.target||0);
+        const col=on?cluster.color:"#e9edf3";
+        return `<td><span class="cell" style="background:${col};color:${on?'#fff':'#aab'}">${on?(i+1):""}</span></td>`;
+      }).join("");
+      return `<tr><td style="text-align:left"><span class="dot" style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${cluster.color};margin-right:5px"></span>${esc(comp.name)}</td>${cells}<td><b>${round(this.effWeight(m,comp),1)}</b></td></tr>`;
+    }).join("");
+    return `<table class="heat"><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table>
+      <div class="hint small">说明：每行填充至「目标等级」，颜色代表所属胜任力簇，单元格数字为该等级序号。</div>`;
+  },
+  weightTableHTML(m){const tot=this.totalEff(m)||1;
+    const rows=this.flatten(m).map(({comp,cluster})=>{const ew=this.effWeight(m,comp);const pct=ew/tot*100;
+      return `<tr><td><span class="dot" style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${cluster.color};margin-right:5px"></span>${esc(cluster.name)}</td>
+        <td style="text-align:left">${esc(comp.name)}</td><td>${comp.weight}</td><td>${comp.target}</td>
+        <td><span class="bar" style="width:${clamp(pct,0,100)*1.4}px"></span> ${fmtPct(pct)}</td><td><b>${round(ew,1)}</b></td></tr>`;
+    }).join("");
+    return `<table><thead><tr><th>簇</th><th>胜任力项</th><th>权重</th><th>目标</th><th>归一占比</th><th>有效权重</th></tr></thead><tbody>${rows}</tbody></table>`;
+  },
+  exportVizPNG(){this.toast("请使用浏览器打印/截图保存图片");},
+
+  /* ---------- 人才评估 ---------- */
+  assessHTML(m){
+    const f=this.flatten(m);
+    const rows=f.map(({comp,cluster},idx)=>{
+      const opts=Array.from({length:m.maxLevel}).map((_,i)=>`<option value="${i+1}" ${i+1===m.maxLevel?"selected":""}>${esc(m.levelNames[i]||("L"+(i+1)))}</option>`).join("");
+      return `<tr>
+        <td style="text-align:left"><span class="dot" style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${cluster.color};margin-right:5px"></span>${esc(comp.name)}<div class="small muted">权重 ${comp.weight} · 目标 ${comp.target}</div></td>
+        <td><input class="score-input" type="number" min="0" max="${m.maxLevel}" step="1" value="${m.maxLevel}" data-cid="${comp.id}" oninput="App.assessInput('${comp.id}',this.value)"></td>
+        <td class="muted small">${comp.target}</td>
+      </tr>`;
+    }).join("");
+    const saved=m.assessments||[];
+    const savedHTML=saved.length?saved.map((a,i)=>{
+      const match=this.matchOf(m,a);
+      const pc=match>=80?"ok":match>=60?"warn":"bad";
+      return `<tr><td style="text-align:left"><b>${esc(a.name)}</b><div class="small muted">${new Date(a.date).toLocaleString()}</div></td>
+        <td><span class="pill ${pc}">${fmtPct(match)}</span></td>
+        <td><button class="btn sm" onclick="App.loadAssess('${a.id}')">载入</button>
+        <button class="btn sm danger" onclick="App.delAssess('${a.id}')">删</button></td></tr>`;
+    }).join(""):'<tr><td colspan="3" class="muted">暂无已保存评估</td></tr>';
+    return `<div class="grid2">
+      <div>
+        <div class="panel" style="margin-bottom:16px">
+          <div class="ph">评估对象
+            <span class="row" style="gap:6px;font-weight:400">
+              <input id="assessName" placeholder="姓名/候选人" style="width:160px" value="${esc(this.assessSel?this.assessSel.name:"")}">
+              <button class="btn sm primary" onclick="App.saveAssess()">💾 保存评估</button>
+            </span>
+          </div>
+          <div class="pb">
+            <table><thead><tr><th>胜任力项</th><th>实际得分(1-${m.maxLevel})</th><th>目标</th></tr></thead><tbody>${rows}</tbody></table>
+            <div class="hint small">得分范围 0–${m.maxLevel}（0 表示未评估）。保存后可在下方对比、排名。</div>
+          </div>
+        </div>
+        <div class="panel"><div class="ph">已保存评估（点击载入可对比）</div>
+          <div class="pb"><table><thead><tr><th>对象</th><th>匹配度</th><th>操作</th></tr></thead><tbody>${savedHTML}</tbody></table></div></div>
+      </div>
+      <div>
+        <div class="panel" style="position:sticky;top:0">
+          <div class="ph">实时匹配度</div>
+          <div class="pb" id="assessResult"></div>
+          <div class="chart-box" id="assessRadar"></div>
+          <div class="legend" id="assessLegend"></div>
+        </div>
+      </div>
+    </div>`;
+  },
+  bindAssess(){this.recomputeAssess();},
+  assessInput(cid,val){const m=this.cur();const c=this.flatten(m).find(x=>x.comp.id===cid);if(!c)return;
+    if(!this._draft)this._draft={};this._draft[cid]=clamp(parseInt(val)||0,0,m.maxLevel);this.recomputeAssess();},
+  curScores(m){const f=this.flatten(m);if(this._draft)return f.map(({comp})=>this._draft[comp.id]!=null?this._draft[comp.id]:m.maxLevel);
+    return f.map(({comp})=>m.maxLevel);},
+  matchOf(m,a){const f=this.flatten(m);if(!a.scores)return 0;let num=0,den=0;
+    f.forEach(({comp})=>{const ew=this.effWeight(m,comp);const tgt=comp.target;const act=clamp(a.scores[comp.id]!=null?a.scores[comp.id]:0,0,m.maxLevel);num+=ew*Math.min(act,tgt);den+=ew*tgt;});
+    return den?num/den*100:0;},
+  recomputeAssess(){
+    const m=this.cur();if(!m)return;const f=this.flatten(m);
+    const scores=this.curScores(m);
+    // 匹配度（基于当前输入）
+    let num=0,den=0;f.forEach(({comp},i)=>{const ew=this.effWeight(m,comp);const tgt=comp.target;const act=clamp(scores[i]||0,0,m.maxLevel);num+=ew*Math.min(act,tgt);den+=ew*tgt;});
+    const match=den?num/den*100:0;
+    // 差距
+    const gaps=f.map(({comp},i)=>({name:comp.name,color:this.flatten(m).find(x=>x.comp.id===comp.id).cluster.color,gap:(comp.target||0)-(scores[i]||0),tgt:comp.target,act:scores[i]||0}));
+    const pc=match>=80?"ok":match>=60?"warn":"bad";
+    const top=gaps.slice().sort((a,b)=>b.gap-a.gap).slice(0,4).filter(g=>g.gap>0);
+    document.getElementById("assessResult").innerHTML=`
+      <div style="text-align:center;padding:6px 0 12px">
+        <div style="font-size:40px;font-weight:800;color:var(--${pc==='ok'?'ok':pc==='warn'?'warn':'danger'})">${fmtPct(match)}</div>
+        <div class="muted small">综合匹配度（按有效权重加权）</div>
+        <span class="pill ${pc}" style="margin-top:6px">${pc==='ok'?'匹配良好':pc==='warn'?'基本匹配':'存在差距'}</span>
+      </div>
+      <div class="small" style="font-weight:600;margin:6px 0 4px">主要发展建议（差距最大项）</div>
+      ${top.length?top.map(g=>`<div class="row" style="justify-content:space-between;font-size:12px;padding:4px 0;border-bottom:1px dashed var(--border)">
+        <span><span class="dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${g.color};margin-right:5px"></span>${esc(g.name)}</span>
+        <span class="muted">实际 ${g.act} / 目标 ${g.tgt}（差 ${g.gap}）</span></div>`).join(""):'<div class="muted small">当前已达到全部目标等级 🎉</div>'}`;
+    // 雷达：目标 vs 实际
+    const labels=f.map(x=>x.comp.name);
+    const tgtVals=f.map(x=>x.comp.target/m.maxLevel);
+    const actVals=scores.map(s=>s/m.maxLevel);
+    document.getElementById("assessRadar").innerHTML=radarSVG([{name:"目标画像",color:"#3b6ef5",values:tgtVals},{name:"实际得分",color:"#19a974",values:actVals}],labels,{size:300});
+    document.getElementById("assessLegend").innerHTML=`<span class="li"><span class="sw" style="background:#3b6ef5"></span>目标画像</span><span class="li"><span class="sw" style="background:#19a974"></span>实际得分</span>`;
+  },
+  saveAssess(){const m=this.cur();if(!m)return;const name=(document.getElementById("assessName").value||"").trim()||("评估"+(new Date().toLocaleString()));
+    const f=this.flatten(m);const scores={};f.forEach(({comp})=>{scores[comp.id]=this._draft&&this._draft[comp.id]!=null?this._draft[comp.id]:m.maxLevel;});
+    if(!m.assessments)m.assessments=[];
+    const id=uid("a");m.assessments.push({id,name,date:Date.now(),scores});m.updatedAt=Date.now();this.save();this.toast("已保存："+name);this.renderMain();},
+  loadAssess(aid){const m=this.cur();const a=m.assessments.find(x=>x.id===aid);if(!a)return;this._draft=a.scores;this.assessSel={name:a.name};this.renderMain();},
+  delAssess(aid){const m=this.cur();m.assessments=m.assessments.filter(a=>a.id!==aid);this.save();this.renderMain();},
+
+  /* ---------- 模板中心 ---------- */
+  templatesHTML(){
+    const tpls=TEMPLATES;
+    return `<div class="toolbar"><b>模板中心</b><span class="muted small">点击「使用模板」将基于内置结构生成新模型（不会覆盖现有模型）。</span></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px">
+      ${tpls.map((t,i)=>`<div class="template-card">
+        <h3>${esc(t.name)}</h3>
+        <div class="muted small">${esc(t.department)} · ${esc(t.jobLevel)}</div>
+        <div class="tags">${t.clusters.map(c=>`<span class="tag" style="border-left:3px solid ${c.color}">${esc(c.name)}</span>`).join("")}</div>
+        <div class="small muted">含 ${t.clusters.reduce((s,c)=>s+c.comps.length,0)} 项胜任力、${t.clusters.length} 个簇</div>
+        <div style="margin-top:10px"><button class="btn sm primary" onclick="App.useTemplate(${i})">使用模板</button></div>
+      </div>`).join("")}
+      </div>`;
+  },
+  useTemplate(i){const t=TEMPLATES[i];const m=newModel(t.name,t.department,t.jobLevel);
+    m.levelNames=t.levelNames?t.levelNames.slice():(Array.from({length:5},(_,k)=>["入门","了解","熟悉","熟练","精通","专家"][k]));
+    m.maxLevel=m.levelNames.length;
+    m.description=t.description||"";
+    m.clusters=t.clusters.map(c=>{const k=makeCluster(c.name,c.color);k.weight=c.weight||1;
+      k.comps=c.comps.map(cc=>{const comp=makeComp(cc.name,cc.def);comp.weight=cc.weight||5;comp.target=clamp(cc.target||m.maxLevel,1,m.maxLevel);
+        comp.anchors=Array.from({length:m.maxLevel},(_,li)=>cc.anchors&&cc.anchors[li]?cc.anchors[li]:"（待补充）");return comp;});return k;});
+    this.state.models.unshift(m);this.curModel=m.id;this.save();this.renderSidebar();this.goTab("build");this.toast("已基于模板创建："+t.name);},
+
+  /* ---------- 数据管理 ---------- */
+  dataHTML(){
+    const s=this.state;
+    const dictHTML=s.dict.map((d,i)=>`<tr><td style="text-align:left"><b>${esc(d.name)}</b></td><td class="muted small">${esc(d.cluster)}</td><td class="small">${esc(d.def)}</td>
+      <td><button class="btn sm danger" onclick="App.delDict(${i})">删除</button></td></tr>`).join("");
+    return `<div class="grid2">
+      <div>
+        <div class="panel" style="margin-bottom:16px"><div class="ph">数据导入 / 导出</div><div class="pb">
+          <div class="row" style="flex-wrap:wrap;gap:8px">
+            <button class="btn primary" onclick="App.exportJSON()">⬇ 导出全部数据 (JSON)</button>
+            <button class="btn" onclick="App.importJSON()">⬆ 导入 JSON</button>
+            <button class="btn" onclick="App.exportCSV()">⬇ 导出权重表 (CSV)</button>
+            <button class="btn" onclick="App.exportReport()">⬇ 导出评估报告</button>
+            <button class="btn" onclick="window.print()">🖨 打印当前模型</button>
+          </div>
+          <div class="hint small">JSON 包含全部模型、评估记录与自定义能力词典，可完整备份与迁移。</div>
+        </div></div>
+        <div class="panel"><div class="ph">自定义能力词典
+          <button class="btn sm primary" onclick="App.addDict()">＋ 新增词条</button></div>
+          <div class="pb"><table><thead><tr><th>名称</th><th>簇</th><th>定义</th><th></th></tr></thead><tbody>${dictHTML||'<tr><td colspan="4" class="muted">暂无</td></tr>'}</tbody></table></div></div>
+      </div>
+      <div>
+        <div class="panel" style="margin-bottom:16px"><div class="ph">统计概览</div><div class="stat-grid">
+          <div class="stat"><div class="v">${s.models.length}</div><div class="l">模型总数</div></div>
+          <div class="stat"><div class="v">${s.models.reduce((a,m)=>a+this.flatten(m).length,0)}</div><div class="l">胜任力项总数</div></div>
+          <div class="stat"><div class="v">${s.models.reduce((a,m)=>a+(m.assessments?m.assessments.length:0),0)}</div><div class="l">评估记录</div></div>
+          <div class="stat"><div class="v">${s.dict.length}</div><div class="l">词典词条</div></div>
+        </div></div>
+        <div class="panel"><div class="ph">危险操作</div><div class="pb">
+          <button class="btn danger" onclick="App.resetAll()">🗑 清空并恢复示例数据</button>
+          <div class="hint small">将删除全部模型与词典，恢复为内置示例。此操作不可撤销。</div>
+        </div></div>
+      </div>
+    </div>`;
+  },
+  addDict(){this.showModal(`<div class="mh">新增能力词典词条</div><div class="mb">
+      <div class="field"><label>名称</label><input id="d_name"></div>
+      <div class="field"><label>所属簇</label><input id="d_cluster" value="通用能力"></div>
+      <div class="field"><label>定义</label><textarea id="d_def"></textarea></div></div>
+      <div class="mf"><button class="btn" onclick="App.closeModal()">取消</button><button class="btn primary" onclick="App.saveDict()">保存</button></div>`);},
+  saveDict(){const name=document.getElementById("d_name").value.trim();if(!name){this.toast("请填写名称");return;}
+    this.state.dict.push({name,cluster:document.getElementById("d_cluster").value.trim()||"通用能力",def:document.getElementById("d_def").value.trim()});
+    this.save();this.closeModal();this.toast("已添加词条");this.goTab("data");},
+  delDict(i){this.state.dict.splice(i,1);this.save();this.goTab("data");},
+
+  /* ---------- 导入导出 ---------- */
+  exportJSON(){const data=JSON.stringify(this.state,null,2);this.download(data,"胜任力模型数据_"+this.stamp()+".json","application/json");},
+  importJSON(){document.getElementById("fileInput").click();},
+  onFile(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();
+    r.onload=()=>{try{const d=JSON.parse(r.result);if(!d.models)throw new Error("格式不正确");
+      if(confirm("导入将【替换】当前全部数据，确定继续？")){this.state.models=d.models||[];this.state.dict=d.dict||DICTIONARY.slice();this.state.settings=d.settings||{theme:"light"};this.curModel=this.state.models[0]?this.state.models[0].id:null;this.save();this.render();this.toast("导入成功");}
+      }catch(err){this.toast("导入失败："+err.message);}e.target.value="";};
+    r.readAsText(f);},
+  exportCSV(){const m=this.cur();if(!m){this.toast("请先选择模型");return;}
+    const rows=[["簇","胜任力项","定义","权重","目标等级","有效权重","归一占比"]];
+    const tot=this.totalEff(m)||1;this.flatten(m).forEach(({comp,cluster})=>{rows.push([cluster.name,comp.name,comp.def,comp.weight,comp.target,round(this.effWeight(m,comp),1),round(this.effWeight(m,comp)/tot*100,1)+"%"]);});
+    const csv="\uFEFF"+rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(",")).join("\n");
+    this.download(csv,"权重表_"+m.name+"_"+this.stamp()+".csv","text/csv");},
+  exportReport(){const m=this.cur();if(!m){this.toast("请先选择模型");return;}
+    let html=`<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><title>${esc(m.name)} 胜任力模型报告</title>
+      <style>body{font-family:"Microsoft YaHei",sans-serif;padding:30px;color:#222} h1{color:#3b6ef5} h2{margin-top:24px;border-left:4px solid #3b6ef5;padding-left:8px}
+      table{border-collapse:collapse;width:100%;margin-top:8px} td,th{border:1px solid #ddd;padding:6px 8px;font-size:13px;text-align:left}
+      .cluster{margin-top:18px}.muted{color:#888}</style></head><body>
+      <h1>${esc(m.name)} · 岗位胜任力模型</h1>
+      <p class="muted">部门：${esc(m.department||"-")} ｜ 层级：${esc(m.jobLevel)} ｜ 等级体系：${m.levelNames.join(" / ")}</p>
+      <p>${esc(m.description||"")}</p>`;
+    m.clusters.forEach(k=>{html+=`<div class="cluster"><h2 style="border-color:${k.color}">${esc(k.name)}</h2><table><tr><th>胜任力</th><th>定义</th><th>权重</th><th>目标</th></tr>`;
+      k.comps.forEach(c=>{html+=`<tr><td><b>${esc(c.name)}</b></td><td>${esc(c.def)}</td><td>${c.weight}</td><td>${c.target}（${esc(m.levelNames[c.target-1]||"")}）</td></tr>`;
+        html+=`<tr><td colspan="4"><div class="muted">`+m.levelNames.map((ln,i)=>`${i+1}·${ln}：${esc(c.anchors[i]||"")}`).join(" ｜ ")+`</div></td></tr>`;});
+      html+=`</table></div>`;});
+    html+=`<p class="muted" style="margin-top:30px">由「岗位胜任力模型搭建器」生成</p></body></html>`;
+    const w=window.open("","_blank");w.document.write(html);w.document.close();this.toast("报告已在新窗口打开，可另存为 PDF");},
+  download(text,name,type){const blob=new Blob([text],{type});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000);},
+  stamp(){const d=new Date();const p=n=>String(n).padStart(2,"0");return d.getFullYear()+p(d.getMonth()+1)+p(d.getDate())+"_"+p(d.getHours())+p(d.getMinutes());},
+  resetAll(){if(confirm("确定清空全部数据并恢复示例？")){localStorage.removeItem(LS_KEY);this.state.models=[sampleModel()];this.state.dict=DICTIONARY.slice();this.state.settings={theme:this.state.settings.theme};this.curModel=this.state.models[0].id;this.save();this.render();this.toast("已恢复示例数据");}},
+
+  /* ---------- 通用交互 ---------- */
+  newModel(){this.showModal(`<div class="mh">新建胜任力模型</div><div class="mb">
+    <div class="field"><label>岗位名称</label><input id="n_name" placeholder="如：产品经理（P6）"></div>
+    <div class="field"><label>所属部门</label><input id="n_dept" placeholder="如：产品部"></div>
+    <div class="field"><label>岗位层级</label><select id="n_level"><option>基层</option><option>中层</option><option>高层</option></select></div>
+    </div><div class="mf"><button class="btn" onclick="App.closeModal()">取消</button><button class="btn primary" onclick="App.createModel()">创建</button></div>`);
+    setTimeout(()=>document.getElementById("n_name").focus(),50);},
+  createModel(){const name=(document.getElementById("n_name").value||"").trim()||"未命名岗位模型";
+    const m=newModel(name,document.getElementById("n_dept").value.trim(),document.getElementById("n_level").value);
+    this.state.models.unshift(m);this.curModel=m.id;this.save();this.closeModal();this.renderSidebar();this.goTab("build");},
+  duplicateModel(id){const src=this.getModel(id);if(!src)return;const copy=JSON.parse(JSON.stringify(src));copy.id=uid("m");copy.name=src.name+" 副本";copy.createdAt=copy.updatedAt=Date.now();copy.assessments=[];
+    this.state.models.unshift(copy);this.curModel=copy.id;this.save();this.renderSidebar();this.renderMain();this.toast("已复制模型");},
+  deleteModel(id){if(!confirm("确定删除该模型？"))return;this.state.models=this.state.models.filter(m=>m.id!==id);if(this.curModel===id)this.curModel=this.state.models[0]?this.state.models[0].id:null;this.save();this.renderSidebar();this.renderMain();},
+  selectModel(id){this.curModel=id;this._draft=null;this.assessSel=null;this.renderSidebar();this.renderMain();},
+  goTab(t){this.tab=t;this._draft=null;this.renderMain();},
+
+  search(q){this.searchQ=q;this.renderSidebar();},
+  filterDept(v){this.fDept=v;this.renderSidebar();},
+  filterLevel(v){this.fLevel=v;this.renderSidebar();},
+
+  toggleTheme(){this.state.settings.theme=this.state.settings.theme==="dark"?"light":"dark";document.documentElement.setAttribute("data-theme",this.state.settings.theme);document.getElementById("themeBtn").textContent=this.state.settings.theme==="dark"?"☀":"🌗";this.save();},
+  showModal(html){document.getElementById("modal").innerHTML=html;document.getElementById("modalBg").classList.add("show");},
+  closeModal(){document.getElementById("modalBg").classList.remove("show");},
+  toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");clearTimeout(this._tt);this._tt=setTimeout(()=>t.classList.remove("show"),2200);}
+};
+
+document.getElementById("modalBg").addEventListener("click",e=>{if(e.target.id==="modalBg")App.closeModal();});
+document.addEventListener("keydown",e=>{if(e.key==="Escape")App.closeModal();});
+
+/* ============================ 图表（纯 SVG，无依赖） ============================ */
+function radarSVG(series,labels,opts){
+  opts=opts||{};const size=opts.size||360,cx=size/2,cy=size/2,R=size/2-(opts.labelSize?34:42);
+  const n=labels.length;if(!n)return '<svg viewBox="0 0 '+size+' '+size+'"></svg>';
+  const ang=i=>-Math.PI/2+i*2*Math.PI/n;
+  const pt=(i,v)=>[cx+R*v*Math.cos(ang(i)),cy+R*v*Math.sin(ang(i))];
+  const rings=opts.rings||4;let grid="";
+  for(let g=1;g<=rings;g++){const rr=R*g/rings;const p=[];for(let i=0;i<n;i++)p.push((cx+rr*Math.cos(ang(i))).toFixed(1)+","+(cy+rr*Math.sin(ang(i))).toFixed(1));
+    grid+=`<polygon points="${p.join(" ")}" fill="none" stroke="var(--border)" stroke-width="1"/>`;}
+  let axes="";
+  for(let i=0;i<n;i++){const x=cx+R*Math.cos(ang(i)),y=cy+R*Math.sin(ang(i));
+    axes+=`<line x1="${cx}" y1="${cy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="var(--border)"/>`;
+    const lx=cx+(R+18)*Math.cos(ang(i)),ly=cy+(R+18)*Math.sin(ang(i));
+    let anchor="middle";if(lx<cx-6)anchor="end";else if(lx>cx+6)anchor="start";
+    const fs=opts.labelSize||11;const lbl=esc(labels[i]);
+    axes+=`<text x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" font-size="${fs}" fill="var(--muted)" text-anchor="${anchor}" dominant-baseline="middle">${lbl.length>7?lbl.slice(0,7)+"…":lbl}</text>`;}
+  let polys="";
+  series.forEach(s=>{const p=[];for(let i=0;i<n;i++){const v=clamp(s.values[i]||0,0,1);const[x,y]=pt(i,v);p.push(x.toFixed(1)+","+y.toFixed(1));}
+    polys+=`<polygon points="${p.join(" ")}" fill="${s.color}22" stroke="${s.color}" stroke-width="2"/>`;
+    for(let i=0;i<n;i++){const v=clamp(s.values[i]||0,0,1);const[x,y]=pt(i,v);polys+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2.6" fill="${s.color}"/>`;}});
+  return `<svg viewBox="0 0 ${size} ${size}" width="100%" style="max-width:${size}px">${grid}${axes}${polys}</svg>`;
+}
+function donutSVG(vals,labels,colors,opts){
+  opts=opts||{};const size=opts.size||260,cx=size/2,cy=size/2,r=size/2-30,ir=r*0.6;
+  const tot=vals.reduce((a,b)=>a+(b||0),0)||1;let acc=0;let segs="";
+  if(tot===0){segs=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--border)" stroke-width="${r-ir}"/>`;}
+  else{vals.forEach((v,i)=>{const a0=acc/tot*2*Math.PI-Math.PI/2;acc+=v;const a1=acc/tot*2*Math.PI-Math.PI/2;
+    if(v<=0)return;const large=(a1-a0)>Math.PI?1:0;
+    const x0=cx+r*Math.cos(a0),y0=cy+r*Math.sin(a0),x1=cx+r*Math.cos(a1),y1=cy+r*Math.sin(a1);
+    const xi1=cx+ir*Math.cos(a1),yi1=cy+ir*Math.sin(a1),xi0=cx+ir*Math.cos(a0),yi0=cy+ir*Math.sin(a0);
+    segs+=`<path d="M${x0.toFixed(2)} ${y0.toFixed(2)} A${r} ${r} 0 ${large} 1 ${x1.toFixed(2)} ${y1.toFixed(2)} L${xi1.toFixed(2)} ${yi1.toFixed(2)} A${ir} ${ir} 0 ${large} 0 ${xi0.toFixed(2)} ${yi0.toFixed(2)} Z" fill="${colors[i]||"#999"}"/>`;});}
+  let leg=labels.map((l,i)=>`<span class="li"><span class="sw" style="background:${colors[i]||"#999"}"></span>${esc(l)} ${vals[i]?fmtPct(vals[i]/tot*100):"0%"}</span>`).join("");
+  return `<svg viewBox="0 0 ${size} ${size}" width="100%" style="max-width:${size}px">${segs}<text x="${cx}" y="${cy-4}" text-anchor="middle" font-size="13" fill="var(--muted)">权重</text><text x="${cx}" y="${cy+14}" text-anchor="middle" font-size="15" font-weight="700" fill="var(--text)">${labels.length}</text></svg><div class="legend">${leg}</div>`;
+}
+
+/* ============================ 模板库 ============================ */
+const TEMPLATES=[
+  {name:"基层管理者（主管）",department:"通用",jobLevel:"基层",description:"带领小团队达成业务目标的一线管理者。",
+   clusters:[
+     {name:"团队管理",color:"#3b6ef5",weight:1,comps:[
+       {name:"团队领导",def:"凝聚团队、分配任务、激发成员潜能。",weight:6,target:3,anchors:["按指令办事","能带 1-2 人","独立带小组","带团队拿结果","培养梯队"]},
+       {name:"目标管理",def:"制定并拆解目标，追踪达成路径。",weight:5,target:3,anchors:["理解目标","协助拆解","独立拆解","设机制追踪","定战略节奏"]},
+       {name:"人才培养",def:"识别与发展人才，建设梯队。",weight:4,target:2,anchors:["无","带教新人","能辅导","建培养机制","建人才梯队"]}]},
+     {name:"专业能力",color:"#19a974",weight:1,comps:[
+       {name:"专业深度",def:"掌握岗位核心技术/知识。",weight:5,target:4,anchors:["了解","熟悉","熟练","精通","专家"]},
+       {name:"业务理解",def:"理解行业、市场与公司商业模式。",weight:4,target:3,anchors:["了解","知道","理解","熟练","精通"]}]},
+     {name:"通用能力",color:"#7c5cff",weight:1,comps:[
+       {name:"沟通表达",def:"清晰传递信息，促成共识。",weight:4,target:3,anchors:["表达不清","基本表达","清晰","有说服力","影响他人"]},
+       {name:"执行力",def:"按时保质交付结果。",weight:5,target:4,anchors:["拖延","能完成","按时完成","超预期","建流程"]}]}
+   ]},
+  {name:"销售工程师",department:"销售部",jobLevel:"基层",description:"面向客户的技术型销售，负责方案与达成。",
+   clusters:[
+     {name:"客户导向",color:"#e0564f",weight:1,comps:[
+       {name:"客户导向",def:"洞察需求，创造客户价值。",weight:6,target:4,anchors:["被动响应","了解需求","挖掘需求","创造需求","引领需求"]},
+       {name:"沟通表达",def:"清晰、有感染力地表达。",weight:5,target:4,anchors:["表达弱","基本表达","清晰","有感染力","影响决策"]}]},
+     {name:"专业能力",color:"#19a974",weight:1,comps:[
+       {name:"产品知识",def:"精通产品与方案。",weight:5,target:4,anchors:["了解","熟悉","熟练","精通","专家"]},
+       {name:"谈判能力",def:"促成双赢成交。",weight:5,target:3,anchors:["无","协助","独立谈","擅谈判","战略谈判"]}]},
+     {name:"通用能力",color:"#e8a33d",weight:1,comps:[
+       {name:"抗压韧性",def:"在压力下保持稳定与投入。",weight:5,target:4,anchors:["易崩","一般","稳定","抗压","高压绽放"]},
+       {name:"执行力",def:"跟进商机直至闭环。",weight:4,target:4,anchors:["拖延","能完成","按时","超预期","建机制"]}]}
+   ]},
+  {name:"研发工程师",department:"技术部",jobLevel:"基层",description:"负责需求实现、编码与质量保障。",
+   clusters:[
+     {name:"专业技术",color:"#1aa7c4",weight:1,comps:[
+       {name:"专业深度",def:"掌握核心技术栈。",weight:7,target:4,anchors:["了解","熟悉","熟练","精通","专家"]},
+       {name:"代码质量",def:"写出可读、可维护、健壮的代码。",weight:5,target:4,anchors:["易出错","达标","良好","优秀","制定规范"]}]},
+     {name:"通用能力",color:"#7c5cff",weight:1,comps:[
+       {name:"问题解决",def:"结构化分析并解决技术难题。",weight:6,target:3,anchors:["依赖他人","协助","独立解决","攻克难题","预防问题"]},
+       {name:"学习能力",def:"快速吸收新技术。",weight:5,target:4,anchors:["慢","一般","较快","快","引领学习"]},
+       {name:"团队协作",def:"高效配合上下游角色。",weight:4,target:3,anchors:["独行","配合","主动","推动","跨团队"]}]}
+   ]},
+  {name:"产品经理",department:"产品部",jobLevel:"中层",description:"负责产品规划、设计与商业化落地。",
+   clusters:[
+     {name:"产品思维",color:"#3b6ef5",weight:1,comps:[
+       {name:"产品思维",def:"从用户与商业视角定义产品。",weight:7,target:4,anchors:["无","理解","能设计","体系化","引领"]},
+       {name:"数据分析",def:"用数据支撑决策。",weight:5,target:4,anchors:["看报表","会分析","建指标","建模","驱动增长"]}]},
+     {name:"专业能力",color:"#19a974",weight:1,comps:[
+       {name:"需求管理",def:"挖掘、优先级排序与落地需求。",weight:6,target:4,anchors:["记录","整理","独立排","闭环","建体系"]},
+       {name:"项目管理",def:"统筹进度、资源与风险。",weight:5,target:3,anchors:["参与","协助","独立管","多线","建机制"]}]},
+     {name:"通用能力",color:"#7c5cff",weight:1,comps:[
+       {name:"沟通协调",def:"跨团队推动共识。",weight:6,target:4,anchors:["弱","基本","良好","高效","影响",""]},
+       {name:"执行力",def:"把规划变为结果。",weight:5,target:4,anchors:["拖延","完成","按时","超预期","建流程"]}]}
+   ]},
+  {name:"人力资源专员",department:"人力资源部",jobLevel:"基层",description:"负责招聘、员工关系与基础 HR 运营。",
+   clusters:[
+     {name:"专业知识",color:"#d36bd0",weight:1,comps:[
+       {name:"HR专业知识",def:"掌握六大模块基础。",weight:6,target:3,anchors:["了解","熟悉","熟练","精通","专家"]},
+       {name:"流程优化",def:"改进 HR 流程效率。",weight:4,target:3,anchors:["执行","优化点","改进","重设","建体系"]}]},
+     {name:"价值观",color:"#e0564f",weight:1,comps:[
+       {name:"保密合规",def:"严守人事信息保密与合规。",weight:6,target:5,anchors:["易泄","注意","严守","机制","文化"]},
+       {name:"敬业度",def:"主动付出额外努力。",weight:4,target:3,anchors:["低","一般","高","很高","标杆"]}]},
+     {name:"通用能力",color:"#7c5cff",weight:1,comps:[
+       {name:"沟通表达",def:"与员工、用人部门有效沟通。",weight:5,target:4,anchors:["弱","基本","清晰","有温度","影响"]},
+       {name:"服务意识",def:"以服务心态支撑业务。",weight:4,target:4,anchors:["被动","一般","主动","前瞻","伙伴"]}]}
+   ]}
+];
+
+/* ============================ 示例数据 ============================ */
+function sampleModel(){
+  const m=newModel("互联网公司 · 产品经理（P6）","产品部","中层");
+  m.description="负责 C 端产品线的规划、设计与增长，对所在产品线的核心指标负责。";
+  m.clusters=[
+    (()=>{const k=makeCluster("产品思维","#3b6ef5");k.weight=1;
+      k.comps=[
+        Object.assign(makeComp("产品思维","从用户与商业双视角定义与打磨产品。"),{weight:7,target:4,anchors:["了解概念","理解方法","能独立设计","体系化设计","引领产品方向"]}),
+        Object.assign(makeComp("数据分析","用数据发现问题、验证假设、支撑决策。"),{weight:5,target:4,anchors:["看报表","会基础分析","能建指标","能建模","数据驱动增长"]})
+      ];return k;})(),
+    (()=>{const k=makeCluster("专业能力","#19a974");k.weight=1;
+      k.comps=[
+        Object.assign(makeComp("需求管理","挖掘、优先级排序并落地需求。"),{weight:6,target:4,anchors:["记录需求","整理需求","独立排序","闭环管理","建需求体系"]}),
+        Object.assign(makeComp("项目管理","统筹范围、进度、资源与风险。"),{weight:5,target:3,anchors:["参与","协助","独立管理","多线并行","建机制"]})
+      ];return k;})(),
+    (()=>{const k=makeCluster("通用能力","#7c5cff");k.weight=1;
+      k.comps=[
+        Object.assign(makeComp("沟通协调","跨团队推动共识与协作。"),{weight:6,target:4,anchors:["表达弱","基本表达","清晰","高效推动","影响决策"]}),
+        Object.assign(makeComp("执行力","把规划变成可交付结果。"),{weight:5,target:4,anchors:["拖延","能完成","按时完成","超预期","建流程"]}),
+        Object.assign(makeComp("学习能力","快速吸收新领域知识。"),{weight:4,target:3,anchors:["慢","一般","较快","快","引领"]})
+      ];return k;})()
+  ];
+  return m;
+}
+
+/* ============================ 启动 ============================ */
+App.load();
+App.render();
+</script>
+</body>
+</html>

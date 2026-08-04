@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PyEditor · Python 文件编辑器</title>
+
+<!-- CodeMirror 核心样式 -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+<!-- 主题 -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/dracula.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/monokai.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/material.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/solarized.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/eclipse.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/idea.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/cobalt.min.css">
+<!-- 对话框 / 提示 / 全屏 样式 -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/dialog/dialog.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/show-hint.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/display/fullscreen.min.css">
+
+<style>
+  :root {
+    --bg: #1e1e2e;
+    --bg2: #181825;
+    --bg3: #11111b;
+    --border: #313244;
+    --text: #cdd6f4;
+    --muted: #9399b2;
+    --accent: #89b4fa;
+    --accent2: #a6e3a1;
+    --warn: #f9e2af;
+    --danger: #f38ba8;
+    --panel: #1e1e2e;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    background: var(--bg); color: var(--text);
+    font-family: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+    font-size: 13px; overflow: hidden;
+  }
+  #app { display: flex; flex-direction: column; height: 100vh; }
+
+  /* 顶部菜单条 */
+  #topbar {
+    display: flex; align-items: center; gap: 4px;
+    background: var(--bg3); padding: 4px 8px;
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+  #topbar .title {
+    font-weight: 700; color: var(--accent); margin-right: 10px;
+    letter-spacing: .5px; white-space: nowrap;
+  }
+  .menu { position: relative; }
+  .menu > button {
+    background: transparent; color: var(--text); border: none;
+    padding: 5px 10px; cursor: pointer; border-radius: 4px; font-size: 13px;
+  }
+  .menu > button:hover { background: var(--border); }
+  .menu .dropdown {
+    display: none; position: absolute; top: 100%; left: 0; z-index: 50;
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 6px; min-width: 220px; padding: 4px; box-shadow: 0 8px 24px rgba(0,0,0,.5);
+  }
+  .menu.open .dropdown { display: block; }
+  .menu .dropdown .item {
+    padding: 7px 12px; cursor: pointer; border-radius: 4px; display: flex;
+    justify-content: space-between; gap: 16px; white-space: nowrap;
+  }
+  .menu .dropdown .item:hover { background: var(--accent); color: #11111b; }
+  .menu .dropdown .item .k { color: var(--muted); font-size: 11px; }
+  .menu .dropdown .item:hover .k { color: #11111b; }
+  .menu .dropdown .sep { height: 1px; background: var(--border); margin: 4px 0; }
+
+  .toolbar { display: flex; gap: 6px; align-items: center; margin-left: auto; }
+  .btn {
+    background: var(--bg2); color: var(--text); border: 1px solid var(--border);
+    padding: 6px 12px; border-radius: 5px; cursor: pointer; font-size: 13px;
+    display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
+  }
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+  .btn.primary { background: var(--accent2); color: #11111b; border-color: var(--accent2); font-weight: 600; }
+  .btn.primary:hover { filter: brightness(1.1); color: #11111b; }
+
+  /* 标签栏 */
+  #tabbar {
+    display: flex; background: var(--bg2); border-bottom: 1px solid var(--border);
+    overflow-x: auto; flex-shrink: 0; min-height: 34px;
+  }
+  #tabbar .tab {
+    display: flex; align-items: center; gap: 8px; padding: 7px 12px;
+    border-right: 1px solid var(--border); cursor: pointer; white-space: nowrap;
+    color: var(--muted); max-width: 220px;
+  }
+  #tabbar .tab.active { background: var(--bg); color: var(--text); border-bottom: 2px solid var(--accent); }
+  #tabbar .tab.dirty .name::after { content: " ●"; color: var(--warn); }
+  #tabbar .tab .close { color: var(--muted); border-radius: 3px; padding: 0 4px; }
+  #tabbar .tab .close:hover { background: var(--danger); color: #11111b; }
+
+  /* 主区域 */
+  #main { display: flex; flex: 1; min-height: 0; }
+  #sidebar {
+    width: 220px; background: var(--bg2); border-right: 1px solid var(--border);
+    display: flex; flex-direction: column; flex-shrink: 0;
+  }
+  #sidebar.hidden { display: none; }
+  #sidebar .shead {
+    padding: 8px 10px; font-size: 12px; color: var(--muted);
+    border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;
+  }
+  #filelist { flex: 1; overflow-y: auto; padding: 4px; }
+  #filelist .fitem {
+    display: flex; align-items: center; gap: 6px; padding: 6px 8px; border-radius: 4px;
+    cursor: pointer; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  #filelist .fitem:hover { background: var(--border); }
+  #filelist .fitem.active { background: var(--accent); color: #11111b; }
+  #filelist .fitem .fname { flex: 1; overflow: hidden; text-overflow: ellipsis; }
+  #filelist .fitem .fclose { opacity: .6; }
+  #filelist .fitem .fclose:hover { opacity: 1; color: var(--danger); }
+
+  #editorwrap { flex: 1; min-width: 0; position: relative; display: flex; flex-direction: column; }
+  .CodeMirror { flex: 1; height: auto; font-size: 14px; font-family: "JetBrains Mono","Fira Code",Consolas,monospace; }
+  .CodeMirror.fullscreen { height: 100% !important; }
+
+  /* 控制台 */
+  #console {
+    height: 200px; background: var(--bg3); border-top: 1px solid var(--border);
+    display: flex; flex-direction: column; flex-shrink: 0; transition: height .15s;
+  }
+  #console.hidden { display: none; }
+  #console .chead {
+    display: flex; align-items: center; gap: 8px; padding: 4px 10px;
+    background: var(--bg2); border-bottom: 1px solid var(--border); font-size: 12px;
+  }
+  #console .chead .ctitle { color: var(--accent2); font-weight: 600; }
+  #console .chead .spacer { flex: 1; }
+  #console .chead button {
+    background: transparent; border: 1px solid var(--border); color: var(--muted);
+    border-radius: 4px; padding: 2px 8px; cursor: pointer; font-size: 12px;
+  }
+  #console .chead button:hover { color: var(--text); border-color: var(--accent); }
+  #console .cbody {
+    flex: 1; overflow-y: auto; padding: 8px 12px; font-family: Consolas,monospace;
+    font-size: 13px; line-height: 1.5; white-space: pre-wrap; word-break: break-word;
+  }
+  #console .out { color: var(--text); }
+  #console .err { color: var(--danger); }
+  #console .sys { color: var(--muted); }
+  #console .ok  { color: var(--accent2); }
+  #console .prompt { color: var(--accent); }
+
+  /* 状态栏 */
+  #statusbar {
+    display: flex; gap: 16px; background: var(--bg3); border-top: 1px solid var(--border);
+    padding: 4px 12px; font-size: 12px; color: var(--muted); flex-shrink: 0; flex-wrap: wrap;
+  }
+  #statusbar .s-item { white-space: nowrap; }
+  #statusbar .s-item b { color: var(--text); }
+
+  /* 设置弹窗 */
+  .modal {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,.6);
+    z-index: 100; align-items: center; justify-content: center;
+  }
+  .modal.open { display: flex; }
+  .modal .box {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 10px;
+    width: 460px; max-width: 92vw; max-height: 86vh; overflow-y: auto; padding: 18px 20px;
+    box-shadow: 0 12px 40px rgba(0,0,0,.6);
+  }
+  .modal .box h3 { margin: 0 0 14px; color: var(--accent); }
+  .modal .row { display: flex; align-items: center; justify-content: space-between; margin: 12px 0; gap: 12px; }
+  .modal .row label { color: var(--text); }
+  .modal .row select, .modal .row input[type=number] {
+    background: var(--bg3); color: var(--text); border: 1px solid var(--border);
+    border-radius: 5px; padding: 5px 8px; min-width: 150px;
+  }
+  .modal .row input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--accent); }
+  .modal .actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
+
+  /* 查找替换条 */
+  #findbar {
+    display: none; align-items: center; gap: 6px; padding: 6px 10px;
+    background: var(--bg2); border-bottom: 1px solid var(--border); flex-shrink: 0; flex-wrap: wrap;
+  }
+  #findbar.show { display: flex; }
+  #findbar input {
+    background: var(--bg3); color: var(--text); border: 1px solid var(--border);
+    border-radius: 4px; padding: 5px 8px; min-width: 160px;
+  }
+  #findbar button {
+    background: var(--bg3); color: var(--text); border: 1px solid var(--border);
+    border-radius: 4px; padding: 5px 10px; cursor: pointer;
+  }
+  #findbar button:hover { border-color: var(--accent); color: var(--accent); }
+  #findbar label { display: flex; align-items: center; gap: 4px; color: var(--muted); font-size: 12px; }
+  #findbar .msg { color: var(--warn); font-size: 12px; }
+
+  /* 通用滚动条 */
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: var(--bg3); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 5px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+  .toast {
+    position: fixed; bottom: 60px; left: 50%; transform: translateX(-50%);
+    background: var(--accent); color: #11111b; padding: 8px 18px; border-radius: 20px;
+    z-index: 200; font-size: 13px; opacity: 0; transition: opacity .25s; pointer-events: none;
+    box-shadow: 0 4px 16px rgba(0,0,0,.4);
+  }
+  .toast.show { opacity: 1; }
+  .CodeMirror-gutters { background: var(--bg) !important; }
+  kbd { background: var(--bg3); border: 1px solid var(--border); border-radius: 3px; padding: 0 4px; font-size: 11px; }
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- 顶部菜单 -->
+  <div id="topbar">
+    <span class="title">🐍 PyEditor</span>
+    <div class="menu" data-menu="file">
+      <button>文件</button>
+      <div class="dropdown">
+        <div class="item" data-act="new">新建文件 <span class="k">Ctrl+N</span></div>
+        <div class="item" data-act="open">打开文件… <span class="k">Ctrl+O</span></div>
+        <div class="item" data-act="openMulti">打开多个文件…</div>
+        <div class="sep"></div>
+        <div class="item" data-act="save">保存 <span class="k">Ctrl+S</span></div>
+        <div class="item" data-act="saveAs">另存为…</div>
+        <div class="item" data-act="downloadAll">下载全部文件</div>
+        <div class="sep"></div>
+        <div class="item" data-act="closeFile">关闭当前文件</div>
+      </div>
+    </div>
+    <div class="menu" data-menu="edit">
+      <button>编辑</button>
+      <div class="dropdown">
+        <div class="item" data-act="undo">撤销 <span class="k">Ctrl+Z</span></div>
+        <div class="item" data-act="redo">重做 <span class="k">Ctrl+Y</span></div>
+        <div class="sep"></div>
+        <div class="item" data-act="find">查找 / 替换 <span class="k">Ctrl+F</span></div>
+        <div class="item" data-act="goto">跳转到行… <span class="k">Alt+G</span></div>
+        <div class="sep"></div>
+        <div class="item" data-act="comment">注释 / 取消注释 <span class="k">Ctrl+/</span></div>
+        <div class="item" data-act="indent">增加缩进 <span class="k">Tab</span></div>
+        <div class="item" data-act="outdent">减少缩进 <span class="k">Shift+Tab</span></div>
+        <div class="sep"></div>
+        <div class="item" data-act="dupLine">复制当前行 <span class="k">Ctrl+D</span></div>
+        <div class="item" data-act="delLine">删除当前行 <span class="k">Ctrl+K</span></div>
+        <div class="item" data-act="moveUp">上移行 <span class="k">Alt+↑</span></div>
+        <div class="item" data-act="moveDown">下移行 <span class="k">Alt+↓</span></div>
+      </div>
+    </div>
+    <div class="menu" data-menu="run">
+      <button>运行</button>
+      <div class="dropdown">
+        <div class="item" data-act="run">运行代码 <span class="k">Ctrl+R</span></div>
+        <div class="item" data-act="runNew">在新环境运行（清空变量）</div>
+        <div class="item" data-act="clearConsole">清空控制台</div>
+        <div class="sep"></div>
+        <div class="item" data-act="lint">语法检查 <span class="k">F8</span></div>
+        <div class="item" data-act="format">用 black 格式化</div>
+      </div>
+    </div>
+    <div class="menu" data-menu="view">
+      <button>视图</button>
+      <div class="dropdown">
+        <div class="item" data-act="toggleSidebar">文件侧栏</div>
+        <div class="item" data-act="toggleConsole">控制台面板</div>
+        <div class="item" data-act="toggleWrap">自动换行</div>
+        <div class="item" data-act="fullscreen">全屏编辑 <span class="k">F11</span></div>
+        <div class="item" data-act="theme">切换主题</div>
+        <div class="item" data-act="increaseFont">增大字号 <span class="k">Ctrl++</span></div>
+        <div class="item" data-act="decreaseFont">减小字号 <span class="k">Ctrl+-</span></div>
+      </div>
+    </div>
+    <div class="menu" data-menu="help">
+      <button>帮助</button>
+      <div class="dropdown">
+        <div class="item" data-act="loadSample">载入示例代码</div>
+        <div class="item" data-act="shortcuts">快捷键说明</div>
+        <div class="item" data-act="about">关于 PyEditor</div>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <button class="btn primary" id="runBtn">▶ 运行</button>
+      <button class="btn" id="saveBtn">💾 保存</button>
+      <button class="btn" id="newBtn">＋ 新建</button>
+    </div>
+  </div>
+
+  <!-- 标签栏 -->
+  <div id="tabbar"></div>
+
+  <!-- 查找条 -->
+  <div id="findbar">
+    <input id="findInput" placeholder="查找…">
+    <input id="replaceInput" placeholder="替换为…">
+    <button id="findPrev">↑</button>
+    <button id="findNext">↓</button>
+    <button id="replaceOne">替换</button>
+    <button id="replaceAll">全部替换</button>
+    <label><input type="checkbox" id="findRe">正则</label>
+    <label><input type="checkbox" id="findCase">区分大小写</label>
+    <span class="msg" id="findMsg"></span>
+    <button id="findClose" style="margin-left:auto;">✕</button>
+  </div>
+
+  <!-- 主区域 -->
+  <div id="main">
+    <div id="sidebar">
+      <div class="shead"><span>📂 工作区文件</span><span id="fileCount" style="color:var(--accent)"></span></div>
+      <div id="filelist"></div>
+    </div>
+    <div id="editorwrap">
+      <textarea id="code"></textarea>
+    </div>
+  </div>
+
+  <!-- 控制台 -->
+  <div id="console">
+    <div class="chead">
+      <span class="ctitle">▣ 控制台输出</span>
+      <span class="spacer"></span>
+      <button id="clearConsoleBtn">清空</button>
+      <button id="toggleConsoleBtn">隐藏</button>
+    </div>
+    <div class="cbody" id="consoleBody"></div>
+  </div>
+
+  <!-- 状态栏 -->
+  <div id="statusbar">
+    <span class="s-item">文件: <b id="stFile">—</b></span>
+    <span class="s-item">行 <b id="stLine">1</b>, 列 <b id="stCol">1</b></span>
+    <span class="s-item">选区 <b id="stSel">0</b> 字符</span>
+    <span class="s-item">行数 <b id="stLines">0</b></span>
+    <span class="s-item">字符 <b id="stChars">0</b></span>
+    <span class="s-item">编码: <b>UTF-8</b></span>
+    <span class="s-item" id="stPy">Python 引擎: <b style="color:var(--warn)">未加载</b></span>
+    <span class="s-item">主题: <b id="stTheme">dracula</b></span>
+  </div>
+</div>
+
+<!-- 设置弹窗 -->
+<div class="modal" id="settingsModal">
+  <div class="box">
+    <h3>⚙️ 编辑器设置</h3>
+    <div class="row">
+      <label>主题</label>
+      <select id="setTheme">
+        <option value="dracula">Dracula（暗）</option>
+        <option value="monokai">Monokai（暗）</option>
+        <option value="material">Material（暗）</option>
+        <option value="cobalt">Cobalt（暗蓝）</option>
+        <option value="solarized">Solarized（暗）</option>
+        <option value="eclipse">Eclipse（亮）</option>
+        <option value="idea">Idea（亮）</option>
+      </select>
+    </div>
+    <div class="row">
+      <label>字体大小</label>
+      <input type="number" id="setFont" min="10" max="28" value="14">
+    </div>
+    <div class="row">
+      <label>缩进宽度（空格）</label>
+      <input type="number" id="setTab" min="1" max="8" value="4">
+    </div>
+    <div class="row">
+      <label>使用 Tab 字符（而非空格）</label>
+      <input type="checkbox" id="setTabChar">
+    </div>
+    <div class="row">
+      <label>自动换行</label>
+      <input type="checkbox" id="setWrap">
+    </div>
+    <div class="row">
+      <label>显示行号</label>
+      <input type="checkbox" id="setLineNo" checked>
+    </div>
+    <div class="row">
+      <label>代码折叠</label>
+      <input type="checkbox" id="setFold" checked>
+    </div>
+    <div class="row">
+      <label>自动关闭括号/引号</label>
+      <input type="checkbox" id="setCloseBracket" checked>
+    </div>
+    <div class="row">
+      <label>高亮当前行</label>
+      <input type="checkbox" id="setActiveLine" checked>
+    </div>
+    <div class="row">
+      <label>自动补全提示（Ctrl+Space）</label>
+      <input type="checkbox" id="setHint" checked>
+    </div>
+    <div class="row">
+      <label>自动保存（localStorage）</label>
+      <input type="checkbox" id="setAutoSave" checked>
+    </div>
+    <div class="actions">
+      <button class="btn" id="setCancel">取消</button>
+      <button class="btn primary" id="setApply">应用</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<input type="file" id="fileInput" accept=".py,.pyw,.txt,.text" multiple style="display:none">
+<input type="file" id="singleInput" accept=".py,.pyw" style="display:none">
+
+<!-- CodeMirror 核心 + 模式 + 插件 -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/foldcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/foldgutter.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/brace-fold.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/indent-fold.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/comment-fold.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/selection/active-line.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/dialog/dialog.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/search/searchcursor.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/search/search.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/search/jump-to-line.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/comment/comment.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/show-hint.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/python-hint.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/display/fullscreen.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/trailingspace.min.js"></script>
+
+<script>
+"use strict";
+/* ====================== 全局状态 ====================== */
+const SAMPLE = `# 欢迎使用 PyEditor —— 浏览器内的 Python 编辑器
+# 按 Ctrl+R 运行此代码，输出会显示在下方控制台
+
+def fib(n):
+    a, b = 0, 1
+    for _ in range(n):
+        print(a, end=" ")
+        a, b = b, a + b
+    print()
+
+if __name__ == "__main__":
+    print("Fibonacci 数列前 10 项：")
+    fib(10)
+    print("2 + 3 =", 2 + 3)
+`;
+
+const files = {};            // { name: { doc, dirty } }
+let activeFile = null;
+let fileCounter = 0;
+let pyodide = null;
+let pyodideLoading = false;
+let runToken = 0;
+
+const settings = loadSettings();
+
+/* ====================== 编辑器初始化 ====================== */
+const editor = CodeMirror.fromTextArea(document.getElementById('code'), {
+  mode: 'python',
+  lineNumbers: settings.lineNo,
+  theme: settings.theme,
+  indentUnit: settings.tab,
+  tabSize: settings.tab,
+  indentWithTabs: settings.tabChar,
+  lineWrapping: settings.wrap,
+  foldGutter: settings.fold,
+  gutters: settings.fold
+    ? ["CodeMirror-linenumbers", "CodeMirror-foldgutter"]
+    : ["CodeMirror-linenumbers"],
+  matchBrackets: true,
+  autoCloseBrackets: settings.closeBracket,
+  showTrailingSpace: true,
+  styleActiveLine: settings.activeLine,
+  extraKeys: buildExtraKeys(),
+  hintOptions: { completeSingle: false },
+});
+
+function buildExtraKeys() {
+  const k = {
+    "Ctrl-Space": "autocomplete",
+    "Ctrl-/": "toggleComment",
+    "Ctrl-D": duplicateLine,
+    "Ctrl-K": deleteLine,
+    "Alt-Up": moveLine(-1),
+    "Alt-Down": moveLine(1),
+    "Ctrl-R": (cm) => runCode(false),
+    "Ctrl-F": (cm) => openFind(),
+    "Alt-G": (cm) => CodeMirror.commands.jumpToLine(cm),
+    "F8": (cm) => lintCode(),
+    "F11": (cm) => cm.setOption("fullScreen", !cm.getOption("fullScreen")),
+    "Esc": (cm) => { if (cm.getOption("fullScreen")) cm.setOption("fullScreen", false); else CodeMirror.commands.closeHint(cm); },
+  };
+  // 回车自动保持 Python 缩进
+  k["Enter"] = function(cm){ autoIndentEnter(cm); };
+  return k;
+}
+
+/* ====================== 文件管理 ====================== */
+function makeDoc(name, content) {
+  return CodeMirror.Doc(content || "", { mode: "python" });
+}
+
+function addFile(name, content, activate = true) {
+  // 避免重名
+  let finalName = name, i = 1;
+  while (files[finalName]) { finalName = name.replace(/(\.[^.]+)?$/, "") + "_" + i + (name.match(/\.[^.]+$/)?.[0] || ".py"); i++; }
+  files[finalName] = { doc: makeDoc(finalName, content), dirty: false, saved: false };
+  if (activate) switchFile(finalName);
+  renderTabs(); renderFileList(); updateStatus();
+  return finalName;
+}
+
+function switchFile(name) {
+  if (!files[name]) return;
+  activeFile = name;
+  editor.swapDoc(files[name].doc);
+  editor.setOption("mode", "python");
+  // 绑定 change 事件（仅一次）
+  if (!files[name]._bound) {
+    files[name].doc.on("change", () => { markDirty(name); if (settings.autoSave) autosave(); });
+    files[name]._bound = true;
+  }
+  editor.focus();
+  renderTabs(); renderFileList(); updateStatus();
+}
+
+function closeFile(name) {
+  if (!files[name]) return;
+  const names = Object.keys(files);
+  if (names.length === 1) {
+    delete files[name];
+    activeFile = null;
+    addFile("untitled-" + (++fileCounter) + ".py", "", true);
+    return;
+  }
+  const idx = names.indexOf(name);
+  delete files[name];
+  if (activeFile === name) {
+    const next = names[idx + 1] || names[idx - 1];
+    switchFile(next);
+  }
+  renderTabs(); renderFileList();
+}
+
+function markDirty(name) { files[name].dirty = true; renderTabs(); }
+
+function currentContent() { return activeFile ? files[activeFile].doc.getValue() : ""; }
+
+/* ====================== 渲染 ====================== */
+function renderTabs() {
+  const bar = document.getElementById('tabbar');
+  bar.innerHTML = "";
+  Object.keys(files).forEach(name => {
+    const t = document.createElement('div');
+    t.className = "tab" + (name === activeFile ? " active" : "") + (files[name].dirty ? " dirty" : "");
+    t.innerHTML = `<span class="name">${escapeHtml(name)}</span><span class="close" title="关闭">✕</span>`;
+    t.querySelector('.name').onclick = (e) => { e.stopPropagation(); switchFile(name); };
+    t.onclick = () => switchFile(name);
+    t.querySelector('.close').onclick = (e) => { e.stopPropagation(); closeFile(name); };
+    bar.appendChild(t);
+  });
+}
+
+function renderFileList() {
+  const list = document.getElementById('filelist');
+  list.innerHTML = "";
+  const names = Object.keys(files);
+  document.getElementById('fileCount').textContent = names.length;
+  names.forEach(name => {
+    const d = document.createElement('div');
+    d.className = "fitem" + (name === activeFile ? " active" : "");
+    d.innerHTML = `<span>📄</span><span class="fname" title="${escapeHtml(name)}">${escapeHtml(name)}</span><span class="fclose" title="关闭">✕</span>`;
+    d.querySelector('.fname').onclick = () => switchFile(name);
+    d.onclick = () => switchFile(name);
+    d.querySelector('.fclose').onclick = (e) => { e.stopPropagation(); closeFile(name); };
+    list.appendChild(d);
+  });
+}
+
+function updateStatus() {
+  if (!activeFile) { document.getElementById('stFile').textContent = "—"; return; }
+  const doc = files[activeFile].doc;
+  document.getElementById('stFile').textContent = activeFile;
+  const cur = editor.getCursor();
+  document.getElementById('stLine').textContent = cur.line + 1;
+  document.getElementById('stCol').textContent = cur.ch + 1;
+  const sel = editor.getSelection();
+  document.getElementById('stSel').textContent = sel.length;
+  document.getElementById('stLines').textContent = doc.lineCount();
+  document.getElementById('stChars').textContent = doc.getValue().length;
+  document.getElementById('stTheme').textContent = settings.theme;
+}
+
+/* ====================== 文件读写 ====================== */
+function newFile() { addFile("untitled-" + (++fileCounter) + ".py", "", true); toast("已新建文件"); }
+
+function openFiles(fileList) {
+  let first = null;
+  [...fileList].forEach(f => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const n = addFile(f.name, e.target.result, false);
+      if (!first) first = n;
+      if (f === fileList[fileList.length - 1]) switchFile(first || n);
+    };
+    reader.readAsText(f);
+  });
+}
+
+function saveCurrent(download = true) {
+  if (!activeFile) return;
+  const content = currentContent();
+  files[activeFile].dirty = false;
+  files[activeFile].saved = true;
+  if (download) {
+    const blob = new Blob([content], { type: "text/x-python;charset=utf-8" });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = activeFile;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+  autosave();
+  renderTabs();
+  toast("已保存：" + activeFile);
+}
+
+function saveAs() {
+  if (!activeFile) return;
+  const name = prompt("文件名（含 .py 后缀）：", activeFile);
+  if (!name) return;
+  const content = currentContent();
+  if (files[name] && name !== activeFile) {
+    if (!confirm("文件 " + name + " 已存在，覆盖？")) return;
+  }
+  files[name] = { doc: makeDoc(name, content), dirty: false, saved: true, _bound: true };
+  files[name].doc.on("change", () => { markDirty(name); if (settings.autoSave) autosave(); });
+  const old = activeFile;
+  // 如果原名是 untitled，删除原占位
+  delete files[old];
+  activeFile = name;
+  switchFile(name);
+  saveCurrent(true);
+}
+
+function downloadAll() {
+  const names = Object.keys(files);
+  names.forEach(name => {
+    const blob = new Blob([files[name].doc.getValue()], { type: "text/x-python;charset=utf-8" });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = name; a.click();
+    URL.revokeObjectURL(a.href);
+  });
+  toast("已下载 " + names.length + " 个文件");
+}
+
+/* localStorage 自动保存 */
+function autosave() {
+  if (!settings.autoSave) return;
+  const data = {};
+  Object.keys(files).forEach(n => data[n] = files[n].doc.getValue());
+  try { localStorage.setItem("pyeditor.files", JSON.stringify(data)); } catch(e){}
+  try { localStorage.setItem("pyeditor.settings", JSON.stringify(settings)); } catch(e){}
+}
+
+function restoreAutosave() {
+  try {
+    const raw = localStorage.getItem("pyeditor.files");
+    if (raw) {
+      const data = JSON.parse(raw);
+      const names = Object.keys(data);
+      if (names.length) {
+        names.forEach(n => addFile(n, data[n], false));
+        switchFile(names[0]);
+        return true;
+      }
+    }
+  } catch(e){}
+  return false;
+}
+
+/* ====================== 运行 Python (Pyodide) ====================== */
+async function ensurePyodide() {
+  if (pyodide) return pyodide;
+  if (pyodideLoading) { while(pyodideLoading){ await new Promise(r=>setTimeout(r,200)); } return pyodide; }
+  pyodideLoading = true;
+  consoleLog("sys", "正在加载 Python 引擎 (Pyodide)，首次需要联网，请稍候…");
+  setPyStatus("加载中…", "var(--warn)");
+  try {
+    const script = document.createElement('script');
+    script.src = "https://cdn.jsdelivr.net/pyodide/v0.26.2/full/pyodide.js";
+    await new Promise((res, rej) => { script.onload = res; script.onerror = rej; document.head.appendChild(script); });
+    pyodide = await loadPyodide();
+    // 覆盖 input() 避免阻塞
+    pyodide.runPython(`import builtins
+def _wb_input(prompt_msg=''):
+    return ''
+builtins.input = _wb_input`);
+    setPyStatus("已就绪", "var(--accent2)");
+    consoleLog("ok", "Python 引擎就绪 ✓");
+  } catch (e) {
+    setPyStatus("加载失败", "var(--danger)");
+    consoleLog("err", "Python 引擎加载失败：" + e.message + "\n请检查网络连接。");
+  } finally {
+    pyodideLoading = false;
+  }
+  return pyodide;
+}
+
+async function runCode(freshEnv) {
+  if (!activeFile) { toast("没有可运行的文件"); return; }
+  const code = currentContent();
+  if (!code.trim()) { toast("文件为空"); return; }
+  showConsole(true);
+  const token = ++runToken;
+  consoleLog("sys", "\n─── 运行 " + activeFile + " @ " + new Date().toLocaleTimeString() + " ───");
+  const py = await ensurePyodide();
+  if (!py) return;
+  if (freshEnv) {
+    // 软重置：替换 __main__ 命名空间，清空上次的全局变量
+    py.runPython("import sys\nfrom types import ModuleType\nsys.modules['__main__'] = ModuleType('__main__')");
+    consoleLog("sys", "（已清空全局变量，全新环境）");
+  }
+  const t0 = performance.now();
+  py.setStdout({ batched: (s) => { if (token === runToken) consoleLog("out", s); } });
+  py.setStderr({ batched: (s) => { if (token === runToken) consoleLog("err", s); } });
+  try {
+    await py.runPythonAsync(code);
+    if (token === runToken) {
+      const dt = (performance.now() - t0).toFixed(0);
+      consoleLog("ok", "✓ 执行完成，耗时 " + dt + " ms");
+    }
+  } catch (err) {
+    if (token === runToken) consoleLog("err", String(err.message || err));
+  } finally {
+    py.setStdout({});
+    py.setStderr({});
+  }
+}
+
+/* ====================== 语法检查 & 格式化 ====================== */
+async function lintCode() {
+  const code = currentContent();
+  showConsole(true);
+  const py = await ensurePyodide();
+  if (!py) return;
+  consoleLog("sys", "── 语法检查 ──");
+  try {
+    py.FS.writeFile("/tmp/_wb_check.py", code);
+    py.runPython(`
+import ast
+try:
+    with open("/tmp/_wb_check.py", encoding="utf-8") as _f:
+        ast.parse(_f.read())
+    print("✓ 语法正确，没有发现问题。")
+except SyntaxError as e:
+    print("语法错误 第 " + str(e.lineno) + " 行 第 " + str(e.offset) + " 列: " + e.msg)
+`);
+  } catch(e) { consoleLog("err", String(e.message||e)); }
+}
+
+async function formatCode() {
+  const code = currentContent();
+  showConsole(true);
+  const py = await ensurePyodide();
+  if (!py) return;
+  consoleLog("sys", "── 使用 black 格式化 ──");
+  try {
+    consoleLog("sys", "正在安装 black（首次需联网下载）…");
+    await py.loadPackage("micropip");
+    await py.runPython("import micropip; await micropip.install('black')");
+    py.FS.writeFile("/tmp/_wb_fmt.py", code);
+    await py.runPythonAsync(`
+import black
+try:
+    black.format_file_in_place("/tmp/_wb_fmt.py", fast=True, mode=black.FileMode(), write_back=black.WriteBack.YES)
+    print("FORMATTED_OK")
+except Exception as e:
+    print("FORMAT_ERROR:" + str(e))
+`);
+    const formatted = py.FS.readFile("/tmp/_wb_fmt.py", { encoding: "utf-8" });
+    if (formatted != null) {
+      files[activeFile].doc.setValue(formatted);
+      consoleLog("ok", "✓ 已使用 black 格式化。");
+      autosave();
+    }
+  } catch(e) { consoleLog("err", String(e.message||e)); }
+}
+
+/* ====================== 编辑器命令 ====================== */
+function duplicateLine(cm) {
+  const cur = cm.getCursor();
+  const line = cm.getLine(cur.line);
+  cm.replaceRange(line + "\n", { line: cur.line, ch: 0 });
+}
+function deleteLine(cm) {
+  const cur = cm.getCursor();
+  cm.replaceRange("", { line: cur.line, ch: 0 }, { line: cur.line + 1, ch: 0 });
+}
+function moveLine(dir) {
+  return function(cm) {
+    const cur = cm.getCursor();
+    const from = cur.line, to = cur.line + (dir > 0 ? 1 : 0);
+    const line = cm.getLine(cur.line);
+    cm.replaceRange("", { line: from, ch: 0 }, { line: from + 1, ch: 0 });
+    cm.replaceRange(line + "\n", { line: from + dir, ch: 0 });
+    cm.setCursor({ line: cur.line + dir, ch: cur.ch });
+  };
+}
+function autoIndentEnter(cm) {
+  const cur = cm.getCursor();
+  const line = cm.getLine(cur.line);
+  // 空缩进行按回车：退一格缩进（常见的“空行退出代码块”行为）
+  if (line.trim() === "") {
+    const indent = line.match(/^\s*/)[0].length;
+    const dedent = Math.max(0, indent - settings.tab);
+    cm.replaceSelection("\n");
+    cm.indentLine(cur.line, dedent);
+    cm.indentLine(cur.line + 1, dedent);
+    return;
+  }
+  // 其余情况交给 Python 模式：自动按上行列号(:)缩进一级
+  CodeMirror.commands.newlineAndIndent(cm);
+}
+
+function toggleComment() { CodeMirror.commands.toggleComment(editor); }
+
+/* ====================== 查找替换 ====================== */
+function openFind() {
+  document.getElementById('findbar').classList.add('show');
+  document.getElementById('findInput').focus();
+}
+function doFind(dir) {
+  const q = document.getElementById('findInput').value;
+  if (!q) return;
+  const re = document.getElementById('findRe').checked;
+  const cs = document.getElementById('findCase').checked;
+  const cursor = editor.getCursor();
+  const start = dir > 0 ? cursor : cursor;
+  const res = editor.getSearchCursor(q, dir > 0 ? cursor : { line: 0, ch: 0 }, { caseFold: !cs, regexp: re });
+  const found = dir > 0 ? res.findNext() : res.findPrevious();
+  if (found) { editor.setSelection(res.from(), res.to()); editor.scrollIntoView(res.from()); document.getElementById('findMsg').textContent = ""; }
+  else { document.getElementById('findMsg').textContent = "未找到"; }
+}
+function doReplaceOne() {
+  const q = document.getElementById('findInput').value;
+  const r = document.getElementById('replaceInput').value;
+  if (!q) return;
+  const re = document.getElementById('findRe').checked;
+  const cs = document.getElementById('findCase').checked;
+  const res = editor.getSearchCursor(q, editor.getCursor(), { caseFold: !cs, regexp: re });
+  if (res.findNext()) { res.replace(r); document.getElementById('findMsg').textContent = "已替换"; }
+  else document.getElementById('findMsg').textContent = "未找到";
+}
+function doReplaceAll() {
+  const q = document.getElementById('findInput').value;
+  const r = document.getElementById('replaceInput').value;
+  if (!q) return;
+  const re = document.getElementById('findRe').checked;
+  const cs = document.getElementById('findCase').checked;
+  let n = 0;
+  editor.operation(() => {
+    const res = editor.getSearchCursor(q, { line: 0, ch: 0 }, { caseFold: !cs, regexp: re });
+    while (res.findNext()) { res.replace(r); n++; }
+  });
+  document.getElementById('findMsg').textContent = "共替换 " + n + " 处";
+}
+
+/* ====================== 控制台 ====================== */
+function consoleLog(type, text) {
+  const body = document.getElementById('consoleBody');
+  const div = document.createElement('div');
+  div.className = type;
+  div.textContent = text;
+  body.appendChild(div);
+  body.scrollTop = body.scrollHeight;
+}
+function clearConsole() { document.getElementById('consoleBody').innerHTML = ""; }
+function showConsole(show) {
+  const c = document.getElementById('console');
+  if (show) c.classList.remove('hidden'); else c.classList.add('hidden');
+}
+function setPyStatus(text, color) {
+  document.getElementById('stPy').innerHTML = 'Python 引擎: <b style="color:' + color + '">' + text + '</b>';
+}
+
+/* ====================== 设置 ====================== */
+function loadSettings() {
+  const def = { theme:"dracula", font:14, tab:4, tabChar:false, wrap:false, lineNo:true, fold:true, closeBracket:true, activeLine:true, hint:true, autoSave:true };
+  try { return Object.assign(def, JSON.parse(localStorage.getItem("pyeditor.settings") || "{}")); }
+  catch(e){ return def; }
+}
+function applySettings() {
+  settings.theme = document.getElementById('setTheme').value;
+  settings.font = +document.getElementById('setFont').value;
+  settings.tab = +document.getElementById('setTab').value;
+  settings.tabChar = document.getElementById('setTabChar').checked;
+  settings.wrap = document.getElementById('setWrap').checked;
+  settings.lineNo = document.getElementById('setLineNo').checked;
+  settings.fold = document.getElementById('setFold').checked;
+  settings.closeBracket = document.getElementById('setCloseBracket').checked;
+  settings.activeLine = document.getElementById('setActiveLine').checked;
+  settings.hint = document.getElementById('setHint').checked;
+  settings.autoSave = document.getElementById('setAutoSave').checked;
+
+  editor.setOption("theme", settings.theme);
+  editor.setOption("indentUnit", settings.tab);
+  editor.setOption("tabSize", settings.tab);
+  editor.setOption("indentWithTabs", settings.tabChar);
+  editor.setOption("lineWrapping", settings.wrap);
+  editor.setOption("lineNumbers", settings.lineNo);
+  editor.setOption("foldGutter", settings.fold);
+  editor.setOption("gutters", settings.fold ? ["CodeMirror-linenumbers","CodeMirror-foldgutter"] : ["CodeMirror-linenumbers"]);
+  editor.setOption("autoCloseBrackets", settings.closeBracket);
+  editor.setOption("styleActiveLine", settings.activeLine);
+  editor.setOption("extraKeys", settings.hint ? buildExtraKeys() : Object.assign(buildExtraKeys(), { "Ctrl-Space": null }));
+  document.getElementById('code').parentElement.querySelector('.CodeMirror').style.fontSize = settings.font + "px";
+  autosave();
+  updateStatus();
+  toast("设置已应用");
+}
+function openSettings() {
+  document.getElementById('setTheme').value = settings.theme;
+  document.getElementById('setFont').value = settings.font;
+  document.getElementById('setTab').value = settings.tab;
+  document.getElementById('setTabChar').checked = settings.tabChar;
+  document.getElementById('setWrap').checked = settings.wrap;
+  document.getElementById('setLineNo').checked = settings.lineNo;
+  document.getElementById('setFold').checked = settings.fold;
+  document.getElementById('setCloseBracket').checked = settings.closeBracket;
+  document.getElementById('setActiveLine').checked = settings.activeLine;
+  document.getElementById('setHint').checked = settings.hint;
+  document.getElementById('setAutoSave').checked = settings.autoSave;
+  document.getElementById('settingsModal').classList.add('open');
+}
+
+/* ====================== 工具 ====================== */
+function escapeHtml(s){ return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+let toastTimer;
+function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),1800); }
+
+const THEME_LIST = ["dracula","monokai","material","cobalt","solarized","eclipse","idea"];
+function cycleTheme() {
+  const i = THEME_LIST.indexOf(settings.theme);
+  settings.theme = THEME_LIST[(i+1)%THEME_LIST.length];
+  editor.setOption("theme", settings.theme);
+  updateStatus(); autosave(); toast("主题：" + settings.theme);
+}
+
+/* ====================== 事件绑定 ====================== */
+// 菜单展开
+document.querySelectorAll('.menu > button').forEach(b => {
+  b.onclick = (e) => {
+    e.stopPropagation();
+    const m = b.parentElement;
+    document.querySelectorAll('.menu').forEach(x => { if (x!==m) x.classList.remove('open'); });
+    m.classList.toggle('open');
+  };
+});
+document.querySelectorAll('.menu .item').forEach(item => {
+  item.onclick = () => { item.closest('.menu').classList.remove('open'); handleAction(item.dataset.act); };
+});
+document.addEventListener('click', () => document.querySelectorAll('.menu').forEach(m=>m.classList.remove('open')));
+
+function handleAction(act) {
+  switch(act) {
+    case 'new': newFile(); break;
+    case 'open': document.getElementById('fileInput').click(); break;
+    case 'openMulti': document.getElementById('fileInput').click(); break;
+    case 'save': saveCurrent(true); break;
+    case 'saveAs': saveAs(); break;
+    case 'downloadAll': downloadAll(); break;
+    case 'closeFile': if (activeFile) closeFile(activeFile); break;
+    case 'undo': editor.undo(); break;
+    case 'redo': editor.redo(); break;
+    case 'find': openFind(); break;
+    case 'goto': CodeMirror.commands.jumpToLine(editor); break;
+    case 'comment': toggleComment(); break;
+    case 'indent': CodeMirror.commands.indentMore(editor); break;
+    case 'outdent': CodeMirror.commands.indentLess(editor); break;
+    case 'dupLine': duplicateLine(editor); break;
+    case 'delLine': deleteLine(editor); break;
+    case 'moveUp': moveLine(-1)(editor); break;
+    case 'moveDown': moveLine(1)(editor); break;
+    case 'run': runCode(false); break;
+    case 'runNew': runCode(true); break;
+    case 'clearConsole': clearConsole(); break;
+    case 'lint': lintCode(); break;
+    case 'format': formatCode(); break;
+    case 'toggleSidebar': document.getElementById('sidebar').classList.toggle('hidden'); break;
+    case 'toggleConsole': showConsole(document.getElementById('console').classList.contains('hidden')); document.getElementById('toggleConsoleBtn').textContent = document.getElementById('console').classList.contains('hidden')?'显示':'隐藏'; break;
+    case 'toggleWrap': settings.wrap=!settings.wrap; editor.setOption('lineWrapping',settings.wrap); autosave(); toast('自动换行：'+(settings.wrap?'开':'关')); break;
+    case 'fullscreen': editor.setOption('fullScreen', !editor.getOption('fullScreen')); break;
+    case 'theme': openSettings(); break;
+    case 'increaseFont': settings.font=Math.min(28,settings.font+1); document.getElementById('code').parentElement.querySelector('.CodeMirror').style.fontSize=settings.font+'px'; autosave(); break;
+    case 'decreaseFont': settings.font=Math.max(10,settings.font-1); document.getElementById('code').parentElement.querySelector('.CodeMirror').style.fontSize=settings.font+'px'; autosave(); break;
+    case 'loadSample': addFile('sample.py', SAMPLE, true); toast('已载入示例'); break;
+    case 'shortcuts': showShortcuts(); break;
+    case 'about': showAbout(); break;
+  }
+}
+
+document.getElementById('fileInput').onchange = (e) => { if (e.target.files.length) openFiles(e.target.files); e.target.value=""; };
+document.getElementById('runBtn').onclick = () => runCode(false);
+document.getElementById('saveBtn').onclick = () => saveCurrent(true);
+document.getElementById('newBtn').onclick = () => newFile();
+document.getElementById('clearConsoleBtn').onclick = clearConsole;
+document.getElementById('toggleConsoleBtn').onclick = () => { const c=document.getElementById('console'); c.classList.toggle('hidden'); document.getElementById('toggleConsoleBtn').textContent = c.classList.contains('hidden')?'显示':'隐藏'; };
+
+// 设置弹窗
+document.getElementById('setCancel').onclick = () => document.getElementById('settingsModal').classList.remove('open');
+document.getElementById('setApply').onclick = () => { applySettings(); document.getElementById('settingsModal').classList.remove('open'); };
+
+// 查找条
+document.getElementById('findNext').onclick = () => doFind(1);
+document.getElementById('findPrev').onclick = () => doFind(-1);
+document.getElementById('replaceOne').onclick = doReplaceOne;
+document.getElementById('replaceAll').onclick = doReplaceAll;
+document.getElementById('findClose').onclick = () => document.getElementById('findbar').classList.remove('show');
+document.getElementById('findInput').addEventListener('keydown', e => { if(e.key==='Enter'){ doFind(e.shiftKey?-1:1); e.preventDefault(); } });
+
+// 状态栏更新
+editor.on('cursorActivity', updateStatus);
+editor.on('change', updateStatus);
+
+// 全局快捷键
+document.addEventListener('keydown', (e) => {
+  const mod = e.ctrlKey || e.metaKey;
+  if (mod && e.key.toLowerCase()==='s') { e.preventDefault(); saveCurrent(true); }
+  else if (mod && e.key.toLowerCase()==='o') { e.preventDefault(); document.getElementById('fileInput').click(); }
+  else if (mod && e.key.toLowerCase()==='n') { e.preventDefault(); newFile(); }
+  else if (mod && e.key==='=') { e.preventDefault(); handleAction('increaseFont'); }
+  else if (mod && e.key==='-') { e.preventDefault(); handleAction('decreaseFont'); }
+  else if (mod && e.key.toLowerCase()==='f') { e.preventDefault(); openFind(); }
+  else if (mod && e.key.toLowerCase()==='r') { e.preventDefault(); runCode(false); }
+});
+
+function showShortcuts() {
+  showConsole(true);
+  const lines = [
+    "【快捷键说明】",
+    "  Ctrl+N        新建文件",
+    "  Ctrl+O        打开文件",
+    "  Ctrl+S        保存文件",
+    "  Ctrl+R        运行代码",
+    "  Ctrl+F        查找 / 替换",
+    "  Ctrl+Z/Y      撤销 / 重做",
+    "  Ctrl+/        注释 / 取消注释",
+    "  Ctrl+D        复制当前行",
+    "  Ctrl+K        删除当前行",
+    "  Ctrl+Space    代码补全",
+    "  Alt+↑/↓       上移 / 下移行",
+    "  Alt+G         跳转到行",
+    "  F8            语法检查",
+    "  F11           全屏编辑",
+    "  Ctrl++ / -    字号放大 / 缩小",
+  ];
+  lines.forEach(l => consoleLog("sys", l));
+}
+function showAbout() {
+  showConsole(true);
+  ["PyEditor —— 浏览器内的 Python (.py) 文件编辑器",
+   "功能：多标签、文件侧栏、语法高亮、代码折叠、查找替换、",
+   "      自动缩进、括号匹配、代码补全、语法检查、控制台运行。",
+   "Python 运行基于 Pyodide（WebAssembly），首次运行需联网加载。",
+   "所有文件编辑内容会自动保存在浏览器 localStorage 中。"].forEach(l=>consoleLog("ok",l));
+}
+
+/* ====================== 启动 ====================== */
+(function init() {
+  document.getElementById('code').parentElement.querySelector('.CodeMirror').style.fontSize = settings.font + "px";
+  if (!restoreAutosave()) {
+    addFile("sample.py", SAMPLE, true);
+  }
+  updateStatus();
+})();
+</script>
+</body>
+</html>

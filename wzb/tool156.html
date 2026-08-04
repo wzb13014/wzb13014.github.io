@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>工作汇报「废话文学」模仿器</title>
+<style>
+:root{
+  --bg1:#0f1020; --bg2:#1b1c38; --card:#232447; --card2:#2b2d5e;
+  --ink:#eef0ff; --muted:#a7a9d8; --accent:#7c6cff; --accent2:#ff6bb0;
+  --good:#3ddc97; --warn:#ffc86b; --bad:#ff6b6b;
+  --radius:16px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:"Segoe UI","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+  background:linear-gradient(135deg,var(--bg1),var(--bg2));
+  color:var(--ink); min-height:100vh; padding:24px 16px 60px;
+}
+.wrap{max-width:1180px;margin:0 auto;}
+header{text-align:center;margin-bottom:22px;}
+h1{font-size:30px;letter-spacing:2px;background:linear-gradient(90deg,var(--accent),var(--accent2));
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;display:inline-block;}
+.sub{color:var(--muted);margin-top:6px;font-size:14px;}
+header .badge{display:inline-block;margin-left:10px;font-size:12px;color:var(--accent2);
+  border:1px solid var(--accent2);border-radius:20px;padding:2px 10px;vertical-align:middle;}
+
+/* Layout */
+.grid{display:grid;grid-template-columns:320px 1fr;gap:18px;align-items:start;}
+@media(max-width:920px){.grid{grid-template-columns:1fr;}}
+.card{background:var(--card);border:1px solid rgba(255,255,255,.06);border-radius:var(--radius);
+  padding:18px;box-shadow:0 8px 30px rgba(0,0,0,.35);}
+.card h2{font-size:15px;margin-bottom:14px;color:var(--accent);letter-spacing:1px;display:flex;align-items:center;gap:8px;}
+.card h2::before{content:"";width:4px;height:16px;background:linear-gradient(var(--accent),var(--accent2));border-radius:2px;}
+
+label.ctl{display:block;font-size:12.5px;color:var(--muted);margin:14px 0 6px;}
+.ctl-row{display:flex;gap:10px;flex-wrap:wrap;}
+select,input[type=text]{width:100%;background:var(--card2);border:1px solid rgba(255,255,255,.1);
+  color:var(--ink);padding:9px 12px;border-radius:10px;font-size:14px;outline:none;}
+select:focus,input[type=text]:focus{border-color:var(--accent);}
+.field{display:flex;gap:8px;}
+.field input{flex:1;}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;background:var(--card2);
+  color:var(--ink);border:1px solid rgba(255,255,255,.1);padding:9px 14px;border-radius:10px;
+  cursor:pointer;font-size:14px;transition:.15s;}
+.btn:hover{border-color:var(--accent);transform:translateY(-1px);}
+.btn.primary{background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;font-weight:600;flex:1;}
+.btn.primary:hover{filter:brightness(1.1);}
+.btn.sm{padding:6px 10px;font-size:12.5px;border-radius:8px;}
+.btn.danger:hover{border-color:var(--bad);color:var(--bad);}
+
+/* Slider */
+input[type=range]{width:100%;appearance:none;-webkit-appearance:none;height:6px;border-radius:3px;
+  background:linear-gradient(90deg,var(--good),var(--warn) 50%,var(--bad));outline:none;}
+input[type=range]::-webkit-slider-thumb{appearance:none;-webkit-appearance:none;width:18px;height:18px;border-radius:50%;
+  background:#fff;border:3px solid var(--accent);cursor:pointer;}
+.slider-meta{display:flex;justify-content:space-between;font-size:11.5px;color:var(--muted);margin-top:4px;}
+.pct{color:var(--warn);font-weight:700;}
+
+/* Output */
+#output{background:var(--card2);border-radius:var(--radius);padding:22px 26px;min-height:280px;
+  white-space:pre-wrap;line-height:2.05;font-size:15px;font-family:"Kaiti","STKaiti","KaiTi",serif;}
+#output .sign{margin-top:14px;text-align:right;color:var(--muted);font-size:13px;}
+.placeholder{color:var(--muted);font-family:"Segoe UI","Microsoft YaHei",sans-serif;text-align:center;padding:60px 0;opacity:.6;}
+.metrics{display:flex;gap:12px;flex-wrap:wrap;margin:12px 0;}
+.metric{flex:1;min-width:120px;background:var(--card2);border-radius:12px;padding:12px;text-align:center;}
+.metric .num{font-size:24px;font-weight:700;}
+.metric .lbl{font-size:11.5px;color:var(--muted);margin-top:2px;}
+.metric.gauge .num{color:var(--warn);}
+.metric.words .num{color:var(--good);}
+.metric.phrases .num{color:var(--accent2);}
+.metric.poison .num{color:var(--bad);}
+.actions{display:flex;gap:10px;flex-wrap:wrap;}
+
+/* Quotes */
+.quotes{display:flex;flex-direction:column;gap:8px;}
+.qcat{font-size:12px;color:var(--accent);font-weight:600;margin-top:6px;}
+.chips{display:flex;flex-wrap:wrap;gap:7px;}
+.chip{background:var(--card2);border:1px solid rgba(255,255,255,.08);color:var(--ink);
+  font-size:12.5px;padding:6px 11px;border-radius:20px;cursor:pointer;transition:.15s;}
+.chip:hover{border-color:var(--accent2);color:var(--accent2);transform:translateY(-1px);}
+
+/* History */
+#history,#fav{display:flex;flex-direction:column;gap:8px;}
+.hitem{background:var(--card2);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:8px 12px;
+  cursor:pointer;font-size:12.5px;color:var(--muted);transition:.15s;}
+.hitem:hover{border-color:var(--accent);color:var(--ink);}
+.hitem .t{color:var(--muted);font-size:11px;display:block;margin-top:3px;}
+.empty{color:var(--muted);font-size:12.5px;opacity:.6;text-align:center;padding:10px;}
+
+/* Tabs */
+.tabs{display:flex;gap:6px;margin-bottom:12px;}
+.tab{flex:1;text-align:center;padding:7px;border-radius:8px;font-size:13px;color:var(--muted);
+  background:var(--card2);cursor:pointer;}
+.tab.active{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;}
+.panel{display:none;}
+.panel.active{display:block;}
+
+footer{text-align:center;color:var(--muted);font-size:12px;margin-top:28px;opacity:.6;}
+#toast{position:fixed;left:50%;bottom:34px;transform:translateX(-50%) translateY(20px);
+  background:#fff;color:#222;padding:10px 22px;border-radius:30px;font-size:14px;font-weight:600;
+  opacity:0;pointer-events:none;transition:.25s;box-shadow:0 8px 30px rgba(0,0,0,.4);z-index:99;}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+@media(max-width:560px){ h1{font-size:23px;} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>工作汇报「废话文学」模仿器</h1><span class="badge">v2.0 · 领导听了直点头</span>
+    <div class="sub">一键生成字字珠玑、句句空泛的职场汇报，主打一个「说了等于没说」。</div>
+  </header>
+
+  <div class="grid">
+    <!-- 控制面板 -->
+    <div style="display:flex;flex-direction:column;gap:18px;">
+      <div class="card">
+        <h2>汇报配置</h2>
+
+        <label class="ctl">汇报类型</label>
+        <select id="type">
+          <option value="year">年度总结</option>
+          <option value="week">周报 / 月报</option>
+          <option value="job">述职报告</option>
+          <option value="meeting">会议发言</option>
+          <option value="project">项目汇报</option>
+          <option value="self">自我批评</option>
+          <option value="inaug">就职表态</option>
+          <option value="thanks">感谢致辞</option>
+        </select>
+
+        <label class="ctl">汇报语气</label>
+        <select id="mood">
+          <option value="up">昂扬自信 · 乘势而上</option>
+          <option value="mod">谦虚低调 · 仍有不足</option>
+          <option value="formal">正经八百 · 滴水不漏</option>
+          <option value="self">痛心疾首 · 深刻检讨</option>
+        </select>
+
+        <label class="ctl">废话浓度 <span class="pct" id="densVal">80%</span></label>
+        <input type="range" id="dens" min="0" max="100" value="80">
+        <div class="slider-meta"><span>正常发言</span><span>纯纯废话</span></div>
+
+        <label class="ctl">篇幅</label>
+        <div class="ctl-row">
+          <select id="len" style="flex:1;">
+            <option value="short">短 · 三句打完卡</option>
+            <option value="med" selected>中 · 常规汇报</option>
+            <option value="long">长 · 会议时长凑足</option>
+          </select>
+        </div>
+
+        <label class="ctl">汇报人信息</label>
+        <div class="field">
+          <input type="text" id="name" placeholder="姓名" value="王建国">
+          <button class="btn sm" id="dice" title="随机代入">🎲</button>
+        </div>
+        <div class="field" style="margin-top:8px;">
+          <input type="text" id="pos" placeholder="职位" value="副经理">
+        </div>
+
+        <label class="ctl">部门 / 单位</label>
+        <input type="text" id="dept" placeholder="如：综合管理部" value="综合管理部">
+
+        <label class="ctl">主题关键词（可填 1~3 个，逗号分隔）</label>
+        <input type="text" id="tags" placeholder="如：党建, 数字化, 安全生产">
+
+        <div style="margin-top:16px;display:flex;gap:8px;">
+          <button class="btn primary" id="gen">✦ 生成废话</button>
+          <button class="btn" id="clearOut" title="清空输出">清空</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="tabs">
+          <div class="tab active" data-tab="quotes">金句库</div>
+          <div class="tab" data-tab="hist">历史</div>
+          <div class="tab" data-tab="fav">收藏</div>
+        </div>
+        <div id="quotes" class="panel active"></div>
+        <div id="hist" class="panel"></div>
+        <div id="fav" class="panel"></div>
+      </div>
+    </div>
+
+    <!-- 输出区 -->
+    <div class="card">
+      <h2>汇报正文（点击金句可直接插入）</h2>
+      <div class="metrics">
+        <div class="metric gauge"><div class="num" id="mGauge">--</div><div class="lbl">废话指数</div></div>
+        <div class="metric words"><div class="num" id="mWords">0</div><div class="lbl">字数</div></div>
+        <div class="metric phrases"><div class="num" id="mPhrases">0</div><div class="lbl">高频套话</div></div>
+        <div class="metric poison"><div class="num" id="mPoison">0</div><div class="lbl">毒句</div></div>
+      </div>
+      <div id="output"><div class="placeholder">配置好左侧参数，点击「生成废话」开始你的表演。</div></div>
+      <div class="actions" style="margin-top:14px;">
+        <button class="btn" id="copy">📋 复制全文</button>
+        <button class="btn" id="download">⬇ 下载 .txt</button>
+        <button class="btn" id="favBtn">⭐ 收藏</button>
+      </div>
+    </div>
+  </div>
+
+  <footer>仅供娱乐 · 切勿对号入座 · 被领导点名概不负责</footer>
+</div>
+
+<div id="toast"></div>
+
+<script>
+"use strict";
+/* ============ 废话词汇库 ============ */
+const L = {
+  leader:["各位领导","各位领导、各位同事","各级领导","各位同仁","尊敬的领导们","班子和各位前辈",
+          "各位领导、各位评委","在座的各位领导和专家","各位尊敬的领导与嘉宾","各位领导、各位企业家朋友",
+          "各位领导和同志们","各位领导、各位老前辈"],
+  guideSrc:[
+    "在${L}的坚强领导下","在${L}的正确指引下","在${L}的亲切关怀下",
+    "在上级的统一部署下","在集团党委的统筹安排下","在领导的悉心指导下",
+    "在公司的科学决策下","在各部门的通力配合下",
+    "在上级党委的正确领导下","在全体员工的共同努力下","在股东方的大力支持下",
+    "在领导的亲自部署、亲自推动下","在相关部门的鼎力支持下","在组织多年的培养与信任下",
+    "在集团战略规划的引领下","在兄弟单位的无私帮助下"
+  ],
+  verbs:["加强","深化","推进","落实","提升","优化","强化","夯实","完善","健全","统筹","协调",
+        "抓实","做细","攻坚","突破","筑牢","聚焦","对标","发力","深耕","赋能",
+        "部署","安排","督导","调度","盯紧","咬定","稳住","做优","做强","做大",
+        "整合","盘活","激活","培育","壮大","扩容","提质","增效","破题","解题","出招","落地"],
+  adv:["进一步","深入","全面","扎实","切实","持续","积极","认真","稳步","有效","精准","有力","不断","着力",
+       "坚决","果断","一以贯之","善始善终","不折不扣","动真碰硬","驰而不息","从严从实",
+       "多措并举","同向发力","毫不松懈","锲而不舍","统筹兼顾","精准施策","靶向发力","久久"],
+  nouns:["工作","建设","发展","机制","体系","责任","意识","能力","水平","质量","效率","成效","基础",
+         "保障","力度","进度","质效","动能","底盘","基本盘",
+         "实绩","成果","红利","满意度","安全感","幸福感","大局","全局","样板","标杆",
+         "高地","主战场","增长极","强引擎","示范","引领力","穿透力","执行力","协同性","闭环"],
+  thing:["高质量发展","数字化转型","降本增效","合规经营","队伍建设","作风建设","安全生产","品质提升",
+         "创新驱动","精细化管理","现场管理","体系建设","客户满意","品牌塑造","全要素生产率",
+         "新质生产力","内控管理","业财融合","供应链管理","市场开拓","品牌建设","文化建设",
+         "人才梯队","精益运营","流程再造","标准化建设","数智化转型","绿色低碳","治理现代化","营商环境"],
+  obj:["各项决策部署","各项目标任务","各项重点工作","年度经营指标","安全生产责任","党建工作责任",
+       "民生保障任务","重点项目清单","年度改革任务",
+       "阶段性目标任务","攻坚任务清单","重点督办事项","年度考核指标","专项治理任务",
+       "巡视整改任务","民生实事项目","风险防控清单","时间节点任务","既定工作安排"],
+  outcome:["稳中有进、质效齐升","蹄疾步稳、扎实推进","总体向好、态势良好","进展顺利、成效初显",
+           "多点开花、亮点纷呈","持续向好、明显增强","稳中加固、持续回稳",
+           "节节攀升、态势喜人","稳扎稳打、好于预期","开局良好、后劲十足",
+           "量质并举、行稳致远","整体推进、重点突破","齐头并进、全面开花","成效显著、群众认可"],
+  cliche:[
+    "凝聚了广泛共识","形成了强大合力","筑牢了坚实根基","增添了强劲动力","打下了坚实基础",
+    "营造了良好氛围","积累了宝贵经验","取得了阶段性成果","实现了历史性突破","交出了满意答卷",
+    "开创了崭新局面","迈出了坚实步伐","书写了精彩答卷","打开了工作新天地","跑出了发展加速度",
+    "交出了高分报表","绘就了崭新蓝图","奏响了奋进强音","实现了精彩蝶变","树立了行业标杆"
+  ],
+  empty:[
+    "进一步压实了责任链条","有效打通了最后一公里","切实做到两手抓两手硬",
+    "确保件件有着落、事事有回音","做到事事有人管、件件有人抓",
+    "把功夫下在平时、把工作做在前头","既抓当前又抓长远、既抓显绩又抓潜绩",
+    "努力做到件件有回音、事事有着落","把责任扛在肩上、把任务抓在手中",
+    "做到政策落地、项目落地、责任落地","推动各项工作往深里走、往实里走、往心里走",
+    "在协同联动上再加力、在攻坚克难上再提效","确保同频共振、同题共答、同向发力",
+    "把压力传导到位、把责任压实到底"
+  ],
+  parPref:[
+    "站在新的历史起点上","面向新征程新使命","面对新形势新要求","立足新发展阶段",
+    "锚定新目标新任务","着眼全局、立足长远","紧紧围绕中心、服务大局",
+    "乘着深化改革的东风","趁着行业发展的强劲势头","踏着时代前进的节拍",
+    "迎着高质量发展的春风","对照新部署、认领新任务","牢记初心使命、不忘来时路","把握大势、抢占先机"
+  ],
+  parSuff:[
+    "，为全年工作奠定了坚实基础","，收到了良好的预期效果","，展现了应有的责任担当",
+    "，进一步统一了思想、凝聚了共识","，有效激发了干事创业的热情","，为高质量发展积蓄了强劲动能",
+    "，充分彰显了责任与担当","，进一步擦亮了工作品牌","，切实增强了职工的获得感",
+    "，有力提振了全员精气神","，为后续工作提供了可复制可推广的经验","，彰显了抓铁有痕、踏石留印的力度"
+  ],
+  par:["思想上高度重视、行动上狠抓落实、措施上精准有力",
+       "层层传导压力、环环压实责任、人人扛牢担子",
+       "既注重当下、又着眼长远、更立足全局",
+       "提高政治站位、强化责任担当、狠抓工作落地",
+       "事前有计划、事中有督导、事后有闭环",
+       "目标上对标对表、执行上不折不扣、成效上可感可及",
+       "在政治上讲忠诚、在行动上讲担当、在结果上讲实效",
+       "以目标为导向、以问题为牵引、以实绩为标尺",
+       "以更高标准、更严要求、更实举措推动落实",
+       "坚持系统思维、底线思维、极限思维",
+       "发扬钉钉子精神，一锤接着一锤敲",
+       "实行挂图作战、销号管理、闭环推进",
+       "做到任务清单化、清单责任化、责任节点化",
+       "坚持一线工作法，问题在一线发现、矛盾在一线化解、成效在一线检验",
+       "把方向、管大局、保落实相贯通",
+       "统筹好发展与安全、当前与长远、局部与全局"],
+  height:["政治站位高、工作举措实、推进力度大、实际效果好",
+          "方向明、路子对、措施硬、成效实",
+          "有声势、有章法、有力度、有成效",
+          "决策科学、执行有力、落实有效、保障到位",
+          "思路清、措施实、推进快、成效好",
+          "上下一盘棋、拧成一股绳、劲往一处使",
+          "干在实处、走在前列、勇立潮头",
+          "责任落实到位、措施执行到位、风险防控到位"],
+  self:["对照上级要求还有差距，深刻反思仍有不足","与先进单位相比仍存在明显短板",
+        "暴露出的问题警示我们、教育我们、鞭策我们","在抓落实上还存在层层递减现象",
+        "存在重部署轻落实、重形式轻实效的问题","对自身存在的问题认识还不够深、剖析还不够透",
+        "存在标准不高、要求不严、抓得不细的问题","在动真碰硬上还有欠缺、在较真叫板上还不够劲",
+        "有时满足于过得去、缺乏精益求精的追求","存在惯性思维、路径依赖，创新办法不多",
+        "统筹不够、联动不足，存在各自为战的现象","有的工作重痕迹、轻实绩，存在形式主义苗头"],
+  plan:["持续发力、久久为功","以钉钉子精神一抓到底","咬定目标不放松、一张蓝图绘到底",
+        "说了就办、定了就干、干就干成","以时不我待的紧迫感抓好落实",
+        "坚持当下改与长久立相结合","注重破立并举、先立后破",
+        "坚持清单化管理、项目化推进、节点化验收","一环接着一环抓、一棒接着一棒跑",
+        "以周保月、以月保季、以季保年","多干实事、少摆花架子",
+        "把规划图变成施工图、把时间表变成计程表","抓早抓小、防微杜渐",
+        "保持定力、稳扎稳打、积小胜为大胜"],
+  nums:["三个全面到位","四个务必坚持","五项重点攻坚","两手抓、两不误","六个方面下功夫","十件民生实事",
+        "三级联动机制","双过半目标","五本台账闭环管理","一张蓝图、两支队伍、三大战役",
+        "四大攻坚行动","六个清单一张图","九项硬性举措","百分百全落实"],
+  open:["借此机会，就近期工作向${L}作一简要汇报","现就有关情况向大家作一汇报，不妥之处请批评指正",
+        "承蒙组织信任，现将相关工作汇报如下","下面我代表${D}作个发言，讲得不到位的请领导多担待",
+        "根据安排，我把近期工作情况向${L}作个汇报",
+        "下面，我占用大家几分钟时间，简要汇报有关情况","受组织委托，我就近期工作与大家作个交流",
+        "趁这个难得的机会，把近期的工作情况向大家交个底","现就本单位有关工作向在座各位作汇报，请批评指正",
+        "按照议程安排，下面由我作汇报发言"],
+  intro:["本人始终以高度的责任感和使命感开展工作","一年来，本人立足岗位、履职尽责",
+         "本人在工作中坚持实字当头、干字为先","回顾这段时间，本人边学边干、边干边悟",
+         "本人始终把政治标准放在首位，把业务能力抓在手上",
+         "本人注重在学中干、在干中学，不断提升履职本领","本人坚持问题导向，迎着问题上、盯着问题改",
+         "本人牢固树立一盘棋思想，积极融入大局、服务大局","本人常怀敬畏之心，把纪律规矩挺在前面",
+         "本人在实践中磨练、在磨练中成长，保持了良好精神状态"],
+  sign:["汇报人：${N}","${N}（${P}）","汇报人：${N} · ${P}","${D}：${N}"],
+  dateClose:["特此汇报。","以上汇报，请审阅。","此致","报告完毕。","特此报告。","谨此汇报。","汇报完毕，请领导审阅。","以上内容，仅供领导参考。"],
+  closeArr:["恳请${L}批评指正","请${L}多提宝贵意见","不当之处，敬请批评指正","以上发言，请${L}审阅指正",
+            "水平有限、时间仓促，不足之处恳请${L}指正","敬请${L}不吝赐教","抛砖引玉，请${L}多多包涵",
+            "以上意见仅供参考，欢迎${L}随时指正"],
+  mood:{}
+};
+
+L.mood = {
+  up:{w:["倍增信心、倍增干劲","豪情满怀、信心百倍","热情高涨、斗志昂扬","意气风发、干劲十足"],
+      hot:["乘势而上、再攀新高","百尺竿头、更进一步","趁热打铁、一鼓作气","只争朝夕、抢抓机遇"],
+      resp:["我们有信心、有决心、有能力完成好各项任务","请领导放心，我们必将交出一份满意答卷","我们有底气、有把握实现既定目标","将乘势而上，确保全年红、满堂红"]},
+  mod:{w:["深感受之有愧、仍有差距","诚感差距明显、进步有限","深知百尺竿头、尚有不足","自省本领恐慌、能力欠缺"],
+      hot:["戒骄戒躁、步履不停","虚心求教、奋起直追","取长补短、迎头赶上","潜心钻研、苦练内功"],
+      resp:["将虚心学习、迎头赶上，不辜负信任与期待","将加压奋进，以勤补拙，请大家监督","将加倍努力，以实实在在的进步回报关心厚爱","将以勤为径，用实绩说话、用结果证明"]},
+  formal:{w:["稳妥有序推进","审慎稳妥、有序衔接","稳扎稳打、张弛有度","统筹兼顾、有条不紊"],
+      hot:["保持定力、稳中求进","蹄疾步稳、行稳致远","沉着冷静、步步为营","心无旁骛、久久为功"],
+      resp:["将严格按照部署要求抓好落实","将不折不扣执行好各项规定动作","将依规依纪依程序推进各项工作","将按既定路线图、时间表稳步推进"]},
+  self:{w:["教训极其深刻、必须警钟长鸣","问题触目惊心、教训发人深省","差距令人汗颜、局面令人警醒","病灶积弊，必须下猛药去疴"],
+      hot:["知耻后勇、亡羊补牢","痛定思痛、刮骨疗毒","刀刃向内、动真碰硬","壮士断腕、坚决止损"],
+      resp:["恳请组织继续监督，本人将坚决整改到位","本人立行立改、真改实改，请领导检验","将建立台账、限期销号，绝不拖泥带水","将直面问题、不遮不掩，整改不到底绝不收兵"]}
+};
+
+/* ============ 汇报类型配置 ============ */
+const TYPE = {
+  year:{label:"年度总结", greeting:"各位领导、各位同事：", ach:["重点工作","指标任务","专项工程"], planNote:"展望新的一年", doReflect:true},
+  week:{label:"周报月报", greeting:"各位领导：", ach:["本周工作","阶段性任务","重点跟进事项"], planNote:"下一阶段", doReflect:false},
+  job:{label:"述职报告", greeting:"尊敬的各位领导：", ach:["履职尽责","分管领域","牵头事项"], planNote:"下一步努力方向", doReflect:true},
+  meeting:{label:"会议发言", greeting:"各位领导、各位同事：", ach:["贯彻落实","重点环节","协同配合"], planNote:"下一阶段安排", doReflect:false},
+  project:{label:"项目汇报", greeting:"各位领导：", ach:["项目节点","攻坚任务","资源保障"], planNote:"后续推进计划", doReflect:false},
+  self:{label:"自我批评", greeting:"各位领导、各位同志：", ach:["思想认识","工作作风","责任落实"], planNote:"整改措施", doReflect:true, selfFirst:true},
+  inaug:{label:"就职表态", greeting:"各位领导、各位同事：", ach:["岗位职责","重点方向","承诺事项"], planNote:"履职承诺", doReflect:false},
+  thanks:{label:"感谢致辞", greeting:"尊敬的各位领导、各位来宾：", ach:["支持帮助","关心关怀","携手共进"], planNote:"未来展望", doReflect:false}
+};
+
+/* ============ 工具函数 ============ */
+const $=id=>document.getElementById(id);
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const chance=p=>Math.random()<p;
+function fill(s,c){return s.replace(/\$\{(\w+)\}/g,(m,k)=>c[k]||m);}
+function uni(a){return a[Math.floor(Math.random()*a.length)];}
+
+function buildCtx(tags){
+  const thing=L.thing.slice();
+  (tags||[]).forEach(t=>{const x=(t||"").trim();if(x)thing.push(x);});
+  return {thing:uniq(thing)};
+}
+function uniq(a){return a.filter((v,i)=>a.indexOf(v)===i);}
+
+/* ============ 句子构造器 ============ */
+function outcome(){return "呈现出"+pick(L.outcome)+"的良好态势";}
+function cliche(){return pick(L.cliche);}
+
+function wrap(s,ctx,dens){
+  // 用废话浓度决定加多少"空话调味"
+  let out=s;
+  if(dens>.15&&chance(dens)) out=fill(pick(L.guideSrc),{L:pick(L.leader)})+"，"+out;
+  if(dens>.3&&chance(dens*.8)) out=pick(L.parPref)+"，"+out;
+  if(dens>.5&&chance((dens-.3))) out=out+pick(L.parSuff);
+  if(dens>.65&&chance((dens-.4))) out=out+"。同时，"+pick(L.empty);
+  return out;
+}
+
+/* 分节生成 */
+function sOpen(typeC,ctx,mood){
+  const lead=fill(pick(L.open),{L:pick(L.leader),D:ctx.dept||"本部门"});
+  let s=lead+"。";
+  if(chance(.8)) s+=pick(L.intro)+"。";
+  return s;
+}
+function sOverview(typeC,ctx,mood){
+  const th=pick(ctx.thing), scope=ctx.dept?"全"+ctx.dept+"上下":"全部门上下";
+  let s=`一年来，${scope}${pick(L.adv)}${pick(L.verbs)}${th}，`;
+  s+=pick(L.height)+"；"+pick(L.par)+"，整体上"+outcome()+"。";
+  if(chance(.7)) s+=cliche()+"。";
+  return s;
+}
+function sAchieve(i,typeC,ctx,mood){
+  const th=pick(ctx.thing), nm=pick(L.nouns);
+  let s=`在${pick(L.adv)}${pick(L.verbs)}${th}的过程中，我们坚持${pick(L.par)}，`;
+  s+=`围绕${pick(L.obj)}，做到了${pick(L.adv)}${pick(L.verbs)}${nm}、${pick(L.adv)}${pick(L.verbs)}${pick(L.nouns)}，`;
+  s+=pick(L.empty)+"，最终"+outcome()+"。"+cliche()+"。";
+  return s;
+}
+function sReflect(typeC,ctx,mood){
+  let s="同时，我们也清醒地认识到：";
+  const items=[pick(L.self),pick(L.self),pick(L.self)];
+  s+=items.slice(0,chance(.5)?1:2).join("；")+"。";
+  if(chance(.6)) s+=`这与${pick(L.par)}的要求相比，还存在不小差距。`;
+  return s;
+}
+function sPlan(i,typeC,ctx,mood){
+  const th=pick(ctx.thing), m=L.mood[mood]||L.mood.formal;
+  let s=`下一步，我们将${pick(L.adv)}${pick(L.verbs)}${th}，`;
+  s+=`坚持${pick(L.par)}，把${pick(L.obj)}抓实抓细、落细落实，`;
+  s+=`努力做到${pick(L.height)}，同时${pick(L.plan)}，`;
+  s+=pick(m.w)+"、"+pick(m.hot)+"。"+pick(m.resp)+"。";
+  return s;
+}
+function sNums(typeC,ctx,mood){
+  return `我们按照${pick(L.nums)}的总体思路，统筹推进、协同发力，`+
+    `${pick(L.adv)}${pick(L.verbs)}${pick(ctx.thing)}，确保各项部署贯通到底、落地见效。`;
+}
+function sAssure(typeC,ctx,mood){
+  const m=L.mood[mood]||L.mood.formal;
+  return `${pick(L.par)}，力争${pick(L.adv)}${pick(L.verbs)}${pick(L.nouns)}、${pick(L.adv)}${pick(L.verbs)}${pick(L.nouns)}，`
+    +`以${pick(L.obj)}的实绩实效，回报${pick(L.leader)}的信任与期望。${pick(m.resp)}。`;
+}
+function sClose(typeC,ctx){
+  let s="";
+  if(chance(.5)) s+=pick(L.dateClose)+" ";
+  s+=pick(L.closeArr);
+  return fill(s,{L:pick(L.leader)});
+}
+
+/* ============ 生成主流程 ============ */
+function generate(){
+  const type=$("type").value;
+  const typeC=TYPE[type]||TYPE.year;
+  const mood=$("mood").value;
+  const dens=parseInt($("dens").value)/100;
+  const len=$("len").value;
+  const name=$("name").value.trim()||"王建国";
+  const pos=$("pos").value.trim()||"";
+  const dept=$("dept").value.trim()||"";
+  const tags=$("tags").value.split(/[,，、\s]+/).filter(Boolean);
+
+  const fullCtx=buildCtx(tags);
+  fullCtx.dept=dept; fullCtx.name=name; fullCtx.pos=pos;
+
+  const paras=[];
+  // 标题
+  paras.push(`关于${dept||"本部门"}${typeC.label}工作情况的汇报`);
+  // 称呼
+  paras.push(typeC.greeting);
+
+  const selfFirst = typeC.selfFirst && mood==="self";
+  if(selfFirst) paras.push(wrap(sReflect(typeC,fullCtx,mood),fullCtx,dens));
+
+  paras.push(wrap(sOpen(typeC,fullCtx,mood),fullCtx,dens));
+  paras.push(wrap(sOverview(typeC,fullCtx,mood),fullCtx,dens));
+
+  const numN= len==="short"?0: len==="med"?1:2;
+  for(let i=0;i<numN;i++) paras.push(wrap(sNums(typeC,fullCtx,mood),fullCtx,dens));
+
+  const achN= len==="short"?2: len==="med"?3:5;
+  for(let i=0;i<achN;i++) paras.push(wrap(sAchieve(i,typeC,fullCtx,mood),fullCtx,dens));
+
+  if(!selfFirst && (typeC.doReflect||dens>.55))
+    paras.push(wrap(sReflect(typeC,fullCtx,mood),fullCtx,dens));
+
+  const planN= len==="short"?1: len==="med"?2:3;
+  for(let i=0;i<planN;i++) paras.push(wrap(sPlan(i,typeC,fullCtx,mood),fullCtx,dens));
+
+  if(len==="long") paras.push(wrap(sAssure(typeC,fullCtx,mood),fullCtx,dens));
+
+  // 结尾 + 落款
+  const closePar=sClose(typeC,fullCtx);
+  paras.push(closePar);
+  const today=new Date();
+  const ds=`${today.getFullYear()}年${today.getMonth()+1}月${today.getDate()}日`;
+  paras.push(`汇报人：${name}${pos?"（"+pos+"）":""}\n${typeC.greeting.includes("致辞")?"":"\n"+ds}`);
+
+  return paras.join("\n\n");
+}
+
+/* ============ 渲染 & 交互 ============ */
+function render(){
+  const out=generate();
+  $("output").innerHTML=out.split("\n").map(line=>line===""?"<br>":line).join("\n");
+  calcMetrics(out);
+}
+function calcMetrics(text){
+  const total=text.replace(/\s/g,"").length;
+  const hit=(text.match(/(进一步|高度重视|切实提高|不断推进|深入贯彻|认真落实|切实抓好|扎实做好|持续提升|着力推动|全面加强|确保到位|落地见效|思想上|行动上|层层传导|久久为功|钉钉子|稳中有进|态势良好|明显增强|不断增强|取得实效|见到实效|再上新台阶|迈上新台阶|抓深抓实|压实责任|最后一公里|两手抓|闭环|对标对表|可感可及)/g)||[]);
+  const poison=(text.match(/(说了等于没说|纯属|一个字都没有听进去)/g)||[]).length;
+  const density=parseInt($("dens").value);
+  const score=Math.min(100, Math.round(hit.length*2 + total*0.03 + density*0.45));
+  $("mGauge").textContent=score+"%";
+  $("mGauge").style.color=score>70?"var(--bad)":score>40?"var(--warn)":"var(--good)";
+  $("mWords").textContent=total;
+  $("mPhrases").textContent=hit.length;
+  $("mPoison").textContent=poison;
+}
+
+/* 金句库渲染 */
+const QUOTES=[
+ ["万能开头",["借此机会，就近期工作作一简要汇报","下面我抛砖引玉，讲几句不成熟的看法","在各位领导面前，权当是班门弄斧","承蒙信任，现将有关情况作个汇报","我占用大家几分钟，简单交个底"]],
+ ["政治站位",["始终把政治建设摆在首位","把思想统一到上级决策部署上来","提高政治判断力、政治领悟力、政治执行力","对党忠诚、对人民负责、对事业担当","把讲政治的要求贯穿工作始终"]],
+ ["排比连招",["思想上高度重视、行动上狠抓落实、措施上精准有力","层层传导压力、环环压实责任、人人扛牢担子","既注重当下、又着眼长远、更立足全局","事前有计划、事中有督导、事后有闭环","坚持系统思维、底线思维、极限思维","任务清单化、清单责任化、责任节点化"]],
+ ["数字话术",["三个全面到位","四个务必坚持","五项重点攻坚","两手抓、两不误","六本台账闭环管理","一张蓝图、两支队伍、三大战役","四大攻坚行动"]],
+ ["高大上词汇",["赋能","抓手","闭环","颗粒度","组合拳","护城河","基本盘","第二曲线","挂图作战","销号管理","同频共振","穿透力"]],
+ ["万能成果",["呈现出稳中有进、质效齐升的良好态势","取得了阶段性成果，达到了预期目标","为高质量发展注入了强劲动能","交出了高分答卷","跑出了发展加速度"]],
+ ["花式甩锅",["受客观条件所限，进展不及预期","与先进单位相比仍有差距","还有进一步提升空间","需要上下联动、协同发力","存在不可控的外部因素干扰"]],
+ ["亮眼表态",["请领导放心，我们有信心、有决心","以钉钉子精神抓好落实","绝不辜负组织信任与群众期待","立下军令状、倒排时间表","办法总比困难多，坚决啃下硬骨头"]],
+ ["谦逊收尾",["不当之处，敬请批评指正","恳请各位领导多提宝贵意见","成绩的取得离不开大家的支持","讲得不到位的，请领导海涵","水平有限、时间仓促，请大家多担待"]]
+];
+function renderQuotes(){
+  const q=$("quotes");
+  q.innerHTML=QUOTES.map(([cat,arr])=>
+    `<div class="qcat">${cat}</div><div class="chips">`+
+    arr.map(s=>`<span class="chip" data-q="${s}">${s}</span>`).join("")+
+    `</div>`).join("");
+  q.querySelectorAll(".chip").forEach(c=>{
+    c.addEventListener("click",()=>{
+      const out=$("output");
+      if(out.querySelector(".placeholder")){out.innerHTML="";}
+      out.innerHTML=(out.innerHTML?out.innerHTML+"\n":"")+c.dataset.q;
+      toast("金句已插入正文");
+    });
+  });
+}
+
+/* 历史 & 收藏 */
+let history=JSON.parse(localStorage.getItem("wf_history")||"[]");
+let favs=JSON.parse(localStorage.getItem("wf_fav")||"[]");
+function saveHist(text){
+  history.unshift({text,t:new Date().toLocaleString()});
+  history=history.slice(0,12);
+  localStorage.setItem("wf_history",JSON.stringify(history));
+  renderHist();
+}
+function renderHist(){
+  const h=$("hist");
+  h.innerHTML=history.length? history.map((it,i)=>
+    `<div class="hitem" data-i="${i}"><span>${it.t}</span><span class="t">${it.text.split("\n")[0]}…</span></div>`)
+    .join(""):`<div class="empty">暂无生成记录</div>`;
+  h.querySelectorAll(".hitem").forEach(el=>el.addEventListener("click",()=>{
+    $("output").innerHTML=history[+el.dataset.i].text.split("\n").map(l=>l===""?"<br>":l).join("\n");
+    toast("已载入历史记录");
+  }));
+}
+function renderFav(){
+  const f=$("fav");
+  f.innerHTML=favs.length? favs.map((it,i)=>
+    `<div class="hitem" data-i="${i}"><span>⭐ ${it.t}</span><span class="t">${it.text.split("\n")[0]}…</span></div>`)
+    .join(""):`<div class="empty">暂无收藏</div>`;
+  f.querySelectorAll(".hitem").forEach(el=>el.addEventListener("click",()=>{
+    $("output").innerHTML=favs[+el.dataset.i].text.split("\n").map(l=>l===""?"<br>":l).join("\n");
+    toast("已载入收藏");
+  }));
+}
+
+/* 复制 / 下载 */
+function getText(){
+  const out=$("output").innerHTML.replace(/<br>/g,"\n").replace(/<[^>]+>/g,"");
+  return out.replace(/\n{3,}/g,"\n\n").trim();
+}
+function toast(msg){
+  const t=$("toast"); t.textContent=msg; t.classList.add("show");
+  clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove("show"),1600);
+}
+
+/* 事件绑定 */
+$("gen").addEventListener("click",()=>{render();saveHist(getText());});
+$("copy").addEventListener("click",async()=>{
+  const txt=getText(); if(!txt)return toast("还没有内容");
+  try{await navigator.clipboard.writeText(txt);}catch(e){
+    const ta=document.createElement("textarea");ta.value=txt;document.body.appendChild(ta);ta.select();document.execCommand("copy");ta.remove();
+  }
+  toast("已复制，去群里装逼吧");
+});
+$("download").addEventListener("click",()=>{
+  const txt=getText(); if(!txt)return toast("还没有内容");
+  const blob=new Blob([txt],{type:"text/plain;charset=utf-8"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download=`工作汇报废话文学_${new Date().toISOString().slice(0,10)}.txt`;
+  a.click();URL.revokeObjectURL(a.href);
+});
+$("favBtn").addEventListener("click",()=>{
+  const txt=getText(); if(!txt)return toast("还没有内容");
+  favs.unshift({text:txt,t:new Date().toLocaleString()});favs=favs.slice(0,20);
+  localStorage.setItem("wf_fav",JSON.stringify(favs));renderFav();toast("已收藏");
+});
+$("clearOut").addEventListener("click",()=>{
+  $("output").innerHTML=`<div class="placeholder">已清空。领导问起来就说「还在整理」。</div>`;
+  $("mGauge").textContent="--";$("mWords").textContent=0;$("mPhrases").textContent=0;$("mPoison").textContent=0;
+});
+$("dens").addEventListener("input",e=>$("densVal").textContent=e.target.value+"%");
+$("dice").addEventListener("click",()=>{
+  const names=["王建国","李富贵","赵铁柱","孙彩凤","钱满仓","周立言","吴德贵","郑多金"];
+  const poss=["副经理","主任科员","项目负责人","小组长","专员","科员","负责人","协调员"];
+  $("name").value=pick(names);$("pos").value=pick(poss);
+  toast("人物已随机代入");
+});
+document.querySelectorAll(".tab").forEach(tab=>tab.addEventListener("click",()=>{
+  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+  document.querySelectorAll(".panel").forEach(p=>p.classList.remove("active"));
+  tab.classList.add("active");$(tab.dataset.tab).classList.add("active");
+}));
+
+/* 输出区点击任意位置可编辑追加（金句插入后自动换行） */
+$("output").addEventListener("click",()=>{});
+
+/* 初始化 */
+renderQuotes();renderHist();renderFav();
+</script>
+</body>
+</html>

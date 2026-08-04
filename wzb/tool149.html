@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>工作SOP记录模板生成器</title>
+<style>
+:root{
+  --primary:#2f6fed; --primary-dark:#2456c4; --bg:#eef1f6; --card:#fff; --border:#dde3ee;
+  --text:#1f2733; --muted:#6b7686; --ok:#18a058; --warn:#f0a020; --danger:#d03050;
+  --radius:10px; --shadow:0 2px 10px rgba(20,40,80,.06);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Microsoft YaHei","PingFang SC",-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--text);font-size:14px}
+button{font-family:inherit;cursor:pointer;border:none;border-radius:7px;transition:.15s}
+input,select,textarea{font-family:inherit;font-size:13.5px;color:var(--text)}
+::placeholder{color:#aab3c2}
+
+/* ===== 顶栏 ===== */
+header{position:sticky;top:0;z-index:50;background:linear-gradient(90deg,#1d3f8f,#2f6fed);color:#fff;box-shadow:0 2px 12px rgba(20,40,80,.25);padding:0 20px;height:58px;display:flex;align-items:center;gap:14px}
+header .logo{display:flex;align-items:center;gap:10px;font-size:18px;font-weight:700;letter-spacing:.5px;white-space:nowrap}
+header .logo .ic{width:34px;height:34px;border-radius:9px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;font-size:19px}
+.header-spacer{flex:1}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.tb-btn{background:rgba(255,255,255,.14);color:#fff;padding:8px 13px;font-size:13px;border-radius:8px;display:flex;align-items:center;gap:6px;white-space:nowrap}
+.tb-btn:hover{background:rgba(255,255,255,.26)}
+.tb-btn.primary{background:#ffc53d;color:#3a2a00;font-weight:600}
+.tb-btn.primary:hover{background:#ffd666}
+.tb-btn.danger{background:rgba(255,90,110,.35)}
+.tb-btn.danger:hover{background:rgba(255,90,110,.55)}
+
+/* ===== 状态条 ===== */
+.stats-bar{background:var(--card);border-bottom:1px solid var(--border);padding:8px 20px;display:flex;gap:22px;flex-wrap:wrap;align-items:center;font-size:12.5px;color:var(--muted)}
+.stats-bar b{color:var(--text)}
+.stats-bar .stat{display:flex;gap:5px;align-items:center}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.autosave{display:flex;align-items:center;gap:6px;margin-left:auto}
+
+/* ===== 布局 ===== */
+.layout{display:flex;gap:0;min-height:calc(100vh - 108px)}
+nav.side{width:210px;flex-shrink:0;background:var(--card);border-right:1px solid var(--border);padding:14px 0;position:sticky;top:58px;height:calc(100vh - 108px);overflow:auto}
+nav.side .nav-item{display:block;width:100%;text-align:left;padding:10px 18px;background:none;color:var(--muted);font-size:13.5px;border-left:3px solid transparent}
+nav.side .nav-item:hover{background:#f3f6fc;color:var(--primary)}
+nav.side .nav-item.active{background:#eaf1ff;color:var(--primary);border-left-color:var(--primary);font-weight:600}
+nav.side .nav-group{font-size:11px;color:#97a1b3;padding:10px 18px 4px;letter-spacing:1px;font-weight:700}
+.content{flex:1;padding:22px 26px;max-width:1180px}
+.section{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:22px 26px;margin-bottom:22px;scroll-margin-top:70px}
+.section h2{font-size:16.5px;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.section h2 .num{width:26px;height:26px;border-radius:8px;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.section .desc{color:var(--muted);font-size:12.5px;margin-bottom:16px}
+.section .actions{float:right;display:flex;gap:8px}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:13px;font-weight:600;margin-bottom:6px;color:#3a4354}
+.field label .req{color:var(--danger)}
+.field input,.field select,.field textarea{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;background:#fff;outline:none}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(47,111,237,.12)}
+.field textarea{resize:vertical;min-height:72px;line-height:1.6}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.row4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:14px}
+
+/* ===== 动态行 ===== */
+.dyn-list{border:1px solid var(--border);border-radius:9px;overflow:hidden}
+.dyn-head{display:grid;gap:10px;background:#f4f7fd;padding:9px 12px;font-size:12px;font-weight:700;color:#4a5568}
+.dyn-head span{min-width:0}
+.dyn-row{display:grid;gap:10px;padding:10px 12px;border-top:1px solid var(--border);background:#fff;align-items:start}
+.dyn-row .cell{min-width:0}
+.dyn-row .cell label.cell-label{display:block;font-size:11px;color:var(--muted);margin-bottom:4px;font-weight:600}
+.dyn-row input,.dyn-row select,.dyn-row textarea{width:100%;padding:7px 9px;border:1px solid var(--border);border-radius:6px;outline:none}
+.dyn-row input:focus,.dyn-row select:focus,.dyn-row textarea:focus{border-color:var(--primary)}
+.dyn-row textarea{resize:vertical;min-height:38px}
+.row-ops{display:flex;gap:5px;justify-content:flex-end;align-items:center}
+.op-btn{width:28px;height:28px;border-radius:6px;background:#f0f3f9;color:var(--muted);font-size:14px;display:flex;align-items:center;justify-content:center}
+.op-btn:hover{background:#e2e8f4;color:var(--text)}
+.op-btn.del:hover{background:#fde8ec;color:var(--danger)}
+.op-btn.top:hover{background:#e8f4ff;color:var(--primary)}
+.op-btn.bot:hover{background:#e8f4ff;color:var(--primary)}
+.add-btn{margin-top:10px;background:#eaf1ff;color:var(--primary);padding:8px 14px;font-size:13px;border-radius:8px;font-weight:600;border:1px dashed #a9c4ff}
+.add-btn:hover{background:#dceaff}
+.checkline{display:flex;align-items:center;gap:7px;padding:7px 9px;font-size:13px;background:#fff7e6;border:1px solid #ffe1a8;border-radius:6px;cursor:pointer}
+.checkline input{width:15px;height:15px;accent-color:var(--warn)}
+
+/* 步骤表头/行网格 */
+.h-steps{grid-template-columns:56px 1fr 1.2fr 1fr .9fr .9fr 40px}
+.r-steps{grid-template-columns:56px 1fr 1.2fr 1fr .9fr .9fr 40px}
+.h-risks{grid-template-columns:1.3fr 70px 1.3fr .9fr 90px 40px}
+.r-risks{grid-template-columns:1.3fr 70px 1.3fr .9fr 90px 40px}
+.h-refs{grid-template-columns:1fr .8fr .7fr .7fr 40px}
+.r-refs{grid-template-columns:1fr .8fr .7fr .7fr 40px}
+.h-defs{grid-template-columns:1fr 2fr 40px}
+.r-defs{grid-template-columns:1fr 2fr 40px}
+.h-duties{grid-template-columns:1fr 2.2fr 40px}
+.r-duties{grid-template-columns:1fr 2.2fr 40px}
+.h-exc{grid-template-columns:1.1fr 2fr 40px}
+.r-exc{grid-template-columns:1.1fr 2fr 40px}
+.h-rev{grid-template-columns:.7fr 1fr 2fr 1fr 1fr 40px}
+.r-rev{grid-template-columns:.7fr 1fr 2fr 1fr 1fr 40px}
+.h-trn{grid-template-columns:1.4fr 1fr 40px}
+.r-trn{grid-template-columns:1.4fr 1fr 40px}
+
+/* ===== 审批签名 ===== */
+.approve-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.approve-card{border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.approve-card .ac-head{padding:10px 14px;font-weight:700;font-size:14px;color:#fff;display:flex;align-items:center;gap:8px}
+.ac-head.a{background:#2f6fed}.ac-head.b{background:#7c4dff}.ac-head.c{background:#0fa57c}
+.approve-card .ac-body{padding:14px}
+.ac-body .sig-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 0;border-bottom:1px dashed var(--border);font-size:13px}
+.ac-body .sig-row:last-child{border-bottom:none}
+.ac-body .sig-row input{width:110px;padding:6px 8px;border:1px solid var(--border);border-radius:6px}
+
+/* ===== 设置 ===== */
+.settings-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
+.theme-dots{display:flex;gap:9px;margin-top:6px}
+.theme-dots .td{width:30px;height:30px;border-radius:8px;cursor:pointer;border:2px solid transparent;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px}
+.theme-dots .td.sel{border-color:#111;box-shadow:0 0 0 2px #fff inset}
+.switch{display:flex;align-items:center;gap:9px;font-size:13px;cursor:pointer}
+.switch input{width:16px;height:16px;accent-color:var(--primary)}
+
+/* ===== 预览 ===== */
+.preview-wrap{background:#dfe4ee;padding:26px;border-radius:var(--radius);overflow:auto}
+.preview-scale{margin-bottom:14px;display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--muted)}
+.preview-scale input{width:200px}
+#docPage{width:794px;min-height:1123px;margin:0 auto;background:#fff;box-shadow:0 6px 30px rgba(10,20,50,.18);padding:48px 54px;font-size:14px;line-height:1.75;color:#111;position:relative;transition:transform .15s;transform-origin:top center}
+#docPage .pg-head{display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #1d3f8f;padding-bottom:10px;margin-bottom:8px;font-size:12px;color:#333}
+#docPage .company{font-weight:700;font-size:14px}
+#docPage .doc-title{text-align:center;font-size:21px;font-weight:800;margin:6px 0 4px;letter-spacing:1px}
+#docPage .doc-sub{text-align:center;color:#444;font-size:13px;margin-bottom:14px}
+#docPage .doc-no-line{text-align:center;font-size:12.5px;color:#555;margin-bottom:16px}
+#docPage h2{font-size:15px;margin:16px 0 8px;border-left:4px solid #1d3f8f;padding-left:9px;color:#1d3f8f}
+#docPage h2:first-child{margin-top:6px}
+#docPage h3{font-size:13.5px;margin:12px 0 6px;color:#333}
+#docPage p{margin:5px 0;text-align:justify}
+#docPage table{width:100%;border-collapse:collapse;margin:8px 0;font-size:12.5px}
+#docPage th,#docPage td{border:1px solid #333;padding:6px 8px;text-align:left;vertical-align:top}
+#docPage th{background:#eef3fb;font-weight:700;text-align:center}
+#docPage .meta-table td{background:#f7f9fd}
+#docPage .step-num{text-align:center;font-weight:700}
+#docPage .cp-tag{color:#b3571a;font-weight:700}
+#docPage .approve-table td{height:52px}
+#docPage .sign-cell{width:33%}
+#docPage .page-break{page-break-before:always}
+#docPage .watermark{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;font-size:96px;font-weight:900;color:rgba(47,111,237,.045);letter-spacing:12px;transform:rotate(-24deg);z-index:0}
+#docPage .wmark-wrap{position:relative;z-index:1}
+.watermark-abs{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;font-size:96px;font-weight:900;color:rgba(47,111,237,.045);letter-spacing:12px;transform:rotate(-24deg);white-space:nowrap;overflow:hidden}
+
+/* ===== Toast ===== */
+#toast{position:fixed;top:70px;left:50%;transform:translateX(-50%) translateY(-20px);background:#223;color:#fff;padding:10px 22px;border-radius:9px;font-size:13.5px;opacity:0;pointer-events:none;transition:.25s;z-index:999;box-shadow:0 6px 24px rgba(0,0,0,.3)}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#toast.ok{background:var(--ok)}#toast.err{background:var(--danger)}#toast.info{background:#2f6fed}
+
+footer{background:var(--card);border-top:1px solid var(--border);text-align:center;padding:14px;color:var(--muted);font-size:12px}
+
+/* ===== 打印 ===== */
+@media print{
+  body{background:#fff}
+  header,.stats-bar,nav.side,.preview-tools,.add-btn,.no-print,footer,#toast{display:none!important}
+  .content{max-width:none;padding:0}
+  .section{display:none!important}
+  #sec-preview{display:block!important;border:none;box-shadow:none;padding:0;margin:0}
+  .preview-wrap{padding:0;background:#fff;border-radius:0}
+  #docPage{width:100%;min-height:auto;box-shadow:none;padding:0;margin:0;transform:none!important}
+  #docPage .page-break{page-break-before:always}
+  @page{size:A4;margin:14mm 12mm}
+  .page-num{display:block!important}
+}
+.page-num{display:none}
+
+@media (max-width:900px){
+  nav.side{display:none}
+  .row2,.row3,.row4{grid-template-columns:1fr}
+  .approve-grid{grid-template-columns:1fr}
+  .h-steps,.r-steps,.h-risks,.r-risks,.h-refs,.r-refs,.h-defs,.r-defs,.h-duties,.r-duties,.h-exc,.r-exc,.h-rev,.r-rev,.h-trn,.r-trn{grid-template-columns:1fr!important}
+  .dyn-head{display:none}
+}
+</style>
+</head>
+<body>
+
+<header class="no-print">
+  <div class="logo"><span class="ic">📋</span> 工作SOP记录模板生成器</div>
+  <div class="header-spacer"></div>
+  <div class="toolbar">
+    <button class="tb-btn" onclick="saveToLocal()">💾 保存草稿</button>
+    <button class="tb-btn" onclick="exportJSON()">📤 导出JSON</button>
+    <button class="tb-btn" onclick="document.getElementById('importFile').click()">📥 导入JSON</button>
+    <input type="file" id="importFile" accept=".json,application/json" style="display:none" onchange="importJSON(event)">
+    <button class="tb-btn" onclick="exportWord()">📝 导出Word</button>
+    <button class="tb-btn" onclick="copyHTML()">📋 复制文档</button>
+    <button class="tb-btn primary" onclick="printDoc()">🖨️ 打印/导出PDF</button>
+    <button class="tb-btn danger" onclick="resetAll()">🗑️ 清空</button>
+  </div>
+</header>
+
+<div class="stats-bar no-print">
+  <span class="stat">📄 文档名称：<b id="statName">未命名</b></span>
+  <span class="stat">🔢 文件编号：<b id="statNo">-</b></span>
+  <span class="stat">🏷️ 版本：<b id="statVer">-</b></span>
+  <span class="stat">👣 步骤数：<b id="statSteps">0</b></span>
+  <span class="stat">⚠️ 风险点：<b id="statRisks">0</b></span>
+  <span class="stat">📝 总字数：<b id="statWords">0</b></span>
+  <span class="autosave"><span class="dot" id="saveDot" style="background:#18a058"></span><span id="saveLabel">已自动保存</span></span>
+</div>
+
+<div class="layout">
+  <nav class="side no-print">
+    <div class="nav-group">文档信息</div>
+    <button class="nav-item" data-target="sec-meta" onclick="goSection(this)">1. 基本信息</button>
+    <button class="nav-item" data-target="sec-purpose" onclick="goSection(this)">2. 目的与范围</button>
+    <div class="nav-group">内容编辑</div>
+    <button class="nav-item" data-target="sec-term" onclick="goSection(this)">3. 术语与职责</button>
+    <button class="nav-item" data-target="sec-steps" onclick="goSection(this)">4. 操作步骤</button>
+    <button class="nav-item" data-target="sec-risk" onclick="goSection(this)">5. 风险控制</button>
+    <button class="nav-item" data-target="sec-exc" onclick="goSection(this)">6. 异常处理</button>
+    <button class="nav-item" data-target="sec-refs" onclick="goSection(this)">7. 相关文件</button>
+    <div class="nav-group">管理信息</div>
+    <button class="nav-item" data-target="sec-rev" onclick="goSection(this)">8. 修订记录</button>
+    <button class="nav-item" data-target="sec-approve" onclick="goSection(this)">9. 审批流程</button>
+    <button class="nav-item" data-target="sec-train" onclick="goSection(this)">10. 培训确认</button>
+    <div class="nav-group">系统</div>
+    <button class="nav-item" data-target="sec-settings" onclick="goSection(this)">11. 输出设置</button>
+    <button class="nav-item" data-target="sec-template" onclick="goSection(this)">12. 模板库</button>
+  </nav>
+
+  <main class="content">
+
+    <!-- ============ 1 基本信息 ============ -->
+    <section class="section" id="sec-meta">
+      <h2><span class="num">1</span> 基本信息</h2>
+      <div class="desc">填写文件的标识信息，文件编号可自动生成。</div>
+      <div class="row3">
+        <div class="field"><label>📁 文件名称 <span class="req">*</span></label><input id="f_docName" placeholder="如：生产设备日常点检作业指导书" oninput="refreshStats()"></div>
+        <div class="field"><label>🔢 文件编号 <span class="req">*</span></label>
+          <div style="display:flex;gap:8px">
+            <input id="f_docNo" placeholder="如：SOP-QC-2026-001">
+            <button class="add-btn" style="margin:0;white-space:nowrap" onclick="genDocNo()" title="自动生成编号">🎲 自动</button>
+          </div>
+        </div>
+        <div class="field"><label>🏷️ 版本号 <span class="req">*</span></label><input id="f_version" value="1.0"></div>
+      </div>
+      <div class="row4">
+        <div class="field"><label>🏢 编制部门</label><input id="f_dept" placeholder="如：质量管理部"></div>
+        <div class="field"><label>🔤 部门简称（用于编号）</label><input id="f_deptCode" placeholder="如：QC"></div>
+        <div class="field"><label>🔒 文件密级</label><select id="f_secret">
+          <option>内部公开</option><option selected>受控文件</option><option>机密</option><option>绝密</option>
+        </select></div>
+        <div class="field"><label>🧭 文件状态</label><select id="f_status">
+          <option>草稿</option><option selected>正式发布</option><option>修订中</option><option>作废</option>
+        </select></div>
+      </div>
+      <div class="row4">
+        <div class="field"><label>👤 编制人</label><input id="f_author"></div>
+        <div class="field"><label>📅 编制日期</label><input type="date" id="f_draftDate"></div>
+        <div class="field"><label>👤 审核人</label><input id="f_reviewer"></div>
+        <div class="field"><label>👤 批准人</label><input id="f_approver"></div>
+      </div>
+      <div class="row4">
+        <div class="field"><label>📅 发布日期</label><input type="date" id="f_publishDate"></div>
+        <div class="field"><label>📅 生效日期</label><input type="date" id="f_effectDate"></div>
+        <div class="field"><label>🏭 公司/单位名称</label><input id="f_company" placeholder="如：XX科技有限公司"></div>
+        <div class="field"><label>🗂️ 存档部门</label><input id="f_archiveDept"></div>
+      </div>
+    </section>
+
+    <!-- ============ 2 目的与范围 ============ -->
+    <section class="section" id="sec-purpose">
+      <h2><span class="num">2</span> 目的与范围</h2>
+      <div class="desc">说明编写本文件的目的、适用范围、引用依据与总体流程概述。</div>
+      <div class="field"><label>🎯 目的</label><textarea id="f_purpose" placeholder="为保证……的规范性和一致性，明确操作要求与质量/安全控制点，特制定本规程。"></textarea></div>
+      <div class="field"><label>📍 适用范围</label><textarea id="f_scope" placeholder="适用于……部门在……环节中的……作业活动。"></textarea></div>
+      <div class="field"><label>📖 引用文件与依据</label><textarea id="f_basis" placeholder="如：《质量管理体系 要求》GB/T 19001；公司《文件控制程序》等。"></textarea></div>
+      <div class="field"><label>🌐 总体流程概述</label><textarea id="f_overview" placeholder="简要描述整体流程：接单 → 准备 → 执行 → 检查 → 记录 → 归档"></textarea></div>
+    </section>
+
+    <!-- ============ 3 术语与职责 ============ -->
+    <section class="section" id="sec-term">
+      <h2><span class="num">3</span> 术语定义与职责分工</h2>
+      <div class="desc">定义文中涉及的专业术语，并明确各岗位职责。</div>
+      <div class="field"><label>📘 术语定义</label>
+        <div class="dyn-list">
+          <div class="dyn-head h-defs"><span>术语名称</span><span>定义/解释</span><span></span></div>
+          <div id="defList"></div>
+        </div>
+        <button class="add-btn" onclick="addDef()">＋ 添加术语</button>
+      </div>
+      <div class="field"><label>👥 职责分工</label>
+        <div class="dyn-list">
+          <div class="dyn-head h-duties"><span>岗位/角色</span><span>主要职责</span><span></span></div>
+          <div id="dutyList"></div>
+        </div>
+        <button class="add-btn" onclick="addDuty()">＋ 添加岗位职责</button>
+      </div>
+    </section>
+
+    <!-- ============ 4 操作步骤 ============ -->
+    <section class="section" id="sec-steps">
+      <h2><span class="num">4</span> 操作步骤（核心）</h2>
+      <div class="desc">按顺序添加操作步骤，可标记关键控制点(CP)、指定执行岗位与记录表单。</div>
+      <div class="dyn-list">
+        <div class="dyn-head h-steps"><span>序号</span><span>操作步骤/内容</span><span>操作要点/要求</span><span>执行岗位</span><span>时间/频次要求</span><span>记录表单</span><span></span></div>
+        <div id="stepList"></div>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="add-btn" onclick="addStep()">＋ 添加步骤</button>
+        <button class="add-btn" style="background:#fff7e6;color:#b3571a;border-color:#f0c36b" onclick="autoNumber()">🔢 重新自动编号</button>
+      </div>
+    </section>
+
+    <!-- ============ 5 风险控制 ============ -->
+    <section class="section" id="sec-risk">
+      <h2><span class="num">5</span> 风险与关键控制点</h2>
+      <div class="desc">识别作业中的风险点，评估等级并制定控制措施与监督频次。</div>
+      <div class="dyn-list">
+        <div class="dyn-head h-risks"><span>风险/危害描述</span><span>等级</span><span>控制措施</span><span>责任人</span><span>监督频次</span><span></span></div>
+        <div id="riskList"></div>
+      </div>
+      <button class="add-btn" onclick="addRisk()">＋ 添加风险点</button>
+    </section>
+
+    <!-- ============ 6 异常处理 ============ -->
+    <section class="section" id="sec-exc">
+      <h2><span class="num">6</span> 异常处理</h2>
+      <div class="desc">定义常见异常情况及对应的处理措施与上报流程。</div>
+      <div class="dyn-list">
+        <div class="dyn-head h-exc"><span>异常情况</span><span>处理措施/上报流程</span><span></span></div>
+        <div id="excList"></div>
+      </div>
+      <button class="add-btn" onclick="addExc()">＋ 添加异常情况</button>
+    </section>
+
+    <!-- ============ 7 相关文件 ============ -->
+    <section class="section" id="sec-refs">
+      <h2><span class="num">7</span> 相关文件与记录</h2>
+      <div class="desc">登记本文件引用的其它文件、配套表单与记录，及其保存要求。</div>
+      <div class="dyn-list">
+        <div class="dyn-head h-refs"><span>文件/表单名称</span><span>编号</span><span>保存处</span><span>保存期限</span><span></span></div>
+        <div id="refList"></div>
+      </div>
+      <button class="add-btn" onclick="addRef()">＋ 添加相关文件</button>
+    </section>
+
+    <!-- ============ 8 修订记录 ============ -->
+    <section class="section" id="sec-rev">
+      <h2><span class="num">8</span> 修订记录</h2>
+      <div class="desc">记录各版本历次修订的日期、内容与责任人。</div>
+      <div class="dyn-list">
+        <div class="dyn-head h-rev"><span>版本</span><span>修订日期</span><span>修订内容</span><span>修订人</span><span>批准人</span><span></span></div>
+        <div id="revList"></div>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="add-btn" onclick="addRev()">＋ 添加修订记录</button>
+        <button class="add-btn" style="background:#e8f6ef;color:#0fa57c;border-color:#9ad4b5" onclick="addRevDraft()">✚ 生成当前草稿修订项</button>
+      </div>
+    </section>
+
+    <!-- ============ 9 审批 ============ -->
+    <section class="section" id="sec-approve">
+      <h2><span class="num">9</span> 审批流程</h2>
+      <div class="desc">记录文件的编制、审核、批准签名及日期。</div>
+      <div class="approve-grid">
+        <div class="approve-card">
+          <div class="ac-head a">✍️ 编制</div>
+          <div class="ac-body">
+            <div class="sig-row"><span>编制人</span><input id="ap_draft_name" placeholder="姓名"></div>
+            <div class="sig-row"><span>日期</span><input type="date" id="ap_draft_date"></div>
+          </div>
+        </div>
+        <div class="approve-card">
+          <div class="ac-head b">✅ 审核</div>
+          <div class="ac-body">
+            <div class="sig-row"><span>审核人</span><input id="ap_review_name" placeholder="姓名"></div>
+            <div class="sig-row"><span>日期</span><input type="date" id="ap_review_date"></div>
+          </div>
+        </div>
+        <div class="approve-card">
+          <div class="ac-head c">🛡️ 批准</div>
+          <div class="ac-body">
+            <div class="sig-row"><span>批准人</span><input id="ap_approve_name" placeholder="姓名"></div>
+            <div class="sig-row"><span>日期</span><input type="date" id="ap_approve_date"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 10 培训确认 ============ -->
+    <section class="section" id="sec-train">
+      <h2><span class="num">10</span> 培训确认</h2>
+      <div class="desc">登记参加本文件培训的人员，确认已理解并承诺执行。</div>
+      <div class="dyn-list">
+        <div class="dyn-head h-trn"><span>受训人员</span><span>培训/确认日期</span><span></span></div>
+        <div id="trnList"></div>
+      </div>
+      <button class="add-btn" onclick="addTrn()">＋ 添加受训人员</button>
+    </section>
+
+    <!-- ============ 11 输出设置 ============ -->
+    <section class="section" id="sec-settings">
+      <h2><span class="num">11</span> 输出设置</h2>
+      <div class="desc">配置文档预览与打印的样式选项。</div>
+      <div class="settings-grid">
+        <div class="field"><label>🌊 水印文字</label><input id="set_watermark" placeholder="如：受控文件 / 内部资料"></div>
+        <div class="field"><label>🎨 主题色</label>
+          <div class="theme-dots">
+            <div class="td" style="background:#1d3f8f" data-theme="blue" onclick="setTheme(this)">✓</div>
+            <div class="td" style="background:#0fa57c" data-theme="green" onclick="setTheme(this)"></div>
+            <div class="td" style="background:#c0392b" data-theme="red" onclick="setTheme(this)"></div>
+            <div class="td" style="background:#333" data-theme="dark" onclick="setTheme(this)"></div>
+            <div class="td" style="background:#7c4dff" data-theme="purple" onclick="setTheme(this)"></div>
+          </div>
+        </div>
+        <div class="field"><label>🔤 正文字号</label><select id="set_fontsize" onchange="updatePreview()">
+          <option value="12">小（12px）</option><option value="14" selected>标准（14px）</option><option value="16">大（16px）</option>
+        </select></div>
+      </div>
+      <div class="row3">
+        <div class="field"><label class="switch"><input type="checkbox" id="set_showpage" checked onchange="updatePreview()"> 打印时显示页码</label></div>
+        <div class="field"><label class="switch"><input type="checkbox" id="set_showhead" checked onchange="updatePreview()"> 显示页眉（公司+编号）</label></div>
+        <div class="field"><label class="switch"><input type="checkbox" id="set_boldsteps" checked onchange="updatePreview()"> 步骤序号加粗</label></div>
+      </div>
+      <div class="field"><label>📏 预览缩放</label>
+        <div class="preview-scale">
+          <span>50%</span><input type="range" id="zoomRange" min="50" max="140" value="100" oninput="applyZoom(this.value)"><span id="zoomVal">100%</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 12 模板库 ============ -->
+    <section class="section" id="sec-template">
+      <h2><span class="num">12</span> 模板库</h2>
+      <div class="desc">一键载入常用SOP模板（将覆盖当前内容，请先保存草稿）。</div>
+      <div id="templateGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px"></div>
+    </section>
+
+    <!-- ============ 预览 ============ -->
+    <div class="section no-print" id="sec-preview" style="padding:0;overflow:hidden">
+      <div class="preview-tools" style="display:flex;gap:8px;padding:12px 16px;border-bottom:1px solid var(--border);align-items:center">
+        <b>📄 实时预览</b>
+        <span style="flex:1"></span>
+        <button class="tb-btn" style="background:#eaf1ff;color:var(--primary)" onclick="printDoc()">🖨️ 打印 / 导出PDF</button>
+      </div>
+      <div class="preview-wrap">
+        <div id="docPage"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<footer>工作SOP记录模板生成器 · 数据保存在浏览器本地 · 建议使用 Chrome/Edge 打印导出 PDF</footer>
+<div id="toast"></div>
+
+<script>
+/* ================= 数据模型 ================= */
+const LS_KEY = 'sop_generator_state_v1';
+const THEME_KEY = 'sop_theme_v1';
+
+function today(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+
+function defaultSOP(){
+  return {
+    meta:{docName:'',docNo:'',version:'1.0',dept:'',deptCode:'',secret:'受控文件',status:'正式发布',author:'',draftDate:'',reviewer:'',approver:'',publishDate:'',effectDate:'',company:'',archiveDept:''},
+    purpose:'',scope:'',basis:'',overview:'',
+    defs:[{term:'',def:''}], duties:[{post:'',duty:''}],
+    steps:[{seq:'1',content:'',key:'',post:'',timeReq:'',record:'',cp:false}],
+    risks:[{risk:'',level:'中',measure:'',owner:'',freq:''}],
+    excs:[{situation:'',handling:''}],
+    refs:[{name:'',no:'',place:'',period:''}],
+    revs:[{version:'1.0',date:'',content:'初版编制',editor:'',approver:''}],
+    approvals:{draft:{name:'',date:''},review:{name:'',date:''},approve:{name:'',date:''}},
+    trns:[{name:'',date:''}],
+    settings:{watermark:'',theme:'blue',fontsize:'14',showpage:true,showhead:true,boldsteps:true}
+  };
+}
+
+/* ================= 工具函数 ================= */
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function nl(s){ return esc(s).replace(/\n/g,'<br>'); }
+function $(id){ return document.getElementById(id); }
+function toast(msg,type){ const t=$('toast'); t.textContent=msg; t.className='show '+type; clearTimeout(t._h); t._h=setTimeout(()=>t.className='',2200); }
+function genDocNo(){
+  const code=esc($('f_deptCode').value.trim())||'SOP';
+  const n=String(Math.floor(100+Math.random()*900));
+  $('f_docNo').value='SOP-'+code+'-'+new Date().getFullYear()+'-'+n;
+  toast('已自动生成文件编号','ok'); refreshStats();
+}
+
+/* ================= 动态行渲染 ================= */
+function rowTemplate(kind,data){
+  const k=kind; const d=data||{};
+  if(k==='def') return `<div class="dyn-row r-defs"><div class="cell"><input data-k="term" value="${esc(d.term)}" placeholder="术语名称"></div><div class="cell"><input data-k="def" value="${esc(d.def)}" placeholder="定义/解释"></div><div class="cell"><div class="row-ops"><button class="op-btn top" title="上移" onclick="moveRow(this,-1)">↑</button><button class="op-btn bot" title="下移" onclick="moveRow(this,1)">↓</button><button class="op-btn del" title="删除" onclick="delRow(this)">✕</button></div></div></div>`;
+  if(k==='duty') return `<div class="dyn-row r-duties"><div class="cell"><input data-k="post" value="${esc(d.post)}" placeholder="岗位/角色"></div><div class="cell"><input data-k="duty" value="${esc(d.duty)}" placeholder="主要职责"></div><div class="cell"><div class="row-ops"><button class="op-btn top" onclick="moveRow(this,-1)">↑</button><button class="op-btn bot" onclick="moveRow(this,1)">↓</button><button class="op-btn del" onclick="delRow(this)">✕</button></div></div></div>`;
+  if(k==='step') return `<div class="dyn-row r-steps"><div class="cell"><input data-k="seq" value="${esc(d.seq)}" placeholder="1" style="text-align:center"></div><div class="cell"><textarea data-k="content" placeholder="本步骤做什么">${esc(d.content)}</textarea></div><div class="cell"><textarea data-k="key" placeholder="怎么做/标准要求">${esc(d.key)}</textarea></div><div class="cell"><input data-k="post" value="${esc(d.post)}" placeholder="执行岗位"></div><div class="cell"><input data-k="timeReq" value="${esc(d.timeReq)}" placeholder="如：≤10分钟/班"></div><div class="cell"><input data-k="record" value="${esc(d.record)}" placeholder="记录表单"></div><div class="cell"><div class="row-ops" style="flex-direction:column;gap:4px"><label class="checkline" title="标记为关键控制点" style="padding:3px 6px"><input type="checkbox" data-k="cp" ${d.cp?'checked':''}>CP</label><div style="display:flex;gap:4px"><button class="op-btn top" onclick="moveRow(this,-1)">↑</button><button class="op-btn bot" onclick="moveRow(this,1)">↓</button><button class="op-btn del" onclick="delRow(this)">✕</button></div></div></div></div>`;
+  if(k==='risk') return `<div class="dyn-row r-risks"><div class="cell"><input data-k="risk" value="${esc(d.risk)}" placeholder="风险/危害描述"></div><div class="cell"><select data-k="level"><option ${d.level==='高'?'selected':''}>高</option><option ${d.level==='中'?'selected':''}>中</option><option ${d.level==='低'?'selected':''}>低</option></select></div><div class="cell"><textarea data-k="measure" placeholder="控制措施">${esc(d.measure)}</textarea></div><div class="cell"><input data-k="owner" value="${esc(d.owner)}" placeholder="责任人"></div><div class="cell"><input data-k="freq" value="${esc(d.freq)}" placeholder="如：每班/每周"></div><div class="cell"><div class="row-ops"><button class="op-btn top" onclick="moveRow(this,-1)">↑</button><button class="op-btn bot" onclick="moveRow(this,1)">↓</button><button class="op-btn del" onclick="delRow(this)">✕</button></div></div></div>`;
+  if(k==='exc') return `<div class="dyn-row r-exc"><div class="cell"><textarea data-k="situation" placeholder="异常情况">${esc(d.situation)}</textarea></div><div class="cell"><textarea data-k="handling" placeholder="处理措施/上报流程">${esc(d.handling)}</textarea></div><div class="cell"><div class="row-ops"><button class="op-btn top" onclick="moveRow(this,-1)">↑</button><button class="op-btn bot" onclick="moveRow(this,1)">↓</button><button class="op-btn del" onclick="delRow(this)">✕</button></div></div></div>`;
+  if(k==='ref') return `<div class="dyn-row r-refs"><div class="cell"><input data-k="name" value="${esc(d.name)}" placeholder="文件/表单名称"></div><div class="cell"><input data-k="no" value="${esc(d.no)}" placeholder="编号"></div><div class="cell"><input data-k="place" value="${esc(d.place)}" placeholder="保存处"></div><div class="cell"><input data-k="period" value="${esc(d.period)}" placeholder="保存期限"></div><div class="cell"><div class="row-ops"><button class="op-btn top" onclick="moveRow(this,-1)">↑</button><button class="op-btn bot" onclick="moveRow(this,1)">↓</button><button class="op-btn del" onclick="delRow(this)">✕</button></div></div></div>`;
+  if(k==='rev') return `<div class="dyn-row r-rev"><div class="cell"><input data-k="version" value="${esc(d.version)}" placeholder="版本"></div><div class="cell"><input type="date" data-k="date" value="${esc(d.date)}"></div><div class="cell"><textarea data-k="content" placeholder="修订内容">${esc(d.content)}</textarea></div><div class="cell"><input data-k="editor" value="${esc(d.editor)}" placeholder="修订人"></div><div class="cell"><input data-k="approver" value="${esc(d.approver)}" placeholder="批准人"></div><div class="cell"><div class="row-ops"><button class="op-btn top" onclick="moveRow(this,-1)">↑</button><button class="op-btn bot" onclick="moveRow(this,1)">↓</button><button class="op-btn del" onclick="delRow(this)">✕</button></div></div></div>`;
+  if(k==='trn') return `<div class="dyn-row r-trn"><div class="cell"><input data-k="name" value="${esc(d.name)}" placeholder="受训人员"></div><div class="cell"><input type="date" data-k="date" value="${esc(d.date)}"></div><div class="cell"><div class="row-ops"><button class="op-btn top" onclick="moveRow(this,-1)">↑</button><button class="op-btn bot" onclick="moveRow(this,1)">↓</button><button class="op-btn del" onclick="delRow(this)">✕</button></div></div></div>`;
+}
+const ADD = {def:()=>addDef(),duty:()=>addDuty(),step:()=>addStep(),risk:()=>addRisk(),exc:()=>addExc(),ref:()=>addRef(),rev:()=>addRev(),trn:()=>addTrn()};
+const LISTS = {def:'defList',duty:'dutyList',step:'stepList',risk:'riskList',exc:'excList',ref:'refList',rev:'revList',trn:'trnList'};
+
+function addRow(kind,data){
+  const wrap=$(LISTS[kind]);
+  const div=document.createElement('div');
+  div.innerHTML=rowTemplate(kind,data);
+  const el=div.firstElementChild;
+  wrap.appendChild(el);
+  bindRow(el);
+  if(kind==='step') autoNumber();
+  onChange();
+}
+function addDef(){addRow('def',{})}
+function addDuty(){addRow('duty',{})}
+function addStep(){addRow('step',{})}
+function addRisk(){addRow('risk',{})}
+function addExc(){addRow('exc',{})}
+function addRef(){addRow('ref',{})}
+function addRev(){addRow('rev',{})}
+function addTrn(){addRow('trn',{})}
+function addRevDraft(){
+  const ver=parseFloat($('f_version').value||'1.0');
+  addRow('rev',{version:(ver+0.1).toFixed(1),date:today(),content:'更新修订：'+$('f_docName').value,editor:$('f_author').value,approver:$('f_approver').value});
+  toast('已生成修订项（版本 +0.1）','info');
+}
+
+function bindRow(el){
+  el.querySelectorAll('[data-k]').forEach(inp=>{
+    inp.addEventListener('input',onChange);
+    inp.addEventListener('change',onChange);
+  });
+}
+function delRow(btn){
+  const row=btn.closest('.dyn-row');
+  const wrap=row.parentElement;
+  if(!wrap) return;
+  const kind=Object.keys(LISTS).find(k=>LISTS[k]===wrap.id);
+  row.remove();
+  if(kind==='step') autoNumber();
+  onChange();
+}
+function moveRow(btn,dir){
+  const row=btn.closest('.dyn-row');
+  const wrap=row.parentElement;
+  const sib=dir<0?row.previousElementSibling:row.nextElementSibling;
+  if(!sib||sib.classList.contains('dyn-head')) return;
+  if(dir<0) wrap.insertBefore(row,sib); else wrap.insertBefore(sib,row);
+  onChange();
+}
+function autoNumber(){
+  const wrap=$('stepList');
+  [...wrap.querySelectorAll('.dyn-row')].forEach((r,i)=>{ const s=r.querySelector('[data-k="seq"]'); if(s) s.value=i+1; });
+  onChange();
+}
+
+/* ================= 数据收集 ================= */
+function collect(){
+  const g=id=>$(id).value;
+  const ck=id=>$(id).checked;
+  const rows=id=>[...$(id).querySelectorAll('.dyn-row')].map(r=>{
+    const o={}; r.querySelectorAll('[data-k]').forEach(inp=>{
+      o[inp.dataset.k] = inp.type==='checkbox'? inp.checked : inp.value;
+    }); return o;
+  });
+  return {
+    meta:{docName:g('f_docName'),docNo:g('f_docNo'),version:g('f_version'),dept:g('f_dept'),deptCode:g('f_deptCode'),secret:g('f_secret'),status:g('f_status'),author:g('f_author'),draftDate:g('f_draftDate'),reviewer:g('f_reviewer'),approver:g('f_approver'),publishDate:g('f_publishDate'),effectDate:g('f_effectDate'),company:g('f_company'),archiveDept:g('f_archiveDept')},
+    purpose:g('f_purpose'),scope:g('f_scope'),basis:g('f_basis'),overview:g('f_overview'),
+    defs:rows('defList'),duties:rows('dutyList'),steps:rows('stepList'),risks:rows('riskList'),excs:rows('excList'),refs:rows('refList'),revs:rows('revList'),trns:rows('trnList'),
+    approvals:{draft:{name:g('ap_draft_name'),date:g('ap_draft_date')},review:{name:g('ap_review_name'),date:g('ap_review_date')},approve:{name:g('ap_approve_name'),date:g('ap_approve_date')}},
+    settings:{watermark:g('set_watermark'),theme:currentTheme(),fontsize:g('set_fontsize'),showpage:ck('set_showpage'),showhead:ck('set_showhead'),boldsteps:ck('set_boldsteps')}
+  };
+}
+
+/* ================= 数据回填 ================= */
+function renderToForm(data){
+  const d=data||defaultSOP();
+  const m=d.meta;
+  $('f_docName').value=m.docName||''; $('f_docNo').value=m.docNo||''; $('f_version').value=m.version||'1.0';
+  $('f_dept').value=m.dept||''; $('f_deptCode').value=m.deptCode||''; $('f_secret').value=m.secret||'受控文件';
+  $('f_status').value=m.status||'正式发布'; $('f_author').value=m.author||''; $('f_draftDate').value=m.draftDate||'';
+  $('f_reviewer').value=m.reviewer||''; $('f_approver').value=m.approver||''; $('f_publishDate').value=m.publishDate||'';
+  $('f_effectDate').value=m.effectDate||''; $('f_company').value=m.company||''; $('f_archiveDept').value=m.archiveDept||'';
+  $('f_purpose').value=d.purpose||''; $('f_scope').value=d.scope||''; $('f_basis').value=d.basis||''; $('f_overview').value=d.overview||'';
+  fillList('defList',d.defs||[],'def'); fillList('dutyList',d.duties||[],'duty');
+  fillList('stepList',d.steps&&d.steps.length?d.steps:[{seq:'1',content:'',key:'',post:'',timeReq:'',record:'',cp:false}],'step');
+  fillList('riskList',d.risks||[],'risk'); fillList('excList',d.excs||[],'exc'); fillList('refList',d.refs||[],'ref');
+  fillList('revList',d.revs&&d.revs.length?d.revs:[{version:'1.0',date:'',content:'初版编制',editor:'',approver:''}],'rev');
+  fillList('trnList',d.trns||[],'trn');
+  $('ap_draft_name').value=(d.approvals&&d.approvals.draft.name)||''; $('ap_draft_date').value=(d.approvals&&d.approvals.draft.date)||'';
+  $('ap_review_name').value=(d.approvals&&d.approvals.review.name)||''; $('ap_review_date').value=(d.approvals&&d.approvals.review.date)||'';
+  $('ap_approve_name').value=(d.approvals&&d.approvals.approve.name)||''; $('ap_approve_date').value=(d.approvals&&d.approvals.approve.date)||'';
+  const s=d.settings||{};
+  $('set_watermark').value=s.watermark||''; $('set_fontsize').value=s.fontsize||'14';
+  $('set_showpage').checked=s.showpage!==false; $('set_showhead').checked=s.showhead!==false; $('set_boldsteps').checked=s.boldsteps!==false;
+  setThemeByName(s.theme||'blue');
+  updatePreview(); refreshStats();
+}
+function fillList(id,arr,kind){
+  const wrap=$(id); wrap.innerHTML='';
+  (arr&&arr.length?arr:[{}]).forEach(d=>{
+    const div=document.createElement('div'); div.innerHTML=rowTemplate(kind,d);
+    const el=div.firstElementChild; wrap.appendChild(el); bindRow(el);
+  });
+}
+
+/* ================= 预览生成 ================= */
+function currentTheme(){ return (document.body.dataset.theme||'blue'); }
+
+function updatePreview(){
+  const d=collect();
+  const m=d.meta; const s=d.settings;
+  const themeColor={blue:'#1d3f8f',green:'#0d7d5c',red:'#a03020',dark:'#333',purple:'#5b3bd0'}[s.theme]||'#1d3f8f';
+  const st=document.createElement('style');
+  st.textContent=`#docPage h2{border-left-color:${themeColor};color:${themeColor}} .pg-head{border-color:${themeColor}}`;
+  st.id='themeStyle';
+  const old=$('themeStyle'); if(old) old.remove();
+  document.head.appendChild(st);
+
+  const hasStep=d.steps.some(x=>x.content&&x.content.trim());
+  const hasRisk=d.risks.some(x=>x.risk&&x.risk.trim());
+  const hasExc=d.excs.some(x=>x.situation&&x.situation.trim());
+  const hasRef=d.refs.some(x=>x.name&&x.name.trim());
+  const hasDef=d.defs.some(x=>x.term&&x.term.trim());
+  const hasDuty=d.duties.some(x=>x.post&&x.post.trim());
+  const hasRev=d.revs.some(x=>x.version&&(x.content||x.date));
+  const hasTrn=d.trns.some(x=>x.name&&x.name.trim());
+
+  const fs=s.fontsize||'14';
+  let html='';
+  if(s.watermark&&s.watermark.trim()) html+=`<div class="watermark-abs">${esc(s.watermark)}</div>`;
+  html+='<div class="wmark-wrap">';
+  if(s.showhead!==false){
+    html+=`<div class="pg-head"><span class="company">${esc(m.company||'XX公司')}</span><span>${esc(m.docNo||'')}</span></div>`;
+  }
+  html+=`<div class="doc-title">${esc(m.docName||'（未命名文件）')}</div>`;
+  html+=`<div class="doc-sub">${esc(m.docName? '工作标准操作规程（SOP）':'' )}</div>`;
+  if(m.docNo) html+=`<div class="doc-no-line">文件编号：${esc(m.docNo)}　版本：${esc(m.version)}　${esc(m.secret)}　${esc(m.status)}</div>`;
+
+  /* 元信息表 */
+  html+=`<table class="meta-table">
+    <tr><th style="width:16%">编制部门</th><td style="width:34%">${esc(m.dept)}</td><th style="width:16%">文件密级</th><td>${esc(m.secret)}</td></tr>
+    <tr><th>编制人</th><td>${esc(m.author)}</td><th>编制日期</th><td>${esc(m.draftDate)}</td></tr>
+    <tr><th>审核人</th><td>${esc(m.reviewer)}</td><th>发布日期</th><td>${esc(m.publishDate)}</td></tr>
+    <tr><th>批准人</th><td>${esc(m.approver)}</td><th>生效日期</th><td>${esc(m.effectDate)}</td></tr>
+    <tr><th>适用范围</th><td colspan="3">${nl(m.archiveDept? '适用单位：'+m.archiveDept+'；':'' )}${esc(d.scope||'')}</td></tr>
+  </table>`;
+
+  const CN=['零','一','二','三','四','五','六','七','八','九','十','十一','十二','十三','十四'];
+  let sec=0;
+  const secHead=t=>`<h2>${CN[++sec]}、${t}</h2>`;
+
+  /* 目的 */
+  if(d.purpose.trim()) html+=secHead('目的')+`<p>${nl(d.purpose)}</p>`;
+  /* 范围 */
+  if(d.scope.trim()) html+=secHead('适用范围')+`<p>${nl(d.scope)}</p>`;
+  /* 依据 */
+  if(d.basis.trim()) html+=secHead('引用文件与依据')+`<p>${nl(d.basis)}</p>`;
+  /* 术语 */
+  if(hasDef){
+    html+=secHead('术语定义')+`<table><tr><th style="width:28%">术语</th><th>定义/解释</th></tr>`;
+    d.defs.filter(x=>x.term&&x.term.trim()).forEach(x=>html+=`<tr><td><b>${esc(x.term)}</b></td><td>${nl(x.def)}</td></tr>`);
+    html+='</table>';
+  }
+  /* 职责 */
+  if(hasDuty){
+    html+=secHead('职责分工')+`<table><tr><th style="width:30%">岗位/角色</th><th>主要职责</th></tr>`;
+    d.duties.filter(x=>x.post&&x.post.trim()).forEach(x=>html+=`<tr><td><b>${esc(x.post)}</b></td><td>${nl(x.duty)}</td></tr>`);
+    html+='</table>';
+  }
+
+  /* 操作步骤 */
+  if(hasStep){
+    html+=secHead('操作流程与步骤');
+    if(d.overview.trim()) html+=`<p><b>流程概述：</b>${nl(d.overview)}</p>`;
+    html+=`<table><tr><th style="width:8%">步骤</th><th style="width:26%">操作内容</th><th style="width:28%">操作要点/要求</th><th style="width:12%">执行岗位</th><th style="width:13%">时间/频次</th><th>记录表单</th></tr>`;
+    d.steps.filter(x=>x.content&&x.content.trim()).forEach(x=>{
+      html+=`<tr><td class="step-num" style="${s.boldsteps!==false?'font-weight:700':''}">${esc(x.seq||'')}${x.cp?'<div class="cp-tag" style="font-size:10.5px">【关键点】</div>':''}</td>`;
+      html+=`<td>${nl(x.content)}</td><td>${nl(x.key)}</td><td>${esc(x.post)}</td><td>${esc(x.timeReq)}</td><td>${esc(x.record)}</td></tr>`;
+    });
+    html+='</table>';
+  }
+
+  /* 风险 */
+  if(hasRisk){
+    html+=secHead('风险与关键控制点')+`<table><tr><th style="width:30%">风险/危害</th><th style="width:9%">等级</th><th style="width:33%">控制措施</th><th style="width:12%">责任人</th><th>监督频次</th></tr>`;
+    d.risks.filter(x=>x.risk&&x.risk.trim()).forEach(x=>{
+      const lvColor=x.level==='高'?'#c0392b':(x.level==='中'?'#e67e22':'#27ae60');
+      html+=`<tr><td>${nl(x.risk)}</td><td style="text-align:center;color:${lvColor};font-weight:700">${esc(x.level)}</td><td>${nl(x.measure)}</td><td>${esc(x.owner)}</td><td>${esc(x.freq)}</td></tr>`;
+    });
+    html+='</table>';
+  }
+
+  /* 异常 */
+  if(hasExc){
+    html+=secHead('异常处理')+`<table><tr><th style="width:35%">异常情况</th><th>处理措施 / 上报流程</th></tr>`;
+    d.excs.filter(x=>x.situation&&x.situation.trim()).forEach(x=>html+=`<tr><td>${nl(x.situation)}</td><td>${nl(x.handling)}</td></tr>`);
+    html+='</table>';
+  }
+
+  /* 相关文件 */
+  if(hasRef){
+    html+=secHead('相关文件与记录')+`<table><tr><th>文件/表单名称</th><th style="width:20%">编号</th><th style="width:14%">保存处</th><th style="width:14%">保存期限</th></tr>`;
+    d.refs.filter(x=>x.name&&x.name.trim()).forEach(x=>html+=`<tr><td>${esc(x.name)}</td><td>${esc(x.no)}</td><td>${esc(x.place)}</td><td>${esc(x.period)}</td></tr>`);
+    html+='</table>';
+  }
+
+  /* 修订记录 */
+  if(hasRev){
+    html+=secHead('修订记录')+`<table><tr><th style="width:9%">版本</th><th style="width:14%">修订日期</th><th>修订内容</th><th style="width:12%">修订人</th><th style="width:12%">批准人</th></tr>`;
+    d.revs.filter(x=>x.version&&x.version.trim()).forEach(x=>html+=`<tr><td>${esc(x.version)}</td><td>${esc(x.date)}</td><td>${nl(x.content)}</td><td>${esc(x.editor)}</td><td>${esc(x.approver)}</td></tr>`);
+    html+='</table>';
+  }
+
+  /* 审批 */
+  html+=secHead('审批流程')+`<table class="approve-table"><tr><th style="width:33%">编制</th><th style="width:33%">审核</th><th>批准</th></tr>`;
+  html+=`<tr><td>编制人：${esc(d.approvals.draft.name)}<br>日期：${esc(d.approvals.draft.date)}</td>`;
+  html+=`<td>审核人：${esc(d.approvals.review.name)}<br>日期：${esc(d.approvals.review.date)}</td>`;
+  html+=`<td>批准人：${esc(d.approvals.approve.name)}<br>日期：${esc(d.approvals.approve.date)}</td></tr></table>`;
+
+  /* 培训 */
+  if(hasTrn){
+    html+=secHead('培训确认')+`<table><tr><th>受训人员</th><th style="width:30%">培训/确认日期</th></tr>`;
+    d.trns.filter(x=>x.name&&x.name.trim()).forEach(x=>html+=`<tr><td>${esc(x.name)}</td><td>${esc(x.date)}</td></tr>`);
+    html+='</table>';
+  }
+
+  html+='</div>';
+  if(s.showpage!==false) html+=`<div class="page-num" style="text-align:center;font-size:11px;color:#888;margin-top:14px">第 <span class="pg"></span> 页</div>`;
+  $('docPage').innerHTML=html;
+  $('docPage').style.fontSize=fs+'px';
+  applyZoom();
+}
+
+function applyZoom(v){
+  const z=(v!=null?v:$('zoomRange').value);
+  $('zoomVal').textContent=z+'%';
+  $('docPage').style.transform=`scale(${z/100})`;
+}
+
+/* ================= 统计 ================= */
+function refreshStats(){
+  const d=collect();
+  $('statName').textContent=d.meta.docName||'未命名';
+  $('statNo').textContent=d.meta.docNo||'-';
+  $('statVer').textContent=d.meta.version||'-';
+  const steps=d.steps.filter(x=>x.content&&x.content.trim());
+  const risks=d.risks.filter(x=>x.risk&&x.risk.trim());
+  $('statSteps').textContent=steps.length;
+  $('statRisks').textContent=risks.length;
+  const txt=JSON.stringify(d);
+  $('statWords').textContent=txt.length>0?Math.max(0,(txt.replace(/[^\u4e00-\u9fa5]/g,'').length)):0;
+  updatePreview();
+}
+
+/* ================= 主题 ================= */
+function setThemeByName(name){
+  document.body.dataset.theme=name;
+  document.querySelectorAll('.theme-dots .td').forEach(t=>t.classList.toggle('sel',t.dataset.theme===name));
+  if(name==='green') setVar('#0d7d5c'); else if(name==='red') setVar('#a03020');
+  else if(name==='dark') setVar('#333'); else if(name==='purple') setVar('#5b3bd0');
+  else setVar('#2f6fed');
+  updatePreview();
+}
+function setVar(c){
+  document.documentElement.style.setProperty('--primary',c);
+  document.documentElement.style.setProperty('--primary-dark',c);
+}
+function setTheme(el){ setThemeByName(el.dataset.theme); toast('主题已切换：'+el.dataset.theme,'ok'); }
+
+/* ================= 保存 / 载入 ================= */
+function saveToLocal(quiet){
+  try{ localStorage.setItem(LS_KEY,JSON.stringify(collect())); setSaveStatus(true); if(!quiet) toast('草稿已保存到浏览器','ok'); }
+  catch(e){ setSaveStatus(false); if(!quiet) toast('保存失败：'+e.message,'err'); }
+}
+function loadFromLocal(){
+  try{
+    const raw=localStorage.getItem(LS_KEY);
+    if(raw){ renderToForm(JSON.parse(raw)); toast('已载入本地草稿','info'); return true; }
+  }catch(e){ toast('载入失败','err'); }
+  return false;
+}
+let saveTimer=null;
+function setSaveStatus(ok){
+  const dot=$('saveDot'),lb=$('saveLabel');
+  if(ok){ dot.style.background='#18a058'; lb.textContent='已自动保存 '+new Date().toLocaleTimeString(); }
+  else{ dot.style.background='#f0a020'; lb.textContent='草稿未保存'; }
+}
+function onChange(){
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(()=>saveToLocal(true),600);
+  refreshStats();
+}
+
+/* ================= 导出 / 导入 ================= */
+function downloadFile(name,content,mime){
+  const blob=new Blob([content],{type:mime});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob); a.download=name; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+}
+function exportJSON(){
+  const d=collect();
+  downloadFile('SOP_'+(d.meta.docNo||'模板')+'.json',JSON.stringify(d,null,2),'application/json');
+  toast('JSON 已导出','ok');
+}
+function importJSON(ev){
+  const f=ev.target.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=()=>{ try{ renderToForm(JSON.parse(r.result)); toast('导入成功','ok'); }catch(e){ toast('JSON 解析失败','err'); } };
+  r.readAsText(f); ev.target.value='';
+}
+function exportWord(){
+  const d=collect();
+  const themeColor={blue:'#1d3f8f',green:'#0d7d5c',red:'#a03020',dark:'#333',purple:'#5b3bd0'}[d.settings.theme]||'#1d3f8f';
+  const clone=$('docPage').cloneNode(true);
+  clone.querySelectorAll('.watermark-abs,.page-num').forEach(n=>n.remove());
+  const wm=clone.querySelector('.wmark-wrap');
+  if(wm){ const kids=wm.innerHTML; clone.insertAdjacentHTML('afterbegin',kids); wm.remove(); }
+  const body=clone.innerHTML;
+  const html=`<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word">
+  <head><meta charset="utf-8"><title>${d.meta.docName}</title>
+  <style>body{font-family:"Microsoft YaHei",SimSun,sans-serif;font-size:14px;line-height:1.7;margin:20mm}
+  table{width:100%;border-collapse:collapse}th,td{border:1px solid #000;padding:5px 7px;text-align:left;vertical-align:top}
+  th{background:#eef3fb;text-align:center}h2{font-size:16px;color:${themeColor};border-left:4px solid ${themeColor};padding-left:8px;margin:18px 0 8px}
+  .doc-title{text-align:center;font-size:22px;font-weight:bold;margin:8px 0}.doc-sub{text-align:center;color:#444;margin-bottom:10px}
+  .doc-no-line{text-align:center;font-size:13px;margin-bottom:14px}
+  .pg-head{display:flex;justify-content:space-between;border-bottom:2px solid ${themeColor};padding-bottom:6px;margin-bottom:6px}
+  </style></head><body>
+  <div class="pg-head"><span>${esc(d.meta.company)}</span><span>${esc(d.meta.docNo)}</span></div>
+  <div class="doc-title">${esc(d.meta.docName)}</div><div class="doc-sub">工作标准操作规程（SOP）</div>
+  <div class="doc-no-line">文件编号：${esc(d.meta.docNo)}　版本：${esc(d.meta.version)}　${esc(d.meta.secret)}　${esc(d.meta.status)}</div>
+  ${body}
+  </body></html>`;
+  downloadFile('SOP_'+(d.meta.docNo||'模板')+'.doc','\ufeff'+html,'application/msword');
+  toast('Word 文档已导出','ok');
+}
+function copyHTML(){
+  const d=collect();
+  const text=`【${d.meta.docName}】\n编号：${d.meta.docNo}　版本：${d.meta.version}\n`+$('docPage').innerText;
+  if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(text).then(()=>toast('文档内容已复制','ok')).catch(()=>toast('复制失败','err')); }
+  else toast('当前环境不支持复制','err');
+}
+function printDoc(){ refreshStats(); setTimeout(()=>window.print(),100); }
+
+/* ================= 重置 ================= */
+function resetAll(){
+  if(!confirm('确定要清空所有内容吗？此操作不可恢复（建议先保存草稿）。')) return;
+  renderToForm(defaultSOP());
+  toast('已重置为空白模板','info');
+}
+
+/* ================= 导航 ================= */
+function goSection(btn){
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(btn.dataset.target).scrollIntoView({behavior:'smooth'});
+}
+function trackScroll(){
+  const secs=['sec-meta','sec-purpose','sec-term','sec-steps','sec-risk','sec-exc','sec-refs','sec-rev','sec-approve','sec-train','sec-settings','sec-template'];
+  let cur=secs[0];
+  secs.forEach(id=>{ const el=document.getElementById(id); if(el&&el.getBoundingClientRect().top<=120) cur=id; });
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active',n.dataset.target===cur));
+}
+
+/* ================= 模板库 ================= */
+const TEMPLATES={
+  'production':{
+    name:'🏭 生产设备点检SOP',desc:'适用于生产设备日常/定期点检',
+    data:{
+      meta:{docName:'生产设备日常点检作业指导书',docNo:'',version:'1.0',dept:'生产部',deptCode:'PD',secret:'受控文件',status:'正式发布',author:'',draftDate:'',reviewer:'',approver:'',publishDate:'',effectDate:'',company:'',archiveDept:'生产部'},
+      purpose:'规范生产设备日常点检作业行为，确保设备处于良好状态，及时发现并消除隐患，防止设备故障及安全事故发生，保障生产连续稳定运行。',
+      scope:'适用于公司各车间生产设备的日常、定期及专项点检作业。',
+      basis:'《设备管理程序》\n《生产设备维护保养规程》\nGB/T 19001-2016 质量管理体系要求',
+      overview:'班前准备 → 按点检表逐项检查 → 记录异常 → 处理/上报 → 交接班确认',
+      defs:[{term:'点检',def:'按规定的标准与周期，通过人的感官或检测工具对设备规定部位进行的检查活动。'},{term:'关键控制点(CP)',def:'影响产品质量或设备安全的重点监控环节。'}],
+      duties:[{post:'操作工',duty:'按点检表执行日常点检并如实记录，发现异常立即上报。'},{post:'设备主管',duty:'组织专项点检、审核点检记录、跟进异常整改闭环。'},{post:'维修工',duty:'对点检发现的问题及时维修并反馈结果。'}],
+      steps:[
+        {seq:'1',content:'班前准备',key:'穿戴好劳保用品，领取点检表，检查工具齐全有效。',post:'操作工',timeReq:'每班班前',record:'《设备点检表》',cp:true},
+        {seq:'2',content:'开机检查',key:'检查润滑、油位、气压、安全防护装置是否正常。',post:'操作工',timeReq:'≤5分钟',record:'点检表',cp:false},
+        {seq:'3',content:'运行观察',key:'空载试运行1-2分钟，听异响、看振动、查泄漏。',post:'操作工',timeReq:'开机后',record:'点检表',cp:true},
+        {seq:'4',content:'记录异常',key:'如实填写点检结果，异常项用“△”标注。',post:'操作工',timeReq:'点检结束',record:'点检表',cp:false},
+        {seq:'5',content:'异常处理',key:'一般问题自行排除，重大隐患停机挂牌并上报。',post:'操作工/维修工',timeReq:'立即',record:'《设备维修单》',cp:true},
+        {seq:'6',content:'交接确认',key:'与接班人员逐项交接，双方签字确认。',post:'交接双方',timeReq:'班末',record:'点检表/交接班记录',cp:false}
+      ],
+      risks:[
+        {risk:'未点检即开机，存在机械伤人/损坏风险',level:'高',measure:'严格执行班前点检制度，未点检禁止开机；安装互锁保护。',owner:'操作工',freq:'每班检查'},
+        {risk:'润滑不良导致设备磨损/停机',level:'中',measure:'按润滑表定时加注，巡检核对油位油质。',owner:'操作工',freq:'每周抽查'},
+        {risk:'异常记录漏填/虚填',level:'中',measure:'主管每日抽查点检表，发现虚假记录按制度考核。',owner:'设备主管',freq:'每日'}
+      ],
+      excs:[
+        {situation:'设备异响、异常振动',handling:'立即停机，切断电源，挂牌“检修中”，上报设备主管，待维修确认后方可开机。'},
+        {situation:'点检发现漏油/漏气',handling:'记录异常，能自行处理的当场处理；否则报修并做好防护隔离。'}
+      ],
+      refs:[
+        {name:'《设备点检表》',no:'PD-REC-001',place:'车间班组',period:'3年'},
+        {name:'《设备维修单》',no:'PD-REC-002',place:'设备部',period:'3年'},
+        {name:'《设备管理程序》',no:'PD-PR-001',place:'文件中心',period:'长期'}
+      ],
+      revs:[{version:'1.0',date:'',content:'初版编制',editor:'',approver:''}],
+      approvals:{draft:{name:'',date:''},review:{name:'',date:''},approve:{name:'',date:''}},
+      trns:[{name:'',date:''}],
+      settings:{watermark:'受控文件',theme:'blue',fontsize:'14',showpage:true,showhead:true,boldsteps:true}
+    }
+  },
+  'quality':{
+    name:'🔬 来料检验SOP',desc:'适用于原辅料/外购件进货检验',
+    data:{
+      meta:{docName:'原辅料来料检验操作规程',docNo:'',version:'1.0',dept:'质量管理部',deptCode:'QC',secret:'受控文件',status:'正式发布',author:'',draftDate:'',reviewer:'',approver:'',publishDate:'',effectDate:'',company:'',archiveDept:'质量管理部'},
+      purpose:'规范原辅料进厂检验流程，确保来料质量符合标准要求，防止不合格物料流入生产，保证产品质量稳定。',
+      scope:'适用于所有原辅料、外购件、包装材料的进厂检验。',
+      basis:'《进货检验和试验控制程序》\nGB/T 2828.1 计数抽样检验程序',
+      overview:'供应商到货 → 核对单证 → 抽样 → 检验 → 判定 → 入库/退货 → 记录归档',
+      defs:[{term:'AQL',def:'可接受质量水平，抽样检验的允收质量水平指标。'}],
+      duties:[{post:'仓管员',duty:'负责到货接收、通知检验、办理入库/退货。'},{post:'IQC检验员',duty:'按标准抽样检验并出具检验报告。'},{post:'质量工程师',duty:'异常批处理与供应商跟进。'}],
+      steps:[
+        {seq:'1',content:'到货接收',key:'核对送货单与采购订单，确认品名、规格、数量一致。',post:'仓管员',timeReq:'到货即办',record:'送货单',cp:false},
+        {seq:'2',content:'待检标识',key:'放置“待检”标识并隔离存放，通知IQC检验。',post:'仓管员',timeReq:'≤30分钟',record:'待检标识卡',cp:true},
+        {seq:'3',content:'抽样',key:'按GB/T 2828.1及检验规程随机抽样。',post:'IQC检验员',timeReq:'按方案',record:'抽样记录',cp:true},
+        {seq:'4',content:'检验',key:'进行外观、尺寸、理化及性能检验并记录数据。',post:'IQC检验员',timeReq:'≤4小时',record:'检验记录表',cp:false},
+        {seq:'5',content:'判定放行',key:'对照标准判定合格/不合格，合格办理入库，不合格执行退货或让步接收评审。',post:'IQC检验员',timeReq:'检验后2小时',record:'《检验报告》',cp:true},
+        {seq:'6',content:'记录归档',key:'检验报告与合格证归档保存，录入质量系统。',post:'IQC检验员',timeReq:'当日内',record:'质量系统',cp:false}
+      ],
+      risks:[
+        {risk:'抽样不随机导致误判',level:'中',measure:'严格执行抽样方案，双人复核抽样。',owner:'IQC检验员',freq:'每次'},
+        {risk:'关键指标漏检导致批量不良',level:'高',measure:'检验规程明确必检项目，主管抽查报告。',owner:'质量工程师',freq:'每周'},
+        {risk:'待检物料误用',level:'高',measure:'严格执行隔离标识，未检物料禁止发放。',owner:'仓管员',freq:'每日'}
+      ],
+      excs:[
+        {situation:'来料与订单不符',handling:'拒绝收货，报告采购部，要求供应商换货并跟踪。'},
+        {situation:'检验不合格',handling:'出具不合格报告，执行退货；如需让步使用，须按《让步接收程序》评审并得到客户/授权人批准。'}
+      ],
+      refs:[
+        {name:'《检验报告》',no:'QC-REC-003',place:'质量部',period:'3年'},
+        {name:'《进货检验和试验控制程序》',no:'QC-PR-002',place:'文件中心',period:'长期'}
+      ],
+      revs:[{version:'1.0',date:'',content:'初版编制',editor:'',approver:''}],
+      approvals:{draft:{name:'',date:''},review:{name:'',date:''},approve:{name:'',date:''}},
+      trns:[{name:'',date:''}],
+      settings:{watermark:'受控文件',theme:'green',fontsize:'14',showpage:true,showhead:true,boldsteps:true}
+    }
+  },
+  'safety':{
+    name:'⛑️ 动火作业审批SOP',desc:'适用于易燃易爆场所动火作业审批与监护',
+    data:{
+      meta:{docName:'易燃易爆场所动火作业管理规程',docNo:'',version:'1.0',dept:'安全环保部',deptCode:'SE',secret:'机密',status:'正式发布',author:'',draftDate:'',reviewer:'',approver:'',publishDate:'',effectDate:'',company:'',archiveDept:'安全环保部'},
+      purpose:'规范动火作业审批与现场管理，有效控制火灾爆炸风险，保障人员生命与财产安全。',
+      scope:'适用于公司范围内所有在易燃易爆场所、禁火区进行的动火作业。',
+      basis:'《中华人民共和国消防法》\nGB 30871 危险化学品企业特殊作业安全规范\n公司《作业许可管理制度》',
+      overview:'作业申请 → 风险分析 → 现场核查 → 审批签发 → 交底确认 → 作业监护 → 完工验收',
+      defs:[{term:'动火作业',def:'在禁火区进行能直接或间接产生明火的工艺设备作业，如电焊、气焊、切割等。'},{term:'监护人',def:'经培训合格，对动火作业全过程进行安全监护的指定人员。'}],
+      duties:[{post:'作业申请人',duty:'填写动火作业票，落实安全措施并组织实施。'},{post:'现场监护人',duty:'全程监护，有权制止违章作业，发现危险立即停止作业。'},{post:'审批人',duty:'核查安全措施并签发作业票，负责对作业过程监督管理。'}],
+      steps:[
+        {seq:'1',content:'作业申请',key:'填写《动火作业许可证》，写明作业内容、时间、地点、作业人。',post:'作业申请人',timeReq:'作业前',record:'动火作业许可证',cp:true},
+        {seq:'2',content:'风险分析',key:'进行JSA作业安全分析，辨识火灾爆炸等风险并制定措施。',post:'作业申请人/监护人',timeReq:'作业前',record:'JSA分析表',cp:true},
+        {seq:'3',content:'现场核查',key:'确认可燃物清除、通风、检测合格、灭火器材到位。',post:'安全员',timeReq:'审批前',record:'核查记录',cp:true},
+        {seq:'4',content:'审批签发',key:'分级审批，签发作业票并明确作业有效期。',post:'审批人',timeReq:'核查后',record:'许可证',cp:false},
+        {seq:'5',content:'安全交底',key:'对作业人员与监护人员进行安全交底并签字确认。',post:'监护人',timeReq:'作业前',record:'许可证附页',cp:true},
+        {seq:'6',content:'作业监护',key:'监护人到岗履职，全程监护，气体检测持续进行。',post:'监护人',timeReq:'全程',record:'监测记录',cp:true},
+        {seq:'7',content:'完工验收',key:'清理现场，确认无火种残留，双方签字关闭作业票。',post:'监护人/申请人',timeReq:'作业结束后30分钟',record:'许可证',cp:false}
+      ],
+      risks:[
+        {risk:'可燃气体泄漏遇明火爆炸',level:'高',measure:'动火前及过程中持续气体检测，置换合格后方可动火。',owner:'安全员',freq:'连续监测'},
+        {risk:'无证作业、措施缺失',level:'高',measure:'严格执行作业许可制度，无票一律禁止动火，违章从严处理。',owner:'审批人',freq:'每次'},
+        {risk:'监护不到位',level:'高',measure:'监护人须持证上岗，作业期间不得离岗，发现隐患立即叫停。',owner:'监护人',freq:'全程'}
+      ],
+      excs:[
+        {situation:'检测指标超限',handling:'立即停止作业，撤离人员，恢复现场安全条件并重新检测合格后方可继续。'},
+        {situation:'作业票超期',handling:'作业票到期自动失效，需重新申请办理后方可继续作业。'}
+      ],
+      refs:[
+        {name:'《动火作业许可证》',no:'SE-REC-005',place:'安全环保部',period:'1年'},
+        {name:'《作业许可管理制度》',no:'SE-PR-003',place:'文件中心',period:'长期'}
+      ],
+      revs:[{version:'1.0',date:'',content:'初版编制',editor:'',approver:''}],
+      approvals:{draft:{name:'',date:''},review:{name:'',date:''},approve:{name:'',date:''}},
+      trns:[{name:'',date:''}],
+      settings:{watermark:'机密文件',theme:'red',fontsize:'14',showpage:true,showhead:true,boldsteps:true}
+    }
+  },
+  'admin':{
+    name:'📦 仓库出入库SOP',desc:'适用于仓库收发货与库存管理',
+    data:{
+      meta:{docName:'仓库物资出入库管理规程',docNo:'',version:'1.0',dept:'仓储部',deptCode:'WH',secret:'内部公开',status:'正式发布',author:'',draftDate:'',reviewer:'',approver:'',publishDate:'',effectDate:'',company:'',archiveDept:'仓储部'},
+      purpose:'规范物资验收入库、出库发放与库存盘点作业，确保账实相符、先进先出，保障物资安全与供应。',
+      scope:'适用于公司所有仓库物资的出入库与库存管理。',
+      basis:'《仓储管理制度》\n公司《库存管理办法》',
+      overview:'采购到货 → 验收 → 入库上架 → 凭单出库 → 记账 → 定期盘点',
+      defs:[{term:'先进先出(FIFO)',def:'按物资入库时间先后顺序发放，优先发出先入库的物资。'},{term:'安全库存',def:'为应对供应波动而设定的最低库存水平。'}],
+      duties:[{post:'仓管员',duty:'负责验收、上架、发料、记账及库区日常管理。'},{post:'库主管',duty:'审核出入库单据，组织盘点，处理差异。'}],
+      steps:[
+        {seq:'1',content:'到货验收',key:'核对送货单与采购单，清点数量，检查外观与包装。',post:'仓管员',timeReq:'到货即办',record:'入库单',cp:false},
+        {seq:'2',content:'质检确认',key:'需检验物资经IQC确认合格后方可入库。',post:'仓管员/IQC',timeReq:'验收后',record:'检验报告',cp:true},
+        {seq:'3',content:'入库上架',key:'录入系统，粘贴标识，按区域定位上架。',post:'仓管员',timeReq:'≤2小时',record:'系统台账',cp:false},
+        {seq:'4',content:'凭单出库',key:'核对领料单/发货单，坚持先进先出原则发料。',post:'仓管员',timeReq:'当日',record:'出库单',cp:true},
+        {seq:'5',content:'记账对账',key:'当日单据当日入账，定期与财务核对账实。',post:'仓管员',timeReq:'每日',record:'系统台账',cp:false},
+        {seq:'6',content:'定期盘点',key:'月度抽盘、季度全盘，盘点差异查明原因并调整。',post:'库主管',timeReq:'月/季',record:'盘点表',cp:true}
+      ],
+      risks:[
+        {risk:'账实不符',level:'中',measure:'严格凭单出入库、日清日结，定期盘点核对。',owner:'库主管',freq:'每月'},
+        {risk:'超期物资误发',level:'中',measure:'执行先进先出，标识有效期并预警。',owner:'仓管员',freq:'每周'},
+        {risk:'无单发货/领料',level:'高',measure:'禁止无单出入库，单据不全一律拒办。',owner:'仓管员',freq:'每次'}
+      ],
+      excs:[
+        {situation:'数量与单据不符',handling:'当场复点，与送货方/领料方共同确认并备注说明，报库主管处理。'},
+        {situation:'物资临近/超过保质期',handling:'立即隔离并挂“待处理”标识，报质量部评审处理。'}
+      ],
+      refs:[
+        {name:'《入库单》',no:'WH-REC-001',place:'仓储部',period:'3年'},
+        {name:'《盘点表》',no:'WH-REC-002',place:'仓储部',period:'2年'}
+      ],
+      revs:[{version:'1.0',date:'',content:'初版编制',editor:'',approver:''}],
+      approvals:{draft:{name:'',date:''},review:{name:'',date:''},approve:{name:'',date:''}},
+      trns:[{name:'',date:''}],
+      settings:{watermark:'',theme:'purple',fontsize:'14',showpage:true,showhead:true,boldsteps:true}
+    }
+  }
+};
+function renderTemplates(){
+  const grid=$('templateGrid'); grid.innerHTML='';
+  Object.keys(TEMPLATES).forEach(k=>{
+    const t=TEMPLATES[k];
+    const card=document.createElement('div');
+    card.style.cssText='border:1px solid var(--border);border-radius:10px;padding:16px;background:#fbfcff;display:flex;flex-direction:column;gap:10px';
+    card.innerHTML=`<div style="font-size:15px;font-weight:700">${t.name}</div>
+      <div style="font-size:12.5px;color:var(--muted);flex:1">${t.desc}</div>
+      <button class="add-btn" style="margin:0;text-align:center" onclick="loadTemplate('${k}')">📥 载入此模板</button>`;
+    grid.appendChild(card);
+  });
+}
+function loadTemplate(k){
+  if(!confirm('载入模板将覆盖当前所有内容，是否继续？（建议先保存草稿）')) return;
+  const t=TEMPLATES[k];
+  renderToForm(JSON.parse(JSON.stringify(t.data)));
+  toast('已载入模板：'+t.name,'ok');
+  document.getElementById('sec-preview').scrollIntoView({behavior:'smooth'});
+}
+
+/* ================= 初始化 ================= */
+window.addEventListener('scroll',trackScroll);
+(function init(){
+  let data;
+  try{ data=JSON.parse(localStorage.getItem(LS_KEY)); }catch(e){ data=null; }
+  renderToForm(data||defaultSOP());
+  renderTemplates();
+  window.addEventListener('beforeunload',()=>saveToLocal(true));
+  document.addEventListener('keydown',e=>{
+    if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='s'){ e.preventDefault(); saveToLocal(); }
+  });
+})();
+</script>
+</body>
+</html>

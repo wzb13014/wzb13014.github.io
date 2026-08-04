@@ -1,0 +1,1371 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>样品存放查询系统</title>
+<style>
+:root{
+  --primary:#2f6fed; --primary-dark:#2456c4; --bg:#eef1f6; --card:#fff; --border:#dde3ee;
+  --text:#1f2733; --muted:#6b7686; --ok:#18a058; --warn:#f0a020; --danger:#d03050;
+  --radius:10px; --shadow:0 2px 10px rgba(20,40,80,.06);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Microsoft YaHei","PingFang SC",-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--text);font-size:14px}
+button{font-family:inherit;cursor:pointer;border:none;border-radius:7px;transition:.15s}
+input,select,textarea{font-family:inherit;font-size:13.5px;color:var(--text)}
+::placeholder{color:#aab3c2}
+
+/* ===== 顶栏 ===== */
+header{position:sticky;top:0;z-index:50;background:linear-gradient(90deg,#1d3f8f,#2f6fed);color:#fff;box-shadow:0 2px 12px rgba(20,40,80,.25);padding:0 20px;height:58px;display:flex;align-items:center;gap:14px}
+header .logo{display:flex;align-items:center;gap:10px;font-size:18px;font-weight:700;letter-spacing:.5px;white-space:nowrap}
+header .logo .ic{width:34px;height:34px;border-radius:9px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;font-size:19px}
+.header-spacer{flex:1}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.tb-btn{background:rgba(255,255,255,.14);color:#fff;padding:8px 13px;font-size:13px;border-radius:8px;display:flex;align-items:center;gap:6px;white-space:nowrap}
+.tb-btn:hover{background:rgba(255,255,255,.26)}
+.tb-btn.primary{background:#ffc53d;color:#3a2a00;font-weight:600}
+.tb-btn.primary:hover{background:#ffd666}
+.tb-btn.danger{background:rgba(255,90,110,.35)}
+.tb-btn.danger:hover{background:rgba(255,90,110,.55)}
+
+/* ===== 状态条 ===== */
+.stats-bar{background:var(--card);border-bottom:1px solid var(--border);padding:8px 20px;display:flex;gap:22px;flex-wrap:wrap;align-items:center;font-size:12.5px;color:var(--muted)}
+.stats-bar b{color:var(--text)}
+.stats-bar .stat{display:flex;gap:5px;align-items:center}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.autosave{display:flex;align-items:center;gap:6px;margin-left:auto}
+
+/* ===== 布局 ===== */
+.layout{display:flex;gap:0;min-height:calc(100vh - 108px)}
+nav.side{width:210px;flex-shrink:0;background:var(--card);border-right:1px solid var(--border);padding:14px 0;position:sticky;top:58px;height:calc(100vh - 108px);overflow:auto}
+nav.side .nav-item{display:block;width:100%;text-align:left;padding:10px 18px;background:none;color:var(--muted);font-size:13.5px;border-left:3px solid transparent}
+nav.side .nav-item:hover{background:#f3f6fc;color:var(--primary)}
+nav.side .nav-item.active{background:#eaf1ff;color:var(--primary);border-left-color:var(--primary);font-weight:600}
+nav.side .nav-group{font-size:11px;color:#97a1b3;padding:10px 18px 4px;letter-spacing:1px;font-weight:700}
+.content{flex:1;padding:22px 26px;max-width:1240px}
+.section{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:22px 26px;margin-bottom:22px;scroll-margin-top:70px}
+.section h2{font-size:16.5px;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.section .desc{color:var(--muted);font-size:12.5px;margin-bottom:16px}
+.section .actions{float:right;display:flex;gap:8px}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:13px;font-weight:600;margin-bottom:6px;color:#3a4354}
+.field label .req{color:var(--danger)}
+.field input,.field select,.field textarea{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;background:#fff;outline:none}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(47,111,237,.12)}
+.field textarea{resize:vertical;min-height:72px;line-height:1.6}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.row4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:14px}
+.row5{display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr;gap:14px}
+.hint{font-size:12px;color:var(--muted);margin-top:5px}
+
+/* ===== 按钮 ===== */
+.btn{background:#eef1f6;color:var(--text);padding:8px 14px;font-size:13px;border-radius:8px;display:inline-flex;align-items:center;gap:6px;font-weight:600}
+.btn:hover{background:#e2e7f0}
+.btn.primary{background:var(--primary);color:#fff}
+.btn.primary:hover{background:var(--primary-dark)}
+.btn.ok{background:var(--ok);color:#fff}
+.btn.warn{background:var(--warn);color:#fff}
+.btn.danger{background:#fff1f2;color:var(--danger);border:1px solid #f5c6cb}
+.btn.danger:hover{background:#ffe3e5}
+.btn.sm{padding:5px 10px;font-size:12.5px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.selected{background:var(--primary);color:#fff}
+
+/* ===== 卡片/统计 ===== */
+.stat-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:22px}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px 20px;position:relative;overflow:hidden}
+.stat-card .label{color:var(--muted);font-size:12.5px;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.stat-card .num{font-size:30px;font-weight:800;letter-spacing:.5px}
+.stat-card .sub{font-size:12px;color:var(--muted);margin-top:6px}
+.stat-card .accent{position:absolute;right:0;top:0;bottom:0;width:5px}
+.c-blue{color:var(--primary)}.c-green{color:var(--ok)}.c-orange{color:var(--warn)}.c-red{color:var(--danger)}
+.ac-blue{background:var(--primary)}.ac-green{background:var(--ok)}.ac-orange{background:var(--warn)}.ac-red{background:var(--danger)}.ac-gray{background:#9aa4b2}
+
+/* ===== 表格 ===== */
+table.tbl{width:100%;border-collapse:collapse;font-size:13px}
+table.tbl th{background:#f6f8fc;color:#3a4354;font-weight:700;text-align:left;padding:11px 12px;border-bottom:1px solid var(--border);white-space:nowrap}
+table.tbl td{padding:10px 12px;border-bottom:1px solid #edf0f6;vertical-align:middle}
+table.tbl tr:hover td{background:#f7faff}
+table.tbl tr.empty td{text-align:center;color:var(--muted);padding:40px 0}
+.tag{display:inline-block;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;white-space:nowrap}
+.tag.blue{background:#eaf1ff;color:var(--primary)}
+.tag.green{background:#e6f7ee;color:var(--ok)}
+.tag.orange{background:#fff3e0;color:#c77700}
+.tag.red{background:#ffeaea;color:var(--danger)}
+.tag.gray{background:#eef1f5;color:#5b6470}
+.actions-cell{display:flex;gap:6px;flex-wrap:wrap}
+
+/* ===== 柜体视图 ===== */
+.cabinet-grid{display:flex;flex-wrap:wrap;gap:22px;align-items:flex-start}
+.cabinet-card{border:1px solid var(--border);border-radius:12px;background:#fff;overflow:hidden;box-shadow:var(--shadow);width:min(100%,640px)}
+.cabinet-card .cab-head{background:linear-gradient(135deg,#243a66,#2f6fed);color:#fff;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.cabinet-card .cab-head .cab-name{font-weight:700;font-size:15px;display:flex;align-items:center;gap:8px}
+.cabinet-card .cab-head .cab-meta{font-size:11.5px;opacity:.85;margin-top:2px}
+.cabinet-card .cab-head .cab-tools{display:flex;gap:6px}
+.cabinet-card .cab-head .cab-tools button{background:rgba(255,255,255,.16);color:#fff;padding:5px 9px;border-radius:6px;font-size:12px}
+.cabinet-card .cab-head .cab-tools button:hover{background:rgba(255,255,255,.32)}
+.drawer-grid{display:grid;gap:6px;padding:16px;background:#f6f8fc}
+.drawer-cell{background:#fff;border:1.5px solid var(--border);border-radius:7px;min-height:58px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:11.5px;color:var(--muted);cursor:pointer;position:relative;transition:.12s;overflow:hidden}
+.drawer-cell:hover{border-color:var(--primary);box-shadow:0 0 0 3px rgba(47,111,237,.12)}
+.drawer-cell .pos{font-weight:700;font-size:11px;color:#5b6470}
+.drawer-cell .cnt{font-size:11px;margin-top:2px}
+.drawer-cell .bar{position:absolute;bottom:0;left:0;right:0;height:3px}
+.drawer-cell.has{background:#fff;border-color:#b8d2ff}
+.drawer-cell.full{background:#fff7ed;border-color:#f5c97a}
+.drawer-cell.selected{border-color:var(--primary);box-shadow:0 0 0 3px rgba(47,111,237,.28)}
+.drawer-cell .pop{position:absolute;top:-8px;right:-6px;min-width:18px;height:18px;border-radius:10px;background:var(--danger);color:#fff;font-size:10.5px;display:flex;align-items:center;justify-content:center;padding:0 5px;font-weight:700}
+
+/* 抽屉弹窗内样品列表 */
+.drawer-detail .sample-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:9px;margin-bottom:8px;background:#fafbfe}
+.drawer-detail .sample-item .info{flex:1;min-width:0}
+.drawer-detail .sample-item .info .n{font-weight:700;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.drawer-detail .sample-item .info .d{font-size:12px;color:var(--muted);margin-top:2px}
+
+/* ===== 筛选条 ===== */
+.filter-bar{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px 20px;margin-bottom:18px;display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
+.filter-bar .f{display:flex;flex-direction:column;gap:5px;min-width:150px;flex:1}
+.filter-bar .f label{font-size:12px;color:var(--muted);font-weight:600}
+.filter-bar .f input,.filter-bar .f select{padding:8px 11px;border:1px solid var(--border);border-radius:8px;background:#fff;outline:none}
+.filter-bar .f input:focus,.filter-bar .f select:focus{border-color:var(--primary)}
+.filter-bar .f.search{flex:2;min-width:220px}
+.filter-bar .f.search input{padding-left:34px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='15' height='15' fill='%239aa4b2' viewBox='0 0 16 16'%3E%3Cpath d='M11.7 10.6a6 6 0 1 0-1.1 1.1l3.4 3.4 1.1-1.1-3.4-3.4zM7 12A5 5 0 1 1 7 2a5 5 0 0 1 0 10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:11px center}
+
+/* ===== 弹窗 ===== */
+.modal-mask{position:fixed;inset:0;background:rgba(15,25,45,.45);z-index:100;display:none;align-items:flex-start;justify-content:center;padding:40px 16px;overflow:auto}
+.modal-mask.show{display:flex}
+.modal{background:#fff;border-radius:14px;box-shadow:0 12px 40px rgba(10,20,50,.3);width:100%;max-width:680px;animation:pop .18s ease}
+.modal.wide{max-width:860px}
+.modal.narrow{max-width:480px}
+@keyframes pop{from{transform:translateY(14px);opacity:0}to{transform:none;opacity:1}}
+.modal-head{padding:18px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.modal-head h3{font-size:16.5px}
+.modal-body{padding:20px 24px}
+.modal-foot{padding:14px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px}
+.close-x{background:none;font-size:22px;color:var(--muted);padding:2px 8px;border-radius:6px}
+.close-x:hover{background:#f0f3f8;color:var(--danger)}
+
+/* ===== Toast ===== */
+#toast-box{position:fixed;top:70px;right:20px;z-index:200;display:flex;flex-direction:column;gap:10px}
+.toast{background:#fff;border-radius:10px;box-shadow:0 6px 22px rgba(10,20,50,.18);padding:12px 18px;font-size:13.5px;display:flex;align-items:center;gap:10px;border-left:4px solid var(--primary);animation:slidein .25s ease;min-width:220px}
+@keyframes slidein{from{transform:translateX(30px);opacity:0}to{transform:none;opacity:1}}
+.toast.ok{border-left-color:var(--ok)}.toast.err{border-left-color:var(--danger)}.toast.warn{border-left-color:var(--warn)}
+.toast .t-ic{font-size:16px}
+
+/* ===== 空状态 ===== */
+.empty{padding:50px 0;text-align:center;color:var(--muted)}
+.empty .ic{font-size:42px;margin-bottom:10px;opacity:.5}
+.empty .tip{font-size:13px;margin-bottom:16px}
+
+/* ===== 复选框 ===== */
+.check-all{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+.check-all input{width:16px;height:16px;accent-color:var(--primary)}
+
+/* ===== 进度 ===== */
+.progress{height:8px;background:#eef1f6;border-radius:6px;overflow:hidden;margin-top:10px}
+.progress>div{height:100%;background:linear-gradient(90deg,#2f6fed,#5b8cff);border-radius:6px}
+
+/* ===== 统计 ===== */
+.chart-wrap{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+@media(max-width:900px){.chart-wrap{grid-template-columns:1fr}}
+.chart-card{border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;background:#fff}
+.chart-card h4{font-size:14px;margin-bottom:14px;color:#3a4354}
+.bar-row{display:flex;align-items:center;gap:10px;margin-bottom:9px;font-size:12.5px}
+.bar-row .lbl{width:110px;text-align:right;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar-row .track{flex:1;height:16px;background:#f0f3f9;border-radius:6px;overflow:hidden}
+.bar-row .fill{height:100%;border-radius:6px;transition:width .4s ease}
+.bar-row .val{width:44px;font-weight:700;font-size:12px}
+
+/* ===== 借还 ===== */
+.record-item{border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:10px;background:#fff}
+.record-item .r-head{display:flex;align-items:center;gap:10px;font-size:13.5px}
+.record-item .r-time{color:var(--muted);font-size:12px;margin-left:auto}
+.record-item .r-detail{font-size:12.5px;color:var(--muted);margin-top:6px;line-height:1.6}
+
+/* ===== 日志 ===== */
+.log-line{display:flex;gap:12px;padding:8px 0;border-bottom:1px dashed #eef1f6;font-size:13px}
+.log-line .t{color:var(--muted);white-space:nowrap;width:150px;flex-shrink:0}
+.log-line .m{flex:1}
+
+/* ===== 打印 ===== */
+@media print{
+  body *{visibility:hidden}
+  #print-area,#print-area *{visibility:visible}
+  #print-area{position:fixed;left:0;top:0;width:100%}
+  @page{margin:8mm}
+}
+
+/* ===== 小部件 ===== */
+.checkbox-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;max-height:200px;overflow:auto;border:1px solid var(--border);border-radius:8px;padding:10px}
+.checkbox-grid label{display:flex;align-items:center;gap:7px;font-size:13px;padding:5px 8px;border-radius:6px;cursor:pointer}
+.checkbox-grid label:hover{background:#f3f6fc}
+.checkbox-grid input{accent-color:var(--primary)}
+.badge{display:inline-block;background:var(--danger);color:#fff;border-radius:12px;font-size:11px;font-weight:700;padding:1px 7px;margin-left:5px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo"><div class="ic">🧪</div>样品存放查询系统</div>
+  <div class="header-spacer"></div>
+  <div class="toolbar">
+    <button class="tb-btn" onclick="location.reload()">↻ 刷新</button>
+    <button class="tb-btn" onclick="quickSearchFromHeader()">⌕ 快速查询</button>
+    <button class="tb-btn" onclick="printLabels()">🖨 打印标签</button>
+    <button class="tb-btn" onclick="toggleFullscreen()">⛶ 全屏</button>
+  </div>
+</header>
+
+<div class="stats-bar">
+  <span class="stat"><span class="dot" style="background:var(--primary)"></span>样品柜 <b id="st-cab">0</b></span>
+  <span class="stat"><span class="dot" style="background:#9aa4b2"></span>抽屉格 <b id="st-drawer">0</b></span>
+  <span class="stat"><span class="dot" style="background:var(--ok)"></span>样品总数 <b id="st-total">0</b></span>
+  <span class="stat"><span class="dot" style="background:#2f6fed"></span>在库 <b id="st-in">0</b></span>
+  <span class="stat"><span class="dot" style="background:#f0a020"></span>借出 <b id="st-borrow">0</b></span>
+  <span class="stat"><span class="dot" style="background:var(--danger)"></span>临期/过期 <b id="st-exp">0</b></span>
+  <span class="autosave"><span id="save-dot" class="dot" style="background:#18a058"></span><span id="save-txt">已自动保存</span></span>
+</div>
+<div id="storage-warn" style="display:none;background:#fff3e0;color:#8a4d00;padding:8px 20px;font-size:13px;border-bottom:1px solid #f5c97a">
+  ⚠️ <b>浏览器本地存储不可用</b>（<span id="storage-warn-why"></span>），数据将<b>仅保存在当前页面内存中</b>，刷新或关闭页面即丢失。
+  请立即前往「数据管理」导出 JSON 备份，或将本文件放到本地服务器(如 python -m http.server)下访问。
+</div>
+
+<div class="layout">
+  <nav class="side">
+    <div class="nav-group">概览</div>
+    <button class="nav-item active" data-view="dashboard">📊 仪表盘</button>
+    <button class="nav-item" data-view="cabinet">🗄 柜体视图</button>
+    <button class="nav-item" data-view="samples">🧫 样品管理</button>
+    <div class="nav-group">业务</div>
+    <button class="nav-item" data-view="borrow">🔄 借还管理</button>
+    <button class="nav-item" data-view="stats">📈 统计报表</button>
+    <div class="nav-group">系统</div>
+    <button class="nav-item" data-view="logs">📝 操作日志</button>
+    <button class="nav-item" data-view="data">💾 数据管理</button>
+  </nav>
+
+  <main class="content">
+    <!-- 仪表盘 -->
+    <section id="view-dashboard" class="view">
+      <div class="stat-cards" id="dash-cards"></div>
+      <div class="section">
+        <h2>⚠️ 到期提醒</h2>
+        <p class="desc">即将到期(30天内)或已过期的样品，请及时处理。</p>
+        <div id="dash-expire"></div>
+      </div>
+      <div class="section">
+        <h2>📌 各柜占用率</h2>
+        <p class="desc">展示每个样品柜的抽屉使用情况。</p>
+        <div id="dash-occupy"></div>
+      </div>
+    </section>
+
+    <!-- 柜体视图 -->
+    <section id="view-cabinet" class="view" style="display:none">
+      <div class="section">
+        <h2>🗄 样品柜总览</h2>
+        <p class="desc">点击抽屉格可查看该格内样品、入库或移入样品。绿色/橙色/红色圆点表示占用、预警、已满。</p>
+        <div class="actions" style="margin-bottom:12px;float:none;display:flex;gap:8px">
+          <button class="btn primary" onclick="openCabinetForm()">＋ 新增样品柜</button>
+          <button class="btn" onclick="reloadCabinets()">↻ 刷新</button>
+        </div>
+        <div class="cabinet-grid" id="cabinet-list"></div>
+      </div>
+    </section>
+
+    <!-- 样品管理 -->
+    <section id="view-samples" class="view" style="display:none">
+      <div class="filter-bar">
+        <div class="f search">
+          <label>🔍 关键词</label>
+          <input id="f-keyword" placeholder="搜索样品名称/编号/存放人...">
+        </div>
+        <div class="f"><label>样品柜</label><select id="f-cabinet"><option value="">全部</option></select></div>
+        <div class="f"><label>状态</label><select id="f-status"><option value="">全部</option><option>在库</option><option>借出</option><option>已过期</option><option>已处理</option></select></div>
+        <div class="f"><label>分类</label><select id="f-category"><option value="">全部</option></select></div>
+        <div class="f"><label>到期情况</label><select id="f-expire"><option value="">全部</option><option value="expired">已过期</option><option value="soon">30天内到期</option><option value="none">无到期时间</option></select></div>
+        <button class="btn primary" onclick="applySampleFilter()">查询</button>
+        <button class="btn" onclick="resetSampleFilter()">重置</button>
+      </div>
+
+      <div class="section">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+          <h2 style="margin-bottom:0">🧫 样品列表 <span class="tag blue" id="sample-count-tag">0 条</span></h2>
+          <div class="actions" style="float:none;display:flex;gap:8px">
+            <button class="btn primary" onclick="openSampleForm()">＋ 新增样品</button>
+            <button class="btn" onclick="batchMoveSelected()">⇄ 批量移库</button>
+            <button class="btn danger" onclick="batchDeleteSelected()">🗑 批量删除</button>
+          </div>
+        </div>
+        <table class="tbl">
+          <thead>
+            <tr>
+              <th style="width:34px"><div class="check-all"><input type="checkbox" id="check-all-samples" onchange="toggleSelectAll(this)"></div></th>
+              <th>样品编号</th><th>样品名称</th><th>分类</th><th>存放位置</th><th>数量</th><th>状态</th><th>入库时间</th><th>到期时间</th><th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="sample-table-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 借还管理 -->
+    <section id="view-borrow" class="view" style="display:none">
+      <div class="filter-bar">
+        <div class="f search">
+          <label>🔍 关键词</label>
+          <input id="b-keyword" placeholder="搜索样品名称/编号/借用人...">
+        </div>
+        <div class="f"><label>类型</label><select id="b-type"><option value="">全部</option><option>借出</option><option>归还</option><option>入库</option><option>移库</option><option>其他</option></select></div>
+        <button class="btn primary" onclick="renderBorrow()">查询</button>
+        <button class="btn" onclick="resetBorrowFilter()">重置</button>
+      </div>
+      <div class="section">
+        <h2>🔄 借还记录</h2>
+        <p class="desc">记录样品的借出、归还及出入库操作历史。</p>
+        <div id="borrow-list"></div>
+      </div>
+    </section>
+
+    <!-- 统计报表 -->
+    <section id="view-stats" class="view" style="display:none">
+      <div class="chart-wrap">
+        <div class="chart-card"><h4>📊 样品分类分布</h4><div id="chart-category"></div></div>
+        <div class="chart-card"><h4>🎯 样品状态分布</h4><div id="chart-status"></div></div>
+        <div class="chart-card"><h4>🗄 各柜存放量</h4><div id="chart-cabinet"></div></div>
+        <div class="chart-card"><h4>📦 到期趋势（未来60天）</h4><div id="chart-expiry"></div></div>
+      </div>
+    </section>
+
+    <!-- 操作日志 -->
+    <section id="view-logs" class="view" style="display:none">
+      <div class="section">
+        <h2>📝 操作日志</h2>
+        <p class="desc">记录系统内的关键操作。</p>
+        <div class="actions" style="float:none;margin-bottom:12px;display:flex;gap:8px">
+          <button class="btn" onclick="exportLogs()">⬇ 导出日志</button>
+          <button class="btn danger" onclick="clearLogs()">清空日志</button>
+        </div>
+        <div id="log-list"></div>
+      </div>
+    </section>
+
+    <!-- 数据管理 -->
+    <section id="view-data" class="view" style="display:none">
+      <div class="section">
+        <h2>💾 数据备份与恢复</h2>
+        <p class="desc">数据保存在浏览器本地（localStorage）。支持导出/导入 JSON 备份，防止数据丢失。</p>
+        <div class="row3">
+          <div class="field"><label>导出完整数据</label><button class="btn primary" style="width:100%" onclick="exportData()">⬇ 导出 JSON 备份</button></div>
+          <div class="field"><label>导出样品明细 CSV</label><button class="btn" style="width:100%" onclick="exportCSV()">⬇ 导出 CSV</button></div>
+          <div class="field"><label>导入备份</label><button class="btn warn" style="width:100%" onclick="document.getElementById('import-file').click()">⬆ 选择 JSON 文件</button></div>
+        </div>
+        <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(event)">
+      </div>
+      <div class="section">
+        <h2>🛠 维护工具</h2>
+        <p class="desc">危险操作，请谨慎使用。</p>
+        <div class="row3">
+          <div class="field"><label>清空所有数据</label><button class="btn danger" style="width:100%" onclick="confirmClearAll()">清空全部数据</button></div>
+          <div class="field"><label>加载演示数据</label><button class="btn" style="width:100%" onclick="loadDemo()">载入示例数据</button></div>
+          <div class="field"><label>下载模板（空）</label><button class="btn" style="width:100%" onclick="downloadTemplate()">下载空模板</button></div>
+        </div>
+      </div>
+      <div class="section">
+        <h2>ℹ️ 使用说明</h2>
+        <ul style="font-size:13px;line-height:2;color:#3a4354;padding-left:18px">
+          <li>先创建「样品柜」并设置行列数，每个格子代表一个抽屉格。</li>
+          <li>在「柜体视图」中点击抽屉格可直接向该格入库样品。</li>
+          <li>「样品管理」支持多条件筛选、批量移库与批量删除。</li>
+          <li>借出的样品请在「样品管理」中标记状态，系统自动记录日志。</li>
+          <li>到期时间在30天内或已过期的样品会以橙色/红色高亮提醒。</li>
+          <li>所有数据自动保存至本地浏览器，请定期导出备份。</li>
+        </ul>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- 弹窗：样品柜表单 -->
+<div class="modal-mask" id="modal-cabinet">
+  <div class="modal narrow">
+    <div class="modal-head"><h3 id="cab-modal-title">新增样品柜</h3><button class="close-x" onclick="closeModal('modal-cabinet')">×</button></div>
+    <div class="modal-body">
+      <div class="field"><label>柜体名称 <span class="req">*</span></label><input id="cab-name" placeholder="如：试剂柜A / 一号样品柜"></div>
+      <div class="field"><label>柜体编号</label><input id="cab-code" placeholder="如：A-01（留空自动生成）"></div>
+      <div class="row2">
+        <div class="field"><label>行数 <span class="req">*</span></label><input id="cab-rows" type="number" min="1" max="12" value="4"></div>
+        <div class="field"><label>列数 <span class="req">*</span></label><input id="cab-cols" type="number" min="1" max="12" value="6"></div>
+      </div>
+      <div class="field"><label>备注</label><textarea id="cab-desc" placeholder="存放说明、位置备注等"></textarea></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal('modal-cabinet')">取消</button>
+      <button class="btn primary" onclick="saveCabinet()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 弹窗：样品表单 -->
+<div class="modal-mask" id="modal-sample">
+  <div class="modal wide">
+    <div class="modal-head"><h3 id="smp-modal-title">新增样品</h3><button class="close-x" onclick="closeModal('modal-sample')">×</button></div>
+    <div class="modal-body">
+      <div class="row4">
+        <div class="field"><label>样品编号</label><input id="smp-code" placeholder="留空自动生成"></div>
+        <div class="field"><label>样品名称 <span class="req">*</span></label><input id="smp-name" placeholder="如：标准品-苯甲酸"></div>
+        <div class="field"><label>分类</label><input id="smp-category" placeholder="如：试剂/样品/标准品" list="category-list">
+          <datalist id="category-list"></datalist>
+        </div>
+        <div class="field"><label>数量</label><input id="smp-qty" type="number" min="0" step="any" value="1"></div>
+      </div>
+      <div class="row4">
+        <div class="field"><label>单位</label><input id="smp-unit" placeholder="g / mL / 支 / 盒"></div>
+        <div class="field"><label>存放人</label><input id="smp-owner" placeholder="负责人姓名"></div>
+        <div class="field"><label>入库时间</label><input id="smp-stored" type="date"></div>
+        <div class="field"><label>到期时间</label><input id="smp-expiry" type="date"></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label>存放位置</label>
+          <div class="row3" style="gap:8px">
+            <select id="smp-cabinet" onchange="updateCabPos()"><option value="">选择柜体</option></select>
+            <select id="smp-row"><option value="">行</option></select>
+            <select id="smp-col"><option value="">列</option></select>
+          </div>
+          <div class="hint" id="smp-pos-hint"></div>
+        </div>
+        <div class="field"><label>状态</label><select id="smp-status"><option>在库</option><option>借出</option><option>已过期</option><option>已处理</option></select></div>
+      </div>
+      <div class="field"><label>备注</label><textarea id="smp-note" placeholder="批次号、纯度、存储条件等"></textarea></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal('modal-sample')">取消</button>
+      <button class="btn primary" onclick="saveSample()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 弹窗：抽屉详情 -->
+<div class="modal-mask" id="modal-drawer">
+  <div class="modal">
+    <div class="modal-head"><h3 id="drw-modal-title">抽屉格详情</h3><button class="close-x" onclick="closeModal('modal-drawer')">×</button></div>
+    <div class="modal-body drawer-detail" id="drawer-detail-body"></div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal('modal-drawer')">关闭</button>
+      <button class="btn primary" onclick="openSampleFormFromDrawer()">＋ 向本格入库</button>
+    </div>
+  </div>
+</div>
+
+<!-- 弹窗：样品详情 -->
+<div class="modal-mask" id="modal-detail">
+  <div class="modal">
+    <div class="modal-head"><h3>样品详情</h3><button class="close-x" onclick="closeModal('modal-detail')">×</button></div>
+    <div class="modal-body" id="detail-body"></div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal('modal-detail')">关闭</button>
+      <button class="btn" onclick="printSingleLabel()">🖨 打印标签</button>
+      <button class="btn primary" onclick="editFromDetail()">编辑</button>
+    </div>
+  </div>
+</div>
+
+<!-- 弹窗：批量移库 -->
+<div class="modal-mask" id="modal-move">
+  <div class="modal narrow">
+    <div class="modal-head"><h3>批量移库</h3><button class="close-x" onclick="closeModal('modal-move')">×</button></div>
+    <div class="modal-body">
+      <p class="hint" style="margin-bottom:14px">将选中的 <b id="move-count">0</b> 个样品移动到新位置。</p>
+      <div class="field"><label>目标柜体 <span class="req">*</span></label><select id="mv-cabinet" onchange="updateMovePos()"><option value="">选择柜体</option></select></div>
+      <div class="row2">
+        <div class="field"><label>行</label><select id="mv-row"><option value="">行</option></select></div>
+        <div class="field"><label>列</label><select id="mv-col"><option value="">列</option></select></div>
+      </div>
+      <div class="hint" id="mv-hint"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal('modal-move')">取消</button>
+      <button class="btn primary" onclick="doMoveSelected()">确认移动</button>
+    </div>
+  </div>
+</div>
+
+<!-- 弹窗：确认框 -->
+<div class="modal-mask" id="modal-confirm">
+  <div class="modal narrow">
+    <div class="modal-head"><h3 id="cfm-title">确认操作</h3></div>
+    <div class="modal-body"><p id="cfm-msg" style="line-height:1.7"></p></div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal('modal-confirm')">取消</button>
+      <button class="btn danger" id="cfm-ok">确定</button>
+    </div>
+  </div>
+</div>
+
+<!-- 打印区 -->
+<div id="print-area" style="display:none"></div>
+<div id="toast-box"></div>
+
+<script>
+/* ================= 数据层 ================= */
+const LS_KEY = 'sample_storage_system_v1';
+let DB = { cabinets: [], samples: [], logs: [], nextSampleNo: 1 };
+let currentView = 'dashboard';
+let selectedIds = new Set();
+let drawerContext = null;      // {cabinetId,row,col}
+let detailSampleId = null;
+let movingIds = [];
+
+const STATUS_META = { '在库':{cls:'green'}, '借出':{cls:'orange'}, '已过期':{cls:'red'}, '已处理':{cls:'gray'} };
+
+let storageOK = null;   // null=未知, true=可用, false=不可用
+let warnShown = false;
+function storageAvailable(){
+  try{ const k='__sst'; localStorage.setItem(k,'1'); localStorage.removeItem(k); return true; }
+  catch(e){ return false; }
+}
+function showStorageWarn(reason){
+  document.getElementById('storage-warn-why').textContent = reason;
+  document.getElementById('storage-warn').style.display = 'block';
+  if(!warnShown){ warnShown = true; toast('浏览器本地存储不可用，数据仅保存在内存中，请尽快导出备份','err'); }
+}
+
+function loadDB(){
+  storageOK = storageAvailable();
+  try{
+    const raw = storageOK ? localStorage.getItem(LS_KEY) : null;
+    if(raw){ DB = JSON.parse(raw); DB.cabinets = DB.cabinets||[]; DB.samples = DB.samples||[]; DB.logs = DB.logs||[]; if(!DB.nextSampleNo) DB.nextSampleNo = 1; }
+  }catch(e){ DB = { cabinets:[], samples:[], logs:[], nextSampleNo:1 }; }
+  if(storageOK === false){
+    showStorageWarn('浏览器禁止本地存储');
+  }else if(DB.cabinets.length===0 && DB.samples.length===0){
+    loadDemo();
+  }
+}
+function saveDB(){
+  if(storageOK !== false){
+    try{
+      localStorage.setItem(LS_KEY, JSON.stringify(DB));
+    }catch(e){
+      storageOK = false;
+      showStorageWarn((e && e.name==='QuotaExceededError') ? '存储空间不足(QuotaExceededError)' : '浏览器禁止本地存储');
+    }
+  }
+  const dot = document.getElementById('save-dot'), txt = document.getElementById('save-txt');
+  if(storageOK === false){
+    dot.style.background = '#d03050';
+    txt.textContent = '存储不可用';
+    return;
+  }
+  dot.style.background = '#2f6fed'; txt.textContent = '保存中...';
+  clearTimeout(saveDB._t);
+  saveDB._t = setTimeout(()=>{ dot.style.background = '#18a058'; txt.textContent = '已自动保存 ' + new Date().toLocaleTimeString('zh-CN',{hour12:false}); }, 300);
+}
+function addLog(type, msg){
+  DB.logs.unshift({ time: new Date().toISOString(), type, msg });
+  if(DB.logs.length>500) DB.logs.length = 500;
+  saveDB();
+}
+
+/* 工具函数 */
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function today(){ return new Date().toISOString().slice(0,10); }
+function fmtDate(iso){ if(!iso) return '—'; const d=new Date(iso); if(isNaN(d)) return '—'; return d.getFullYear()+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+String(d.getDate()).padStart(2,'0'); }
+function daysUntil(iso){ if(!iso) return null; const d=new Date(iso).setHours(0,0,0,0); const n=new Date().setHours(0,0,0,0); return Math.round((d-n)/86400000); }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function getCabinet(id){ return DB.cabinets.find(c=>c.id===id); }
+function drawerCapacity(cab){ return cab ? cab.rows*cab.cols : 0; }
+function samplesInDrawer(cabId,row,col){ return DB.samples.filter(s=>s.cabinetId===cabId && s.row==row && s.col==col && s.status!=='已处理'); }
+function countByPosition(cabId){ const m={}; DB.samples.forEach(s=>{ if(s.cabinetId===cabId && s.status!=='已处理'){ const k=s.row+'-'+s.col; m[k]=(m[k]||0)+1; } }); return m; }
+
+/* ================= 导航 ================= */
+document.querySelectorAll('.nav-item').forEach(btn=>{
+  btn.addEventListener('click', ()=>{ switchView(btn.dataset.view); });
+});
+function switchView(v){
+  currentView = v;
+  document.querySelectorAll('.nav-item').forEach(b=>b.classList.toggle('active', b.dataset.view===v));
+  document.querySelectorAll('.view').forEach(s=>s.style.display = s.id==='view-'+v ? '' : 'none');
+  if(v==='dashboard') renderDashboard();
+  if(v==='cabinet') renderCabinets();
+  if(v==='samples'){ refreshSampleFilters(); renderSamples(); }
+  if(v==='borrow') renderBorrow();
+  if(v==='stats') renderStats();
+  if(v==='logs') renderLogs();
+  if(v==='data') renderDataInfo();
+}
+
+/* ================= 仪表盘 ================= */
+function renderDashboard(){
+  const s = computeStats();
+  document.getElementById('st-cab').textContent = s.cabs;
+  document.getElementById('st-drawer').textContent = s.drawers;
+  document.getElementById('st-total').textContent = s.total;
+  document.getElementById('st-in').textContent = s.in;
+  document.getElementById('st-borrow').textContent = s.borrow;
+  document.getElementById('st-exp').textContent = s.exp;
+
+  const cards = [
+    {label:'样品柜总数', num:s.cabs, sub:'共 '+s.drawers+' 个抽屉格', color:'c-blue', accent:'ac-blue', ic:'🗄'},
+    {label:'在库样品', num:s.in, sub:'占用 '+s.occRate+'% 抽屉格', color:'c-green', accent:'ac-green', ic:'🧪'},
+    {label:'借出样品', num:s.borrow, sub:'待归还', color:'c-orange', accent:'ac-orange', ic:'⇄'},
+    {label:'临期/过期', num:s.exp, sub:'30天内到期或已过期', color:'c-red', accent:'ac-red', ic:'⚠'},
+  ];
+  document.getElementById('dash-cards').innerHTML = cards.map(c=>`
+    <div class="stat-card">
+      <div class="label">${c.ic} ${c.label}</div>
+      <div class="num ${c.color}">${c.num}</div>
+      <div class="sub">${c.sub}</div>
+      <div class="accent ${c.accent}"></div>
+    </div>`).join('');
+
+  // 到期提醒
+  const list = DB.samples.filter(s=>s.status==='在库' && s.expiry).sort((a,b)=>new Date(a.expiry)-new Date(b.expiry));
+  const near = list.filter(s=>{ const d=daysUntil(s.expiry); return d!==null && d<=30; });
+  const box = document.getElementById('dash-expire');
+  if(near.length===0){ box.innerHTML = '<div class="empty"><div class="ic">🎉</div><div class="tip">暂无临期样品，库存状态良好。</div></div>'; }
+  else{
+    box.innerHTML = '<table class="tbl"><thead><tr><th>样品编号</th><th>样品名称</th><th>位置</th><th>到期时间</th><th>剩余天数</th><th>操作</th></tr></thead><tbody>'+
+      near.map(s=>{ const d=daysUntil(s.expiry); return `<tr>
+        <td>${esc(s.code)}</td><td><b>${esc(s.name)}</b></td><td>${esc(posText(s))}</td>
+        <td>${fmtDate(s.expiry)}</td>
+        <td>${d<0 ? `<span class="tag red">已过期 ${-d}天</span>` : d===0 ? '<span class="tag red">今天到期</span>' : `<span class="tag ${d<=7?'red':d<=15?'orange':'blue'}">${d}天</span>`}</td>
+        <td><button class="btn sm" onclick="openDetail('${s.id}')">查看</button></td></tr>`; }).join('')+'</tbody></table>';
+  }
+
+  // 占用率
+  const occ = document.getElementById('dash-occupy');
+  if(DB.cabinets.length===0){ occ.innerHTML = '<div class="empty"><div class="tip">请先创建样品柜。</div></div>'; }
+  else{
+    occ.innerHTML = DB.cabinets.map(c=>{
+      const cap = drawerCapacity(c); const used = Object.keys(countByPosition(c.id)).length;
+      const pct = cap? Math.round(used/cap*100):0;
+      return `<div style="margin-bottom:16px">
+        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px"><span><b>${esc(c.name)}</b> ${esc(c.code)}</span><span class="tag ${pct>=90?'red':pct>=70?'orange':'blue'}">${used}/${cap} 格 · ${pct}%</span></div>
+        <div class="progress"><div style="width:${Math.min(pct,100)}%"></div></div>
+      </div>`; }).join('');
+  }
+}
+function computeStats(){
+  let s = { cabs:DB.cabinets.length, drawers:0, total:DB.samples.length, in:0, borrow:0, exp:0, occRate:0 };
+  let usedTotal = 0;
+  DB.cabinets.forEach(c=>{ s.drawers += drawerCapacity(c); usedTotal += Object.keys(countByPosition(c.id)).length; });
+  DB.samples.forEach(sp=>{
+    if(sp.status==='在库'){ s.in++; if(sp.expiry && daysUntil(sp.expiry)<=30) s.exp++; }
+    else if(sp.status==='借出') s.borrow++;
+  });
+  s.occRate = s.drawers? Math.round(usedTotal/s.drawers*100):0;
+  return s;
+}
+
+/* ================= 柜体视图 ================= */
+function renderCabinets(){
+  const box = document.getElementById('cabinet-list');
+  if(DB.cabinets.length===0){
+    box.innerHTML = '<div class="empty" style="grid-column:1/-1"><div class="ic">🗄</div><div class="tip">还没有样品柜，请先创建。</div><button class="btn primary" onclick="openCabinetForm()">＋ 新增样品柜</button></div>';
+    return;
+  }
+  box.innerHTML = DB.cabinets.map(c=>{
+    const cntMap = countByPosition(c.id);
+    const used = Object.keys(cntMap).length;
+    const cap = drawerCapacity(c);
+    const pct = cap? Math.round(used/cap*100):0;
+    let cells = '';
+    for(let r=1;r<=c.rows;r++){
+      for(let col=1;col<=c.cols;col++){
+        const cnt = cntMap[r+'-'+col]||0;
+        const state = cnt===0 ? '' : cnt>=3 ? 'full' : 'has';
+        cells += `<div class="drawer-cell ${state}" onclick="openDrawer('${c.id}',${r},${col})" title="第${r}行 第${col}列 · ${cnt}件样品">
+          <div class="pos">R${r}C${col}</div>
+          <div class="cnt">${cnt? cnt+' 件': '空'}</div>
+          ${cnt>0?`<div class="bar" style="background:${cnt>=3?'#d03050':cnt>=2?'#f0a020':'#2f6fed'}"></div>`:''}
+          ${cnt>0?`<div class="pop">${cnt}</div>`:''}
+        </div>`;
+      }
+    }
+    return `<div class="cabinet-card">
+      <div class="cab-head">
+        <div><div class="cab-name">🗄 ${esc(c.name)} <span style="font-weight:400;font-size:12px;background:rgba(255,255,255,.18);padding:2px 8px;border-radius:10px">${esc(c.code)}</span></div>
+        <div class="cab-meta">${c.rows}×${c.cols} 抽屉格 · 已用 ${used}/${cap}（${pct}%）${c.desc?' · '+esc(c.desc):''}</div></div>
+        <div class="cab-tools">
+          <button onclick="openCabinetForm('${c.id}')">✎ 编辑</button>
+          <button onclick="delCabinet('${c.id}')">🗑 删除</button>
+        </div>
+      </div>
+      <div class="drawer-grid" style="grid-template-columns:repeat(${c.cols},1fr);grid-auto-rows:minmax(58px,auto)">${cells}</div>
+    </div>`;
+  }).join('');
+}
+function reloadCabinets(){ renderCabinets(); toast('已刷新','ok'); }
+
+function openDrawer(cabId,row,col){
+  const cab = getCabinet(cabId);
+  const items = samplesInDrawer(cabId,row,col);
+  drawerContext = { cabinetId:cabId, row, col };
+  document.getElementById('drw-modal-title').textContent = `${cab.name} · R${row}C${col}（${items.length} 件样品）`;
+  if(items.length===0){
+    document.getElementById('drawer-detail-body').innerHTML = '<div class="empty"><div class="ic">📭</div><div class="tip">本格为空，可点击下方按钮入库。</div></div>';
+  }else{
+    document.getElementById('drawer-detail-body').innerHTML = items.map(s=>`
+      <div class="sample-item">
+        <div class="info">
+          <div class="n">${esc(s.name)} <span class="tag ${STATUS_META[s.status].cls}" style="margin-left:6px">${s.status}</span></div>
+          <div class="d">编号 ${esc(s.code)} · 数量 ${s.qty}${s.unit} · 入库 ${fmtDate(s.stored)}${s.expiry?' · 到期 '+fmtDate(s.expiry):''}</div>
+        </div>
+        <button class="btn sm" onclick="openDetail('${s.id}')">查看</button>
+        <button class="btn sm" onclick="removeSample('${s.id}')">取出</button>
+      </div>`).join('');
+  }
+  openModal('modal-drawer');
+}
+function openSampleFormFromDrawer(){
+  closeModal('modal-drawer');
+  openSampleForm(null, drawerContext);
+}
+
+/* ================= 样品柜表单 ================= */
+let editingCabinetId = null;
+function openCabinetForm(id){
+  editingCabinetId = id||null;
+  document.getElementById('cab-modal-title').textContent = id? '编辑样品柜':'新增样品柜';
+  if(id){
+    const c = getCabinet(id);
+    document.getElementById('cab-name').value = c.name;
+    document.getElementById('cab-code').value = c.code||'';
+    document.getElementById('cab-rows').value = c.rows;
+    document.getElementById('cab-cols').value = c.cols;
+    document.getElementById('cab-desc').value = c.desc||'';
+  }else{
+    document.getElementById('cab-name').value='';
+    document.getElementById('cab-code').value='';
+    document.getElementById('cab-rows').value=4;
+    document.getElementById('cab-cols').value=6;
+    document.getElementById('cab-desc').value='';
+  }
+  openModal('modal-cabinet');
+}
+function saveCabinet(){
+  const name = document.getElementById('cab-name').value.trim();
+  const code = document.getElementById('cab-code').value.trim();
+  const rows = parseInt(document.getElementById('cab-rows').value);
+  const cols = parseInt(document.getElementById('cab-cols').value);
+  if(!name){ toast('请填写柜体名称','err'); return; }
+  if(!rows||!cols||rows<1||cols<1){ toast('行列数至少为1','err'); return; }
+  if(editingCabinetId){
+    const c = getCabinet(editingCabinetId);
+    // 缩小行列时检查越界样品
+    const outside = DB.samples.filter(s=>s.cabinetId===c.id && (s.row>rows||s.col>cols));
+    if(outside.length>0){ toast(`有 ${outside.length} 个样品超出新行列范围，请先移走！`,'err'); return; }
+    c.name=name; c.code=code||c.code; c.rows=rows; c.cols=cols; c.desc=document.getElementById('cab-desc').value.trim();
+    addLog('柜体', `编辑样品柜「${name}」`);
+    toast('样品柜已更新','ok');
+  }else{
+    const id = uid();
+    DB.cabinets.push({ id, name, code: code||('C'+String(DB.cabinets.length+1).padStart(2,'0')), rows, cols, desc:document.getElementById('cab-desc').value.trim(), created:new Date().toISOString() });
+    addLog('柜体', `新增样品柜「${name}」${rows}×${cols}`);
+    toast('样品柜已创建','ok');
+  }
+  closeModal('modal-cabinet');
+  saveDB();
+  refreshSampleFilters();
+  if(currentView==='cabinet') renderCabinets();
+}
+function delCabinet(id){
+  const c = getCabinet(id);
+  const cnt = DB.samples.filter(s=>s.cabinetId===id && s.status!=='已处理').length;
+  confirmAction('删除样品柜', `确定删除「${c.name}」？该柜内尚有 <b>${cnt}</b> 件未处理样品。\n<b style="color:var(--danger)">柜内样品将被一并删除，无法恢复！</b>`, ()=>{
+    DB.samples = DB.samples.filter(s=>s.cabinetId!==id);
+    DB.cabinets = DB.cabinets.filter(c=>c.id!==id);
+    addLog('柜体', `删除样品柜「${c.name}」（含 ${cnt} 件样品）`);
+    saveDB(); refreshSampleFilters(); renderCabinets(); toast('已删除','ok');
+  });
+}
+
+/* ================= 样品管理 ================= */
+function refreshSampleFilters(){
+  const selCab = document.getElementById('f-cabinet');
+  const cur = selCab.value;
+  selCab.innerHTML = '<option value="">全部</option>' + DB.cabinets.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('');
+  selCab.value = cur;
+
+  const cats = [...new Set(DB.samples.map(s=>s.category).filter(Boolean))].sort();
+  const selCat = document.getElementById('f-category');
+  const curCat = selCat.value;
+  selCat.innerHTML = '<option value="">全部</option>' + cats.map(c=>`<option>${esc(c)}</option>`).join('');
+  selCat.value = curCat;
+
+  const dl = document.getElementById('category-list');
+  dl.innerHTML = cats.map(c=>`<option value="${esc(c)}">`).join('');
+}
+function getSampleFilter(){
+  return {
+    kw: document.getElementById('f-keyword').value.trim().toLowerCase(),
+    cabinet: document.getElementById('f-cabinet').value,
+    status: document.getElementById('f-status').value,
+    category: document.getElementById('f-category').value,
+    expire: document.getElementById('f-expire').value,
+  };
+}
+function filterSamples(f){
+  return DB.samples.filter(s=>{
+    if(f.cabinet && s.cabinetId!==f.cabinet) return false;
+    if(f.status && s.status!==f.status) return false;
+    if(f.category && s.category!==f.category) return false;
+    if(f.kw){
+      const hay = [s.name,s.code,s.owner,s.category,s.note,s.status].join(' ').toLowerCase();
+      if(!hay.includes(f.kw)) return false;
+    }
+    if(f.expire){
+      if(f.expire==='expired' && !(s.expiry && daysUntil(s.expiry)<0)) return false;
+      if(f.expire==='soon' && !(s.expiry && daysUntil(s.expiry)>=0 && daysUntil(s.expiry)<=30)) return false;
+      if(f.expire==='none' && s.expiry) return false;
+    }
+    return true;
+  }).sort((a,b)=> (b.stored||'').localeCompare(a.stored||''));
+}
+function renderSamples(){
+  const list = filterSamples(getSampleFilter());
+  document.getElementById('sample-count-tag').textContent = list.length + ' 条';
+  const body = document.getElementById('sample-table-body');
+  if(list.length===0){
+    body.innerHTML = '<tr class="empty"><td colspan="10">没有匹配的样品。点击右上角「新增样品」入库。</td></tr>';
+    return;
+  }
+  // 更新全选状态
+  document.getElementById('check-all-samples').checked = list.length>0 && list.every(s=>selectedIds.has(s.id));
+  body.innerHTML = list.map(s=>{
+    const d = s.expiry? daysUntil(s.expiry):null;
+    let expCell = '—';
+    if(d!==null && s.status==='在库'){
+      expCell = d<0? `<span class="tag red">已过期</span>` : d<=7? `<span class="tag red">${d}天</span>` : d<=30? `<span class="tag orange">${d}天</span>` : fmtDate(s.expiry);
+    }else if(s.expiry){ expCell = fmtDate(s.expiry); }
+    return `<tr ${selectedIds.has(s.id)?'style="background:#f0f6ff"':''}>
+      <td><input type="checkbox" class="row-check" data-id="${s.id}" ${selectedIds.has(s.id)?'checked':''} onchange="toggleSelect('${s.id}',this)"></td>
+      <td>${esc(s.code)}</td>
+      <td><b>${esc(s.name)}</b><br><span style="font-size:11.5px;color:var(--muted)">${esc(s.owner||'')}</span></td>
+      <td>${s.category? `<span class="tag blue">${esc(s.category)}</span>`:'—'}</td>
+      <td>${esc(posText(s))}</td>
+      <td>${s.qty} ${esc(s.unit||'')}</td>
+      <td><span class="tag ${STATUS_META[s.status].cls}">${s.status}</span></td>
+      <td>${fmtDate(s.stored)}</td>
+      <td>${expCell}</td>
+      <td><div class="actions-cell">
+        <button class="btn sm" onclick="openDetail('${s.id}')">查看</button>
+        <button class="btn sm" onclick="openSampleForm('${s.id}')">编辑</button>
+        <button class="btn sm" onclick="toggleStatus('${s.id}')">${s.status==='在库'?'借出':'归还'}</button>
+        <button class="btn sm danger" onclick="removeSample('${s.id}')">取出</button>
+      </div></td>
+    </tr>`;
+  }).join('');
+}
+function posText(s){
+  const c = getCabinet(s.cabinetId);
+  if(!c) return '—';
+  return `${c.name} R${s.row}C${s.col}`;
+}
+function applySampleFilter(){ renderSamples(); }
+function resetSampleFilter(){
+  document.getElementById('f-keyword').value='';
+  document.getElementById('f-cabinet').value='';
+  document.getElementById('f-status').value='';
+  document.getElementById('f-category').value='';
+  document.getElementById('f-expire').value='';
+  renderSamples();
+}
+document.getElementById('f-keyword').addEventListener('keydown', e=>{ if(e.key==='Enter') renderSamples(); });
+
+/* 选择 */
+function toggleSelect(id, el){ el.checked? selectedIds.add(id) : selectedIds.delete(id); renderSamples(); }
+function toggleSelectAll(el){
+  const list = filterSamples(getSampleFilter());
+  if(el.checked){ list.forEach(s=>selectedIds.add(s.id)); } else { list.forEach(s=>selectedIds.delete(s.id)); }
+  renderSamples();
+}
+function getSelected(){ return DB.samples.filter(s=>selectedIds.has(s.id)); }
+
+/* ================= 样品表单 ================= */
+let editingSampleId = null;
+function updateCabPos(){
+  const cabSel = document.getElementById('smp-cabinet');
+  const cab = getCabinet(cabSel.value);
+  const rSel = document.getElementById('smp-row');
+  const cSel = document.getElementById('smp-col');
+  if(!cab){ rSel.innerHTML='<option value="">行</option>'; cSel.innerHTML='<option value="">列</option>'; document.getElementById('smp-pos-hint').textContent=''; return; }
+  const taken = countByPosition(cab.id);
+  rSel.innerHTML = '<option value="">行</option>'+Array.from({length:cab.rows},(_,i)=>`<option value="${i+1}">第${i+1}行</option>`).join('');
+  cSel.innerHTML = '<option value="">列</option>'+Array.from({length:cab.cols},(_,i)=>`<option value="${i+1}">第${i+1}列</option>`).join('');
+  document.getElementById('smp-pos-hint').textContent = `当前该格样品数：${taken[(rSel.value||'')+'-'+(cSel.value||'')]||0}`;
+  rSel.onchange = cSel.onchange = ()=> document.getElementById('smp-pos-hint').textContent = `当前该格样品数：${taken[(rSel.value||'')+'-'+(cSel.value||'')]||0}`;
+}
+function openSampleForm(id, forcedPos){
+  editingSampleId = id||null;
+  document.getElementById('smp-modal-title').textContent = id? '编辑样品':'新增样品';
+  if(id){
+    const s = DB.samples.find(x=>x.id===id);
+    document.getElementById('smp-code').value = s.code;
+    document.getElementById('smp-name').value = s.name;
+    document.getElementById('smp-category').value = s.category||'';
+    document.getElementById('smp-qty').value = s.qty;
+    document.getElementById('smp-unit').value = s.unit||'';
+    document.getElementById('smp-owner').value = s.owner||'';
+    document.getElementById('smp-stored').value = s.stored||today();
+    document.getElementById('smp-expiry').value = s.expiry||'';
+    document.getElementById('smp-status').value = s.status;
+    document.getElementById('smp-note').value = s.note||'';
+    const cabSel = document.getElementById('smp-cabinet');
+    cabSel.innerHTML = '<option value="">选择柜体</option>'+DB.cabinets.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('');
+    cabSel.value = s.cabinetId;
+    updateCabPos();
+    document.getElementById('smp-row').value = s.row;
+    document.getElementById('smp-col').value = s.col;
+  }else{
+    document.getElementById('smp-code').value='';
+    document.getElementById('smp-name').value='';
+    document.getElementById('smp-category').value='';
+    document.getElementById('smp-qty').value=1;
+    document.getElementById('smp-unit').value='';
+    document.getElementById('smp-owner').value='';
+    document.getElementById('smp-stored').value=today();
+    document.getElementById('smp-expiry').value='';
+    document.getElementById('smp-status').value='在库';
+    document.getElementById('smp-note').value='';
+    const cabSel = document.getElementById('smp-cabinet');
+    cabSel.innerHTML = '<option value="">选择柜体</option>'+DB.cabinets.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('');
+    let cabId = forcedPos? forcedPos.cabinetId : (DB.cabinets[0]?DB.cabinets[0].id:'');
+    cabSel.value = cabId;
+    updateCabPos();
+    if(forcedPos){ document.getElementById('smp-row').value=forcedPos.row; document.getElementById('smp-col').value=forcedPos.col; }
+  }
+  openModal('modal-sample');
+}
+function saveSample(){
+  const name = document.getElementById('smp-name').value.trim();
+  const cabId = document.getElementById('smp-cabinet').value;
+  const row = document.getElementById('smp-row').value;
+  const col = document.getElementById('smp-col').value;
+  if(!name){ toast('请填写样品名称','err'); return; }
+  if(!cabId || !row || !col){ toast('请选择完整的存放位置（柜体+行+列）','err'); return; }
+
+  if(editingSampleId){
+    const s = DB.samples.find(x=>x.id===editingSampleId);
+    const oldPos = posText(s);
+    s.code = document.getElementById('smp-code').value.trim() || s.code;
+    s.name = name;
+    s.category = document.getElementById('smp-category').value.trim();
+    s.qty = parseFloat(document.getElementById('smp-qty').value)||0;
+    s.unit = document.getElementById('smp-unit').value.trim();
+    s.owner = document.getElementById('smp-owner').value.trim();
+    s.stored = document.getElementById('smp-stored').value || today();
+    s.expiry = document.getElementById('smp-expiry').value || '';
+    s.status = document.getElementById('smp-status').value;
+    s.note = document.getElementById('smp-note').value.trim();
+    const newPos = posText(s);
+    s.cabinetId=cabId; s.row=parseInt(row); s.col=parseInt(col);
+    if(oldPos!==newPos) addLog('样品', `样品「${s.name}」位置变更：${oldPos} → ${newPos}`);
+    addLog('样品', `编辑样品「${s.name}」`);
+    toast('样品已更新','ok');
+  }else{
+    const code = document.getElementById('smp-code').value.trim() || genSampleNo();
+    const s = {
+      id: uid(), code, name, cabinetId:cabId, row:parseInt(row), col:parseInt(col),
+      category:document.getElementById('smp-category').value.trim(),
+      qty:parseFloat(document.getElementById('smp-qty').value)||0,
+      unit:document.getElementById('smp-unit').value.trim(),
+      owner:document.getElementById('smp-owner').value.trim(),
+      stored:document.getElementById('smp-stored').value || today(),
+      expiry:document.getElementById('smp-expiry').value || '',
+      status:document.getElementById('smp-status').value,
+      note:document.getElementById('smp-note').value.trim(),
+      created:new Date().toISOString()
+    };
+    DB.samples.push(s);
+    addLog('样品', `新增样品「${s.name}」${s.code} 存放于 ${posText(s)}`);
+    toast('样品已入库','ok');
+  }
+  closeModal('modal-sample');
+  saveDB(); refreshSampleFilters(); renderSamples();
+  if(currentView==='cabinet') renderCabinets();
+}
+function genSampleNo(){
+  const d = new Date();
+  let n = DB.nextSampleNo++;
+  saveDB();
+  return 'S' + String(d.getFullYear()).slice(2) + String(d.getMonth()+1).padStart(2,'0') + '-' + String(n).padStart(4,'0');
+}
+
+/* ================= 状态切换（借还） ================= */
+function toggleStatus(id){
+  const s = DB.samples.find(x=>x.id===id);
+  if(!s) return;
+  if(s.status==='在库'){
+    // 借出：填写借用人
+    openBorrowModal(s);
+  }else if(s.status==='借出'){
+    confirmAction('确认归还', `归还样品「${s.name}」？`, ()=>{
+      s.status='在库';
+      addLog('借还', `样品「${s.name}」（${s.code}）归还入库`);
+      saveDB(); renderSamples(); toast('已归还','ok');
+    });
+  }else if(s.status==='已过期'){
+    toast('过期样品请先处理后标记','warn');
+  }
+}
+function openBorrowModal(s){
+  const name = prompt(`借出样品「${s.name}」\n请输入借用人：`, s.owner||'');
+  if(name===null) return;
+  if(!name.trim()){ toast('借用人不能为空','err'); return; }
+  s.status='借出'; s.borrower = name.trim(); s.borrowDate = today();
+  addLog('借还', `样品「${s.name}」（${s.code}）由 ${s.borrower} 借出`);
+  saveDB(); renderSamples(); toast('已借出','ok');
+}
+
+/* ================= 取出/删除 ================= */
+function removeSample(id){
+  const s = DB.samples.find(x=>x.id===id);
+  confirmAction('取出样品', `确定将「${s.name}」（${s.code}）取出并删除记录？`, ()=>{
+    DB.samples = DB.samples.filter(x=>x.id!==id);
+    selectedIds.delete(id);
+    addLog('样品', `取出并删除样品「${s.name}」（${s.code}）`);
+    saveDB(); refreshSampleFilters(); renderSamples();
+    if(currentView==='cabinet') renderCabinets();
+    if(drawerContext){ closeModal('modal-drawer'); }
+    toast('已取出','ok');
+  });
+}
+
+/* ================= 批量操作 ================= */
+function batchDeleteSelected(){
+  const sel = getSelected();
+  if(sel.length===0){ toast('请先勾选要删除的样品','warn'); return; }
+  confirmAction('批量删除', `确定删除选中的 <b>${sel.length}</b> 个样品？此操作不可恢复！`, ()=>{
+    sel.forEach(s=>selectedIds.delete(s.id));
+    DB.samples = DB.samples.filter(s=>!selectedIds.has(s.id));
+    addLog('样品', `批量删除 ${sel.length} 个样品`);
+    saveDB(); refreshSampleFilters(); renderSamples();
+    if(currentView==='cabinet') renderCabinets();
+    toast(`已删除 ${sel.length} 个样品`,'ok');
+  });
+}
+function batchMoveSelected(){
+  const sel = getSelected();
+  if(sel.length===0){ toast('请先勾选要移库的样品','warn'); return; }
+  movingIds = sel.map(s=>s.id);
+  document.getElementById('move-count').textContent = sel.length;
+  const cabSel = document.getElementById('mv-cabinet');
+  cabSel.innerHTML = '<option value="">选择柜体</option>'+DB.cabinets.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('');
+  cabSel.value = DB.cabinets[0]?DB.cabinets[0].id:'';
+  updateMovePos();
+  openModal('modal-move');
+}
+function updateMovePos(){
+  const cab = getCabinet(document.getElementById('mv-cabinet').value);
+  const rSel = document.getElementById('mv-row');
+  const cSel = document.getElementById('mv-col');
+  if(!cab){ rSel.innerHTML='<option value="">行</option>'; cSel.innerHTML='<option value="">列</option>'; document.getElementById('mv-hint').textContent=''; return; }
+  rSel.innerHTML = '<option value="">行</option>'+Array.from({length:cab.rows},(_,i)=>`<option value="${i+1}">第${i+1}行</option>`).join('');
+  cSel.innerHTML = '<option value="">列</option>'+Array.from({length:cab.cols},(_,i)=>`<option value="${i+1}">第${i+1}列</option>`).join('');
+  document.getElementById('mv-hint').textContent = `目标位置：${cab.name}`;
+}
+function doMoveSelected(){
+  const cabId = document.getElementById('mv-cabinet').value;
+  const row = document.getElementById('mv-row').value;
+  const col = document.getElementById('mv-col').value;
+  if(!cabId||!row||!col){ toast('请选择完整的目标位置','err'); return; }
+  movingIds.forEach(id=>{
+    const s = DB.samples.find(x=>x.id===id);
+    if(s){ const old = posText(s); s.cabinetId=cabId; s.row=parseInt(row); s.col=parseInt(col); }
+  });
+  addLog('样品', `批量移库 ${movingIds.length} 个样品至 ${getCabinet(cabId).name} R${row}C${col}`);
+  closeModal('modal-move');
+  saveDB(); renderSamples();
+  if(currentView==='cabinet') renderCabinets();
+  toast(`已移动 ${movingIds.length} 个样品`,'ok');
+}
+
+/* ================= 样品详情 ================= */
+function openDetail(id){
+  detailSampleId = id;
+  const s = DB.samples.find(x=>x.id===id);
+  if(!s) return;
+  const cab = getCabinet(s.cabinetId);
+  const d = s.expiry? daysUntil(s.expiry):null;
+  let expStatus = '—';
+  if(d!==null){
+    expStatus = d<0? `<span class="tag red">已过期 ${-d} 天</span>` : d===0? '<span class="tag red">今天到期</span>' : `<span class="tag ${d<=7?'red':d<=30?'orange':'blue'}">${d} 天后到期</span>`;
+  }
+  document.getElementById('detail-body').innerHTML = `
+    <div style="background:#f7faff;border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px">
+      <div style="font-size:19px;font-weight:800;margin-bottom:6px">${esc(s.name)}</div>
+      <div style="color:var(--muted);font-size:12.5px">编号 ${esc(s.code)}</div>
+    </div>
+    <table class="tbl">
+      <tr><th style="width:110px">分类</th><td>${s.category? `<span class="tag blue">${esc(s.category)}</span>`:'—'}</td></tr>
+      <tr><th>存放位置</th><td>${esc(cab? cab.name+` R${s.row}C${s.col}`:'—')}</td></tr>
+      <tr><th>数量</th><td>${s.qty} ${esc(s.unit||'')}</td></tr>
+      <tr><th>状态</th><td><span class="tag ${STATUS_META[s.status].cls}">${s.status}</span> ${s.borrower?`<span style="font-size:12.5px;color:var(--muted)">借用人：${esc(s.borrower)}（${fmtDate(s.borrowDate)}）</span>`:''}</td></tr>
+      <tr><th>存放人</th><td>${esc(s.owner||'—')}</td></tr>
+      <tr><th>入库时间</th><td>${fmtDate(s.stored)}</td></tr>
+      <tr><th>到期时间</th><td>${fmtDate(s.expiry)} ${expStatus}</td></tr>
+      <tr><th>备注</th><td style="white-space:pre-wrap">${esc(s.note||'—')}</td></tr>
+    </table>`;
+  openModal('modal-detail');
+}
+function editFromDetail(){
+  closeModal('modal-detail');
+  openSampleForm(detailSampleId);
+}
+
+/* ================= 借还管理 ================= */
+function renderBorrow(){
+  const kw = document.getElementById('b-keyword').value.trim().toLowerCase();
+  const tp = document.getElementById('b-type').value;
+  let list = DB.logs.filter(l=>l.type==='借还');
+  if(tp){
+    list = list.filter(l=>{
+      const m = { '借出':/借出/, '归还':/归还/, '入库':/入库/, '移库':/移库/, '其他':/^(?!.*(借出|归还|入库|移库))/ };
+      return m[tp]? m[tp].test(l.msg) : true;
+    });
+  }
+  if(kw) list = list.filter(l=> l.msg.toLowerCase().includes(kw) || (l.borrower||'').toLowerCase().includes(kw));
+  const box = document.getElementById('borrow-list');
+  if(list.length===0){ box.innerHTML = '<div class="empty"><div class="ic">🔄</div><div class="tip">暂无借还记录。</div></div>'; return; }
+  box.innerHTML = list.map(l=>`
+    <div class="record-item">
+      <div class="r-head"><span class="tag ${/借出/.test(l.msg)?'orange':/归还/.test(l.msg)?'green':'blue'}">${/借出/.test(l.msg)?'借出':/归还/.test(l.msg)?'归还':'记录'}</span>
+      <span>${esc(l.msg)}</span><span class="r-time">${fmtDateTime(l.time)}</span></div>
+    </div>`).join('');
+}
+function fmtDateTime(iso){ const d=new Date(iso); return d.getFullYear()+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+String(d.getDate()).padStart(2,'0')+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')+':'+String(d.getSeconds()).padStart(2,'0'); }
+function resetBorrowFilter(){
+  document.getElementById('b-keyword').value='';
+  document.getElementById('b-type').value='';
+  renderBorrow();
+}
+document.getElementById('b-keyword').addEventListener('keydown', e=>{ if(e.key==='Enter') renderBorrow(); });
+
+/* ================= 统计 ================= */
+const COLORS = ['#2f6fed','#18a058','#f0a020','#d03050','#7c5cff','#00a9c4','#e86aa6','#8aa03e'];
+function barChart(el, rows, colorFn){
+  const max = Math.max(1, ...rows.map(r=>r.val));
+  el.innerHTML = rows.length? rows.map(r=>`
+    <div class="bar-row">
+      <span class="lbl" title="${esc(r.label)}">${esc(r.label)}</span>
+      <div class="track"><div class="fill" style="width:${r.val/max*100}%;background:${colorFn?colorFn(r):COLORS[0]}"></div></div>
+      <span class="val">${r.val}</span>
+    </div>`).join('') : '<div class="empty" style="padding:30px 0"><div class="tip">暂无数据</div></div>';
+}
+function renderStats(){
+  // 分类分布
+  const catMap = {}; DB.samples.forEach(s=>{ const k=s.category||'未分类'; catMap[k]=(catMap[k]||0)+1; });
+  const catRows = Object.entries(catMap).sort((a,b)=>b[1]-a[1]);
+  barChart(document.getElementById('chart-category'), catRows.map(([k,v])=>({label:k,val:v})), (r,i)=>COLORS[i%COLORS.length]);
+  // 状态分布
+  const stMap = {'在库':0,'借出':0,'已过期':0,'已处理':0};
+  DB.samples.forEach(s=>{ if(stMap[s.status]!=null) stMap[s.status]++; });
+  barChart(document.getElementById('chart-status'), Object.entries(stMap).map(([k,v])=>({label:k,val:v})),
+    r=> ({'在库':'#18a058','借出':'#f0a020','已过期':'#d03050','已处理':'#9aa4b2'})[r.label] || '#2f6fed');
+  // 各柜存放量
+  barChart(document.getElementById('chart-cabinet'), DB.cabinets.map(c=>({label:c.name, val:DB.samples.filter(s=>s.cabinetId===c.id && s.status!=='已处理').length})), ()=>'#2f6fed');
+  // 到期趋势
+  const days = []; for(let i=0;i<60;i++) days.push(0);
+  DB.samples.forEach(s=>{ if(s.expiry && s.status==='在库'){ const d=daysUntil(s.expiry); if(d>=0 && d<60) days[d]++; } });
+  barChart(document.getElementById('chart-expiry'), days.map((v,i)=>({label:`+${i}天`,val:v})), r=> r.val>0?'#d03050':'#d5dbe6');
+}
+
+/* ================= 日志 ================= */
+function renderLogs(){
+  const box = document.getElementById('log-list');
+  if(DB.logs.length===0){ box.innerHTML = '<div class="empty"><div class="ic">📝</div><div class="tip">暂无操作日志。</div></div>'; return; }
+  box.innerHTML = DB.logs.map(l=>`
+    <div class="log-line"><span class="t">${fmtDateTime(l.time)}</span><span class="tag ${l.type==='借还'?'orange':l.type==='柜体'?'blue':'gray'}" style="flex-shrink:0">${l.type}</span><span class="m">${esc(l.msg)}</span></div>`).join('');
+}
+function clearLogs(){
+  confirmAction('清空日志', '确定清空所有操作日志？', ()=>{ DB.logs=[]; saveDB(); renderLogs(); toast('日志已清空','ok'); });
+}
+function exportLogs(){
+  const csv = '\uFEFF时间,类型,内容\n' + DB.logs.map(l=>`"${fmtDateTime(l.time)}","${l.type}","${l.msg.replace(/"/g,'""')}"`).join('\n');
+  download(csv, '操作日志.csv', 'text/csv');
+}
+
+/* ================= 数据管理 ================= */
+function renderDataInfo(){
+  const s = computeStats();
+  document.getElementById('st-cab').textContent = s.cabs;
+  document.getElementById('st-drawer').textContent = s.drawers;
+  document.getElementById('st-total').textContent = s.total;
+}
+function exportData(){
+  const blob = JSON.stringify(DB, null, 2);
+  download(blob, `样品库存备份_${today()}.json`, 'application/json');
+  addLog('系统', '导出数据备份');
+  saveDB();
+}
+function exportCSV(){
+  const header = ['样品编号','样品名称','分类','柜体','行','列','数量','单位','状态','存放人','入库时间','到期时间','备注'];
+  const rows = DB.samples.map(s=>{
+    const c = getCabinet(s.cabinetId);
+    return [s.code,s.name,s.category||'',c?c.name:'',s.row,s.col,s.qty,s.unit||'',s.status,s.owner||'',s.stored||'',s.expiry||'',(s.note||'').replace(/"/g,'""')];
+  });
+  const csv = '\uFEFF' + header.map(h=>`"${h}"`).join(',') + '\n' + rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  download(csv, `样品清单_${today()}.csv`, 'text/csv;charset=utf-8');
+  toast('CSV 已导出','ok');
+}
+function importData(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ev=>{
+    try{
+      const data = JSON.parse(ev.target.result);
+      if(!data || !Array.isArray(data.cabinets) || !Array.isArray(data.samples)) throw new Error('格式错误');
+      confirmAction('导入数据', `导入将<b>覆盖</b>当前全部数据。<br>文件包含 ${data.cabinets.length} 个柜体、${data.samples.length} 个样品，是否继续？`, ()=>{
+        DB = { cabinets:data.cabinets, samples:data.samples, logs:data.logs||[], nextSampleNo:data.nextSampleNo||1 };
+        addLog('系统', '导入数据备份');
+        saveDB(); refreshSampleFilters(); renderSamples(); renderCabinets(); switchView('dashboard');
+        toast('导入成功','ok');
+      });
+    }catch(err){
+      toast('导入失败：文件格式不正确','err');
+    }
+  };
+  reader.readAsText(file);
+  e.target.value='';
+}
+function confirmClearAll(){
+  confirmAction('清空全部数据', '<b style="color:var(--danger)">此操作将删除所有样品柜、样品和日志，且不可恢复！</b>建议先导出备份。', ()=>{
+    DB = { cabinets:[], samples:[], logs:[], nextSampleNo:1 };
+    saveDB(); refreshSampleFilters(); renderSamples(); renderCabinets(); switchView('dashboard');
+    toast('已清空全部数据','ok');
+  });
+}
+function download(content, filename, mime){
+  const blob = new Blob([content], { type: mime||'application/octet-stream' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 300);
+}
+
+/* ================= 打印标签 ================= */
+function printLabels(){
+  // 打印选中或当前筛选列表的标签
+  const list = getSelected();
+  if(list.length===0){ toast('请先在样品管理中勾选要打印标签的样品','warn'); return; }
+  doPrint(list);
+}
+function printSingleLabel(){
+  const s = DB.samples.find(x=>x.id===detailSampleId);
+  if(!s) return;
+  closeModal('modal-detail');
+  doPrint([s]);
+}
+function doPrint(list){
+  const area = document.getElementById('print-area');
+  area.style.display='block';
+  area.innerHTML = '<div style="display:flex;flex-wrap:wrap;gap:6mm">'+list.map(s=>{
+    const c = getCabinet(s.cabinetId);
+    return `<div style="width:60mm;border:1.5px solid #000;border-radius:2mm;padding:3mm;font-size:11px;font-family:inherit">
+      <div style="font-size:9px;letter-spacing:2px;color:#555;border-bottom:1px solid #999;padding-bottom:1mm;margin-bottom:2mm">🧪 样品标签 · ${esc(s.code)}</div>
+      <div style="font-weight:800;font-size:13px;margin-bottom:1mm">${esc(s.name)}</div>
+      <div>分类：${esc(s.category||'—')}　数量：${s.qty}${esc(s.unit||'')}</div>
+      <div>位置：${esc(c? c.name+` R${s.row}C${s.col}`:'—')}</div>
+      <div>入库：${fmtDate(s.stored)}${s.expiry?`　到期：${fmtDate(s.expiry)}`:''}</div>
+      <div>存放人：${esc(s.owner||'—')}</div>
+      <div style="margin-top:2mm;font-size:8px;letter-spacing:1px;color:#888">${s.status}</div>
+    </div>`; }).join('')+'</div>';
+  window.print();
+  setTimeout(()=>{ area.style.display='none'; area.innerHTML=''; }, 300);
+}
+
+/* ================= 快速查询 ================= */
+function quickSearchFromHeader(){
+  const kw = prompt('输入样品名称或编号进行快速查询：');
+  if(kw===null) return;
+  document.getElementById('f-keyword').value = kw;
+  switchView('samples');
+  const list = filterSamples(getSampleFilter());
+  toast(`找到 ${list.length} 条匹配记录`,'ok');
+}
+function toggleFullscreen(){
+  if(document.fullscreenElement){ document.exitFullscreen(); }
+  else{ document.documentElement.requestFullscreen(); }
+}
+
+/* ================= 演示数据 ================= */
+function loadDemo(){
+  if(DB.cabinets.length>0 || DB.samples.length>0){
+    confirmAction('载入示例数据', '载入示例数据将覆盖当前数据，确定？', ()=>doLoadDemo());
+  } else { doLoadDemo(); }
+}
+function doLoadDemo(){
+  const cabs = [
+    { id:'cab1', name:'一号样品柜', code:'C01', rows:3, cols:5, desc:'常温样品区', created:new Date().toISOString() },
+    { id:'cab2', name:'二号样品柜', code:'C02', rows:2, cols:4, desc:'冷藏区/标准品', created:new Date().toISOString() },
+    { id:'cab3', name:'三号样品柜', code:'C03', rows:4, cols:6, desc:'备品区', created:new Date().toISOString() },
+  ];
+  const now = today();
+  const mk = (i, code, name, category, cabId, row, col, qty, unit, owner, stored, expiry, status, note)=>{
+    return { id:'d'+i, code, name, category, cabinetId:cabId, row, col, qty, unit, owner, stored, expiry:expiry||'', status, note:note||'', created:new Date().toISOString() };
+  };
+  const d = (n)=> new Date(Date.now()+n*86400000).toISOString().slice(0,10);
+  const samples = [
+    mk(1,'S001','标准品-苯甲酸','标准品','cab1',1,1,2,'瓶','张三',d(-80),d(200),'在库','纯度≥99.9%'),
+    mk(2,'S002','标准品-山梨酸','标准品','cab1',1,2,1,'瓶','李四',d(-50),d(120),'在库',''),
+    mk(3,'S003','样品-饮料A批次202401','样品','cab1',2,3,5,'盒','王五',d(-30),d(-2),'在库','已过期待处理'),
+    mk(4,'S004','试剂-氢氧化钠','试剂','cab2',1,1,3,'瓶','张三',d(-100),d(365),'在库','密封保存'),
+    mk(5,'S005','试剂-盐酸(稀)','试剂','cab2',1,2,2,'瓶','李四',d(-90),d(15),'在库','通风柜存放'),
+    mk(6,'S006','标准品-咖啡因','标准品','cab2',2,3,1,'支','赵六',d(-10),d(200),'借出','借予第三方检测'),
+    mk(7,'S007','样品-果汁B批次','样品','cab3',1,1,8,'盒','王五',d(-15),'', '在库',''),
+    mk(8,'S008','样品-奶粉C批次','样品','cab3',2,2,4,'袋','王五',d(-5),d(40),'在库',''),
+    mk(9,'S009','试剂-无水乙醇','试剂','cab3',3,3,6,'瓶','张三',d(-200),d(600),'在库','易燃'),
+    mk(10,'S010','样品-酱油D批次','样品','cab3',4,4,3,'瓶','赵六',d(-60),d(7),'在库','临期注意'),
+  ];
+  DB = { cabinets:cabs, samples, logs:[], nextSampleNo:11 };
+  DB.logs.push({ time:new Date().toISOString(), type:'系统', msg:'已载入演示数据' });
+  saveDB();
+  refreshSampleFilters(); renderSamples(); renderCabinets(); switchView('dashboard');
+  toast('演示数据已载入','ok');
+}
+function downloadTemplate(){
+  const data = { cabinets:[], samples:[], logs:[], nextSampleNo:1 };
+  download(JSON.stringify(data,null,2), '样品库存空模板.json', 'application/json');
+}
+
+/* ================= 弹窗/提示 ================= */
+function openModal(id){ document.getElementById(id).classList.add('show'); }
+function closeModal(id){ document.getElementById(id).classList.remove('show'); }
+document.querySelectorAll('.modal-mask').forEach(m=>{
+  m.addEventListener('click', e=>{ if(e.target===m) m.classList.remove('show'); });
+});
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') document.querySelectorAll('.modal-mask.show').forEach(m=>m.classList.remove('show')); });
+
+function confirmAction(title, msg, fn){
+  document.getElementById('cfm-title').textContent = title;
+  document.getElementById('cfm-msg').innerHTML = msg;
+  const ok = document.getElementById('cfm-ok');
+  ok.onclick = ()=>{ closeModal('modal-confirm'); fn(); };
+  openModal('modal-confirm');
+}
+function toast(msg, type){
+  const box = document.getElementById('toast-box');
+  const el = document.createElement('div');
+  el.className = 'toast '+(type||'');
+  const ic = {ok:'✅',err:'❌',warn:'⚠️'}[type] || 'ℹ️';
+  el.innerHTML = `<span class="t-ic">${ic}</span><span>${msg}</span>`;
+  box.appendChild(el);
+  setTimeout(()=>{ el.style.opacity='0'; el.style.transition='opacity .3s'; }, 2200);
+  setTimeout(()=>el.remove(), 2600);
+}
+
+/* ================= 初始化 ================= */
+loadDB();
+refreshSampleFilters();
+renderSamples();
+renderCabinets();
+renderDashboard();
+</script>
+</body>
+</html>

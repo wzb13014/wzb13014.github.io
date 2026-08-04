@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>职场压力自评量表</title>
+<style>
+  :root {
+    --bg: #0f1419;
+    --bg-soft: #161c24;
+    --bg-card: #1b232e;
+    --bg-hover: #232e3b;
+    --border: #2a3645;
+    --text: #e6edf3;
+    --text-soft: #9aa7b5;
+    --text-dim: #6b7785;
+    --accent: #4f9dff;
+    --accent-2: #7c5cff;
+    --good: #3fb950;
+    --warn: #d29922;
+    --bad: #f85149;
+    --shadow: 0 8px 28px rgba(0,0,0,.45);
+    --radius: 14px;
+  }
+  [data-theme="light"] {
+    --bg: #f4f6f9;
+    --bg-soft: #ffffff;
+    --bg-card: #ffffff;
+    --bg-hover: #eef2f7;
+    --border: #dce3ec;
+    --text: #1b2733;
+    --text-soft: #55636f;
+    --text-dim: #8a97a3;
+    --accent: #2b7fff;
+    --accent-2: #6d4bff;
+    --good: #1a9e3e;
+    --warn: #b8860b;
+    --bad: #d83a2f;
+    --shadow: 0 8px 28px rgba(20,40,70,.12);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  header {
+    position: sticky; top: 0; z-index: 50;
+    background: linear-gradient(180deg, var(--bg-soft), color-mix(in srgb, var(--bg-soft) 88%, transparent));
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border);
+  }
+  .header-inner {
+    max-width: 1280px; margin: 0 auto; padding: 14px 20px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .logo {
+    width: 38px; height: 38px; border-radius: 11px; flex: 0 0 auto;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    display: grid; place-items: center; font-size: 20px;
+  }
+  .title-wrap h1 { font-size: 17px; margin: 0; font-weight: 700; }
+  .title-wrap p { font-size: 12px; margin: 0; color: var(--text-soft); }
+  .header-actions { margin-left: auto; display: flex; gap: 8px; flex-wrap: wrap; }
+  button {
+    font-family: inherit; cursor: pointer; border: 1px solid var(--border);
+    background: var(--bg-card); color: var(--text); border-radius: 10px;
+    padding: 9px 14px; font-size: 13px; font-weight: 600; transition: .15s;
+  }
+  button:hover { background: var(--bg-hover); }
+  button.primary {
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: #fff; border: none;
+  }
+  button.primary:hover { filter: brightness(1.08); }
+  button.ghost { background: transparent; }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  .icon-btn { width: 38px; height: 38px; padding: 0; display: grid; place-items: center; font-size: 16px; }
+
+  main { max-width: 1280px; margin: 0 auto; padding: 24px 20px 80px; }
+
+  /* ----- 进度 ----- */
+  .progress-bar { height: 6px; background: var(--bg-hover); border-radius: 99px; overflow: hidden; margin-bottom: 18px; }
+  .progress-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent), var(--accent-2)); transition: width .3s; }
+
+  .card {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 22px; box-shadow: var(--shadow);
+  }
+  .card + .card { margin-top: 18px; }
+
+  .hidden { display: none !important; }
+
+  /* ----- 维度导航 ----- */
+  .dim-nav { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 14px; }
+  .dim-nav::-webkit-scrollbar { height: 6px; }
+  .dim-nav::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+  .dim-chip {
+    flex: 0 0 auto; padding: 7px 13px; border-radius: 99px; font-size: 12.5px;
+    border: 1px solid var(--border); background: var(--bg-soft); color: var(--text-soft);
+    white-space: nowrap; display: flex; align-items: center; gap: 6px;
+  }
+  .dim-chip.done { color: var(--good); border-color: color-mix(in srgb, var(--good) 45%, var(--border)); }
+  .dim-chip.active { color: #fff; background: linear-gradient(135deg, var(--accent), var(--accent-2)); border: none; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+
+  /* ----- 题目 ----- */
+  .q-meta { font-size: 12px; color: var(--text-dim); margin-bottom: 6px; display: flex; gap: 10px; align-items: center; }
+  .q-tag { padding: 2px 9px; border-radius: 6px; font-size: 11px; font-weight: 700; }
+  .q-text { font-size: 17px; font-weight: 600; margin: 4px 0 20px; }
+  .q-text .reverse-note { display: inline-block; margin-left: 8px; font-size: 11px; color: var(--warn); font-weight: 600; vertical-align: middle; }
+  .options { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+  @media (max-width: 640px) { .options { grid-template-columns: 1fr; } }
+  .opt {
+    border: 1px solid var(--border); background: var(--bg-soft); border-radius: 11px;
+    padding: 14px 10px; text-align: center; cursor: pointer; transition: .15s; user-select: none;
+  }
+  .opt:hover { background: var(--bg-hover); }
+  .opt .score { font-size: 20px; font-weight: 800; }
+  .opt .label { font-size: 12.5px; color: var(--text-soft); margin-top: 4px; }
+  .opt.selected { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, var(--bg-card)); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 35%, transparent); }
+  .opt.selected .score { color: var(--accent); }
+
+  .nav-btns { display: flex; justify-content: space-between; margin-top: 22px; gap: 10px; }
+
+  /* ----- 结果 ----- */
+  .result-head { display: flex; flex-wrap: wrap; gap: 20px; align-items: center; }
+  .score-ring { position: relative; width: 150px; height: 150px; flex: 0 0 auto; }
+  .score-ring svg { transform: rotate(-90deg); }
+  .score-ring .center { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; }
+  .score-ring .num { font-size: 38px; font-weight: 800; line-height: 1; }
+  .score-ring .sub { font-size: 11px; color: var(--text-soft); }
+  .grade-badge { display: inline-block; padding: 5px 14px; border-radius: 99px; font-weight: 800; font-size: 14px; }
+  .result-info h2 { margin: 0 0 6px; font-size: 22px; }
+  .result-info .desc { color: var(--text-soft); font-size: 14px; max-width: 520px; }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  @media (max-width: 760px) { .grid-2 { grid-template-columns: 1fr; } }
+  .chart-title { font-size: 14px; font-weight: 700; margin: 0 0 12px; display: flex; align-items: center; gap: 8px; }
+
+  .dim-list { display: flex; flex-direction: column; gap: 10px; }
+  .dim-row { display: grid; grid-template-columns: 92px 1fr 64px; gap: 10px; align-items: center; font-size: 13px; }
+  .dim-row .name { color: var(--text-soft); }
+  .dim-row .track { height: 9px; background: var(--bg-hover); border-radius: 99px; overflow: hidden; }
+  .dim-row .fill { height: 100%; border-radius: 99px; transition: width .5s; }
+  .dim-row .val { text-align: right; font-weight: 700; font-size: 12.5px; }
+
+  .advice h3 { font-size: 15px; margin: 18px 0 8px; }
+  .advice ul { margin: 0; padding-left: 18px; }
+  .advice li { margin-bottom: 7px; font-size: 13.5px; color: var(--text-soft); }
+  .advice li b { color: var(--text); }
+
+  .history-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .history-table th, .history-table td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--border); }
+  .history-table th { color: var(--text-dim); font-weight: 600; font-size: 12px; }
+  .history-table td .pill { padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; }
+  .history-empty { color: var(--text-dim); font-size: 13px; text-align: center; padding: 24px; }
+
+  .export-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; }
+
+  .modal-mask {
+    position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 100;
+    display: grid; place-items: center; padding: 20px;
+  }
+  .modal {
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
+    max-width: 560px; width: 100%; padding: 26px; box-shadow: var(--shadow); max-height: 88vh; overflow-y: auto;
+  }
+  .modal h2 { margin-top: 0; font-size: 19px; }
+  .modal p { color: var(--text-soft); font-size: 14px; }
+  .modal ul { color: var(--text-soft); font-size: 13.5px; padding-left: 18px; }
+  .modal .actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 18px; flex-wrap: wrap; }
+
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: var(--bg-card); border: 1px solid var(--border); color: var(--text);
+    padding: 12px 18px; border-radius: 10px; box-shadow: var(--shadow); font-size: 13px;
+    opacity: 0; pointer-events: none; transition: .25s; z-index: 200;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  .share-img-preview { display: grid; place-items: center; }
+  .share-img-preview canvas { max-width: 100%; border-radius: 10px; border: 1px solid var(--border); }
+
+  .view-tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+  .view-tabs button.active { background: linear-gradient(135deg, var(--accent), var(--accent-2)); color:#fff; border:none; }
+
+  .footnote { color: var(--text-dim); font-size: 11.5px; margin-top: 10px; line-height: 1.5; }
+</style>
+</head>
+<body>
+<header>
+  <div class="header-inner">
+    <div class="logo">🧠</div>
+    <div class="title-wrap">
+      <h1>职场压力自评量表</h1>
+      <p>7 维度 · 21 题 · 科学量化你的职场压力</p>
+    </div>
+    <div class="header-actions">
+      <button class="icon-btn" id="themeBtn" title="切换主题">🌓</button>
+      <button class="ghost" id="historyBtn">📈 历史</button>
+      <button class="ghost" id="restartBtn">↻ 重新开始</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <!-- 进度 -->
+  <div class="progress-bar" id="progressBar"><div class="progress-fill" id="progressFill"></div></div>
+
+  <!-- ===== 答题视图 ===== -->
+  <section id="quizView">
+    <div class="dim-nav" id="dimNav"></div>
+    <div class="card">
+      <div class="q-meta">
+        <span id="qCounter">第 1 / 21 题</span>
+        <span class="q-tag" id="qDimTag">工作负荷</span>
+      </div>
+      <div class="q-text" id="qText"></div>
+      <div class="options" id="options"></div>
+      <div class="nav-btns">
+        <button class="ghost" id="prevBtn">← 上一题</button>
+        <button class="primary" id="nextBtn">下一题 →</button>
+      </div>
+    </div>
+    <p class="footnote">计分说明：1=从不，2=偶尔，3=有时，4=经常，5=总是。标注「反向」的题目已自动反向计分（分数越高代表压力越大）。量表仅供参考，不构成临床诊断。</p>
+  </section>
+
+  <!-- ===== 结果视图 ===== -->
+  <section id="resultView" class="hidden">
+    <div class="view-tabs" id="resultTabs">
+      <button class="active" data-tab="overview">📊 概览</button>
+      <button data-tab="advice">💡 建议</button>
+      <button data-tab="history">📈 历史趋势</button>
+    </div>
+
+    <!-- 概览 -->
+    <div data-panel="overview">
+      <div class="card">
+        <div class="result-head">
+          <div class="score-ring">
+            <svg width="150" height="150">
+              <circle cx="75" cy="75" r="66" stroke="var(--bg-hover)" stroke-width="12" fill="none"></circle>
+              <circle id="ringFg" cx="75" cy="75" r="66" stroke="var(--accent)" stroke-width="12" fill="none" stroke-linecap="round"></circle>
+            </svg>
+            <div class="center">
+              <div class="num" id="totalNum">0</div>
+              <div class="sub">/ 105 总分</div>
+            </div>
+          </div>
+          <div class="result-info">
+            <h2 id="gradeTitle">—</h2>
+            <span class="grade-badge" id="gradeBadge">—</span>
+            <p class="desc" id="gradeDesc"></p>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-2" style="margin-top:18px">
+        <div class="card">
+          <p class="chart-title">🕸️ 维度雷达图</p>
+          <canvas id="radarCanvas" width="420" height="340" style="width:100%"></canvas>
+        </div>
+        <div class="card">
+          <p class="chart-title">📶 各维度得分（满分 15）</p>
+          <div class="dim-list" id="dimList"></div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:18px">
+        <p class="chart-title">📤 导出与分享</p>
+        <div class="export-row">
+          <button id="exportPdf">🖨️ 导出 PDF / 打印</button>
+          <button id="exportPng">🖼️ 生成分享图</button>
+          <button id="exportTxt">📄 文本报告</button>
+          <button id="exportJson">💾 备份历史(JSON)</button>
+          <button class="ghost" id="copyReport">📋 复制报告</button>
+          <button class="ghost" id="retakeBtn">↻ 再测一次</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 建议 -->
+    <div data-panel="advice" class="hidden">
+      <div class="card advice" id="adviceBox"></div>
+    </div>
+
+    <!-- 历史 -->
+    <div data-panel="history" class="hidden">
+      <div class="card">
+        <p class="chart-title">📈 历次总分趋势</p>
+        <canvas id="trendCanvas" width="900" height="300" style="width:100%"></canvas>
+        <div id="historyWrap"></div>
+        <div class="export-row" style="margin-top:14px">
+          <button class="ghost" id="clearHistory">🗑️ 清空历史</button>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- 欢迎弹窗 -->
+<div class="modal-mask" id="introModal">
+  <div class="modal">
+    <h2>👋 欢迎使用职场压力自评量表</h2>
+    <p>本量表从 <b>7 个核心维度</b> 评估你的职场压力水平，共 21 道题，预计耗时 3–5 分钟。</p>
+    <ul>
+      <li><b>工作负荷</b> · <b>角色压力</b> · <b>人际关系</b></li>
+      <li><b>职业发展</b> · <b>控制感</b> · <b>工作生活平衡</b> · <b>情绪耗竭</b></li>
+    </ul>
+    <p>请根据 <b>过去一个月</b> 的真实感受作答，没有对错之分。作答进度会自动保存在本地，可随时关闭后继续。</p>
+    <div class="actions">
+      <button class="primary" id="startBtn">开始测评 →</button>
+    </div>
+  </div>
+</div>
+
+<!-- 分享图弹窗 -->
+<div class="modal-mask hidden" id="shareModal">
+  <div class="modal">
+    <h2>🖼️ 你的压力画像</h2>
+    <p>右键图片或点击下方按钮保存 / 分享。</p>
+    <div class="share-img-preview"><canvas id="shareCanvas" width="600" height="760"></canvas></div>
+    <div class="actions">
+      <button class="primary" id="downloadShare">⬇️ 下载图片</button>
+      <button class="ghost" id="closeShare">关闭</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ============ 数据 ============ */
+  const DIMS = [
+    { key: "workload",  name: "工作负荷",   color: "#4f9dff" },
+    { key: "role",      name: "角色压力",   color: "#7c5cff" },
+    { key: "relation",  name: "人际关系",   color: "#e0668b" },
+    { key: "career",    name: "职业发展",   color: "#f0a04b" },
+    { key: "control",   name: "控制感",     color: "#2bb6a8" },
+    { key: "balance",   name: "工作平衡",   color: "#56c168" },
+    { key: "burnout",   name: "情绪耗竭",   color: "#f85149" }
+  ];
+
+  // 每维度 3 题，共 21 题；reverse 为反向计分题
+  const QUESTIONS = [
+    { dim:"workload", text:"工作任务多到无法在正常工作时间内完成", reverse:false },
+    { dim:"workload", text:"我需要同时处理多项紧急且冲突的任务", reverse:false },
+    { dim:"workload", text:"我对当前的工作节奏感到从容自如", reverse:true },
+
+    { dim:"role", text:"我常不清楚自己的工作职责边界在哪里", reverse:false },
+    { dim:"role", text:"不同上级给我的要求常常相互冲突", reverse:false },
+    { dim:"role", text:"我收到的指令经常含糊、前后不一致", reverse:false },
+
+    { dim:"relation", text:"我与同事之间存在紧张或冲突关系", reverse:false },
+    { dim:"relation", text:"我在工作中感到孤立，缺乏支持", reverse:false },
+    { dim:"relation", text:"我在同事中能获得足够的支持与帮助", reverse:true },
+
+    { dim:"career", text:"我对自己的职业前景感到迷茫或担忧", reverse:false },
+    { dim:"career", text:"我缺乏晋升或成长的机会", reverse:false },
+    { dim:"career", text:"我的工作让我缺乏成就感", reverse:false },
+
+    { dim:"control", text:"我对如何安排工作几乎没有决定权", reverse:false },
+    { dim:"control", text:"我的工作节奏完全由他人掌控", reverse:false },
+    { dim:"control", text:"我很少能参与影响自身的决策", reverse:false },
+
+    { dim:"balance", text:"工作占据了我本该陪伴家人/休息的时间", reverse:false },
+    { dim:"balance", text:"下班后我仍要经常处理工作事务", reverse:false },
+    { dim:"balance", text:"我的身心健康因工作压力受到影响", reverse:false },
+
+    { dim:"burnout", text:"工作让我感到身心俱疲", reverse:false },
+    { dim:"burnout", text:"我对工作越来越失去热情", reverse:false },
+    { dim:"burnout", text:"我常因工作压力而情绪低落或烦躁", reverse:false }
+  ].map((q, i) => ({ id: i, ...q }));
+
+  const SCALE = [
+    { s:1, label:"从不" }, { s:2, label:"偶尔" }, { s:3, label:"有时" },
+    { s:4, label:"经常" }, { s:5, label:"总是" }
+  ];
+
+  const STORE_KEY = "wpsa_answers_v1";
+  const HIST_KEY  = "wpsa_history_v1";
+  const THEME_KEY = "wpsa_theme";
+
+  /* ============ 状态 ============ */
+  let answers = loadAnswers();      // { qid: score }
+  let current = 0;
+  let lastResult = null;            // 上次结果（用于导出/重新测试）
+
+  /* ============ 工具 ============ */
+  const $ = (s) => document.querySelector(s);
+  const $$ = (s) => Array.from(document.querySelectorAll(s));
+
+  function loadAnswers() {
+    try { return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; }
+    catch { return {}; }
+  }
+  function saveAnswers() {
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(answers)); } catch {}
+  }
+  function loadHistory() {
+    try { return JSON.parse(localStorage.getItem(HIST_KEY)) || []; }
+    catch { return []; }
+  }
+  function saveHistory(h) {
+    try { localStorage.setItem(HIST_KEY, JSON.stringify(h)); } catch {}
+  }
+  function toast(msg) {
+    const t = $("#toast"); t.textContent = msg; t.classList.add("show");
+    clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove("show"), 2200);
+  }
+  function effectiveScore(q, raw) {
+    if (raw == null) return null;
+    return q.reverse ? (6 - raw) : raw;
+  }
+  function answeredCount() {
+    return QUESTIONS.filter(q => answers[q.id] != null).length;
+  }
+
+  /* ============ 计分 ============ */
+  function computeResult() {
+    const byDim = {};
+    DIMS.forEach(d => byDim[d.key] = { sum: 0, count: 0 });
+    QUESTIONS.forEach(q => {
+      const ef = effectiveScore(q, answers[q.id]);
+      if (ef != null) { byDim[q.dim].sum += ef; byDim[q.dim].count += 1; }
+    });
+    const dimScores = DIMS.map(d => {
+      const o = byDim[d.key];
+      const max = o.count * 5 || 15;
+      const pct = max ? o.sum / max : 0;
+      return { key: d.key, name: d.name, color: d.color, sum: o.sum, pct };
+    });
+    const total = dimScores.reduce((a, b) => a + b.sum, 0);
+    const maxTotal = QUESTIONS.length * 5; // 105
+    const pct = total / maxTotal;
+
+    let grade;
+    if (pct < 0.25) grade = { t:"低压力", c:"var(--good)", bg:"color-mix(in srgb,var(--good) 18%,transparent)", d:"你的压力处于健康区间，请继续保持良好节奏。" };
+    else if (pct < 0.5) grade = { t:"轻度压力", c:"#7cc4ff", bg:"color-mix(in srgb,var(--accent) 18%,transparent)", d:"存在一定压力信号，注意自我调节，避免累积。" };
+    else if (pct < 0.75) grade = { t:"中度压力", c:"var(--warn)", bg:"color-mix(in srgb,var(--warn) 20%,transparent)", d:"压力已较明显，建议主动干预并关注高分维度。" };
+    else grade = { t:"高度压力", c:"var(--bad)", bg:"color-mix(in srgb,var(--bad) 18%,transparent)", d:"压力水平偏高，强烈建议寻求支持与专业帮助。" };
+
+    return { total, maxTotal, pct, dimScores, grade, date: new Date().toISOString() };
+  }
+
+  /* ============ 渲染题目 ============ */
+  function renderDimNav() {
+    const nav = $("#dimNav"); nav.innerHTML = "";
+    DIMS.forEach((d, di) => {
+      const firstIdx = QUESTIONS.findIndex(q => q.dim === d.key);
+      const dimQs = QUESTIONS.filter(q => q.dim === d.key);
+      const done = dimQs.every(q => answers[q.id] != null);
+      const chip = document.createElement("div");
+      chip.className = "dim-chip" + (done ? " done" : "") + (QUESTIONS[current].dim === d.key ? " active" : "");
+      chip.innerHTML = `<span class="dot"></span>${d.name}`;
+      chip.onclick = () => { current = firstIdx; renderQuestion(); };
+      nav.appendChild(chip);
+    });
+  }
+
+  function renderQuestion() {
+    const q = QUESTIONS[current];
+    const dim = DIMS.find(d => d.key === q.dim);
+    $("#qCounter").textContent = `第 ${current + 1} / ${QUESTIONS.length} 题`;
+    const tag = $("#qDimTag");
+    tag.textContent = dim.name;
+    tag.style.background = "color-mix(in srgb," + dim.color + " 20%,transparent)";
+    tag.style.color = dim.color;
+
+    $("#qText").innerHTML = q.text + (q.reverse ? '<span class="reverse-note">↔ 反向题</span>' : "");
+
+    const opts = $("#options"); opts.innerHTML = "";
+    SCALE.forEach(({ s, label }) => {
+      const el = document.createElement("div");
+      el.className = "opt" + (answers[q.id] === s ? " selected" : "");
+      el.innerHTML = `<div class="score">${s}</div><div class="label">${label}</div>`;
+      el.onclick = () => {
+        answers[q.id] = s; saveAnswers();
+        renderQuestion(); updateProgress();
+        if (current < QUESTIONS.length - 1) {
+          // 自动前进，体验更顺
+          setTimeout(() => { current++; renderQuestion(); renderDimNav(); }, 160);
+        }
+      };
+      opts.appendChild(el);
+    });
+
+    $("#prevBtn").disabled = current === 0;
+    const nextBtn = $("#nextBtn");
+    if (current === QUESTIONS.length - 1) {
+      nextBtn.textContent = "查看结果 ✓";
+    } else {
+      nextBtn.textContent = "下一题 →";
+    }
+    updateProgress();
+    renderDimNav();
+  }
+
+  function updateProgress() {
+    const p = (answeredCount() / QUESTIONS.length) * 100;
+    $("#progressFill").style.width = p + "%";
+  }
+
+  /* ============ 完成 / 结果 ============ */
+  function finishQuiz() {
+    const unanswered = QUESTIONS.filter(q => answers[q.id] == null);
+    if (unanswered.length > 0) {
+      toast(`还有 ${unanswered.length} 题未作答`);
+      current = QUESTIONS.findIndex(q => answers[q.id] == null);
+      showQuiz(); renderQuestion();
+      return;
+    }
+    lastResult = computeResult();
+    // 保存历史（避免重复同一时间戳覆盖）
+    const hist = loadHistory();
+    hist.push({
+      date: lastResult.date,
+      total: lastResult.total,
+      pct: lastResult.pct,
+      grade: lastResult.grade.t,
+      dims: lastResult.dimScores.map(d => ({ key:d.key, name:d.name, sum:d.sum, pct:d.pct }))
+    });
+    saveHistory(hist);
+    localStorage.removeItem(STORE_KEY); // 清空作答缓存
+    showResult();
+  }
+
+  /* ============ 图表 ============ */
+  function setupCanvas(cv) {
+    const dpr = window.devicePixelRatio || 1;
+    const rect = cv.getBoundingClientRect();
+    const cssW = rect.width || cv.width;
+    const cssH = cv.height;
+    cv.width = cssW * dpr; cv.height = cssH * dpr;
+    const ctx = cv.getContext("2d");
+    ctx.scale(dpr, dpr);
+    return { ctx, w: cssW, h: cssH };
+  }
+
+  function drawRadar(cv, dimScores) {
+    const { ctx, w, h } = setupCanvas(cv);
+    ctx.clearRect(0, 0, w, h);
+    const cx = w / 2, cy = h / 2 + 6, R = Math.min(w, h) / 2 - 46;
+    const n = dimScores.length;
+    const theme = getComputedStyle(document.documentElement);
+    const cText = theme.getPropertyValue("--text-soft").trim();
+    const cGrid = theme.getPropertyValue("--border").trim();
+    const cAccent = theme.getPropertyValue("--accent").trim();
+
+    // 网格圈
+    for (let ring = 1; ring <= 4; ring++) {
+      const r = R * ring / 4;
+      ctx.beginPath();
+      for (let i = 0; i <= n; i++) {
+        const a = -Math.PI/2 + i * 2*Math.PI/n;
+        const x = cx + r*Math.cos(a), y = cy + r*Math.sin(a);
+        i === 0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+      }
+      ctx.strokeStyle = cGrid; ctx.lineWidth = 1; ctx.stroke();
+    }
+    // 轴线 + 标签
+    ctx.fillStyle = cText; ctx.font = "12px sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    for (let i = 0; i < n; i++) {
+      const a = -Math.PI/2 + i * 2*Math.PI/n;
+      const x = cx + R*Math.cos(a), y = cy + R*Math.sin(a);
+      ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(x, y);
+      ctx.strokeStyle = cGrid; ctx.stroke();
+      const lx = cx + (R+26)*Math.cos(a), ly = cy + (R+20)*Math.sin(a);
+      ctx.fillText(dimScores[i].name, lx, ly);
+    }
+    // 数据多边形
+    ctx.beginPath();
+    for (let i = 0; i < n; i++) {
+      const a = -Math.PI/2 + i * 2*Math.PI/n;
+      const r = R * Math.max(0.02, dimScores[i].pct);
+      const x = cx + r*Math.cos(a), y = cy + r*Math.sin(a);
+      i === 0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+    }
+    ctx.closePath();
+    ctx.fillStyle = "color-mix(in srgb," + cAccent + " 30%,transparent)";
+    ctx.fill();
+    ctx.strokeStyle = cAccent; ctx.lineWidth = 2; ctx.stroke();
+    // 数据点
+    for (let i = 0; i < n; i++) {
+      const a = -Math.PI/2 + i * 2*Math.PI/n;
+      const r = R * Math.max(0.02, dimScores[i].pct);
+      const x = cx + r*Math.cos(a), y = cy + r*Math.sin(a);
+      ctx.beginPath(); ctx.arc(x, y, 3.5, 0, 2*Math.PI);
+      ctx.fillStyle = dimScores[i].color; ctx.fill();
+    }
+  }
+
+  function drawTrend(cv, hist) {
+    const { ctx, w, h } = setupCanvas(cv);
+    ctx.clearRect(0, 0, w, h);
+    const theme = getComputedStyle(document.documentElement);
+    const cText = theme.getPropertyValue("--text-soft").trim();
+    const cGrid = theme.getPropertyValue("--border").trim();
+    const cAccent = theme.getPropertyValue("--accent").trim();
+    if (!hist.length) {
+      ctx.fillStyle = cText; ctx.font = "14px sans-serif"; ctx.textAlign = "center";
+      ctx.fillText("暂无历史数据，完成测评后即可看到趋势", w/2, h/2);
+      return;
+    }
+    const padL = 42, padR = 16, padT = 18, padB = 34;
+    const maxV = 105;
+    const x = i => padL + (w - padL - padR) * (hist.length === 1 ? 0.5 : i / (hist.length - 1));
+    const y = v => padT + (h - padT - padB) * (1 - v / maxV);
+    // 网格 + Y 轴
+    ctx.strokeStyle = cGrid; ctx.fillStyle = cText; ctx.font = "11px sans-serif"; ctx.textAlign = "right"; ctx.textBaseline = "middle";
+    [0, 25, 50, 75, 105].forEach(v => {
+      ctx.beginPath(); ctx.moveTo(padL, y(v)); ctx.lineTo(w - padR, y(v)); ctx.stroke();
+      ctx.fillText(v, padL - 6, y(v));
+    });
+    // 折线
+    ctx.beginPath();
+    hist.forEach((r, i) => { const px = x(i), py = y(r.total); i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py); });
+    ctx.strokeStyle = cAccent; ctx.lineWidth = 2.5; ctx.stroke();
+    // 点 + 标签
+    hist.forEach((r, i) => {
+      const px = x(i), py = y(r.total);
+      ctx.beginPath(); ctx.arc(px, py, 4, 0, 2*Math.PI); ctx.fillStyle = cAccent; ctx.fill();
+      ctx.fillStyle = cText; ctx.font = "10px sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "bottom";
+      const d = new Date(r.date);
+      const lbl = (d.getMonth()+1) + "/" + d.getDate();
+      ctx.fillText(lbl, px, py - 8);
+    });
+  }
+
+  /* ============ 结果渲染 ============ */
+  function renderResult() {
+    const r = lastResult;
+    // 环形
+    const C = 2 * Math.PI * 66;
+    const ring = $("#ringFg");
+    ring.style.stroke = r.grade.c;
+    ring.style.strokeDasharray = C;
+    ring.style.strokeDashoffset = C * (1 - r.pct);
+    $("#totalNum").textContent = r.total;
+    $("#gradeTitle").textContent = "压力等级：" + r.grade.t;
+    const badge = $("#gradeBadge");
+    badge.textContent = r.grade.t; badge.style.background = r.grade.bg; badge.style.color = r.grade.c;
+    $("#gradeDesc").textContent = r.grade.d;
+
+    // 维度列表
+    const dl = $("#dimList"); dl.innerHTML = "";
+    r.dimScores.forEach(d => {
+      const row = document.createElement("div"); row.className = "dim-row";
+      const pctColor = d.pct < 0.25 ? "var(--good)" : d.pct < 0.5 ? "var(--accent)" : d.pct < 0.75 ? "var(--warn)" : "var(--bad)";
+      row.innerHTML = `<span class="name">${d.name}</span>
+        <span class="track"><span class="fill" style="width:${d.pct*100}%;background:${pctColor}"></span></span>
+        <span class="val">${d.sum}</span>`;
+      dl.appendChild(row);
+    });
+
+    drawRadar($("#radarCanvas"), r.dimScores);
+    renderAdvice(r);
+  }
+
+  function renderAdvice(r) {
+    const box = $("#adviceBox");
+    let html = `<h3>📌 总体评估</h3><p style="color:var(--text-soft);font-size:14px;margin:0">${r.grade.d}</p>`;
+
+    // 总分建议
+    const general = {
+      "低压力": ["保持现有工作节奏与休息习惯。","定期自我觉察，建立压力预警机制。","可主动帮助压力较高的同事，营造支持氛围。"],
+      "轻度压力": ["坚持规律运动（每周 3 次，每次 30 分钟以上）。","练习正念或深呼吸，每天 5–10 分钟。","与信任的人倾诉，避免情绪积压。"],
+      "中度压力": ["使用「四象限法」梳理任务优先级，减少救火式工作。","与上级坦诚沟通工作量与角色期望。","设定清晰的「下班边界」，减少非必要加班。","关注下方高分维度，针对性改善。"],
+      "高度压力": ["尽快与上级 / HR 沟通工作量与资源支持，必要时申请调整。","强烈建议寻求 Employee Assistance Program(EAP) 或专业心理咨询。","考虑短期休假或调休，优先恢复身心。","如持续失眠、情绪低落，请及时就医。"]
+    }[r.grade.t] || [];
+
+    html += `<h3>🧩 综合建议</h3><ul>` + general.map(t => `<li>${t}</li>`).join("") + `</ul>`;
+
+    // 维度建议（取 pct>0.5 的维度）
+    const DIM_ADVICE = {
+      workload: "工作负荷偏高：尝试任务分解、委派与拒绝低价值事务，用「时间盒」保护专注时段。",
+      role: "角色压力明显：主动与上级澄清职责边界与考核标准，形成书面共识。",
+      relation: "人际关系紧张：采用非暴力沟通，定期一对一交流，建立职场支持网络。",
+      career: "职业发展焦虑：制定 3–6 个月成长目标，主动争取反馈与学习资源。",
+      control: "控制感不足：从可控的小决策入手（如排期、工具），逐步拿回主动权。",
+      balance: "工作生活失衡：设定「数字断连」时间，保护休息与陪伴，区分紧急与重要。",
+      burnout: "情绪耗竭警报：优先恢复性活动，减少消耗源，必要时寻求专业支持。"
+    };
+    const hot = r.dimScores.filter(d => d.pct >= 0.5).sort((a,b)=>b.pct-a.pct);
+    if (hot.length) {
+      html += `<h3>🔥 重点关注的维度</h3><ul>`;
+      hot.forEach(d => { html += `<li><b>${d.name}（${d.sum}/15）</b>：${DIM_ADVICE[d.key]}</li>`; });
+      html += `</ul>`;
+    } else {
+      html += `<h3>✅ 维度均衡</h3><p style="color:var(--text-soft);font-size:13.5px">各维度得分均处于健康区间，保持即可。</p>`;
+    }
+    box.innerHTML = html;
+  }
+
+  function renderHistory() {
+    const hist = loadHistory();
+    drawTrend($("#trendCanvas"), hist);
+    const wrap = $("#historyWrap");
+    if (!hist.length) { wrap.innerHTML = `<div class="history-empty">还没有历史记录</div>`; return; }
+    let rows = hist.slice().reverse().map((r, idx) => {
+      const d = new Date(r.date);
+      const ds = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
+      const c = r.pct < 0.25 ? "var(--good)" : r.pct < 0.5 ? "var(--accent)" : r.pct < 0.75 ? "var(--warn)" : "var(--bad)";
+      return `<tr>
+        <td>${hist.length - idx}</td>
+        <td>${ds}</td>
+        <td><b>${r.total}</b> / 105</td>
+        <td><span class="pill" style="background:color-mix(in srgb,${c} 20%,transparent);color:${c}">${r.grade}</span></td>
+        <td><button class="ghost" data-del="${r.date}" style="padding:4px 10px;font-size:12px">删除</button></td>
+      </tr>`;
+    }).join("");
+    wrap.innerHTML = `<table class="history-table"><thead><tr><th>#</th><th>时间</th><th>总分</th><th>等级</th><th></th></tr></thead><tbody>${rows}</tbody></table>`;
+    wrap.querySelectorAll("[data-del]").forEach(b => {
+      b.onclick = () => {
+        const h = loadHistory().filter(x => x.date !== b.getAttribute("data-del"));
+        saveHistory(h); renderHistory(); toast("已删除该记录");
+      };
+    });
+  }
+
+  /* ============ 视图切换 ============ */
+  function showQuiz() {
+    $("#quizView").classList.remove("hidden");
+    $("#resultView").classList.add("hidden");
+    renderQuestion();
+  }
+  function showResult() {
+    $("#quizView").classList.add("hidden");
+    $("#resultView").classList.remove("hidden");
+    switchTab("overview");
+    renderResult();
+    renderHistory();
+  }
+  function switchTab(tab) {
+    $$("#resultTabs button").forEach(b => b.classList.toggle("active", b.dataset.tab === tab));
+    $$("#resultView [data-panel]").forEach(p => p.classList.toggle("hidden", p.dataset.panel !== tab));
+    if (tab === "history") renderHistory();
+  }
+
+  /* ============ 导出 ============ */
+  function reportText() {
+    const r = lastResult; if (!r) return "";
+    const d = new Date(r.date);
+    let s = `职场压力自评量表报告\n========================\n`;
+    s += `测评时间：${d.toLocaleString("zh-CN")}\n`;
+    s += `总分：${r.total} / 105（${(r.pct*100).toFixed(1)}%）\n`;
+    s += `压力等级：${r.grade.t}\n\n`;
+    s += `各维度得分：\n`;
+    r.dimScores.forEach(x => s += `  · ${x.name}：${x.sum} / 15（${(x.pct*100).toFixed(0)}%）\n`);
+    s += `\n评估：${r.grade.d}\n`;
+    s += `\n（本结果仅供参考，不构成临床诊断）\n`;
+    return s;
+  }
+  function download(filename, content, type) {
+    const blob = new Blob([content], { type: type || "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href = url; a.download = filename; a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+  function buildShareCanvas() {
+    const cv = $("#shareCanvas");
+    const ctx = cv.getContext("2d");
+    const theme = getComputedStyle(document.documentElement);
+    const bg = theme.getPropertyValue("--bg-soft").trim();
+    const card = theme.getPropertyValue("--bg-card").trim();
+    const text = theme.getPropertyValue("--text").trim();
+    const soft = theme.getPropertyValue("--text-soft").trim();
+    const r = lastResult;
+    const W = cv.width, H = cv.height;
+    ctx.fillStyle = bg; ctx.fillRect(0,0,W,H);
+    // 卡片
+    ctx.fillStyle = card; roundRect(ctx, 24, 24, W-48, H-48, 18); ctx.fill();
+    ctx.fillStyle = text; ctx.font = "bold 26px sans-serif"; ctx.textAlign = "left"; ctx.textBaseline = "top";
+    ctx.fillText("职场压力自评", 52, 54);
+    ctx.fillStyle = soft; ctx.font = "14px sans-serif";
+    ctx.fillText(new Date(r.date).toLocaleDateString("zh-CN"), 52, 90);
+    // 总分
+    ctx.textAlign = "center";
+    ctx.fillStyle = r.grade.c; ctx.font = "bold 64px sans-serif";
+    ctx.fillText(r.total, W/2, 130);
+    ctx.fillStyle = soft; ctx.font = "14px sans-serif";
+    ctx.fillText("/ 105  ·  " + r.grade.t, W/2, 200);
+    // 维度条
+    let y = 250;
+    r.dimScores.forEach(d => {
+      ctx.textAlign = "left"; ctx.fillStyle = soft; ctx.font = "13px sans-serif";
+      ctx.fillText(d.name, 52, y - 2);
+      const bx = 150, bw = W - 220;
+      ctx.fillStyle = theme.getPropertyValue("--bg-hover").trim(); roundRect(ctx, bx, y, bw, 12, 6); ctx.fill();
+      ctx.fillStyle = d.color; roundRect(ctx, bx, y, bw * d.pct, 12, 6); ctx.fill();
+      ctx.fillStyle = text; ctx.font = "bold 13px sans-serif"; ctx.textAlign = "right";
+      ctx.fillText(d.sum + "/15", W - 52, y - 2);
+      y += 38;
+    });
+    ctx.textAlign = "center"; ctx.fillStyle = soft; ctx.font = "12px sans-serif";
+    ctx.fillText("仅供参考，不构成临床诊断 · 职场压力自评量表", W/2, H - 40);
+  }
+  function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x+r, y); ctx.arcTo(x+w, y, x+w, y+h, r); ctx.arcTo(x+w, y+h, x, y+h, r);
+    ctx.arcTo(x, y+h, x, y, r); ctx.arcTo(x, y, x+w, y, r); ctx.closePath();
+  }
+
+  /* ============ 事件 ============ */
+  $("#prevBtn").onclick = () => { if (current > 0) { current--; renderQuestion(); } };
+  $("#nextBtn").onclick = () => {
+    if (current < QUESTIONS.length - 1) { current++; renderQuestion(); }
+    else finishQuiz();
+  };
+  $("#startBtn").onclick = () => { $("#introModal").classList.add("hidden"); };
+  $("#themeBtn").onclick = () => {
+    const cur = document.documentElement.getAttribute("data-theme");
+    const next = cur === "dark" ? "light" : "dark";
+    document.documentElement.setAttribute("data-theme", next);
+    localStorage.setItem(THEME_KEY, next);
+    if (!$("#resultView").classList.contains("hidden")) {
+      drawRadar($("#radarCanvas"), lastResult.dimScores);
+      drawTrend($("#trendCanvas"), loadHistory());
+    }
+  };
+  $("#restartBtn").onclick = () => {
+    if (answeredCount() > 0 && !confirm("确定要清空当前作答进度并重新开始吗？")) return;
+    answers = {}; saveAnswers(); current = 0; showQuiz();
+  };
+  $("#historyBtn").onclick = () => {
+    if ($("#resultView").classList.contains("hidden")) {
+      // 没有结果时，提示先完成；但仍可查看历史
+      lastResult = lastResult || (answeredCount() === QUESTIONS.length ? computeResult() : null);
+    }
+    $("#quizView").classList.add("hidden");
+    $("#resultView").classList.remove("hidden");
+    switchTab("history");
+  };
+  $("#resultTabs").addEventListener("click", e => {
+    const b = e.target.closest("button"); if (b) switchTab(b.dataset.tab);
+  });
+
+  // 导出
+  $("#exportPdf").onclick = () => window.print();
+  $("#exportTxt").onclick = () => { download("职场压力自评报告.txt", reportText()); toast("文本报告已下载"); };
+  $("#exportJson").onclick = () => {
+    const data = { version:1, exportedAt: new Date().toISOString(), history: loadHistory() };
+    download("职场压力历史备份.json", JSON.stringify(data, null, 2), "application/json");
+    toast("历史已备份");
+  };
+  $("#copyReport").onclick = async () => {
+    try { await navigator.clipboard.writeText(reportText()); toast("报告已复制到剪贴板"); }
+    catch { toast("复制失败，请手动选择"); }
+  };
+  $("#retakeBtn").onclick = () => { answers = {}; saveAnswers(); current = 0; showQuiz(); };
+  $("#exportPng").onclick = () => {
+    buildShareCanvas();
+    $("#shareModal").classList.remove("hidden");
+  };
+  $("#downloadShare").onclick = () => {
+    const url = $("#shareCanvas").toDataURL("image/png");
+    const a = document.createElement("a"); a.href = url; a.download = "职场压力画像.png"; a.click();
+  };
+  $("#closeShare").onclick = () => $("#shareModal").classList.add("hidden");
+  $("#clearHistory").onclick = () => {
+    if (!confirm("确定清空所有历史记录？此操作不可恢复。")) return;
+    saveHistory([]); renderHistory(); toast("历史已清空");
+  };
+
+  // 初始化渲染：无论新测评还是续答，都先渲染首题（题目区不再空白）
+  if (answeredCount() > 0) {
+    $("#introModal").classList.add("hidden");
+  }
+  renderQuestion();
+
+  // 打印样式
+  const style = document.createElement("style");
+  style.textContent = `@media print {
+    header, .progress-bar, #resultTabs, .export-row, .view-tabs { display:none !important; }
+    body { background:#fff; }
+    .card { box-shadow:none; break-inside:avoid; }
+    #resultView { display:block !important; }
+    [data-panel] { display:block !important; }
+  }`;
+  document.head.appendChild(style);
+
+  // 初始化主题
+  const savedTheme = localStorage.getItem(THEME_KEY);
+  if (savedTheme) document.documentElement.setAttribute("data-theme", savedTheme);
+})();
+</script>
+</body>
+</html>

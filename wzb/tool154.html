@@ -1,0 +1,1123 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>职场黑话翻译器</title>
+<style>
+  :root {
+    --bg: #f4f6fb;
+    --bg-soft: #eef1f8;
+    --card: #ffffff;
+    --text: #1f2937;
+    --muted: #6b7280;
+    --border: #e2e8f0;
+    --accent: #4f46e5;
+    --accent-soft: rgba(79,70,229,.1);
+    --accent2: #0ea5e9;
+    --warn: #f59e0b;
+    --good: #10b981;
+    --bad: #ef4444;
+    --shadow: 0 8px 30px rgba(15,23,42,.08);
+    --radius: 14px;
+  }
+  [data-theme="dark"] {
+    --bg: #0f172a;
+    --bg-soft: #1e293b;
+    --card: #1e293b;
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+    --border: #334155;
+    --accent: #818cf8;
+    --accent-soft: rgba(129,140,248,.15);
+    --shadow: 0 8px 30px rgba(0,0,0,.4);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+    background: linear-gradient(180deg, var(--bg-soft), var(--bg) 260px);
+    color: var(--text);
+    min-height: 100vh;
+    transition: background .3s, color .3s;
+  }
+  .container { max-width: 1080px; margin: 0 auto; padding: 24px 20px 80px; }
+
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px; padding: 28px 0 20px;
+  }
+  header h1 {
+    font-size: 26px; letter-spacing: 1px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  header p.sub { color: var(--muted); font-size: 13px; margin-top: 6px; }
+
+  .topbtns { display: flex; gap: 10px; align-items: center; }
+  .btn {
+    border: 1px solid var(--border); background: var(--card); color: var(--text);
+    padding: 9px 16px; border-radius: 10px; cursor: pointer; font-size: 13px;
+    transition: all .2s; font-family: inherit;
+  }
+  .btn:hover { border-color: var(--accent); color: var(--accent); transform: translateY(-1px); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+  .btn.primary:hover { opacity: .9; color: #fff; }
+  .btn.ghost { background: transparent; border: none; color: var(--muted); }
+  .btn.small { padding: 6px 10px; font-size: 12px; border-radius: 8px; }
+
+  nav.tabs {
+    display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 22px;
+    background: var(--card); padding: 6px; border-radius: 14px; border: 1px solid var(--border);
+    box-shadow: var(--shadow); position: sticky; top: 12px; z-index: 20;
+  }
+  nav.tabs button {
+    flex: 1; min-width: 90px; padding: 10px 14px; border: none; border-radius: 10px;
+    background: transparent; color: var(--muted); cursor: pointer; font-size: 14px;
+    transition: all .2s; font-family: inherit; font-weight: 500;
+  }
+  nav.tabs button:hover { color: var(--text); background: var(--bg-soft); }
+  nav.tabs button.active { background: var(--accent); color: #fff; font-weight: 600; }
+
+  .panel { display: none; animation: fade .25s ease; }
+  .panel.active { display: block; }
+  @keyframes fade { from { opacity: 0; transform: translateY(6px);} to { opacity: 1; transform: none;} }
+
+  .card {
+    background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 20px; box-shadow: var(--shadow); margin-bottom: 18px;
+  }
+  .card h2 { font-size: 16px; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+  .card h2 .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); display: inline-block; }
+  .muted { color: var(--muted); font-size: 12px; }
+  .small { font-size: 12px; }
+  .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+  .grow { flex: 1; min-width: 200px; }
+
+  textarea, input[type="text"] {
+    width: 100%; border: 1px solid var(--border); border-radius: 12px;
+    padding: 12px 14px; font-size: 14px; background: var(--bg-soft); color: var(--text);
+    font-family: inherit; resize: vertical; transition: border .2s;
+  }
+  textarea:focus, input[type="text"]:focus { outline: none; border-color: var(--accent); background: var(--card); }
+  textarea { min-height: 140px; line-height: 1.7; }
+  select {
+    border: 1px solid var(--border); border-radius: 10px; padding: 9px 12px;
+    background: var(--card); color: var(--text); font-size: 13px; font-family: inherit;
+  }
+
+  .modebar { display: flex; background: var(--bg-soft); border-radius: 10px; padding: 4px; width: fit-content; }
+  .modebar button {
+    border: none; background: transparent; padding: 8px 18px; border-radius: 8px;
+    cursor: pointer; color: var(--muted); font-size: 13px; font-family: inherit; transition: all .2s;
+  }
+  .modebar button.active { background: var(--card); color: var(--accent); font-weight: 600; box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  @media (max-width: 860px) { .grid2 { grid-template-columns: 1fr; } }
+
+  .result-box {
+    border: 1px dashed var(--border); border-radius: 12px; padding: 14px; background: var(--bg-soft);
+    min-height: 140px; line-height: 1.9; font-size: 14px; white-space: pre-wrap; word-break: break-word;
+  }
+  .hl { background: var(--accent-soft); color: var(--accent); border-bottom: 2px solid var(--accent); cursor: pointer; border-radius: 3px; padding: 0 2px; }
+  .hlr { background: rgba(16,185,129,.14); color: var(--good); border-bottom: 2px solid var(--good); border-radius: 3px; padding: 0 2px; }
+
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 999px;
+    border: 1px solid var(--border); background: var(--card); font-size: 12px; cursor: pointer;
+    transition: all .2s; color: var(--muted); font-family: inherit;
+  }
+  .chip:hover { border-color: var(--accent); color: var(--accent); }
+  .chip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  .stat-row { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 18px; }
+  .stat {
+    flex: 1; min-width: 120px; background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 16px; text-align: center; box-shadow: var(--shadow);
+  }
+  .stat .num { font-size: 26px; font-weight: 700; color: var(--accent); }
+  .stat .lbl { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+  .term-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+  .term-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; transition: all .2s; }
+  .term-card:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: var(--shadow); }
+  .term-card .term { font-size: 17px; font-weight: 700; color: var(--accent); }
+  .term-card .cat {
+    display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 999px;
+    background: var(--accent-soft); color: var(--accent); margin-left: 8px; vertical-align: middle;
+  }
+  .term-card .mean { font-size: 13px; color: var(--text); margin-top: 8px; line-height: 1.7; }
+  .term-card .ex { font-size: 12px; color: var(--muted); margin-top: 8px; border-left: 3px solid var(--border); padding-left: 10px; line-height: 1.6; }
+  .term-card .del { float: right; color: var(--bad); cursor: pointer; font-size: 12px; background: none; border: none; }
+
+  table.comp { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.comp th, table.comp td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+  table.comp th { color: var(--muted); font-weight: 600; background: var(--bg-soft); }
+  table.comp tr:last-child td { border-bottom: none; }
+  table.comp td.k { color: var(--accent); font-weight: 600; white-space: nowrap; }
+
+  .gauge { height: 10px; background: var(--bg-soft); border-radius: 999px; overflow: hidden; margin-top: 8px; }
+  .gauge > div { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--warn), var(--bad)); transition: width .5s; }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+  .badge.low { background: rgba(16,185,129,.15); color: var(--good); }
+  .badge.mid { background: rgba(245,158,11,.15); color: var(--warn); }
+  .badge.high { background: rgba(239,68,68,.15); color: var(--bad); }
+
+  .quiz-area { text-align: center; }
+  .quiz-area .q { font-size: 22px; font-weight: 700; color: var(--accent); margin: 18px 0 4px; }
+  .quiz-area .qm { color: var(--muted); font-size: 13px; margin-bottom: 18px; }
+  .opt { display: block; width: 100%; text-align: left; padding: 14px 18px; margin-bottom: 10px; border-radius: 12px; border: 1px solid var(--border); background: var(--card); color: var(--text); cursor: pointer; font-size: 14px; transition: all .2s; font-family: inherit; }
+  .opt:hover { border-color: var(--accent); }
+  .opt.correct { border-color: var(--good); background: rgba(16,185,129,.1); color: var(--good); }
+  .opt.wrong { border-color: var(--bad); background: rgba(239,68,68,.1); color: var(--bad); }
+  .opt:disabled { cursor: not-allowed; opacity: .85; }
+
+  .gen-out { font-size: 18px; line-height: 2; min-height: 60px; padding: 20px; border-radius: 12px; background: var(--bg-soft); border: 1px dashed var(--border); }
+  .word { display: inline-block; margin: 3px; }
+
+  .toast {
+    position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: var(--text); color: var(--bg); padding: 12px 22px; border-radius: 10px;
+    font-size: 13px; opacity: 0; pointer-events: none; transition: all .3s; z-index: 100; box-shadow: var(--shadow);
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  .foot { text-align: center; color: var(--muted); font-size: 12px; margin-top: 30px; line-height: 1.8; }
+  .tbl-wrap { overflow-x: auto; }
+  .empty { text-align: center; color: var(--muted); padding: 30px 0; font-size: 14px; }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div>
+      <h1>职场黑话翻译器</h1>
+      <p class="sub">黑话转人话 · 人话转黑话 · 一句话拆穿职场套路</p>
+    </div>
+    <div class="topbtns">
+      <button class="btn" id="themeToggle">深色模式</button>
+    </div>
+  </header>
+
+  <nav class="tabs">
+    <button data-tab="translator" class="active">翻译</button>
+    <button data-tab="dictionary">词典</button>
+    <button data-tab="generator">黑话生成器</button>
+    <button data-tab="quiz">黑话挑战</button>
+    <button data-tab="about">关于</button>
+  </nav>
+
+  <!-- 翻译 -->
+  <section class="panel active" id="panel-translator">
+    <div class="stat-row">
+      <div class="stat"><div class="num" id="statTerms">0</div><div class="lbl">词条总数</div></div>
+      <div class="stat"><div class="num" id="statCats">0</div><div class="lbl">覆盖分类</div></div>
+      <div class="stat"><div class="num" id="statCustom">0</div><div class="lbl">自建词条</div></div>
+      <div class="stat"><div class="num" id="statDaily">--</div><div class="lbl">今日黑话</div></div>
+    </div>
+
+    <div class="card">
+      <h2><span class="dot"></span>今日黑话</h2>
+      <div id="dailyCard" class="term-card" style="margin-top:8px"></div>
+    </div>
+
+    <div class="card">
+      <h2><span class="dot"></span>翻译</h2>
+      <div class="row" style="justify-content:space-between; margin-bottom:14px;">
+        <div class="modebar" id="modeBar">
+          <button data-mode="toPlain" class="active">黑话 转 人话</button>
+          <button data-mode="toJargon">人话 转 黑话</button>
+        </div>
+        <span class="muted">Ctrl+Enter 翻译</span>
+      </div>
+      <div class="grid2">
+        <div>
+          <textarea id="input" placeholder="粘贴或输入职场黑话，例如：我们要拉通对齐，打造闭环，形成抓手，赋能业务，颗粒度要细……"></textarea>
+          <div class="row" style="margin-top:10px;">
+            <button class="btn primary" id="btnTranslate">翻译</button>
+            <button class="btn" id="btnClear">清空</button>
+            <span class="muted grow">示例：</span>
+            <button class="btn small" data-fill="0">周会材料</button>
+            <button class="btn small" data-fill="1">绩效面谈</button>
+            <button class="btn small" data-fill="2">裁员通知</button>
+          </div>
+        </div>
+        <div>
+          <div class="result-box" id="output">翻译结果将显示在这里</div>
+          <div class="row" style="margin-top:10px; justify-content:space-between;">
+            <span id="density"></span>
+            <button class="btn" id="btnCopy">复制结果</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card hidden" id="detailCard">
+      <h2><span class="dot"></span>逐词对照</h2>
+      <div class="tbl-wrap">
+        <table class="comp">
+          <thead><tr><th>黑话</th><th>翻译</th><th>分类</th></tr></thead>
+          <tbody id="compBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- 词典 -->
+  <section class="panel" id="panel-dictionary">
+    <div class="card">
+      <h2><span class="dot"></span>词典</h2>
+      <div class="row" style="margin-bottom:14px;">
+        <input type="text" id="searchInput" class="grow" placeholder="搜索黑话关键词……">
+        <select id="catFilter">
+          <option value="">全部分类</option>
+        </select>
+        <button class="btn small" id="btnExport">导出自建词条</button>
+        <button class="btn small" id="btnImport">导入自建词条</button>
+        <input type="file" id="fileInput" class="hidden" accept=".json,application/json">
+      </div>
+      <div class="row" id="catChips" style="margin-bottom:14px;">
+        <button class="chip active" data-cat="">全部</button>
+      </div>
+      <div class="term-list" id="termList"></div>
+    </div>
+
+    <div class="card">
+      <h2><span class="dot"></span>添加自建词条</h2>
+      <div class="row">
+        <input type="text" id="addTerm" class="grow" placeholder="黑话，如：对齐颗粒度" style="flex:1">
+        <input type="text" id="addMean" class="grow" placeholder="翻译，如：把工作标准统一清楚" style="flex:2">
+      </div>
+      <div class="row" style="margin-top:12px;">
+        <select id="addCat" style="flex:1"></select>
+        <input type="text" id="addEx" class="grow" placeholder="例句（选填）" style="flex:2">
+        <button class="btn primary" id="btnAdd">添加</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 生成器 -->
+  <section class="panel" id="panel-generator">
+    <div class="card">
+      <h2><span class="dot"></span>黑话生成器</h2>
+      <p class="muted" style="margin-bottom:14px;">随机拼装一段以假乱真的职场黑话，可用于周报、汇报演示、反讽段子。</p>
+      <div class="gen-out" id="genOut">点击生成，见证奇迹</div>
+      <div class="row" style="margin-top:14px;">
+        <button class="btn primary" id="btnGen">生成一句</button>
+        <button class="btn" id="btnGenPara">生成一段</button>
+        <button class="btn" id="btnCopyGen">复制</button>
+      </div>
+    </div>
+    <div class="card">
+      <h2><span class="dot"></span>翻译黑话模板速查</h2>
+      <div class="tbl-wrap">
+        <table class="comp">
+          <thead><tr><th>老板说的</th><th>实际意思</th></tr></thead>
+          <tbody id="reverseList"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- 挑战 -->
+  <section class="panel" id="panel-quiz">
+    <div class="card">
+      <h2><span class="dot"></span>黑话挑战</h2>
+      <div class="quiz-area" id="quizArea">
+        <p class="muted" style="margin-bottom:14px;">每次随机 8 题，测试你的黑话免疫力。</p>
+        <button class="btn primary" id="btnQuizStart">开始挑战</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 关于 -->
+  <section class="panel" id="panel-about">
+    <div class="card">
+      <h2><span class="dot"></span>关于</h2>
+      <p style="line-height:2; font-size:14px;">
+        职场黑话翻译器是一款<b>完全本地运行</b>的工具：所有词条、数据都保存在你自己的浏览器里，无需联网，无需上传。
+        词库覆盖会议汇报、战略管理、增长运营、技术研发、商业市场、数据指标、招聘绩效、职场生态八大类，并支持自建词条与导入导出。
+      </p>
+      <ul style="margin:12px 0 0 20px; line-height:2.2; font-size:14px;">
+        <li>翻译模式：黑话转人话 / 人话转黑话，支持整段分析并逐词对照。</li>
+        <li>黑话浓度检测：识别一段话里有多少黑话，并给出浓度评级。</li>
+        <li>词典：8 大分类可检索，支持自定义词条（保存在本地）。</li>
+        <li>黑话生成器：一键生成以假乱真的汇报黑话。</li>
+        <li>黑话挑战：随机出题，测试黑话免疫力。</li>
+        <li>深色模式：保护眼睛，深夜加班必备。</li>
+      </ul>
+      <p class="muted" style="margin-top:16px;">本工具内容仅供娱乐，祝大家在职场中少听黑话、多拿真钱。</p>
+    </div>
+  </section>
+
+  <div class="foot">
+    职场黑话翻译器 · 纯本地运行，数据不离开浏览器 · 词库仅供娱乐，请以实际为准
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+'use strict';
+
+const CATS = {
+  meeting: '会议与汇报',
+  manage:  '战略与管理',
+  growth:  '增长与运营',
+  tech:    '技术与研发',
+  market:  '商业与市场',
+  data:    '数据与指标',
+  hr:      '招聘与绩效',
+  culture: '职场生态'
+};
+
+const DICTIONARY = [
+  {t:'对齐',m:'开会统一想法，让大家步调一致，谁都别跑偏',c:'meeting',e:'例：我们先把方案对齐一下再开工。'},
+  {t:'同步',m:'告知大家最新进展，你负责说，我负责听',c:'meeting',e:'例：我同步一下本周的进度。'},
+  {t:'拉通',m:'协调各方资源，消除部门间的信息差',c:'meeting',e:'例：这件事需要拉通产品和技术一起做。'},
+  {t:'联动',m:'多个部门配合一起干活，多半要靠你推动',c:'meeting',e:'例：市场部和我们联动做一次推广。'},
+  {t:'复盘',m:'事后总结经验和教训，顺便把锅分清楚',c:'meeting',e:'例：项目结束了，我们开个复盘会。'},
+  {t:'周知',m:'告知所有人，别再说你没收到',c:'meeting',e:'例：此通知全组周知。'},
+  {t:'抄送',m:'把邮件发给你以示知情，别想太多',c:'meeting',e:'例：结果记得抄送老板一份。'},
+  {t:'已阅',m:'我看过了，但不打算表态',c:'meeting',e:'例：消息显示"已阅"，但没有回复。'},
+  {t:'收到',m:'我知道了，但别指望我回复具体内容',c:'meeting',e:'例：收到。'},
+  {t:'尽快',m:'其实没那么急，别把自己累着',c:'meeting',e:'例：这个需求尽快给我。'},
+  {t:'及时',m:'出问题的时候，你得负责任',c:'meeting',e:'例：问题要及时反馈啊。'},
+  {t:'辛苦',m:'口头感谢，不含任何实质奖励',c:'meeting',e:'例：这周辛苦大家了。'},
+  {t:'麻烦您',m:'这是我甩给你的活儿',c:'meeting',e:'例：麻烦您把这表填一下。'},
+  {t:'过会',m:'拿去评审会上讨论，通常已内定',c:'meeting',e:'例：这个方案下周一过会。'},
+  {t:'评审',m:'让大家提意见，但意见一般不作数',c:'meeting',e:'例：周五评审会，记得参加。'},
+  {t:'述职',m:'向领导汇报我这一年到底干了啥',c:'meeting',e:'例：年底要述职，你PPT做完了吗。'},
+  {t:'头脑风暴',m:'一群人七嘴八舌提想法，一般不负责落地',c:'meeting',e:'例：下午头脑风暴，大家放开聊。'},
+  {t:'一对一',m:'和领导单独谈话，检查你的思想状态',c:'meeting',e:'例：老板约了你一对一，想想怎么回答。'},
+  {t:'弹性工作',m:'没有固定上下班时间，但活干完为止',c:'meeting',e:'例：我们弹性工作制，早上不用打卡。'},
+  {t:'建群',m:'群里讨论问题，方便甩锅时有人作证',c:'meeting',e:'例：这件事我们建个群推进。'},
+  {t:'赋能',m:'给下属加活，还包装成是在帮助你成长',c:'manage',e:'例：我们要赋能一线，让他们更有战斗力。'},
+  {t:'抓手',m:'推进工作的切入点或方法，没有抓手就没法干活',c:'manage',e:'例：这件事总得有个抓手吧。'},
+  {t:'闭环',m:'事情有始有终，形成完整流程',c:'manage',e:'例：我们要形成管理闭环。'},
+  {t:'颗粒度',m:'事情被细化拆解的程度',c:'manage',e:'例：你的方案颗粒度太粗了，再细一点。'},
+  {t:'打法',m:'做事的方法和策略',c:'manage',e:'例：今年市场的打法是什么。'},
+  {t:'组合拳',m:'多种手段配合使用',c:'manage',e:'例：我们要打一套组合拳。'},
+  {t:'方法论',m:'把经验包装成一套看起来很有体系的东西',c:'manage',e:'例：这套方法论要沉淀下来。'},
+  {t:'底层逻辑',m:'事情最根本的道理，讲不清时就甩这个词',c:'manage',e:'例：这事的底层逻辑你懂吗。'},
+  {t:'顶层设计',m:'先画个大框架，细节以后再说',c:'manage',e:'例：我们得先从顶层设计入手。'},
+  {t:'认知',m:'你懂不懂事、明白多少道理',c:'manage',e:'例：你要提升自己的认知。'},
+  {t:'心智',m:'用户脑子里根深蒂固的想法',c:'manage',e:'例：我们要占领用户心智。'},
+  {t:'格局',m:'嫌你想得不够远、站得不够高',c:'manage',e:'例：做人要有格局。'},
+  {t:'深度',m:'嫌你想得太浅',c:'manage',e:'例：你的分析还差点深度。'},
+  {t:'高度',m:'要你把话说到更高大上的层面',c:'manage',e:'例：汇报要站在公司的高度。'},
+  {t:'温度',m:'让你做事再人性化、有人情味一点',c:'manage',e:'例：产品要有温度。'},
+  {t:'力度',m:'让你干活再使劲一点',c:'manage',e:'例：这次推广大点力度。'},
+  {t:'落地',m:'把想法变成实际行动，别光嘴上说',c:'manage',e:'例：方案再好，不落地等于零。'},
+  {t:'沉淀',m:'把经验保存下来，或裁你之前让你把知识留给别人',c:'manage',e:'例：把这次项目的经验沉淀成文档。'},
+  {t:'抽离',m:'从具体事务中跳出来看全局',c:'manage',e:'例：你要学会从具体事务中抽离出来。'},
+  {t:'复用',m:'做一次的东西，到处换着用',c:'manage',e:'例：这个组件要多场景复用。'},
+  {t:'兜底',m:'出问题时最后有人接着，通常是你',c:'manage',e:'例：这事你兜底。'},
+  {t:'背锅',m:'替别人承担责任',c:'manage',e:'例：这个黑锅我不背。'},
+  {t:'甩锅',m:'把责任推给别人',c:'manage',e:'例：别一有事就甩锅。'},
+  {t:'内耗',m:'内部互相消耗，不产生任何价值',c:'manage',e:'例：各部门互相扯皮，严重内耗。'},
+  {t:'授权',m:'把责任下放给你，出事了由你担责',c:'manage',e:'例：这件事我授权给你全权负责。'},
+  {t:'信任背书',m:'拿别人的名气和信誉替你担保',c:'manage',e:'例：有大厂做信任背书，用户才放心。'},
+  {t:'组织能力',m:'公司整体把事情做成的能力',c:'manage',e:'例：成败取决于组织能力。'},
+  {t:'组织架构调整',m:'裁员或换领导的委婉说法',c:'manage',e:'例：公司近期会有组织架构调整。'},
+  {t:'扁平化管理',m:'层级少，但该汇报的照样汇报',c:'manage',e:'例：我们倡导扁平化管理。'},
+  {t:'矩阵式管理',m:'有多个领导，谁都管你',c:'manage',e:'例：我们是矩阵式组织，双线汇报。'},
+  {t:'双线汇报',m:'有两个老板，两边都要伺候好',c:'manage',e:'例：他实线向我、虚线向总监汇报。'},
+  {t:'长期主义',m:'现在给你画饼，等未来兑现',c:'manage',e:'例：我们要坚持长期主义。'},
+  {t:'第二曲线',m:'老业务不行了，赶紧画个新方向',c:'manage',e:'例：我们要找到第二增长曲线。'},
+  {t:'双轮驱动',m:'两个业务一起推，通常两个都没起来',c:'manage',e:'例：线上线下双轮驱动。'},
+  {t:'飞轮效应',m:'先烧钱跑起来，让业务自己越滚越大',c:'manage',e:''},
+  {t:'护城河',m:'公司的核心竞争力，能挡住对手进攻',c:'manage',e:'例：我们的护城河是什么？'},
+  {t:'壁垒',m:'竞争对手很难学走、很难复制的东西',c:'manage',e:'例：这行没有壁垒就做不起来。'},
+  {t:'降维打击',m:'用更高维度的优势碾压对手',c:'manage',e:'例：我们就是要对同行降维打击。'},
+  {t:'破局',m:'打破现在的僵局，通常是画新饼',c:'manage',e:''},
+  {t:'拥抱变化',m:'公司要裁员或转型，你得接受现实',c:'manage',e:'例：我们要拥抱变化，积极转型。'},
+  {t:'降本增效',m:'降工资、砍预算、裁人',c:'manage',e:'例：今年主题是降本增效。'},
+  {t:'提效',m:'让你一个人干更多活',c:'manage',e:''},
+  {t:'优化',m:'裁员的委婉说法',c:'manage',e:''},
+  {t:'毕业',m:'被裁员了，走得很体面',c:'manage',e:''},
+  {t:'输送人才',m:'开除你，还说得冠冕堂皇',c:'manage',e:''},
+  {t:'向社会输送人才',m:'开除你，理由听起来高大上',c:'manage',e:'例：感谢你多年的贡献，公司将向社会输送人才。'},
+  {t:'兄弟公司',m:'关系好的合作公司，方便互相蹭资源',c:'manage',e:''},
+  {t:'我们是一家人',m:'公司想让你多干活、少谈钱',c:'manage',e:''},
+  {t:'狼性文化',m:'要求员工疯狂加班、疯狂竞争',c:'manage',e:''},
+  {t:'福报',m:'加班是公司赏给你的"福利"',c:'manage',e:'例：你们要有福报意识。'},
+  {t:'团建',m:'占用周末的强制性集体活动',c:'manage',e:''},
+  {t:'996',m:'早9点到晚9点，一周上6天',c:'manage',e:'例：公司现在实行996。'},
+  {t:'画饼',m:'用美好前景承诺代替实际待遇',c:'manage',e:'例：又给我们画饼了。'},
+  {t:'画大饼',m:'画更大更圆的饼',c:'manage',e:'例：老板又在画大饼。'},
+  {t:'期权',m:'用可能永远不上市的公司股票代替工资',c:'manage',e:''},
+  {t:'股权激励',m:'期权的高级叫法，听起来更有面子',c:'manage',e:''},
+  {t:'末位淘汰',m:'绩效排名靠后的直接走人',c:'manage',e:''},
+  {t:'结构优化',m:'裁员的书面说法',c:'manage',e:'例：公司要进行结构优化。'},
+  {t:'人员调整',m:'裁员，只是说得好听',c:'manage',e:''},
+  {t:'战略转型',m:'业务方向大改，老员工危险了',c:'manage',e:''},
+  {t:'内卷',m:'毫无意义的内部恶性竞争',c:'manage',e:''},
+  {t:'卷',m:'拼命加班、拼命竞争、互相消耗',c:'manage',e:''},
+  {t:'躺平',m:'不加班、不内卷，得过且过',c:'manage',e:''},
+  {t:'摸鱼',m:'上班时间干点私事',c:'manage',e:''},
+  {t:'打鸡血',m:'开动员会给大家猛鼓劲',c:'manage',e:''},
+  {t:'打气',m:'口头鼓励，不给任何实际好处',c:'manage',e:''},
+  {t:'增长',m:'让用户数或收入变得更多',c:'growth',e:''},
+  {t:'增长黑客',m:'用低成本手段快速拉增长的偏门玩法',c:'growth',e:''},
+  {t:'拉新',m:'吸引新用户注册使用',c:'growth',e:''},
+  {t:'促活',m:'让老用户多登录多使用',c:'growth',e:''},
+  {t:'留存',m:'让用户留下来、别流失',c:'growth',e:''},
+  {t:'召回',m:'把流失掉的用户重新拉回来',c:'growth',e:''},
+  {t:'裂变',m:'老用户拉新用户，像病毒一样扩散',c:'growth',e:''},
+  {t:'病毒式传播',m:'用户自发帮你传播，一分钱不花',c:'growth',e:''},
+  {t:'私域流量',m:'能反复免费触达的自己家用户',c:'growth',e:''},
+  {t:'公域流量',m:'平台上花钱才触达得到的用户',c:'growth',e:''},
+  {t:'流量红利',m:'获取用户还很便宜的时期',c:'growth',e:''},
+  {t:'流量见顶',m:'用户增长到头了，别指望自然增长',c:'growth',e:''},
+  {t:'存量市场',m:'用户基本固定，只能从对手手里抢',c:'growth',e:''},
+  {t:'增量市场',m:'还有大量新用户可以开发',c:'growth',e:''},
+  {t:'下沉市场',m:'三四线城市和县镇的用户',c:'growth',e:''},
+  {t:'五环外',m:'一线城市以外的广阔天地',c:'growth',e:''},
+  {t:'小镇青年',m:'三四线城市的年轻用户',c:'growth',e:''},
+  {t:'种草',m:'激发用户购买欲望',c:'growth',e:''},
+  {t:'拔草',m:'买下来消除购买欲望',c:'growth',e:''},
+  {t:'安利',m:'强烈推荐给别人的意思',c:'growth',e:''},
+  {t:'避雷',m:'告诉你别买，帮你躲坑',c:'growth',e:''},
+  {t:'精细化运营',m:'把用户分门别类精细管理，多招人、多干活',c:'growth',e:''},
+  {t:'场景',m:'用户用产品时的具体情境',c:'growth',e:''},
+  {t:'触点',m:'用户和产品产生接触的具体节点',c:'growth',e:''},
+  {t:'漏斗',m:'从浏览到下单逐级流失的转化过程',c:'growth',e:''},
+  {t:'转化',m:'从围观者变成买家或用户',c:'growth',e:''},
+  {t:'私域',m:'自己攒的用户池',c:'growth',e:''},
+  {t:'社群',m:'用户群，主要用途是发广告和促活',c:'growth',e:''},
+  {t:'用户画像',m:'给用户贴标签、做分类',c:'growth',e:''},
+  {t:'千人千面',m:'每个人看到的内容都不一样，算法推荐',c:'growth',e:''},
+  {t:'个性化推荐',m:'算法根据你的口味给你推内容',c:'growth',e:''},
+  {t:'痛点',m:'用户最烦、最想解决的问题',c:'growth',e:''},
+  {t:'刚需',m:'用户必须要有的需求',c:'growth',e:''},
+  {t:'伪需求',m:'你以为用户需要，其实他们根本不买',c:'growth',e:''},
+  {t:'心智占领',m:'让用户一想到某类产品就想到你',c:'growth',e:''},
+  {t:'出圈',m:'火到圈外，大众都知道了',c:'growth',e:''},
+  {t:'破圈',m:'突破原有领域，跨到别的圈子',c:'growth',e:''},
+  {t:'引爆点',m:'突然爆火的临界时刻',c:'growth',e:''},
+  {t:'直播带货',m:'在直播间里卖货',c:'growth',e:''},
+  {t:'头部主播',m:'最火的顶流主播，出场费天价',c:'growth',e:''},
+  {t:'坑位费',m:'请主播上播的出场费',c:'growth',e:''},
+  {t:'佣金',m:'卖出去货后的抽成',c:'growth',e:''},
+  {t:'砍价',m:'让你拉人拼单降价',c:'growth',e:''},
+  {t:'拼单',m:'找一堆人一起买更便宜',c:'growth',e:''},
+  {t:'薅羊毛',m:'利用各种优惠白占便宜',c:'growth',e:''},
+  {t:'羊毛党',m:'专门蹲守优惠占便宜的一群人',c:'growth',e:''},
+  {t:'白嫖',m:'不花一分钱白用',c:'growth',e:''},
+  {t:'迭代',m:'不停改版本、不停上线新功能',c:'tech',e:''},
+  {t:'版本',m:'每个阶段的发布包',c:'tech',e:''},
+  {t:'上线',m:'功能正式发布给用户',c:'tech',e:''},
+  {t:'发布',m:'把做好的功能推向用户',c:'tech',e:''},
+  {t:'灰度发布',m:'先放给一小部分用户试水',c:'tech',e:''},
+  {t:'金丝雀发布',m:'先放少量流量试探，没问题再全量',c:'tech',e:''},
+  {t:'蓝绿部署',m:'新旧两套环境无缝切换，坏了立刻切回',c:'tech',e:''},
+  {t:'回滚',m:'新版本出问题，退回旧版本',c:'tech',e:''},
+  {t:'补丁',m:'临时打的快速修复',c:'tech',e:''},
+  {t:'热更新',m:'不重启服务就能更新代码',c:'tech',e:''},
+  {t:'高可用',m:'系统稳定不出错、不宕机',c:'tech',e:''},
+  {t:'容灾',m:'出大事故时数据还能恢复',c:'tech',e:''},
+  {t:'扩容',m:'服务器不够用，加机器',c:'tech',e:''},
+  {t:'缩容',m:'机器多了，减少资源',c:'tech',e:''},
+  {t:'降级',m:'压力太大时砍掉次要功能保命',c:'tech',e:''},
+  {t:'熔断',m:'下游服务挂了，自动断开保护自己',c:'tech',e:''},
+  {t:'限流',m:'请求太多时拦截一部分，防止被打爆',c:'tech',e:''},
+  {t:'分布式',m:'多台机器分工协作干一件事',c:'tech',e:''},
+  {t:'微服务',m:'把大系统拆成一堆小服务独立部署',c:'tech',e:''},
+  {t:'中台',m:'各业务线共用的后台能力中心',c:'tech',e:''},
+  {t:'数据中台',m:'把各系统的数据统一管起来',c:'tech',e:''},
+  {t:'上云',m:'把服务器搬到云服务商那里',c:'tech',e:''},
+  {t:'云原生',m:'从设计上就为云端而生的一套架构',c:'tech',e:''},
+  {t:'大数据',m:'海量数据，常常被拿来画饼',c:'tech',e:''},
+  {t:'人工智能',m:'让机器替人干活的统称',c:'tech',e:''},
+  {t:'机器学习',m:'用数据喂模型，让机器学会规律',c:'tech',e:''},
+  {t:'深度学习',m:'更复杂的机器学习，神经网络那套',c:'tech',e:''},
+  {t:'大模型',m:'参数巨大的人工智能模型',c:'tech',e:''},
+  {t:'AIGC',m:'AI生成文字、图片、视频等内容',c:'tech',e:''},
+  {t:'生成式AI',m:'能凭空创作内容的AI',c:'tech',e:''},
+  {t:'数字化',m:'把线下流程搬到线上',c:'tech',e:''},
+  {t:'智能化',m:'让系统自动做判断和决策',c:'tech',e:''},
+  {t:'数智化',m:'数字化+智能化的最新包装词',c:'tech',e:''},
+  {t:'全链路',m:'从起点到终点的完整流程',c:'tech',e:''},
+  {t:'端到端',m:'从头到尾全部负责',c:'tech',e:''},
+  {t:'最后一公里',m:'最难到达或最难执行的收尾部分',c:'tech',e:''},
+  {t:'底层架构',m:'系统最基础、最核心的结构',c:'tech',e:''},
+  {t:'技术债',m:'图省事欠下的烂摊子，早晚要还',c:'tech',e:''},
+  {t:'重构',m:'推倒重写，通常还会带出几个新bug',c:'tech',e:''},
+  {t:'兼容',m:'新旧版本都能正常使用',c:'tech',e:''},
+  {t:'联调',m:'多个系统配合起来一起调试',c:'tech',e:''},
+  {t:'验收',m:'检查交付的东西合不合格',c:'tech',e:''},
+  {t:'交付',m:'把做好的成果正式交出去',c:'tech',e:''},
+  {t:'工单',m:'任务单，排队等处理',c:'tech',e:''},
+  {t:'SLA',m:'服务水平承诺，多久必须响应',c:'tech',e:''},
+  {t:'响应时间',m:'多久回复你，往往承诺和现实不符',c:'tech',e:''},
+  {t:'瓶颈',m:'拖慢整个系统速度的环节',c:'tech',e:''},
+  {t:'压测',m:'压力测试，看系统能不能扛住',c:'tech',e:''},
+  {t:'性能优化',m:'让系统跑得更快更省资源',c:'tech',e:''},
+  {t:'缓存',m:'把常用数据存起来，读取更快',c:'tech',e:''},
+  {t:'接口',m:'系统与系统之间通话的入口',c:'tech',e:''},
+  {t:'对标',m:'跟行业龙头做对比找差距',c:'market',e:''},
+  {t:'竞品',m:'竞争对手的产品',c:'market',e:''},
+  {t:'头部',m:'行业第一梯队',c:'market',e:''},
+  {t:'腰部',m:'不上不下的中坚力量',c:'market',e:''},
+  {t:'长尾',m:'小众但总量巨大的需求',c:'market',e:''},
+  {t:'蓝海',m:'没人竞争的全新市场',c:'market',e:''},
+  {t:'红海',m:'竞争惨烈到血流成河的市场',c:'market',e:''},
+  {t:'风口',m:'政策和趋势吹出来的机会窗口',c:'market',e:''},
+  {t:'赛道',m:'公司选的业务方向',c:'market',e:''},
+  {t:'天花板',m:'行业或个人能力的上限',c:'market',e:''},
+  {t:'杠杆',m:'用小投入撬动大回报的手段',c:'market',e:''},
+  {t:'放大器',m:'放大已有效果的工具或渠道',c:'market',e:''},
+  {t:'生态',m:'一群互相依赖的公司和产品抱团',c:'market',e:''},
+  {t:'生态圈',m:'把"生态"再画个圈，听起来更完整',c:'market',e:''},
+  {t:'上下游',m:'供应链的前端和后端',c:'market',e:''},
+  {t:'产业链',m:'从原料到销售一整条链条',c:'market',e:''},
+  {t:'价值链',m:'各环节创造价值的总和',c:'market',e:''},
+  {t:'品牌溢价',m:'牌子值钱，所以卖得贵',c:'market',e:''},
+  {t:'差异化',m:'做出和别人不一样的东西',c:'market',e:''},
+  {t:'新消费',m:'用新玩法重新做传统品类',c:'market',e:''},
+  {t:'新零售',m:'线上线下结合的卖货方式',c:'market',e:''},
+  {t:'国潮',m:'中国风的新潮品牌',c:'market',e:''},
+  {t:'银发经济',m:'老年人相关的生意',c:'market',e:''},
+  {t:'她经济',m:'围绕女性的消费生意',c:'market',e:''},
+  {t:'悦己经济',m:'花钱让自己开心的消费',c:'market',e:''},
+  {t:'懒人经济',m:'卖"省事方便"的生意',c:'market',e:''},
+  {t:'元宇宙',m:'虚拟世界，画饼专用词',c:'market',e:''},
+  {t:'区块链',m:'去中心化记账技术，经常被拿来蹭热度',c:'market',e:''},
+  {t:'供应链',m:'从原料到终端的供给链条',c:'market',e:''},
+  {t:'渠道',m:'把货卖出去的途径',c:'market',e:''},
+  {t:'分销',m:'交给代理们帮你卖',c:'market',e:''},
+  {t:'招商',m:'拉人加盟或代理',c:'market',e:''},
+  {t:'直营',m:'自己开店自己卖',c:'market',e:''},
+  {t:'加盟',m:'让别人出钱，用你的品牌开店',c:'market',e:''},
+  {t:'代理商',m:'替你卖货并抽成的中间商',c:'market',e:''},
+  {t:'经销商',m:'买断再转卖的中间商',c:'market',e:''},
+  {t:'供应商',m:'给你供货的厂家',c:'market',e:''},
+  {t:'甲方',m:'掏钱的金主爸爸',c:'market',e:''},
+  {t:'乙方',m:'干活拿钱受气的',c:'market',e:''},
+  {t:'外包',m:'把活包给别人干，便宜省事',c:'market',e:''},
+  {t:'售前',m:'下单前的技术销售支持',c:'market',e:''},
+  {t:'售后',m:'卖完之后的客服和维修',c:'market',e:''},
+  {t:'增值服务',m:'额外收费的附加服务',c:'market',e:''},
+  {t:'KPI',m:'考核你的数字指标，完不成扣钱',c:'data',e:''},
+  {t:'OKR',m:'目标与关键结果，比KPI听起来洋气',c:'data',e:''},
+  {t:'ROI',m:'投入产出比，算不过来的生意不做',c:'data',e:''},
+  {t:'GMV',m:'成交总额，注水后的漂亮数字',c:'data',e:''},
+  {t:'DAU',m:'日活跃用户数',c:'data',e:''},
+  {t:'MAU',m:'月活跃用户数',c:'data',e:''},
+  {t:'ARPU',m:'平均每个用户贡献的收入',c:'data',e:''},
+  {t:'转化率',m:'100个人里几个变成付费用户',c:'data',e:''},
+  {t:'留存率',m:'留下来继续使用的用户比例',c:'data',e:''},
+  {t:'复购率',m:'回头客的比例',c:'data',e:''},
+  {t:'获客成本',m:'每拉一个新用户花了多少钱',c:'data',e:''},
+  {t:'NPS',m:'用户愿不愿意推荐你的净推荐值',c:'data',e:''},
+  {t:'数据驱动',m:'凭数据说话，别拍脑袋决定',c:'data',e:''},
+  {t:'数据埋点',m:'在页面上埋探测器收集用户行为',c:'data',e:''},
+  {t:'数据看板',m:'把关键数据做成图表挂墙上',c:'data',e:''},
+  {t:'日活',m:'每天活跃的用户数',c:'data',e:''},
+  {t:'月活',m:'每月活跃的用户数',c:'data',e:''},
+  {t:'环比',m:'跟上个周期相比',c:'data',e:''},
+  {t:'同比',m:'跟去年同一时期相比',c:'data',e:''},
+  {t:'边际成本',m:'每多生产一个的成本',c:'data',e:''},
+  {t:'沉没成本',m:'已经投入、再也回不来的成本',c:'data',e:''},
+  {t:'机会成本',m:'选了A而放弃B的损失',c:'data',e:''},
+  {t:'二八定律',m:'20%的投入带来80%的产出',c:'data',e:''},
+  {t:'马太效应',m:'强者越强、弱者越弱',c:'data',e:''},
+  {t:'幸存者偏差',m:'只看到成功者，忽略掉大量失败者',c:'data',e:''},
+  {t:'锚定效应',m:'先标个高价，让你觉得打折价很划算',c:'data',e:''},
+  {t:'光环效应',m:'因为一个优点，看整体都顺眼',c:'data',e:''},
+  {t:'羊群效应',m:'看大家都买，你也跟着买',c:'data',e:''},
+  {t:'破窗效应',m:'小问题不管，会引来越来越多的大问题',c:'data',e:''},
+  {t:'巴纳姆效应',m:'星座运势这类话很模糊，你却对号入座',c:'data',e:''},
+  {t:'达克效应',m:'越没能力的人越觉得自己厉害',c:'data',e:''},
+  {t:'信息差',m:'我知道你不知道的信息',c:'data',e:''},
+  {t:'信息茧房',m:'只看得到想看的，越来越偏执',c:'data',e:''},
+  {t:'自驱力',m:'不用人管，自己拼命干活的能力',c:'hr',e:''},
+  {t:'主动性',m:'让你主动多干点活',c:'hr',e:''},
+  {t:'责任心',m:'出事了你得负责',c:'hr',e:''},
+  {t:'抗压能力',m:'扛得住加班、扛得住批评',c:'hr',e:''},
+  {t:'学习能力',m:'自己学新东西，公司不安排培训',c:'hr',e:''},
+  {t:'执行力',m:'让你说干就干、少废话',c:'hr',e:''},
+  {t:'主人翁意识',m:'拿着打工的钱，操着老板的心',c:'hr',e:''},
+  {t:'大局观',m:'牺牲你的个人利益，顾全公司利益',c:'hr',e:''},
+  {t:'团队协作',m:'大家配合着把活干完',c:'hr',e:''},
+  {t:'沟通能力',m:'会说话、会汇报、会来事',c:'hr',e:''},
+  {t:'逻辑思维',m:'想问题有条理，别东一榔头西一棒',c:'hr',e:''},
+  {t:'创新能力',m:'能想出别人想不到的新点子',c:'hr',e:''},
+  {t:'结果导向',m:'只看结果，不管过程多苦',c:'hr',e:''},
+  {t:'用户思维',m:'站在用户角度想问题',c:'hr',e:''},
+  {t:'同理心',m:'能理解别人的感受',c:'hr',e:''},
+  {t:'共情',m:'同理心的洋气说法',c:'hr',e:''},
+  {t:'洞察',m:'发现别人没发现的问题',c:'hr',e:''},
+  {t:'高潜',m:'有潜力、值得培养的人才',c:'hr',e:''},
+  {t:'核心员工',m:'裁不掉、离了你玩不转的人',c:'hr',e:''},
+  {t:'螺丝钉',m:'随时可以被替换的普通员工',c:'hr',e:''},
+  {t:'工具人',m:'被当成工具使唤的人',c:'hr',e:''},
+  {t:'职场PUA',m:'领导通过打压贬低来控制你',c:'hr',e:''},
+  {t:'情绪价值',m:'让人相处起来舒服的价值',c:'hr',e:''},
+  {t:'提供情绪价值',m:'哄人开心，俗称彩虹屁',c:'hr',e:''},
+  {t:'玻璃心',m:'说不得、批评两句就受不了',c:'hr',e:''},
+  {t:'情商高',m:'会来事、会说话、让人舒服',c:'hr',e:''},
+  {t:'报喜不报忧',m:'只汇报好消息，坏消息藏着',c:'hr',e:''},
+  {t:'周报',m:'每周交一次的汇报总结',c:'hr',e:''},
+  {t:'日报',m:'每天交一次的汇报总结',c:'hr',e:''},
+  {t:'述职报告',m:'年终向领导汇报一年的业绩',c:'hr',e:''},
+  {t:'晋升',m:'升职，别高兴太早，活更多了',c:'hr',e:''},
+  {t:'家文化',m:'让你把公司当家的另一面',c:'culture',e:''},
+  {t:'感恩文化',m:'公司让你感恩戴德，少提要求',c:'culture',e:''},
+  {t:'皮实',m:'经得起骂、扛得住折腾',c:'culture',e:''},
+  {t:'情绪稳定',m:'挨骂了也不能回嘴',c:'culture',e:''},
+  {t:'人才梯队',m:'随时备好能替换你的人',c:'culture',e:''},
+  {t:'骨干',m:'干活的主力军，通常最累',c:'culture',e:''},
+  {t:'空降',m:'从外面调来的新领导',c:'culture',e:''},
+  {t:'山头文化',m:'公司内部各派系互相较劲',c:'culture',e:''},
+  {t:'办公室政治',m:'同事之间勾心斗角',c:'culture',e:''},
+  {t:'背锅侠',m:'专门负责背黑锅的人',c:'culture',e:''},
+  {t:'踢皮球',m:'把责任推来推去，谁都不接',c:'culture',e:''},
+  {t:'会议纪要',m:'开会的书面记录，落字的才认',c:'culture',e:''},
+  {t:'约谈',m:'领导找你谈话，通常没好事',c:'culture',e:''},
+  {t:'谈心',m:'约谈的好听说法',c:'culture',e:''},
+  {t:'复盘会',m:'出问题后开的总结批斗会',c:'culture',e:''},
+  {t:'动员大会',m:'打鸡血、喊口号的大会',c:'culture',e:''}
+];
+
+const PLAIN_PAIRS = [
+  {p:'我不知道', j:'这个我需要再对齐一下'},
+  {p:'我没做过', j:'这个领域我还在持续探索'},
+  {p:'我不想去', j:'我这边时间上可能排不开'},
+  {p:'我不愿意', j:'我需要评估一下投入产出比'},
+  {p:'我不知道怎么办', j:'这个需要进一步厘清底层逻辑'},
+  {p:'加钱', j:'需要相应的资源支持才能推进'},
+  {p:'不给钱', j:'我们要控制成本，做到降本增效'},
+  {p:'你看着办', j:'这件事需要你发挥主人翁意识'},
+  {p:'这个不行', j:'这个方案还有很大的优化空间'},
+  {p:'不想加班', j:'我希望通过提效减少不必要的内耗'},
+  {p:'太贵了', j:'我们需要更高性价比的方案'},
+  {p:'做不出来', j:'技术上存在挑战，需要重新排期'},
+  {p:'出bug了', j:'线上环境存在一些异常需要排查'},
+  {p:'用户不买账', j:'用户的痛点还没有被充分挖掘'},
+  {p:'销量不好', j:'我们需要进一步激活存量市场'},
+  {p:'有人反对', j:'我们需要先对齐，形成共识'},
+  {p:'失败了', j:'这是一次非常宝贵的试错'},
+  {p:'别问我', j:'这个需要你发挥自驱力'},
+  {p:'你负责', j:'这个项目由你兜底'},
+  {p:'我背锅', j:'我来承担最终的结果'},
+  {p:'让你背锅', j:'大家是一个整体，要有大局观'},
+  {p:'我被裁员了', j:'我经历了结构优化，重新流入人才市场'},
+  {p:'没加班费', j:'我们更看重长期价值和成长空间'},
+  {p:'想涨工资', j:'你的成长空间还很大'},
+  {p:'请病假', j:'我需要远程协作，保持在线'},
+  {p:'不想干', j:'我想拥抱变化，寻找第二曲线'},
+  {p:'快下班了', j:'我们可以开个短会对齐一下'},
+  {p:'别开会了', j:'建议直接把会议纪要同步一下即可'},
+  {p:'我负责', j:'这个项目由我来操盘'},
+  {p:'没钱了', j:'资源有限，我们需要聚焦核心场景'},
+  {p:'太慢了', j:'我们要小步快跑，快速迭代'},
+  {p:'别废话', j:'请聚焦，直击核心问题'},
+  {p:'就这样吧', j:'先灰度跑起来，用数据说话'},
+  {p:'真的吗', j:'这个结论有数据支撑吗'},
+  {p:'我不同意', j:'这个方案我们需要再评估一下'}
+];
+
+const SAMPLES = [
+  '我们要拉通各部门对齐目标，打通业务链路，以结果为导向，赋能一线团队，颗粒度要细，形成管理闭环。',
+  '你的成长空间很大，要提升认知、拓宽格局，多思考底层逻辑，要有大局观和主人翁意识，拥抱变化，勇攀第二曲线。',
+  '感谢你多年来的辛勤付出，公司正在进行组织架构调整和人员优化，希望你拥抱变化，重新流向更广阔的舞台。'
+];
+
+const GEN_TEMPLATES = [
+  '我们要围绕{n}，以{r}为抓手，通过{d}持续{s}，打通{e}的堵点，构建{q}的{ds}闭环，最终实现{z}，形成{cs}的护城河。',
+  '在{h}的背景下，我们需要{d}，聚焦{ds}痛点，用{r}的杠杆撬动{e}的增量，小步快跑，快速迭代，实现{z}的跨越式增长。',
+  '建议从{cs}层面进行{ds}顶层设计，通过{d}释放{r}势能，抓住{h}的风口，抢占{ds}心智，构建{e}生态，形成{q}的飞轮效应。',
+  '我们要{d}，打造{cs}的中台能力，赋能{e}场景，以{ds}为锚点，双轮驱动、组合拳打法，最终实现{z}。',
+  '基于{ds}的数据驱动，我们要{d}，激活{h}存量，拉通{q}资源，差异化定位{e}赛道，坚持长期主义，实现{z}。'
+];
+
+const GEN_POOL = {
+  n:['北极星指标','用户增长','组织能力','核心场景','第二曲线','业务中台','私域流量','产业互联网'],
+  r:['方法论','抓手','杠杆','放大器','组合拳','底层逻辑','OKR','SOP'],
+  d:['降本增效','精细化运营','重构底层架构','数字化赋能','标准化','流程再造','生态共建','渠道下沉'],
+  s:['沉淀','迭代','复用','拉通','对齐','赋能','复盘','透传'],
+  e:['业务端','用户端','供应链','存量市场','下沉市场','全链路','上下游','最后一公里'],
+  q:['产品','业务','组织','生态','数据','品牌','用户'],
+  ds:['数据','流量','心智','场景','需求','价值','体验','增长'],
+  z:['指数级增长','降维打击','行业第一','生态闭环','商业闭环','品牌溢价','长期价值','第二增长曲线'],
+  cs:['企业','行业','平台','集团','组织','团队'],
+  h:['数字化浪潮','存量博弈','流量红利消退','大模型时代','消费升级','政策窗口','技术变革']
+};
+
+const state = {
+  custom: [],
+  mode: 'toPlain',
+  theme: 'dark'
+};
+
+/* ---------- helpers ---------- */
+const $ = id => document.getElementById(id);
+function toast(msg){
+  const el = $('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => el.classList.remove('show'), 1800);
+}
+function copyText(text){
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(() => toast('已复制')).catch(() => fallbackCopy(text));
+  } else fallbackCopy(text);
+}
+function fallbackCopy(text){
+  const ta = document.createElement('textarea');
+  ta.value = text; document.body.appendChild(ta); ta.select();
+  document.execCommand('copy'); document.body.removeChild(ta);
+  toast('已复制');
+}
+function shuffle(arr){ const a = arr.slice(); for(let i=a.length-1;i>0;i--){ const j = Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+function getDict(){ return DICTIONARY.concat(state.custom); }
+function getCats(){ const s = new Set(getDict().map(d => d.c)); return [...s]; }
+function load(){
+  try { state.custom = JSON.parse(localStorage.getItem('wj_custom') || '[]'); } catch(e){ state.custom = []; }
+  try { state.theme = localStorage.getItem('wj_theme') || 'dark'; } catch(e){ state.theme = 'dark'; }
+}
+function saveCustom(){ try { localStorage.setItem('wj_custom', JSON.stringify(state.custom)); } catch(e){} }
+function saveTheme(){ try { localStorage.setItem('wj_theme', state.theme); } catch(e){} }
+
+/* ---------- tabs ---------- */
+document.querySelectorAll('nav.tabs button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('nav.tabs button').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    $('panel-' + btn.dataset.tab).classList.add('active');
+    if(btn.dataset.tab === 'generator') renderReverse();
+    if(btn.dataset.tab === 'dictionary') renderDictionary();
+  });
+});
+
+/* ---------- theme ---------- */
+function applyTheme(){
+  document.documentElement.setAttribute('data-theme', state.theme);
+  $('themeToggle').textContent = state.theme === 'dark' ? '浅色模式' : '深色模式';
+}
+$('themeToggle').addEventListener('click', () => {
+  state.theme = state.theme === 'dark' ? 'light' : 'dark';
+  saveTheme(); applyTheme();
+});
+
+/* ---------- matching ---------- */
+function matchTerms(text, dict){
+  const byLen = dict.slice().sort((a,b) => b.t.length - a.t.length);
+  const escaped = byLen.map(d => d.t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+  const regex = new RegExp(escaped.join('|'), 'g');
+  const found = [];
+  let m;
+  while((m = regex.exec(text)) !== null){
+    const t = m[0];
+    const entry = byLen.find(d => d.t === t);
+    if(entry){
+      found.push({term:t, meaning:entry.m, cat:entry.c, index:m.index, len:t.length});
+    }
+    regex.lastIndex = m.index + Math.max(1, t.length);
+  }
+  return found.sort((a,b) => a.index - b.index);
+}
+function buildSegs(text, matches){
+  const segs = [];
+  let pos = 0;
+  matches.forEach(mt => {
+    if(mt.index > pos) segs.push({type:'plain', text:text.slice(pos, mt.index)});
+    segs.push({type:'term', ...mt});
+    pos = mt.index + mt.len;
+  });
+  if(pos < text.length) segs.push({type:'plain', text:text.slice(pos)});
+  return segs;
+}
+
+/* ---------- translate ---------- */
+function translate(){
+  const text = $('input').value.trim();
+  if(!text){ $('output').textContent = '请输入内容后再翻译'; $('density').innerHTML = ''; $('detailCard').classList.add('hidden'); return; }
+  let outHTML, detailRows = [], total = 0;
+
+  if(state.mode === 'toPlain'){
+    const dict = getDict();
+    const matches = matchTerms(text, dict);
+    const segs = buildSegs(text, matches);
+    total = matches.length;
+    outHTML = segs.map(s => {
+      if(s.type === 'plain') return esc(s.text);
+      return '<span class="hlr" title="分类：'+esc(CATS[s.c]||s.c)+'">'+esc(s.meaning)+'</span>';
+    }).join('');
+    const seen = {};
+    matches.forEach(m => {
+      if(seen[m.term]){ seen[m.term].count++; return; }
+      seen[m.term] = {term:m.term, meaning:m.meaning, cat:m.c, count:1};
+    });
+    detailRows = Object.values(seen);
+  } else {
+    const matches = matchTerms(text, PLAIN_PAIRS.map(x => ({t:x.p, m:x.j, c:''})));
+    const segs = buildSegs(text, matches);
+    total = matches.length;
+    outHTML = segs.map(s => {
+      if(s.type === 'plain') return esc(s.text);
+      return '<span class="hlr">'+esc(s.meaning)+'</span>';
+    }).join('');
+    const seen = {};
+    matches.forEach(m => {
+      if(seen[m.term]){ seen[m.term].count++; return; }
+      seen[m.term] = {term:m.term, meaning:m.meaning, cat:'', count:1};
+    });
+    detailRows = Object.values(seen);
+    if(total === 0){
+      outHTML = '<span class="muted">没有匹配到人话词条。试试输入"我不知道""不想加班""出bug了"等日常用语。</span>';
+    }
+  }
+
+  $('output').innerHTML = outHTML;
+
+  const ratio = Math.min(100, Math.round(total / (text.length / 2)));
+  let badge, level, msg;
+  if(total === 0){ level = 'low'; badge = '无黑话'; msg = '很干净，是个人话。'; }
+  else if(ratio < 25){ level = 'low'; badge = '轻度黑话'; msg = '只是偶尔冒出一两句，还能忍。'; }
+  else if(ratio < 60){ level = 'mid'; badge = '中度黑话'; msg = '黑话浓度不低，注意提防。'; }
+  else { level = 'high'; badge = '重度黑话'; msg = '满嘴黑话，建议马上逃。'; }
+  $('density').innerHTML = '检测到 <b>' + total + '</b> 处黑话 <span class="badge ' + level + '">' + badge + '</span> <span class="muted">' + msg + '</span><div class="gauge"><div style="width:' + ratio + '%"></div></div>';
+
+  const body = detailRows.map(r =>
+    '<tr><td class="k">' + esc(r.term) + (r.count > 1 ? ' <span class="muted">x'+r.count+'</span>' : '') + '</td>' +
+    '<td>' + esc(r.meaning) + '</td><td>' + esc(r.cat ? (CATS[r.c]||r.c) : '日常用语') + '</td></tr>'
+  ).join('');
+  if(body){
+    $('compBody').innerHTML = body;
+    $('detailCard').classList.remove('hidden');
+  } else {
+    $('detailCard').classList.add('hidden');
+  }
+}
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+$('btnTranslate').addEventListener('click', translate);
+$('btnClear').addEventListener('click', () => { $('input').value = ''; $('output').textContent = '翻译结果将显示在这里'; $('density').innerHTML = ''; $('detailCard').classList.add('hidden'); });
+$('input').addEventListener('keydown', e => { if((e.ctrlKey||e.metaKey) && e.key === 'Enter') translate(); });
+$('btnCopy').addEventListener('click', () => { const txt = $('output').innerText; if(txt && !txt.includes('将显示在这里')) copyText(txt); });
+
+document.querySelectorAll('#modeBar button').forEach(b => {
+  b.addEventListener('click', () => {
+    document.querySelectorAll('#modeBar button').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    state.mode = b.dataset.mode;
+    if($('input').value.trim()) translate();
+  });
+});
+document.querySelectorAll('[data-fill]').forEach(b => {
+  b.addEventListener('click', () => { $('input').value = SAMPLES[+b.dataset.fill]; translate(); });
+});
+
+/* ---------- dictionary ---------- */
+let dictFilter = { q: '', cat: '' };
+function renderCats(){
+  const chips = $('catChips');
+  const cats = getCats();
+  const html = ['<button class="chip' + (dictFilter.cat === '' ? ' active' : '') + '" data-cat="">全部</button>'].concat(
+    cats.map(c => '<button class="chip' + (dictFilter.cat === c ? ' active' : '') + '" data-cat="' + c + '">' + esc(CATS[c]||c) + '</button>')
+  ).join('');
+  chips.innerHTML = html;
+  chips.querySelectorAll('.chip').forEach(ch => {
+    ch.addEventListener('click', () => {
+      chips.querySelectorAll('.chip').forEach(x => x.classList.remove('active'));
+      ch.classList.add('active');
+      dictFilter.cat = ch.dataset.cat;
+      renderDictionary();
+    });
+  });
+  $('catFilter').innerHTML = '<option value="">全部分类</option>' + cats.map(c => '<option value="' + c + '">' + esc(CATS[c]||c) + '</option>').join('');
+}
+function renderDictionary(){
+  renderCats();
+  const q = dictFilter.q.toLowerCase();
+  const list = getDict().filter(d =>
+    (dictFilter.cat === '' || d.c === dictFilter.cat) &&
+    (q === '' || d.t.toLowerCase().includes(q) || d.m.toLowerCase().includes(q))
+  );
+  const box = $('termList');
+  if(!list.length){ box.innerHTML = '<div class="empty">没有匹配的词条，换个关键词试试，或添加自建词条。</div>'; return; }
+  box.innerHTML = list.map((d, i) => {
+    const custom = state.custom.includes(d);
+    return '<div class="term-card">' +
+      (custom ? '<button class="del" data-term="' + esc(d.t) + '">删除</button>' : '') +
+      '<span class="term">' + esc(d.t) + '</span><span class="cat">' + esc(CATS[d.c]||d.c) + (custom ? ' · 自建' : '') + '</span>' +
+      '<div class="mean">' + esc(d.m) + '</div>' +
+      (d.e ? '<div class="ex">' + esc(d.e) + '</div>' : '') +
+    '</div>';
+  }).join('');
+  box.querySelectorAll('.del').forEach(b => {
+    b.addEventListener('click', () => {
+      const idx = state.custom.findIndex(d => d.t === b.dataset.term);
+      if(idx < 0) return;
+      state.custom.splice(idx, 1);
+      saveCustom(); renderDictionary(); updateStats();
+      toast('已删除自建词条');
+    });
+  });
+}
+$('searchInput').addEventListener('input', e => { dictFilter.q = e.target.value; renderDictionary(); });
+$('catFilter').addEventListener('change', e => {
+  dictFilter.cat = e.target.value;
+  $('catChips').querySelectorAll('.chip').forEach(x => x.classList.toggle('active', x.dataset.cat === dictFilter.cat));
+  renderDictionary();
+});
+$('btnAdd').addEventListener('click', () => {
+  const t = $('addTerm').value.trim(), m = $('addMean').value.trim(), c = $('addCat').value, e = $('addEx').value.trim();
+  if(!t || !m){ toast('请填写黑话和翻译'); return; }
+  if(getDict().some(d => d.t === t)){ toast('词条已存在'); return; }
+  state.custom.push({t, m, c, e});
+  saveCustom(); $('addTerm').value = ''; $('addMean').value = ''; $('addEx').value = '';
+  renderDictionary(); updateStats(); toast('已添加自建词条');
+});
+$('btnExport').addEventListener('click', () => {
+  if(!state.custom.length){ toast('还没有自建词条'); return; }
+  const blob = new Blob([JSON.stringify(state.custom, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = '职场黑话自建词条.json';
+  a.click(); URL.revokeObjectURL(a.href);
+});
+$('btnImport').addEventListener('click', () => $('fileInput').click());
+$('fileInput').addEventListener('change', e => {
+  const f = e.target.files[0]; if(!f) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const arr = JSON.parse(reader.result);
+      if(!Array.isArray(arr)) throw 0;
+      let added = 0;
+      arr.forEach(it => {
+        if(it && it.t && it.m && !getDict().some(d => d.t === it.t)){
+          state.custom.push({t:it.t, m:it.m, c:it.c || 'manage', e:it.e || ''});
+          added++;
+        }
+      });
+      saveCustom(); renderDictionary(); updateStats(); toast('导入成功，新增 ' + added + ' 条');
+    } catch(err){ toast('文件格式不正确'); }
+  };
+  reader.readAsText(f);
+  e.target.value = '';
+});
+
+/* ---------- reverse list ---------- */
+function renderReverse(){
+  $('reverseList').innerHTML = PLAIN_PAIRS.map(x => '<tr><td>' + esc(x.p) + '</td><td>' + esc(x.j) + '</td></tr>').join('');
+}
+
+/* ---------- generator ---------- */
+function genSentence(){
+  const tpl = pick(GEN_TEMPLATES);
+  const words = GEN_POOL;
+  return tpl.replace(/\{(\w+)\}/g, (mm, k) => {
+    const arr = words[k] || [];
+    return arr.length ? pick(arr) : mm;
+  });
+}
+$('btnGen').addEventListener('click', () => { $('genOut').textContent = genSentence(); });
+$('btnGenPara').addEventListener('click', () => {
+  const n = 2 + Math.floor(Math.random()*3);
+  const parts = [];
+  for(let i=0;i<n;i++) parts.push(genSentence());
+  $('genOut').textContent = parts.join('');
+});
+$('btnCopyGen').addEventListener('click', () => copyText($('genOut').textContent));
+
+/* ---------- quiz ---------- */
+function startQuiz(){
+  const dict = getDict();
+  if(dict.length < 4){ $('quizArea').innerHTML = '<p class="muted">词条不足，无法出题。</p>'; return; }
+  const questions = shuffle(dict).slice(0, 8).map(q => {
+    const others = shuffle(dict.filter(d => d.t !== q.t)).slice(0, 3);
+    const opts = shuffle([q, ...others].map(o => o.m));
+    return { term: q.t, cat: q.c, answer: q.m, opts };
+  });
+  let idx = 0, score = 0;
+  const area = $('quizArea');
+  function render(){
+    const q = questions[idx];
+    area.innerHTML =
+      '<div class="row" style="justify-content:center; gap:30px; margin-bottom:8px;">' +
+        '<span class="muted">第 ' + (idx+1) + ' / ' + questions.length + ' 题</span>' +
+        '<span class="muted">得分 ' + score + '</span>' +
+      '</div>' +
+      '<div class="q">' + esc(q.term) + '</div>' +
+      '<div class="qm">分类：' + esc(CATS[q.c] || q.c) + ' —— 下列哪项是它的真实含义？</div>' +
+      q.opts.map((o, i) => '<button class="opt" data-i="' + i + '">' + esc(o) + '</button>').join('');
+    area.querySelectorAll('.opt').forEach(b => {
+      b.addEventListener('click', () => {
+        const chosen = q.opts[+b.dataset.i];
+        const correct = chosen === q.answer;
+        if(correct) score++;
+        area.querySelectorAll('.opt').forEach(x => {
+          const val = q.opts[+x.dataset.i];
+          x.disabled = true;
+          if(val === q.answer) x.classList.add('correct');
+          else if(val === chosen) x.classList.add('wrong');
+        });
+        setTimeout(() => {
+          idx++;
+          if(idx < questions.length) render();
+          else {
+            const pct = Math.round(score / questions.length * 100);
+            const grade = pct === 100 ? '黑话大师，无人能及' : pct >= 75 ? '免疫力很强' : pct >= 50 ? '略有抵抗力' : pct >= 25 ? '容易被套路' : '黑话受害者';
+            area.innerHTML =
+              '<div style="font-size:40px; font-weight:800; color:var(--accent); margin:10px 0;">' + score + ' / ' + questions.length + '</div>' +
+              '<div class="q" style="font-size:18px;">正确率 ' + pct + '% · ' + grade + '</div>' +
+              '<div style="margin:20px 0 10px;"><button class="btn primary" id="btnQuizAgain">再来一局</button></div>' +
+              '<button class="btn" id="btnQuizBack">返回</button>';
+            $('btnQuizAgain').addEventListener('click', startQuiz);
+            $('btnQuizBack').addEventListener('click', () => {
+              area.innerHTML = '<p class="muted" style="margin-bottom:14px;">每次随机 8 题，测试你的黑话免疫力。</p><button class="btn primary" id="btnQuizStart">开始挑战</button>';
+              $('btnQuizStart').addEventListener('click', startQuiz);
+            });
+          }
+        }, 900);
+      });
+    });
+  }
+  render();
+}
+$('btnQuizStart').addEventListener('click', startQuiz);
+
+/* ---------- stats & daily ---------- */
+function updateStats(){
+  $('statTerms').textContent = getDict().length;
+  $('statCats').textContent = getCats().length;
+  $('statCustom').textContent = state.custom.length;
+}
+function renderDaily(){
+  const dict = getDict();
+  if(!dict.length) return;
+  const day = Math.floor(Date.now() / 86400000);
+  const idx = (day * 2654435761 % 1000000) % dict.length;
+  const d = dict[idx];
+  $('statDaily').textContent = d.t;
+  $('dailyCard').innerHTML =
+    '<span class="term" style="color:var(--accent); font-weight:700;">' + esc(d.t) + '</span>' +
+    '<span class="cat">' + esc(CATS[d.c]||d.c) + '</span>' +
+    '<div class="mean" style="margin-top:8px;">' + esc(d.m) + '</div>' +
+    (d.e ? '<div class="ex">' + esc(d.e) + '</div>' : '');
+}
+
+/* ---------- init ---------- */
+(function init(){
+  load();
+  applyTheme();
+  const addCat = $('addCat');
+  addCat.innerHTML = Object.keys(CATS).map(k => '<option value="' + k + '">' + CATS[k] + '</option>').join('');
+  updateStats();
+  renderDaily();
+  renderReverse();
+  renderDictionary();
+})();
+</script>
+</body>
+</html>

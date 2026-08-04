@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="auto">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>批量 PDF 页数提取器</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+  /* ============ 主题变量 ============ */
+  :root{
+    --bg:#0f0f17; --bg-grad:radial-gradient(1200px 600px at 80% -10%,#241b3f 0%,transparent 60%),radial-gradient(900px 500px at -10% 10%,#102a43 0%,transparent 55%),#0f0f17;
+    --panel:#1a1a26; --panel-2:#21212f; --panel-3:#262636;
+    --border:#30303f; --border-soft:#272735;
+    --text:#eef0f6; --dim:#9aa0b4; --faint:#6b7088;
+    --accent:#5b9dff; --accent-2:#9b6bff; --accent-soft:rgba(91,157,255,.14);
+    --green:#37d69a; --red:#ff6b81; --amber:#ffc14d; --cyan:#4fd6e0;
+    --shadow:0 10px 34px rgba(0,0,0,.5); --shadow-sm:0 4px 14px rgba(0,0,0,.35);
+    --radius:16px; --radius-sm:10px;
+    --grad:linear-gradient(135deg,#5b9dff,#9b6bff);
+  }
+  :root[data-theme="light"]{
+    --bg:#eef1f7; --bg-grad:radial-gradient(1100px 560px at 85% -10%,#dbe6ff 0%,transparent 60%),radial-gradient(900px 500px at -10% 5%,#e6dcff 0%,transparent 55%),#eef1f7;
+    --panel:#ffffff; --panel-2:#f6f8fc; --panel-3:#eef1f7;
+    --border:#e1e5ee; --border-soft:#eaeef5;
+    --text:#1b2030; --dim:#5b6378; --faint:#9aa2b5;
+    --accent:#3b82f6; --accent-2:#8b5cf6; --accent-soft:rgba(59,130,246,.10);
+    --green:#10b981; --red:#ef4767; --amber:#f59e0b; --cyan:#06b6d4;
+    --shadow:0 14px 40px rgba(40,52,90,.18); --shadow-sm:0 6px 18px rgba(40,52,90,.12);
+  }
+  @media (prefers-color-scheme: light){
+    :root[data-theme="auto"]{
+      --bg:#eef1f7; --bg-grad:radial-gradient(1100px 560px at 85% -10%,#dbe6ff 0%,transparent 60%),radial-gradient(900px 500px at -10% 5%,#e6dcff 0%,transparent 55%),#eef1f7;
+      --panel:#ffffff; --panel-2:#f6f8fc; --panel-3:#eef1f7;
+      --border:#e1e5ee; --border-soft:#eaeef5;
+      --text:#1b2030; --dim:#5b6378; --faint:#9aa2b5;
+      --accent:#3b82f6; --accent-2:#8b5cf6; --accent-soft:rgba(59,130,246,.10);
+      --green:#10b981; --red:#ef4767; --amber:#f59e0b; --cyan:#06b6d4;
+      --shadow:0 14px 40px rgba(40,52,90,.18); --shadow-sm:0 6px 18px rgba(40,52,90,.12);
+    }
+  }
+
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;min-height:100%}
+  body{
+    background:var(--bg-grad); background-attachment:fixed; color:var(--text);
+    font-family:"Segoe UI",system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+    font-size:14px; line-height:1.55; transition:background .35s,color .35s;
+  }
+  .wrap{max-width:1200px;margin:0 auto;padding:0 22px 64px}
+
+  /* 顶栏 */
+  .topbar{position:sticky;top:0;z-index:30;backdrop-filter:blur(14px);
+    background:color-mix(in srgb,var(--bg) 72%, transparent);border-bottom:1px solid var(--border-soft);
+    margin:0 -22px 26px;padding:12px 22px;display:flex;align-items:center;gap:14px}
+  .brand{display:flex;align-items:center;gap:12px}
+  .brand .logo{width:40px;height:40px;border-radius:12px;background:var(--grad);display:flex;align-items:center;justify-content:center;font-size:21px;box-shadow:var(--shadow-sm)}
+  .brand h1{font-size:17px;margin:0;font-weight:700;letter-spacing:.2px}
+  .brand p{margin:0;font-size:11.5px;color:var(--dim)}
+  .topbar .spacer{flex:1}
+  .libchip{display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--dim);
+    background:var(--panel-2);border:1px solid var(--border);padding:6px 11px;border-radius:20px}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--faint);transition:.3s}
+  .dot.ok{background:var(--green);box-shadow:0 0 9px var(--green)}
+  .dot.err{background:var(--red);box-shadow:0 0 9px var(--red)}
+  .iconbtn{width:38px;height:38px;border-radius:11px;border:1px solid var(--border);background:var(--panel-2);
+    cursor:pointer;font-size:17px;display:flex;align-items:center;justify-content:center;transition:.18s;color:var(--text)}
+  .iconbtn:hover{border-color:var(--accent);background:var(--panel-3);transform:translateY(-1px)}
+
+  /* 导入卡 */
+  .hero{margin-bottom:22px}
+  .hero h2{font-size:25px;margin:0 0 6px;font-weight:750;letter-spacing:.2px}
+  .hero h2 .hl{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .hero .lead{color:var(--dim);margin:0 0 18px;font-size:13.5px}
+  .drop{border:2px dashed var(--border);border-radius:var(--radius);background:var(--panel);
+    padding:38px 22px;text-align:center;cursor:pointer;transition:.2s;position:relative;overflow:hidden}
+  .drop:hover{border-color:var(--accent);background:var(--panel-2)}
+  .drop.over{border-color:var(--accent);background:var(--accent-soft);transform:scale(1.006)}
+  .drop .ico{font-size:40px;margin-bottom:10px;filter:drop-shadow(0 6px 14px rgba(91,157,255,.4))}
+  .drop .big{font-size:17px;font-weight:650;margin-bottom:5px}
+  .drop .sub{color:var(--dim);font-size:12.5px}
+  .drop .btns{margin-top:16px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+
+  /* 按钮 */
+  button{font-family:inherit;font-size:13px;cursor:pointer;border:1px solid var(--border);
+    background:var(--panel-3);color:var(--text);padding:9px 15px;border-radius:10px;transition:.16s;
+    display:inline-flex;align-items:center;gap:7px;font-weight:550}
+  button:hover{border-color:var(--accent);background:var(--panel-2)}
+  button:active{transform:translateY(1px)}
+  button:disabled{opacity:.4;cursor:not-allowed}
+  .btn-primary{background:var(--grad);border:none;color:#fff;font-weight:650;box-shadow:var(--shadow-sm)}
+  .btn-primary:hover{filter:brightness(1.07)}
+  .btn-danger{color:var(--red);border-color:color-mix(in srgb,var(--red) 35%,var(--border))}
+  .btn-danger:hover{background:color-mix(in srgb,var(--red) 12%,transparent);border-color:var(--red)}
+  .btn-ghost{background:transparent}
+
+  /* 统计 */
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));gap:13px;margin:22px 0}
+  .stat{position:relative;background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:15px 16px;overflow:hidden;transition:.2s}
+  .stat:hover{transform:translateY(-2px);box-shadow:var(--shadow-sm);border-color:var(--accent)}
+  .stat .sk{display:flex;align-items:center;gap:7px;color:var(--dim);font-size:12px;margin-bottom:8px}
+  .stat .si{font-size:14px}
+  .stat .sv{font-size:25px;font-weight:750;letter-spacing:.3px}
+  .stat .sv small{font-size:12px;color:var(--dim);font-weight:500;margin-left:3px}
+  .stat::after{content:"";position:absolute;right:-18px;top:-18px;width:70px;height:70px;border-radius:50%;background:var(--accent-soft);filter:blur(4px)}
+
+  /* 分布面板 */
+  .dist{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px 18px;margin-bottom:20px}
+  .dist .dh{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:650;margin-bottom:14px;color:var(--text)}
+  .dist .dh .tag{margin-left:auto;font-size:11px;color:var(--dim);font-weight:500}
+  .bars{display:flex;flex-direction:column;gap:9px}
+  .bar{display:grid;grid-template-columns:78px 1fr 42px;align-items:center;gap:11px;font-size:12px}
+  .bar .bl{color:var(--dim);text-align:right;white-space:nowrap}
+  .bar .bt{height:11px;border-radius:7px;background:var(--panel-3);overflow:hidden;position:relative}
+  .bar .bf{height:100%;width:0;border-radius:7px;background:var(--grad);transition:width .5s cubic-bezier(.2,.8,.2,1)}
+  .bar .bv{color:var(--text);font-variant-numeric:tabular-nums;font-weight:600}
+  .dist .empty{color:var(--faint);font-size:12.5px;text-align:center;padding:8px}
+
+  /* 工具栏 */
+  .toolbar{display:flex;gap:11px;align-items:center;flex-wrap:wrap;margin:6px 0 14px}
+  .grp{display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:7px 10px}
+  .grp label{color:var(--dim);font-size:12px;white-space:nowrap}
+  .inp,.sel{font-family:inherit;font-size:12.5px;background:var(--panel-2);color:var(--text);
+    border:1px solid var(--border);border-radius:8px;padding:7px 10px;outline:none;transition:.15s}
+  .inp:focus,.sel:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+  .inp.search{min-width:180px}
+  .toolbar .spacer{flex:1}
+
+  /* 进度 */
+  .progress{height:5px;background:var(--panel-3);border-radius:6px;overflow:hidden;margin:10px 0 4px;display:none}
+  .progress.show{display:block}
+  .progress > i{display:block;height:100%;width:0;background:var(--grad);border-radius:6px;transition:width .25s}
+
+  /* 表格 */
+  .tablewrap{border:1px solid var(--border);border-radius:14px;overflow:auto;background:var(--panel);box-shadow:var(--shadow-sm)}
+  table{width:100%;border-collapse:collapse;font-size:13px;min-width:720px}
+  thead th{background:var(--panel-2);text-align:left;padding:12px 13px;color:var(--dim);font-weight:600;font-size:11.5px;
+    border-bottom:1px solid var(--border);position:sticky;top:0;white-space:nowrap;user-select:none}
+  thead th.sortable{cursor:pointer}
+  thead th.sortable:hover{color:var(--text)}
+  thead th .arrow{opacity:.35;font-size:10px;margin-left:2px}
+  thead th .arrow.active{opacity:1;color:var(--accent)}
+  tbody td{padding:11px 13px;border-bottom:1px solid var(--border-soft);vertical-align:middle}
+  tbody tr{transition:background .12s}
+  tbody tr:hover{background:var(--panel-2)}
+  tbody tr:last-child td{border-bottom:none}
+  .idx{color:var(--faint);width:34px;text-align:center;font-variant-numeric:tabular-nums}
+  .fname{min-width:200px;max-width:300px;overflow:hidden}
+  .fname .nm{font-weight:550;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .fname .path{display:block;color:var(--faint);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ftitle{max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--dim)}
+  .pages{font-weight:750;color:var(--accent);font-variant-numeric:tabular-nums}
+  .badge{font-size:11px;padding:3px 9px;border-radius:20px;background:var(--panel-3);color:var(--dim);border:1px solid var(--border);white-space:nowrap}
+  .badge.ok{color:var(--green);border-color:color-mix(in srgb,var(--green) 40%,var(--border));background:color-mix(in srgb,var(--green) 12%,transparent)}
+  .badge.err{color:var(--red);border-color:color-mix(in srgb,var(--red) 40%,var(--border));background:color-mix(in srgb,var(--red) 12%,transparent)}
+  .badge.run{color:var(--amber);border-color:color-mix(in srgb,var(--amber) 40%,var(--border));background:color-mix(in srgb,var(--amber) 12%,transparent)}
+  .badge.lock{color:var(--cyan);border-color:color-mix(in srgb,var(--cyan) 40%,var(--border));background:color-mix(in srgb,var(--cyan) 12%,transparent)}
+  .ops{display:flex;gap:3px;justify-content:flex-end}
+  .rowbtn{background:transparent;border:none;color:var(--dim);padding:5px 7px;font-size:14px;border-radius:8px;cursor:pointer;transition:.14s}
+  .rowbtn:hover{color:var(--text);background:var(--panel-3)}
+  .rowbtn.del:hover{color:var(--red)}
+  .rowbtn.retry:hover{color:var(--accent)}
+  .thumb{width:44px;height:58px;object-fit:cover;border-radius:6px;border:1px solid var(--border);background:#000;cursor:pointer;display:block;margin:0 auto}
+  .thumb.ph{display:flex;align-items:center;justify-content:center;color:var(--faint);font-size:10px;background:var(--panel-3)}
+  .empty{padding:46px;text-align:center;color:var(--faint)}
+
+  /* 弹窗 */
+  .modal{position:fixed;inset:0;background:rgba(10,10,18,.66);backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;z-index:50;padding:20px}
+  .modal.show{display:flex}
+  .modal .box{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:20px;max-width:92vw;max-height:90vh;overflow:auto;box-shadow:var(--shadow);animation:pop .2s ease}
+  @keyframes pop{from{transform:scale(.96);opacity:0}to{transform:scale(1);opacity:1}}
+  .modal h3{margin:0 0 14px;font-size:15px;word-break:break-all;line-height:1.4}
+  .modal canvas{max-width:100%;height:auto;border-radius:10px;background:#000;box-shadow:var(--shadow-sm)}
+  .meta{display:grid;grid-template-columns:auto 1fr;gap:10px 16px;font-size:13px}
+  .meta dt{color:var(--dim);white-space:nowrap}
+  .meta dd{margin:0;word-break:break-all;font-weight:500}
+  .close{position:absolute;top:14px;right:20px;font-size:28px;color:var(--text);cursor:pointer;background:none;border:none;line-height:1;opacity:.7}
+  .close:hover{opacity:1}
+
+  .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--panel-3);border:1px solid var(--border);color:var(--text);padding:12px 19px;border-radius:11px;box-shadow:var(--shadow);opacity:0;transition:.25s;z-index:60;font-size:13px;pointer-events:none;max-width:90vw}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  footer{margin-top:30px;color:var(--faint);font-size:11.5px;text-align:center;line-height:1.9}
+  footer code{background:var(--panel-2);padding:1px 7px;border-radius:6px;color:var(--dim);border:1px solid var(--border)}
+  .hidden{display:none!important}
+  @media(max-width:680px){
+    .fname{max-width:150px}.ftitle,.previewcell{display:none}
+    .inp.search{min-width:130px}.topbar .libchip span:last-child{display:none}
+  }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="brand">
+    <div class="logo">📄</div>
+    <div>
+      <h1>PDF 页数提取器</h1>
+      <p>批量 · 本地解析 · 隐私安全</p>
+    </div>
+  </div>
+  <div class="spacer"></div>
+  <div class="libchip"><span class="dot" id="libdot"></span><span id="libstatus">引擎加载中…</span></div>
+  <button class="iconbtn" id="themeBtn" title="切换主题">🌗</button>
+</div>
+
+<div class="wrap">
+  <section class="hero">
+    <h2>批量提取 <span class="hl">PDF 页数</span> 与文档信息</h2>
+    <p class="lead">全部在浏览器本地完成，文件不会上传任何服务器。支持多文件、整个文件夹（含子目录）拖拽导入。</p>
+    <div class="drop" id="drop">
+      <div class="ico">📥</div>
+      <div class="big">拖拽 PDF 文件 / 文件夹到此处</div>
+      <div class="sub">支持多选文件、整个文件夹（自动递归子目录）</div>
+      <div class="btns">
+        <button class="btn-primary" id="pickFiles">＋ 选择文件</button>
+        <button id="pickFolder">📁 选择文件夹</button>
+        <button id="pickFolderRec">📂 递归导入</button>
+      </div>
+      <input type="file" id="fileInput" accept="application/pdf,.pdf" multiple class="hidden">
+      <input type="file" id="folderInput" accept="application/pdf,.pdf" multiple webkitdirectory class="hidden">
+    </div>
+  </section>
+
+  <div class="progress" id="progress"><i></i></div>
+
+  <div class="stats" id="stats">
+    <div class="stat"><div class="sk"><span class="si">📚</span>文件总数</div><div class="sv" id="stTotal">0</div></div>
+    <div class="stat"><div class="sk"><span class="si">📄</span>总页数</div><div class="sv" id="stPages">0</div></div>
+    <div class="stat"><div class="sk"><span class="si">📊</span>平均页数</div><div class="sv" id="stAvg">0</div></div>
+    <div class="stat"><div class="sk"><span class="si">⬆️</span>最多 / 最少</div><div class="sv" id="stMinMax">0<small>/0</small></div></div>
+    <div class="stat"><div class="sk"><span class="si">💾</span>总大小</div><div class="sv" id="stSize">0<small>MB</small></div></div>
+  </div>
+
+  <div class="dist">
+    <div class="dh">📈 页数分布<span class="tag" id="distTag"></span></div>
+    <div class="bars" id="bars"><div class="empty">解析完成后将显示页数分布</div></div>
+  </div>
+
+  <div class="toolbar">
+    <div class="grp">
+      <label>🔍</label>
+      <input class="inp search" id="search" type="search" placeholder="搜索文件名 / 标题…">
+    </div>
+    <div class="grp">
+      <label>页数</label>
+      <input class="inp" id="minPages" type="number" min="0" placeholder="≥" style="width:62px">
+      <span style="color:var(--dim)">~</span>
+      <input class="inp" id="maxPages" type="number" min="0" placeholder="≤" style="width:62px">
+    </div>
+    <div class="grp">
+      <label>状态</label>
+      <select class="sel" id="statusFilter">
+        <option value="all">全部</option>
+        <option value="ok">成功</option>
+        <option value="error">失败</option>
+        <option value="lock">加密</option>
+        <option value="running">解析中</option>
+        <option value="pending">等待</option>
+      </select>
+    </div>
+    <div class="grp">
+      <label>导出</label>
+      <button id="expCsv">CSV</button>
+      <button id="expJson">JSON</button>
+      <button id="expTxt">TXT</button>
+      <button id="expCopy">复制</button>
+    </div>
+    <div class="spacer"></div>
+    <button class="btn-danger" id="clearAll">清空全部</button>
+  </div>
+
+  <div class="tablewrap">
+    <table>
+      <thead>
+        <tr>
+          <th class="idx">#</th>
+          <th class="previewcell">封面</th>
+          <th class="sortable" data-sort="name">文件名 <span class="arrow">↕</span></th>
+          <th>标题 / 作者</th>
+          <th class="sortable" data-sort="pages">页数 <span class="arrow">↕</span></th>
+          <th class="sortable" data-sort="size">大小 <span class="arrow">↕</span></th>
+          <th>状态</th>
+          <th style="text-align:right">操作</th>
+        </tr>
+      </thead>
+      <tbody id="tbody">
+        <tr><td colspan="8" class="empty">还没有文件，先添加一些 PDF 吧 ✨</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <footer>
+    解析引擎：<code>pdf.js 3.11.174</code>（首次使用需联网加载一次）· 所有数据仅存在于你的浏览器内存中。<br>
+    操作提示：点击行内「👁」预览封面 · 「📋」复制该行 · 「↺」重试失败项 · 双击任意行查看完整文档信息。
+  </footer>
+</div>
+
+<div class="modal" id="modal">
+  <button class="close" id="modalClose">×</button>
+  <div class="box">
+    <h3 id="modalTitle"></h3>
+    <canvas id="modalCanvas" class="hidden"></canvas>
+    <dl class="meta hidden" id="modalInfo"></dl>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+  const $ = s => document.querySelector(s);
+
+  /* ---------- 主题 ---------- */
+  const themeBtn = $("#themeBtn");
+  const order = ["auto","light","dark"];
+  const icons = {auto:"🌗",light:"☀️",dark:"🌙"};
+  function applyTheme(mode){
+    document.documentElement.setAttribute("data-theme", mode);
+    themeBtn.textContent = icons[mode];
+    themeBtn.title = "主题：" + ({auto:"跟随系统",light:"浅色",dark:"深色"}[mode]) + "（点击切换）";
+    try{ localStorage.setItem("pdfpc-theme", mode); }catch(e){}
+  }
+  let curTheme = "auto";
+  try{ curTheme = localStorage.getItem("pdfpc-theme") || "auto"; }catch(e){}
+  applyTheme(curTheme);
+  themeBtn.onclick = () => { curTheme = order[(order.indexOf(curTheme)+1)%3]; applyTheme(curTheme); };
+
+  /* ---------- 引擎检测 ---------- */
+  const libdot = $("#libdot"), libstatus = $("#libstatus");
+  function checkLib(){
+    if(window.pdfjsLib){
+      libdot.className = "dot ok"; libstatus.textContent = "解析引擎已就绪";
+      try{ pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"; }catch(e){}
+      return true;
+    }
+    libdot.className = "dot err"; libstatus.textContent = "引擎加载失败：请联网后刷新";
+    return false;
+  }
+  let tries = 0;
+  (function wait(){ if(checkLib()) return; if(++tries<40) setTimeout(wait,200); })();
+
+  /* ---------- 状态 ---------- */
+  let items = [];
+  let sortKey = "name", sortDir = 1;
+  let filter = {q:"", min:null, max:null, status:"all"};
+  let seq = 0, running = 0, CONCURRENCY = 4, queue = [];
+
+  const fmtSize = b => b<1024 ? b+" B" : b<1048576 ? (b/1024).toFixed(1)+" KB" : (b/1048576).toFixed(2)+" MB";
+  const toast = m => { const t=$("#toast"); t.textContent=m; t.classList.add("show"); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove("show"),2200); };
+  const esc = s => String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+  function parsePdfDate(d){
+    if(!d || typeof d!=="string") return "";
+    const m = d.match(/D:(\d{4})(\d{2})?(\d{2})?(\d{2})?(\d{2})?(\d{2})?/);
+    if(!m) return d;
+    const dt = new Date(`${m[1]}-${m[2]||"01"}-${m[3]||"01"}T${m[4]||"00"}:${m[5]||"00"}:${m[6]||"00"}`);
+    return isNaN(dt)? d : dt.toLocaleDateString("zh-CN");
+  }
+
+  /* ---------- 收集 ---------- */
+  function addFiles(list){
+    let added = 0;
+    for(const f of list){
+      if(f.type !== "application/pdf" && !f.name.toLowerCase().endsWith(".pdf")) continue;
+      const path = f.webkitRelativePath || f.name;
+      if(items.some(it => (it.path||it.name)===path && it.size===f.size)) continue;
+      const it = {id:++seq, name:f.name, path, size:f.size, pages:null, status:"pending",
+        error:null, enc:false, file:f, thumb:null, meta:null};
+      items.push(it); queue.push(it); added++;
+    }
+    if(added) toast(`已添加 ${added} 个 PDF`);
+    render(); updateStats(); updateDist(); pump();
+  }
+
+  /* ---------- 并发解析 ---------- */
+  function pump(){
+    if(!checkLib()) return;
+    while(running < CONCURRENCY && queue.length){
+      const it = queue.shift(); running++;
+      it.status = "running"; renderRow(it);
+      readItem(it).finally(()=>{ running--; pump(); });
+    }
+  }
+  async function readItem(it){
+    try{
+      const buf = await it.file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({data:buf}).promise;
+      it.pages = pdf.numPages;
+      try{
+        const md = await pdf.getMetadata();
+        const info = (md && md.info) || {};
+        it.meta = {
+          title: info.Title || "", author: info.Author || "", subject: info.Subject || "",
+          creator: info.Creator || "", producer: info.Producer || "",
+          created: parsePdfDate(info.CreationDate), modified: parsePdfDate(info.ModDate)
+        };
+        if(!it.meta.title) it.meta.title = it.name.replace(/\.pdf$/i,"");
+      }catch(e){ it.meta = {title: it.name.replace(/\.pdf$/i,"")}; }
+      it.status = "ok"; it.enc = false;
+    }catch(e){
+      if(e && (e.name==="PasswordException" || /password/i.test(e.message||""))){
+        it.status = "error"; it.enc = true; it.error = "加密文件，需要密码";
+      } else {
+        it.status = "error"; it.error = (e && e.message) ? e.message : "解析失败";
+      }
+    }
+    renderRow(it); updateStats(); updateDist(); updateProgress();
+  }
+  function updateProgress(){
+    const total = items.length, done = items.filter(i=>i.status==="ok"||i.status==="error").length;
+    const p = $("#progress");
+    if(running>0 || queue.length){ p.classList.add("show"); p.firstElementChild.style.width = (total?done/total*100:0)+"%"; }
+    else p.classList.remove("show");
+  }
+
+  /* ---------- 视图 ---------- */
+  function getView(){
+    let v = items.slice();
+    if(filter.q){ const q=filter.q.toLowerCase(); v = v.filter(i => (i.name+" "+(i.meta?i.meta.title:"")).toLowerCase().includes(q)); }
+    if(filter.min!=null) v = v.filter(i => i.pages!=null && i.pages>=filter.min);
+    if(filter.max!=null) v = v.filter(i => i.pages!=null && i.pages<=filter.max);
+    if(filter.status!=="all") v = v.filter(i => i.enc && filter.status==="lock" ? true : (i.enc?false:(i.status===filter.status)));
+    v.sort((a,b)=>{
+      let r=0;
+      if(sortKey==="name") r=(a.path||a.name).localeCompare(b.path||b.name,"zh");
+      else if(sortKey==="pages") r=(a.pages??-1)-(b.pages??-1);
+      else if(sortKey==="size") r=a.size-b.size;
+      return r*sortDir;
+    });
+    return v;
+  }
+  function render(){
+    const tb = $("#tbody"), v = getView();
+    if(!items.length){ tb.innerHTML='<tr><td colspan="8" class="empty">还没有文件，先添加一些 PDF 吧 ✨</td></tr>'; return; }
+    if(!v.length){ tb.innerHTML='<tr><td colspan="8" class="empty">没有符合筛选条件的文件</td></tr>'; return; }
+    tb.innerHTML = v.map((it,idx)=>{
+      const thumb = it.thumb
+        ? `<img class="thumb" src="${it.thumb}" data-id="${it.id}" title="点击预览">`
+        : `<div class="thumb ph" data-id="${it.id}" title="点击生成封面">生成</div>`;
+      const badge = it.status==="ok" ? `<span class="badge ok">✓ 成功</span>`
+        : it.status==="error" ? (it.enc ? `<span class="badge lock">🔒 加密</span>` : `<span class="badge err" title="${esc(it.error||"")}">✕ 失败</span>`)
+        : it.status==="running" ? `<span class="badge run">解析中…</span>`
+        : `<span class="badge">等待</span>`;
+      const titleCell = it.meta
+        ? `<div class="ftitle" title="${esc(it.meta.title)}">${esc(it.meta.title||"—")}</div>` + (it.meta.author?`<div class="ftitle" style="font-size:11px;color:var(--faint)" title="${esc(it.meta.author)}">${esc(it.meta.author)}</div>`:"")
+        : `<span style="color:var(--faint)">—</span>`;
+      const ops = it.status==="error"
+        ? `<button class="rowbtn retry" data-act="retry" data-id="${it.id}" title="重试">↺</button>`
+        : `<button class="rowbtn" data-act="copy" data-id="${it.id}" title="复制该行">📋</button>`;
+      return `<tr data-id="${it.id}">
+        <td class="idx">${idx+1}</td>
+        <td class="previewcell">${thumb}</td>
+        <td class="fname"><div class="nm">${esc(it.name)}</div>${it.path&&it.path!==it.name?`<div class="path">${esc(it.path)}</div>`:""}</td>
+        <td>${titleCell}</td>
+        <td class="pages">${it.pages!=null?it.pages:"—"}</td>
+        <td>${fmtSize(it.size)}</td>
+        <td>${badge}</td>
+        <td><div class="ops">${ops}<button class="rowbtn" data-act="preview" data-id="${it.id}" title="预览封面">👁</button><button class="rowbtn del" data-act="del" data-id="${it.id}" title="移除">🗑</button></div></td>
+      </tr>`;
+    }).join("");
+  }
+  function renderRow(it){
+    const tr = $(`#tbody tr[data-id="${it.id}"]`);
+    if(!tr){ render(); return; }
+    const badge = it.status==="ok" ? `<span class="badge ok">✓ 成功</span>`
+      : it.status==="error" ? (it.enc?`<span class="badge lock">🔒 加密</span>`:`<span class="badge err" title="${esc(it.error||"")}">✕ 失败</span>`)
+      : it.status==="running" ? `<span class="badge run">解析中…</span>` : `<span class="badge">等待</span>`;
+    tr.children[4].textContent = it.pages!=null?it.pages:"—";
+    tr.children[6].innerHTML = badge;
+    const opsTd = tr.children[7].firstElementChild;
+    if(it.status==="error"){ if(!opsTd.querySelector('[data-act="retry"]')) opsTd.innerHTML = `<button class="rowbtn retry" data-act="retry" data-id="${it.id}" title="重试">↺</button><button class="rowbtn" data-act="preview" data-id="${it.id}" title="预览封面">👁</button><button class="rowbtn del" data-act="del" data-id="${it.id}" title="移除">🗑</button>`; }
+    if(it.thumb) tr.children[1].innerHTML = `<img class="thumb" src="${it.thumb}" data-id="${it.id}" title="点击预览">`;
+  }
+  function updateStats(){
+    const ok = items.filter(i=>i.status==="ok");
+    const totalPages = ok.reduce((s,i)=>s+i.pages,0);
+    const sizes = items.reduce((s,i)=>s+i.size,0);
+    $("#stTotal").textContent = items.length;
+    $("#stPages").textContent = totalPages;
+    $("#stAvg").textContent = ok.length ? (totalPages/ok.length).toFixed(1) : "0";
+    if(ok.length){ const ps=ok.map(i=>i.pages); $("#stMinMax").innerHTML = Math.max(...ps)+"<small>/"+Math.min(...ps)+"</small>"; }
+    else $("#stMinMax").innerHTML = "0<small>/0</small>";
+    $("#stSize").innerHTML = (sizes/1048576).toFixed(2)+"<small>MB</small>";
+  }
+  function updateDist(){
+    const ok = items.filter(i=>i.status==="ok");
+    const box = $("#bars");
+    if(!ok.length){ box.innerHTML='<div class="empty">解析完成后将显示页数分布</div>'; $("#distTag").textContent=""; return; }
+    const buckets = [
+      {l:"1–10", t:p=>p<=10}, {l:"11–25", t:p=>p>10&&p<=25}, {l:"26–50", t:p=>p>25&&p<=50},
+      {l:"51–100", t:p=>p>50&&p<=100}, {l:"101–200", t:p=>p>100&&p<=200}, {l:"200+", t:p=>p>200}
+    ];
+    const counts = buckets.map(b=>ok.filter(i=>b.t(i.pages)).length);
+    const max = Math.max(1,...counts);
+    box.innerHTML = buckets.map((b,i)=>`
+      <div class="bar"><div class="bl">${b.l}</div><div class="bt"><div class="bf" style="width:${counts[i]/max*100}%"></div></div><div class="bv">${counts[i]}</div></div>`).join("");
+    $("#distTag").textContent = `共 ${ok.length} 份 · 合计 ${ok.reduce((s,i)=>s+i.pages,0)} 页`;
+  }
+
+  /* ---------- 封面 / 预览 ---------- */
+  async function genThumb(it){
+    if(!checkLib() || it.pages==null || it.thumb) return;
+    try{
+      const buf = await it.file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({data:buf}).promise;
+      const page = await pdf.getPage(1);
+      const vp = page.getViewport({scale:0.42});
+      const c = document.createElement("canvas"); c.width=vp.width; c.height=vp.height;
+      await page.render({canvasContext:c.getContext("2d"),viewport:vp}).promise;
+      it.thumb = c.toDataURL("image/jpeg",0.7); renderRow(it);
+    }catch(e){}
+  }
+  async function preview(it){
+    if(!checkLib() || it.pages==null){ toast("该文件尚未成功解析，无法预览"); return; }
+    closeModal(); $("#modalTitle").textContent = it.name + `（共 ${it.pages} 页）`;
+    const canvas = $("#modalCanvas"), info = $("#modalInfo");
+    canvas.classList.add("hidden"); info.classList.add("hidden");
+    try{
+      const buf = await it.file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({data:buf}).promise;
+      const page = await pdf.getPage(1);
+      const vp = page.getViewport({scale:1.7});
+      canvas.width=vp.width; canvas.height=vp.height;
+      await page.render({canvasContext:canvas.getContext("2d"),viewport:vp}).promise;
+      canvas.classList.remove("hidden"); $("#modal").classList.add("show");
+    }catch(e){ toast("预览生成失败："+(e.message||e)); }
+  }
+  async function showMeta(it){
+    closeModal(); $("#modalTitle").textContent = it.name;
+    const canvas=$("#modalCanvas"), info=$("#modalInfo");
+    canvas.classList.add("hidden");
+    const m = it.meta || {};
+    const rows = [
+      ["页数", it.pages!=null?it.pages+" 页":"—"],
+      ["大小", fmtSize(it.size)],
+      ["标题", m.title||"—"],
+      ["作者", m.author||"—"],
+      ["主题", m.subject||"—"],
+      ["创建工具", m.creator||"—"],
+      ["生成工具", m.producer||"—"],
+      ["创建日期", m.created||"—"],
+      ["修改日期", m.modified||"—"],
+      ["路径", it.path||"—"]
+    ];
+    info.innerHTML = rows.map(([k,v])=>`<dt>${k}</dt><dd>${esc(v)}</dd>`).join("");
+    info.classList.remove("hidden"); $("#modal").classList.add("show");
+  }
+  function closeModal(){ $("#modal").classList.remove("show"); }
+
+  /* ---------- 导出 ---------- */
+  function exportRows(){ return getView().filter(i=>i.status==="ok"); }
+  function download(name, content, type){
+    const blob = new Blob([content],{type}); const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href=url; a.download=name; a.click();
+    setTimeout(()=>URL.revokeObjectURL(url),1000);
+  }
+  const ts = (()=>{ const d=new Date(),p=n=>String(n).padStart(2,"0"); return `${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`; })();
+  const cell = s => { s=String(s==null?"":s); return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s; };
+
+  $("#expCsv").onclick = () => {
+    const r = exportRows(); if(!r.length){ toast("没有可导出记录"); return; }
+    const head=["序号","文件名","相对路径","标题","作者","页数","大小(字节)","大小(可读)"];
+    const lines=[head.join(",")];
+    r.forEach((it,i)=> lines.push([i+1,cell(it.name),cell(it.path),cell(it.meta&&it.meta.title),cell(it.meta&&it.meta.author),it.pages,it.size,fmtSize(it.size)].join(",")));
+    download(`PDF页数统计_${ts}.csv`, "﻿"+lines.join("\n"), "text/csv;charset=utf-8"); toast(`已导出 ${r.length} 行 CSV`);
+  };
+  $("#expJson").onclick = () => {
+    const r = exportRows(); if(!r.length){ toast("没有可导出记录"); return; }
+    const data = { exportedAt:new Date().toISOString(),
+      summary:{ fileCount:r.length, totalPages:r.reduce((s,i)=>s+i.pages,0), totalSizeBytes:r.reduce((s,i)=>s+i.size,0) },
+      files: r.map((it,i)=>({ index:i+1, name:it.name, path:it.path, title:it.meta&&it.meta.title||"", author:it.meta&&it.meta.author||"", pages:it.pages, sizeBytes:it.size, sizeReadable:fmtSize(it.size) })) };
+    download(`PDF页数统计_${ts}.json`, JSON.stringify(data,null,2), "application/json"); toast(`已导出 ${r.length} 条 JSON`);
+  };
+  $("#expTxt").onclick = () => {
+    const r = exportRows(); if(!r.length){ toast("没有可导出记录"); return; }
+    const total = r.reduce((s,i)=>s+i.pages,0), sz = fmtSize(r.reduce((s,i)=>s+i.size,0));
+    const L=[]; L.push("批量 PDF 页数统计报告"); L.push("生成时间："+new Date().toLocaleString());
+    L.push("────────────────────────────"); L.push(`文件总数：${r.length}    总页数：${total}    总大小：${sz}`);
+    L.push("────────────────────────────");
+    r.forEach((it,i)=> L.push(`${String(i+1).padStart(4," ")}. ${it.name}  —  ${it.pages} 页  (${fmtSize(it.size)})${it.meta&&it.meta.title?"  「"+(it.meta.title)+"」":""}`));
+    L.push("────────────────────────────"); L.push(`合计：${r.length} 个文件，${total} 页`);
+    download(`PDF页数统计_${ts}.txt`, L.join("\n"), "text/plain;charset=utf-8"); toast("已导出 TXT 报告");
+  };
+  $("#expCopy").onclick = async () => {
+    const r = exportRows(); if(!r.length){ toast("没有可复制记录"); return; }
+    const text = r.map(it=>`${it.name}\t${it.pages}\t${it.meta&&it.meta.title||""}`).join("\n");
+    try{ await navigator.clipboard.writeText(text); toast(`已复制 ${r.length} 行到剪贴板`); }
+    catch(e){ const ta=document.createElement("textarea"); ta.value=text; document.body.appendChild(ta); ta.select(); document.execCommand("copy"); ta.remove(); toast(`已复制 ${r.length} 行到剪贴板`); }
+  };
+
+  /* ---------- 事件 ---------- */
+  $("#pickFiles").onclick = () => $("#fileInput").click();
+  $("#pickFolder").onclick = $("#pickFolderRec").onclick = () => $("#folderInput").click();
+  $("#fileInput").onchange = e => { addFiles(e.target.files); e.target.value=""; };
+  $("#folderInput").onchange = e => { addFiles(e.target.files); e.target.value=""; };
+
+  const drop = $("#drop");
+  ["dragenter","dragover"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add("over");}));
+  ["dragleave","drop"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();if(ev==="dragleave"&&drop.contains(e.relatedTarget))return;drop.classList.remove("over");}));
+  drop.addEventListener("drop", e=>{
+    e.preventDefault(); const dt=e.dataTransfer;
+    if(dt.items && dt.items.length){
+      const out=[];
+      const walk = entry => new Promise(res=>{
+        if(entry.isFile){ entry.file(f=>{ if(f.name.toLowerCase().endsWith(".pdf")) out.push(f); res(); }); }
+        else if(entry.isDirectory){ const r=entry.createReader(),all=[]; const rb=()=>r.readEntries(es=>{ if(!es.length) Promise.all(all.map(walk)).then(res); else { all.push(...es); rb(); } }); rb(); }
+        else res();
+      });
+      const tasks=[]; for(const it of dt.items){ const en=it.webkitGetAsEntry&&it.webkitGetAsEntry(); if(en) tasks.push(walk(en)); }
+      Promise.all(tasks).then(()=>addFiles(out));
+    } else if(dt.files) addFiles(dt.files);
+  });
+
+  $("#tbody").addEventListener("click", e=>{
+    const t = e.target.closest("[data-id]"); if(!t) return;
+    const it = items.find(i=>i.id===+t.dataset.id); if(!it) return;
+    const act = t.dataset.act;
+    if(!act){ if(t.classList.contains("thumb")) preview(it); return; }
+    if(act==="preview") preview(it);
+    else if(act==="copy") copyRow(it);
+    else if(act==="retry") retry(it);
+    else if(act==="del") removeItem(it.id);
+  });
+  $("#tbody").addEventListener("dblclick", e=>{
+    const tr=e.target.closest("tr[data-id]"); if(!tr) return;
+    const it=items.find(i=>i.id===+tr.dataset.id); if(it) showMeta(it);
+  });
+  $("#tbody").addEventListener("mouseover", e=>{
+    const t=e.target.closest(".thumb.ph"); if(t){ const it=items.find(i=>i.id===+t.dataset.id); if(it&&it.status==="ok"&&!it.thumb) genThumb(it); }
+  });
+  function copyRow(it){
+    const text = `${it.name}\t${it.pages!=null?it.pages:"-"}\t${it.meta&&it.meta.title||""}`;
+    navigator.clipboard?.writeText(text).then(()=>toast("已复制该行"),()=>toast("复制失败"));
+  }
+  function retry(it){
+    it.status="pending"; it.error=null; it.enc=false; if(!queue.includes(it)) queue.push(it);
+    render(); pump();
+  }
+  function removeItem(id){ items=items.filter(i=>i.id!==id); queue=queue.filter(i=>i.id!==id); render(); updateStats(); updateDist(); updateProgress(); }
+  $("#clearAll").onclick = () => { if(!items.length) return; if(confirm("确定清空全部已添加的 PDF 吗？")){ items=[]; queue=[]; render(); updateStats(); updateDist(); updateProgress(); } };
+
+  document.querySelectorAll("th.sortable").forEach(th=>{
+    th.onclick = () => {
+      const k=th.dataset.sort;
+      if(sortKey===k) sortDir*=-1; else { sortKey=k; sortDir=1; }
+      document.querySelectorAll("th.sortable .arrow").forEach(a=>a.classList.remove("active"));
+      th.querySelector(".arrow").classList.add("active");
+      th.querySelector(".arrow").textContent = sortDir>0?"↑":"↓";
+      render();
+    };
+  });
+  function applyFilter(){
+    filter.q = $("#search").value.trim();
+    const mn=$("#minPages").value, mx=$("#maxPages").value;
+    filter.min = mn===""?null:Math.max(0,+mn);
+    filter.max = mx===""?null:Math.max(0,+mx);
+    if(filter.min!=null && filter.max!=null && filter.min>filter.max){ [filter.min,filter.max]=[filter.max,filter.min]; $("#minPages").value=filter.min; $("#maxPages").value=filter.max; }
+    filter.status = $("#statusFilter").value;
+    render();
+  }
+  $("#search").addEventListener("input", applyFilter);
+  $("#minPages").addEventListener("change", applyFilter);
+  $("#maxPages").addEventListener("change", applyFilter);
+  $("#statusFilter").addEventListener("change", applyFilter);
+
+  $("#modalClose").onclick = closeModal;
+  $("#modal").onclick = e => { if(e.target.id==="modal") closeModal(); };
+  document.addEventListener("keydown", e=>{ if(e.key==="Escape") closeModal(); });
+
+})();
+</script>
+</body>
+</html>
