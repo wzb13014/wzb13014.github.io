@@ -767,6 +767,7 @@ const websiteData = [{
         { name: "静息正念呼吸", url: "https://wzb13014.github.io/wzb/tool157", desc: "工具" },
         { name: "排行榜生成器", url: "https://wzb13014.github.io/wzb/tool158", desc: "工具" },
         { name: "职场压力自评", url: "https://wzb13014.github.io/wzb/tool159", desc: "工具" },
+        { name: "繁简转换工具箱", url: "https://wzb13014.github.io/wzb/tool160", desc: "工具" },  
         { name: "登山海拔与含氧量", url: "https://wzb13014.github.io/wzb/tool138", desc: "查询" },
         { name: "自驾油耗与过路费合计计算器", url: "https://wzb13014.github.io/wzb/tool139", desc: "查询" },
         { name: "行李重量尺寸合规检查器", url: "https://wzb13014.github.io/wzb/tool140", desc: "查询" },
