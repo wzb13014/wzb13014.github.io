@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>汉字繁简转换 · 全能工具</title>
+  <style>
+    :root {
+      --bg: #f4f1ec;
+      --surface: #ffffff;
+      --surface2: #faf8f5;
+      --border: #e4dbcf;
+      --text: #3b3329;
+      --text-secondary: #7a6e60;
+      --accent: #b47b4c;
+      --accent-light: #f7efe7;
+      --accent-hover: #9d6539;
+      --success: #5d8a68;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.04);
+      --shadow: 0 4px 16px rgba(60,40,20,0.06);
+      --shadow-lg: 0 12px 32px rgba(60,40,20,0.1);
+      --radius: 16px;
+      --transition: 0.2s ease;
+    }
+    .dark-theme {
+      --bg: #1b1814;
+      --surface: #2a2620;
+      --surface2: #332e27;
+      --border: #4b4238;
+      --text: #e6ddd2;
+      --text-secondary: #b3a68f;
+      --accent: #d09f6e;
+      --accent-light: #3e352b;
+      --accent-hover: #b88351;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      font-family: 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      align-items: stretch;
+      justify-content: center;
+      padding: 8px;
+      transition: background var(--transition);
+      line-height: 1.5;
+    }
+    .app-wrapper {
+      width: 100%;
+      max-width: 1600px;
+      background: var(--surface);
+      border-radius: 24px;
+      box-shadow: var(--shadow-lg);
+      border: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      overflow: hidden;
+    }
+    .app-header {
+      padding: 10px 20px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface2);
+      flex-shrink: 0;
+    }
+    .logo { display:flex; align-items:center; gap:8px; }
+    .logo-icon { font-size:26px; background:var(--accent-light); width:36px; height:36px; display:flex; align-items:center; justify-content:center; border-radius:10px; }
+    .logo-text h2 { font-size:18px; font-weight:700; }
+    .logo-text span { font-size:11px; color:var(--text-secondary); }
+    .header-actions { display:flex; gap:4px; flex-wrap:wrap; }
+    .btn {
+      display:inline-flex; align-items:center; gap:4px; padding:6px 12px; border-radius:18px; font-size:12px; font-weight:500; cursor:pointer;
+      border:1px solid var(--border); background:var(--surface); color:var(--text-secondary); transition:all var(--transition); white-space:nowrap;
+    }
+    .btn:hover { border-color:var(--accent); background:var(--accent-light); color:var(--accent); transform:translateY(-1px); }
+    .btn-primary { background:var(--accent); border-color:var(--accent); color:#fff; font-weight:600; }
+    .btn-primary:hover { background:var(--accent-hover); border-color:var(--accent-hover); color:#fff; }
+    .btn-sm { padding:4px 10px; font-size:11px; border-radius:14px; }
+
+    .mode-bar {
+      padding: 8px 20px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+    .mode-label { font-size:12px; font-weight:600; color:var(--text-secondary); }
+    .chips { display:flex; flex-wrap:wrap; gap:5px; }
+    .chip {
+      padding:5px 12px; border-radius:16px; font-size:11px; font-weight:500; cursor:pointer; border:1px solid var(--border);
+      background:var(--surface2); transition:all var(--transition); user-select:none;
+    }
+    .chip.active { background:var(--accent); border-color:var(--accent); color:#fff; font-weight:600; }
+    .chip:hover:not(.active) { border-color:var(--accent); color:var(--accent); background:var(--accent-light); }
+
+    .workspace {
+      flex: 1;
+      display: flex;
+      gap: 12px;
+      padding: 12px 20px;
+      min-height: 0;
+    }
+    @media (max-width:850px) {
+      .workspace { flex-direction:column; }
+      .center-col { flex-direction:row !important; justify-content:center; gap:10px !important; }
+    }
+    .panel {
+      flex: 1;
+      min-width: 250px;
+      background: var(--surface2);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      min-height: 0;
+    }
+    .panel-header {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+    .panel-title { font-weight:600; font-size:13px; }
+    .panel-actions { display:flex; gap:3px; flex-wrap:wrap; }
+    .text-area {
+      flex: 1;
+      background: transparent;
+      border: none;
+      padding: 12px 14px;
+      font-size: 15px;
+      line-height: 1.7;
+      resize: none;
+      outline: none;
+      font-family: inherit;
+      color: var(--text);
+      min-height: 0;
+    }
+    .text-area::placeholder { color:#baa99a; font-style:italic; }
+    .output-text { background:var(--surface); }
+    .char-stats {
+      padding: 6px 14px;
+      font-size: 10px;
+      color: var(--text-secondary);
+      display: flex;
+      gap: 12px;
+      border-top: 1px solid var(--border);
+      background: var(--surface2);
+      flex-shrink: 0;
+    }
+
+    .center-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+    .btn-swap {
+      width:38px; height:38px; border-radius:50%; border:2px solid var(--border); background:var(--surface); cursor:pointer; font-size:16px;
+      transition:all var(--transition); display:flex; align-items:center; justify-content:center; color:var(--text-secondary); box-shadow:var(--shadow-sm);
+    }
+    .btn-swap:hover { transform:rotate(180deg); border-color:var(--accent); color:var(--accent); }
+    .btn-convert {
+      padding:10px 20px; border-radius:26px; background:var(--accent); color:#fff; border:none; font-weight:600; font-size:13px;
+      box-shadow:0 4px 12px rgba(180,123,76,0.3); cursor:pointer; white-space:nowrap; transition:all var(--transition);
+    }
+    .btn-convert:hover { background:var(--accent-hover); box-shadow:0 6px 16px rgba(180,123,76,0.4); transform:translateY(-1px); }
+
+    .extras-bar {
+      padding: 8px 20px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      background: var(--surface2);
+      font-size: 12px;
+      flex-shrink: 0;
+    }
+    .toggle-group { display:flex; align-items:center; gap:6px; cursor:pointer; }
+    .toggle-switch { width:36px; height:20px; background:#cdc2b2; border-radius:10px; position:relative; transition:background var(--transition); }
+    .toggle-switch.active { background:var(--success); }
+    .toggle-switch::after { content:''; position:absolute; top:2px; left:2px; width:16px; height:16px; border-radius:50%; background:#fff; transition:all var(--transition); }
+    .toggle-switch.active::after { left:18px; }
+
+    .history-drawer { position:fixed; right:0; top:0; bottom:0; width:350px; background:var(--surface); box-shadow:-8px 0 30px rgba(0,0,0,0.15); z-index:100; transform:translateX(100%); transition:transform 0.3s; display:flex; flex-direction:column; border-left:1px solid var(--border); }
+    .history-drawer.open { transform:translateX(0); }
+    .history-header { padding:18px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; }
+    .history-list { flex:1; overflow-y:auto; padding:10px; }
+    .history-item { padding:10px 12px; border-radius:10px; cursor:pointer; margin-bottom:6px; background:var(--surface2); border:1px solid transparent; }
+    .history-item:hover { border-color:var(--accent); background:var(--accent-light); }
+    .overlay { position:fixed; inset:0; background:rgba(0,0,0,0.3); z-index:99; display:none; }
+    .overlay.show { display:block; }
+
+    .modal { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:var(--surface); border-radius:24px; padding:24px; z-index:200; width:90%; max-width:500px; box-shadow:0 30px 50px rgba(0,0,0,0.3); display:none; border:1px solid var(--border); }
+    .modal.active { display:block; }
+    .modal textarea { width:100%; padding:8px; margin:6px 0; border-radius:8px; border:1px solid var(--border); background:var(--surface2); color:var(--text); resize:vertical; overflow:auto; }
+
+    .toast { position:fixed; bottom:30px; left:50%; transform:translateX(-50%); background:var(--text); color:var(--bg); padding:10px 24px; border-radius:30px; font-size:13px; z-index:300; display:none; }
+    .diff-highlight { background:rgba(200,150,90,0.3); border-radius:2px; padding:0 2px; }
+    .diff-view { overflow:auto; white-space:pre-wrap; background:var(--surface); padding:12px 14px; }
+  </style>
+</head>
+<body>
+<div class="app-wrapper">
+  <div class="app-header">
+    <div class="logo">
+      <div class="logo-icon">🀄</div>
+      <div class="logo-text"><h2>繁简转换工具箱</h2><span>本地转换 · 多标准 · 支持CSV</span></div>
+    </div>
+    <div class="header-actions">
+      <button class="btn" id="themeToggle">🌓 主题</button>
+      <button class="btn" id="uploadBtn">📂 打开文件</button>
+      <input type="file" id="fileInput" accept=".txt,.csv,text/plain,text/csv" style="display:none">
+      <button class="btn" id="historyToggle">📜 历史</button>
+      <button class="btn" id="customDictBtn">📖 自定义替换</button>
+      <button class="btn" id="speakInputBtn">🔊 读输入</button>
+      <button class="btn" id="speakOutputBtn">🔊 读输出</button>
+    </div>
+  </div>
+
+  <div class="mode-bar">
+    <span class="mode-label">转换标准</span>
+    <div class="chips" id="modeChips">
+      <button class="chip active" data-mode="s2twp">简→台繁(短语)</button>
+      <button class="chip" data-mode="s2tw">简→台繁(字形)</button>
+      <button class="chip" data-mode="s2hk">简→港繁</button>
+      <button class="chip" data-mode="s2t">简→标准繁</button>
+      <button class="chip" data-mode="tw2sp">台繁→简(短语)</button>
+      <button class="chip" data-mode="tw2s">台繁→简(字形)</button>
+      <button class="chip" data-mode="hk2s">港繁→简</button>
+      <button class="chip" data-mode="t2s">标准繁→简</button>
+    </div>
+  </div>
+
+  <div class="workspace">
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title"><span style="color:#b47b4c;">●</span> 输入文本</span>
+        <div class="panel-actions">
+          <button class="btn btn-sm" id="pasteBtn">📋 粘贴</button>
+          <button class="btn btn-sm" id="clearInputBtn">清空</button>
+          <button class="btn btn-sm" id="sampleBtn">💡 示例</button>
+        </div>
+      </div>
+      <textarea id="inputText" class="text-area" placeholder="输入简体或繁体中文...&#10;也可打开TXT/CSV文件"></textarea>
+      <div class="char-stats" id="inputStats">字符 0 | 汉字 0 | 行 0</div>
+    </div>
+    <div class="center-col">
+      <button class="btn-swap" id="swapBtn">⇄</button>
+      <button class="btn-convert" id="convertBtn">⚡ 开始转换</button>
+      <button class="btn btn-sm" id="diffToggle">🔍 差异</button>
+    </div>
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title"><span style="color:#5d8a68;">●</span> 转换结果</span>
+        <div class="panel-actions">
+          <button class="btn btn-sm" id="copyBtn">📄 复制</button>
+          <button class="btn btn-sm" id="downloadTxtBtn">💾 TXT</button>
+          <button class="btn btn-sm" id="downloadCsvBtn">💾 CSV</button>
+          <button class="btn btn-sm" id="clearOutputBtn">清空</button>
+        </div>
+      </div>
+      <textarea id="outputText" class="text-area output-text" readonly placeholder="转换结果..."></textarea>
+      <div class="char-stats" id="outputStats">字符 0 | 汉字 0 | 行 0</div>
+    </div>
+  </div>
+
+  <div class="extras-bar">
+    <label class="toggle-group" id="realtimeToggle">
+      <span class="toggle-switch active" id="realtimeSwitch"></span>
+      <span>实时转换</span>
+    </label>
+    <span style="margin-left:auto; font-size:11px; color:var(--text-secondary);">
+      快捷键: Ctrl+Enter 转换 | Ctrl+Shift+C 复制 | Ctrl+Shift+S 交换
+    </span>
+  </div>
+</div>
+
+<div class="overlay" id="overlay"></div>
+<div class="history-drawer" id="historyDrawer">
+  <div class="history-header"><strong>📜 转换历史</strong><button class="btn btn-sm" id="closeHistory">✕ 关闭</button></div>
+  <div class="history-list" id="historyList"></div>
+  <button class="btn" style="margin:8px;" id="clearHistoryBtn">🗑️ 清空历史</button>
+</div>
+
+<div class="modal" id="customDictModal">
+  <h3>📖 自定义词汇替换规则</h3>
+  <p style="font-size:13px; color:var(--text-secondary);">每行一条，格式：原文=替换文（在标准转换后应用）</p>
+  <textarea id="customDictText" style="height:140px;"></textarea>
+  <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:12px;">
+    <button class="btn" id="saveCustomDict">💾 保存规则</button>
+    <button class="btn" id="closeModal">取消</button>
+  </div>
+</div>
+<div id="toast" class="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/opencc-js@1.0.5/dist/umd/full.min.js"></script>
+<script>
+(() => {
+  const inputText = document.getElementById('inputText');
+  const outputText = document.getElementById('outputText');
+  const convertBtn = document.getElementById('convertBtn');
+  const swapBtn = document.getElementById('swapBtn');
+  const copyBtn = document.getElementById('copyBtn');
+  const pasteBtn = document.getElementById('pasteBtn');
+  const clearInputBtn = document.getElementById('clearInputBtn');
+  const clearOutputBtn = document.getElementById('clearOutputBtn');
+  const downloadTxtBtn = document.getElementById('downloadTxtBtn');
+  const downloadCsvBtn = document.getElementById('downloadCsvBtn');
+  const sampleBtn = document.getElementById('sampleBtn');
+  const uploadBtn = document.getElementById('uploadBtn');
+  const fileInput = document.getElementById('fileInput');
+  const themeToggle = document.getElementById('themeToggle');
+  const historyToggle = document.getElementById('historyToggle');
+  const historyDrawer = document.getElementById('historyDrawer');
+  const closeHistory = document.getElementById('closeHistory');
+  const overlay = document.getElementById('overlay');
+  const historyList = document.getElementById('historyList');
+  const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+  const speakInputBtn = document.getElementById('speakInputBtn');
+  const speakOutputBtn = document.getElementById('speakOutputBtn');
+  const diffToggle = document.getElementById('diffToggle');
+  const customDictBtn = document.getElementById('customDictBtn');
+  const customDictModal = document.getElementById('customDictModal');
+  const customDictText = document.getElementById('customDictText');
+  const saveCustomDict = document.getElementById('saveCustomDict');
+  const closeModal = document.getElementById('closeModal');
+  const realtimeToggle = document.getElementById('realtimeToggle');
+  const realtimeSwitch = document.getElementById('realtimeSwitch');
+  const modeChips = document.getElementById('modeChips');
+  const inputStats = document.getElementById('inputStats');
+  const outputStats = document.getElementById('outputStats');
+
+  let currentMode = 's2twp';
+  let isRealtime = true;
+  let converterCache = {};
+  let openCCReady = false;
+  let showDiff = false;
+  let customReplaceRules = [];
+
+  function toast(msg, dur=2000) {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.style.display = 'block';
+    setTimeout(() => t.style.display = 'none', dur);
+  }
+
+  const savedDark = localStorage.getItem('fanjian-dark') === '1';
+  if (savedDark) document.body.classList.add('dark-theme');
+  themeToggle.addEventListener('click', ()=>{
+    document.body.classList.toggle('dark-theme');
+    localStorage.setItem('fanjian-dark', document.body.classList.contains('dark-theme') ? '1' : '0');
+  });
+
+  const MODES = {
+    s2twp:{from:'cn',to:'twp'}, s2tw:{from:'cn',to:'tw'}, s2hk:{from:'cn',to:'hk'}, s2t:{from:'cn',to:'t'},
+    tw2sp:{from:'twp',to:'cn'}, tw2s:{from:'tw',to:'cn'}, hk2s:{from:'hk',to:'cn'}, t2s:{from:'t',to:'cn'}
+  };
+
+  async function initConverter(mode) {
+    if (converterCache[mode]) return converterCache[mode];
+    const cfg = MODES[mode];
+    const conv = await OpenCC.Converter({from:cfg.from, to:cfg.to});
+    converterCache[mode] = conv;
+    return conv;
+  }
+
+  async function initDefault() {
+    try { await initConverter(currentMode); openCCReady = true; toast('✅ 引擎就绪'); }
+    catch(e) { toast('❌ 引擎加载失败'); }
+  }
+
+  function applyCustomReplace(text) {
+    if (!customReplaceRules.length) return text;
+    let res = text;
+    customReplaceRules.forEach(([from, to]) => { res = res.split(from).join(to); });
+    return res;
+  }
+
+  async function doConvert() {
+    if (!openCCReady) { toast('引擎未就绪'); return; }
+    const text = inputText.value;
+    if (!text.trim()) { outputText.value = ''; updateStats(); return; }
+    try {
+      const conv = await initConverter(currentMode);
+      let result = conv(text);
+      result = applyCustomReplace(result);
+      outputText.value = result;
+      if (showDiff) renderDiffHighlight(text, result);
+      updateStats();
+      addHistory(text, result);
+    } catch(e) { toast('转换失败: '+e.message); }
+  }
+
+  function renderDiffHighlight(original, converted) {
+    const panel = outputText.closest('.panel');
+    let diffDiv = panel.querySelector('.diff-view');
+    if (!diffDiv) {
+      diffDiv = document.createElement('div');
+      diffDiv.className = 'diff-view';
+      diffDiv.style.cssText = 'overflow:auto; white-space:pre-wrap; background:var(--surface); padding:12px 14px; flex:1;';
+      panel.insertBefore(diffDiv, outputText.nextSibling);
+    }
+    let html = '';
+    for (let i=0; i<Math.max(original.length, converted.length); i++) {
+      const o = original[i] || '', c = converted[i] || '';
+      html += (o !== c) ? `<span class="diff-highlight">${escapeHtml(c)}</span>` : escapeHtml(c);
+    }
+    diffDiv.innerHTML = html;
+    outputText.style.display = 'none';
+    diffDiv.style.display = 'block';
+  }
+  function escapeHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function removeDiffView() {
+    const panel = outputText.closest('.panel');
+    const div = panel.querySelector('.diff-view');
+    if (div) div.remove();
+    outputText.style.display = '';
+  }
+  diffToggle.addEventListener('click', ()=>{
+    showDiff = !showDiff;
+    diffToggle.classList.toggle('btn-primary', showDiff);
+    if (showDiff && outputText.value) renderDiffHighlight(inputText.value, outputText.value);
+    else removeDiffView();
+    toast(showDiff ? '差异对比开启' : '差异对比关闭');
+  });
+
+  function updateStats() {
+    const han = s => (s.match(/[\u4e00-\u9fff]/g)||[]).length;
+    inputStats.innerHTML = `字符 ${inputText.value.length} | 汉字 ${han(inputText.value)} | 行 ${inputText.value.split(/\n/).length}`;
+    outputStats.innerHTML = `字符 ${outputText.value.length} | 汉字 ${han(outputText.value)} | 行 ${outputText.value.split(/\n/).length}`;
+  }
+
+  let history = JSON.parse(localStorage.getItem('fanjian-history') || '[]');
+  function addHistory(inp, out) {
+    history.unshift({ input: inp.slice(0,80), output: out.slice(0,80), mode: currentMode, time: new Date().toLocaleString() });
+    if (history.length > 25) history.pop();
+    localStorage.setItem('fanjian-history', JSON.stringify(history));
+    renderHistory();
+  }
+  function renderHistory() {
+    historyList.innerHTML = history.map((h,i)=>`
+      <div class="history-item" data-index="${i}">
+        <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--text-secondary);">${h.mode} · ${h.time}</div>
+        <div style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(h.input)} → ${escapeHtml(h.output)}</div>
+      </div>`).join('');
+  }
+  historyList.addEventListener('click', e => {
+    const item = e.target.closest('.history-item');
+    if (!item) return;
+    const h = history[parseInt(item.dataset.index)];
+    inputText.value = h.input;
+    if (h.mode && MODES[h.mode]) {
+      document.querySelectorAll('.chip').forEach(c => c.classList.toggle('active', c.dataset.mode===h.mode));
+      currentMode = h.mode;
+    }
+    doConvert();
+    closeHistoryDrawer();
+  });
+  clearHistoryBtn.addEventListener('click', ()=>{ history=[]; localStorage.removeItem('fanjian-history'); renderHistory(); toast('历史已清空'); });
+  function openHistoryDrawer() { historyDrawer.classList.add('open'); overlay.classList.add('show'); }
+  function closeHistoryDrawer() { historyDrawer.classList.remove('open'); overlay.classList.remove('show'); }
+  historyToggle.addEventListener('click', openHistoryDrawer);
+  closeHistory.addEventListener('click', closeHistoryDrawer);
+  overlay.addEventListener('click', closeHistoryDrawer);
+
+  modeChips.addEventListener('click', e => {
+    const chip = e.target.closest('.chip');
+    if (!chip || chip.dataset.mode === currentMode) return;
+    currentMode = chip.dataset.mode;
+    document.querySelectorAll('.chip').forEach(c => c.classList.toggle('active', c.dataset.mode===currentMode));
+    if (isRealtime && inputText.value.trim()) doConvert();
+  });
+
+  uploadBtn.addEventListener('click', ()=> fileInput.click());
+  fileInput.addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => { inputText.value = ev.target.result; updateStats(); if(isRealtime) doConvert(); toast('文件已加载'); };
+    reader.readAsText(file, 'UTF-8');
+    fileInput.value = '';
+  });
+
+  function speak(text) {
+    if (!window.speechSynthesis) { toast('不支持朗读'); return; }
+    const u = new SpeechSynthesisUtterance(text); u.lang = 'zh-CN'; speechSynthesis.speak(u);
+  }
+  speakInputBtn.addEventListener('click', ()=> speak(inputText.value));
+  speakOutputBtn.addEventListener('click', ()=> speak(outputText.value));
+
+  function loadCustomDict() {
+    const saved = localStorage.getItem('fanjian-custom-dict') || '';
+    customDictText.value = saved;
+    customReplaceRules = saved.split('\n').filter(l=>l.includes('=')).map(l=>{ const [a,b]=l.split('='); return [a.trim(), b.trim()]; });
+  }
+  saveCustomDict.addEventListener('click', ()=>{
+    const raw = customDictText.value;
+    localStorage.setItem('fanjian-custom-dict', raw);
+    loadCustomDict();
+    customDictModal.classList.remove('active');
+    toast('规则已保存');
+    if (inputText.value.trim()) doConvert();
+  });
+  customDictBtn.addEventListener('click', ()=>{ loadCustomDict(); customDictModal.classList.add('active'); });
+  closeModal.addEventListener('click', ()=> customDictModal.classList.remove('active'));
+  loadCustomDict();
+
+  function downloadFile(content, filename, mime) {
+    const blob = new Blob(['\uFEFF'+content], {type:mime});
+    const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=filename; a.click();
+  }
+  downloadTxtBtn.addEventListener('click', ()=>{
+    if (!outputText.value) return toast('无内容');
+    downloadFile(outputText.value, `converted_${new Date().toISOString().slice(0,10)}.txt`, 'text/plain');
+    toast('TXT已下载');
+  });
+  downloadCsvBtn.addEventListener('click', ()=>{
+    if (!outputText.value) return toast('无内容');
+    downloadFile(outputText.value, `converted_${new Date().toISOString().slice(0,10)}.csv`, 'text/csv');
+    toast('CSV已下载');
+  });
+
+  convertBtn.addEventListener('click', doConvert);
+  swapBtn.addEventListener('click', ()=>{ [inputText.value, outputText.value] = [outputText.value, inputText.value]; updateStats(); if(isRealtime) doConvert(); });
+  copyBtn.addEventListener('click', ()=> navigator.clipboard.writeText(outputText.value).then(()=>toast('已复制')));
+  pasteBtn.addEventListener('click', ()=> navigator.clipboard.readText().then(t=>{ inputText.value=t; updateStats(); if(isRealtime)doConvert(); }));
+  clearInputBtn.addEventListener('click', ()=>{ inputText.value=''; outputText.value=''; updateStats(); removeDiffView(); });
+  clearOutputBtn.addEventListener('click', ()=>{ outputText.value=''; updateStats(); removeDiffView(); });
+  sampleBtn.addEventListener('click', ()=>{
+    const samples = ['汉字简化是必然趋势。','软件工程师开发应用程序。','香港和台湾用字差异。','学习中文的外国朋友。'];
+    inputText.value = samples[Math.floor(Math.random()*samples.length)];
+    updateStats(); if(isRealtime) doConvert();
+  });
+
+  realtimeToggle.addEventListener('click', ()=>{
+    isRealtime = !isRealtime;
+    realtimeSwitch.classList.toggle('active', isRealtime);
+    if (isRealtime && inputText.value.trim()) doConvert();
+    localStorage.setItem('fanjian-realtime', isRealtime?'1':'0');
+  });
+  if (localStorage.getItem('fanjian-realtime')==='0') { isRealtime=false; realtimeSwitch.classList.remove('active'); }
+
+  inputText.addEventListener('input', ()=>{ updateStats(); if(isRealtime) doConvert(); });
+
+  document.addEventListener('keydown', e => {
+    if (e.ctrlKey && e.key==='Enter') { e.preventDefault(); doConvert(); }
+    if (e.ctrlKey && e.shiftKey && e.key==='C') { e.preventDefault(); copyBtn.click(); }
+    if (e.ctrlKey && e.shiftKey && e.key==='S') { e.preventDefault(); swapBtn.click(); }
+  });
+
+  initDefault().then(()=>{ updateStats(); if(inputText.value.trim() && isRealtime) doConvert(); renderHistory(); });
+})();
+</script>
+</body>
+</html>
