@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Word 文件页数统计工具</title>
+<style>
+  :root {
+    --bg: #0f1419;
+    --bg-soft: #161c24;
+    --panel: #1b232d;
+    --panel-2: #212c38;
+    --border: #2c3848;
+    --text: #e6edf3;
+    --text-dim: #9aa7b4;
+    --text-faint: #6b7886;
+    --primary: #4c8dff;
+    --primary-hover: #6aa0ff;
+    --accent: #36c692;
+    --danger: #ff6b6b;
+    --warn: #f0b34a;
+    --shadow: 0 6px 24px rgba(0, 0, 0, .35);
+    --radius: 12px;
+  }
+  html[data-theme="light"] {
+    --bg: #f4f6fa;
+    --bg-soft: #eef1f6;
+    --panel: #ffffff;
+    --panel-2: #f7f9fc;
+    --border: #dbe2ec;
+    --text: #1b2733;
+    --text-dim: #5a6b7b;
+    --text-faint: #8a98a8;
+    --primary: #2f6fe0;
+    --primary-hover: #1f5fc8;
+    --accent: #1f9d6b;
+    --danger: #e04444;
+    --warn: #c98a14;
+    --shadow: 0 6px 24px rgba(40, 60, 90, .12);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 24px 20px 60px; }
+  header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 8px; }
+  h1 { font-size: 22px; margin: 0; display: flex; align-items: center; gap: 10px; }
+  h1 .logo { font-size: 26px; }
+  .sub { color: var(--text-dim); font-size: 13px; margin: 0 0 20px; }
+  .theme-toggle {
+    background: var(--panel); border: 1px solid var(--border); color: var(--text);
+    border-radius: 999px; padding: 7px 14px; cursor: pointer; font-size: 13px; transition: .15s;
+  }
+  .theme-toggle:hover { border-color: var(--primary); }
+
+  .drop {
+    border: 2px dashed var(--border); border-radius: var(--radius); background: var(--bg-soft);
+    padding: 34px 20px; text-align: center; transition: .18s; cursor: pointer; margin-bottom: 18px;
+  }
+  .drop.drag { border-color: var(--primary); background: rgba(76, 141, 255, .08); }
+  .drop .big { font-size: 16px; font-weight: 600; }
+  .drop .small { color: var(--text-dim); font-size: 13px; margin-top: 6px; }
+  .drop .icon { font-size: 40px; margin-bottom: 8px; }
+
+  .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 18px; }
+  .btn {
+    background: var(--panel); color: var(--text); border: 1px solid var(--border);
+    border-radius: 9px; padding: 9px 14px; cursor: pointer; font-size: 13px; transition: .15s;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .btn:hover { border-color: var(--primary); }
+  .btn:disabled { opacity: .45; cursor: not-allowed; }
+  .btn.primary { background: var(--primary); border-color: var(--primary); color: #fff; }
+  .btn.primary:hover { background: var(--primary-hover); }
+  .btn.ghost { background: transparent; }
+  .btn.danger:hover { border-color: var(--danger); color: var(--danger); }
+
+  .progress-wrap { margin-bottom: 16px; display: none; }
+  .progress-bar { height: 8px; background: var(--panel); border: 1px solid var(--border); border-radius: 999px; overflow: hidden; }
+  .progress-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--primary), var(--accent)); transition: width .15s; }
+  .progress-text { font-size: 12px; color: var(--text-dim); margin-top: 6px; }
+
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 18px; }
+  .stat {
+    background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 14px 16px; box-shadow: var(--shadow);
+  }
+  .stat .k { font-size: 12px; color: var(--text-dim); display: flex; align-items: center; gap: 6px; }
+  .stat .v { font-size: 24px; font-weight: 700; margin-top: 4px; }
+  .stat .v small { font-size: 13px; font-weight: 500; color: var(--text-dim); }
+
+  .toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 12px; }
+  .toolbar input[type="text"], .toolbar input[type="number"], .toolbar select {
+    background: var(--panel); border: 1px solid var(--border); color: var(--text);
+    border-radius: 8px; padding: 8px 10px; font-size: 13px; outline: none;
+  }
+  .toolbar input:focus, .toolbar select:focus { border-color: var(--primary); }
+  .toolbar .grow { flex: 1; min-width: 180px; }
+  .toolbar label { font-size: 12px; color: var(--text-dim); }
+  .range { display: flex; align-items: center; gap: 6px; }
+
+  .table-wrap { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; background: var(--panel); }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead th {
+    text-align: left; background: var(--panel-2); color: var(--text-dim); font-weight: 600;
+    padding: 11px 12px; border-bottom: 1px solid var(--border); white-space: nowrap; position: sticky; top: 0;
+  }
+  tbody td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: var(--panel-2); }
+  .name-cell { display: flex; align-items: center; gap: 8px; }
+  .ficon { font-size: 16px; }
+  .pages-big { font-weight: 700; font-size: 15px; }
+  .est { color: var(--warn); font-size: 11px; margin-left: 4px; }
+  .badge { font-size: 11px; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+  .badge.ok { background: rgba(54, 198, 146, .15); color: var(--accent); }
+  .badge.err { background: rgba(255, 107, 107, .15); color: var(--danger); }
+  .badge.uns { background: rgba(240, 179, 74, .15); color: var(--warn); }
+  .row-remove { color: var(--text-faint); cursor: pointer; border: none; background: none; font-size: 15px; padding: 2px 6px; border-radius: 6px; }
+  .row-remove:hover { color: var(--danger); background: rgba(255, 107, 107, .1); }
+  .num { text-align: right; font-variant-numeric: tabular-nums; }
+
+  .empty { padding: 40px 20px; text-align: center; color: var(--text-faint); font-size: 14px; }
+  .footnote { color: var(--text-faint); font-size: 12px; margin-top: 18px; line-height: 1.7; }
+  .footnote code { background: var(--panel); padding: 1px 5px; border-radius: 4px; color: var(--text-dim); }
+  .toast {
+    position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: var(--panel-2); border: 1px solid var(--border); color: var(--text);
+    padding: 11px 18px; border-radius: 10px; box-shadow: var(--shadow); font-size: 13px;
+    opacity: 0; transition: .25s; pointer-events: none; z-index: 50;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  @media (max-width: 640px) {
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    .hide-sm { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1><span class="logo">📄</span> Word 文件页数统计工具</h1>
+    </div>
+    <button class="theme-toggle" id="themeToggle">🌙 深色</button>
+  </header>
+  <p class="sub">批量读取 .docx 文件的页数（及字数、字符数、段落数等元数据），纯前端解析、无需联网、文件不会上传。</p>
+
+  <div class="drop" id="drop">
+    <div class="icon">📥</div>
+    <div class="big">把 Word 文件拖到这里</div>
+    <div class="small">支持多选 · 支持整个文件夹 · 也可以点击下方按钮选择</div>
+  </div>
+
+  <div class="actions">
+    <button class="btn primary" id="pickFiles">📂 选择文件</button>
+    <button class="btn" id="pickFolder">📁 选择文件夹</button>
+    <input type="file" id="fileInput" accept=".docx,.doc" multiple hidden>
+    <input type="file" id="folderInput" webkitdirectory directory multiple hidden>
+    <button class="btn danger ghost" id="clearBtn" disabled>🗑 清空</button>
+  </div>
+
+  <div class="progress-wrap" id="progressWrap">
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    <div class="progress-text" id="progressText">处理中…</div>
+  </div>
+
+  <div class="stats" id="stats" style="display:none;">
+    <div class="stat"><div class="k">📦 文件总数</div><div class="v" id="stFiles">0</div></div>
+    <div class="stat"><div class="k">📃 页数合计</div><div class="v" id="stPages">0 <small>页</small></div></div>
+    <div class="stat"><div class="k">📊 平均页数</div><div class="v" id="stAvg">0 <small>页</small></div></div>
+    <div class="stat"><div class="k">🔤 字数合计</div><div class="v" id="stWords">0</div></div>
+    <div class="stat"><div class="k">❌ 解析失败</div><div class="v" id="stErr">0</div></div>
+  </div>
+
+  <div class="toolbar" id="toolbar" style="display:none;">
+    <input type="text" class="grow" id="search" placeholder="🔍 搜索文件名…">
+    <div class="range">
+      <label>页数</label>
+      <input type="number" id="minPages" placeholder="最小" style="width:70px;">
+      <span>—</span>
+      <input type="number" id="maxPages" placeholder="最大" style="width:70px;">
+    </div>
+    <select id="sortBy">
+      <option value="name">按名称</option>
+      <option value="pages">按页数</option>
+      <option value="size">按大小</option>
+      <option value="words">按字数</option>
+    </select>
+    <select id="sortDir">
+      <option value="asc">升序</option>
+      <option value="desc">降序</option>
+    </select>
+    <button class="btn" id="exportCsv">⬇ CSV</button>
+    <button class="btn" id="exportJson">⬇ JSON</button>
+    <button class="btn" id="copyBtn">📋 复制</button>
+  </div>
+
+  <div class="table-wrap" id="tableWrap" style="display:none;">
+    <table>
+      <thead>
+        <tr>
+          <th style="width:34px;">#</th>
+          <th>文件名</th>
+          <th class="num">大小</th>
+          <th class="num">页数</th>
+          <th class="num hide-sm">字数</th>
+          <th class="num hide-sm">字符数</th>
+          <th class="num hide-sm">段落数</th>
+          <th class="hide-sm">作者</th>
+          <th>状态</th>
+          <th style="width:34px;"></th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+  <div class="empty" id="empty">尚未添加任何文件。</div>
+
+  <div class="footnote">
+    <b>说明：</b><br>
+    • 页数读取自 Word 文档内置属性 <code>docProps/app.xml</code> 的 <code>&lt;Pages&gt;</code> 字段，与 Word 中显示的页数一致。<br>
+    • 若文档未记录页数，将以「文档内分页符数量 + 1」自动<b>估算</b>（标记为 ~）。<br>
+    • 当前版本主要支持 <code>.docx</code>；旧版 <code>.doc</code> 暂不支持。<br>
+    • 所有解析均在浏览器本地完成，文件<b>不会上传</b>。
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  "use strict";
+
+  const $ = (id) => document.getElementById(id);
+  const fmtBytes = (b) => {
+    if (b < 1024) return b + " B";
+    if (b < 1024 * 1024) return (b / 1024).toFixed(1) + " KB";
+    return (b / 1024 / 1024).toFixed(2) + " MB";
+  };
+  const fmtNum = (n) => (n == null ? "—" : n.toLocaleString("zh-CN"));
+  const isDOCX = (f) => f.name.toLowerCase().endsWith(".docx");
+  const isDOC = (f) => f.name.toLowerCase().endsWith(".doc");
+
+  // ---------- ZIP 解压 ----------
+  async function unzipEntries(buffer) {
+    const dv = new DataView(buffer);
+    const len = buffer.byteLength;
+    let eocdOff = -1;
+    for (let i = len - 22; i >= 0; i--) {
+      if (dv.getUint32(i, true) === 0x06054b50) { eocdOff = i; break; }
+    }
+    if (eocdOff < 0) throw new Error("无效 ZIP");
+    const totalEntries = dv.getUint16(eocdOff + 10, true);
+    const cdOff = dv.getUint32(eocdOff + 16, true);
+    const entries = [];
+    let off = cdOff;
+    for (let i = 0; i < totalEntries; i++) {
+      if (dv.getUint32(off, true) !== 0x02014b50) break;
+      const compMethod = dv.getUint16(off + 10, true);
+      const compSize = dv.getUint32(off + 20, true);
+      const uncompSize = dv.getUint32(off + 24, true);
+      const fnameLen = dv.getUint16(off + 28, true);
+      const extraLen = dv.getUint16(off + 30, true);
+      const commentLen = dv.getUint16(off + 32, true);
+      const localOff = dv.getUint32(off + 42, true);
+      const fnameBytes = new Uint8Array(buffer, off + 46, fnameLen);
+      const name = new TextDecoder("utf-8").decode(fnameBytes);
+      entries.push({ name, compMethod, compSize, uncompSize, localOff });
+      off += 46 + fnameLen + extraLen + commentLen;
+    }
+    return entries;
+  }
+
+  async function getEntryData(buffer, entry) {
+    const dv = new DataView(buffer);
+    let off = entry.localOff;
+    if (dv.getUint32(off, true) !== 0x04034b50) throw new Error("本地文件头错误");
+    const fnameLen = dv.getUint16(off + 26, true);
+    const extraLen = dv.getUint16(off + 28, true);
+    off += 30 + fnameLen + extraLen;
+    const compData = new Uint8Array(buffer, off, entry.compSize);
+    if (entry.compMethod === 0) return compData;
+    if (entry.compMethod === 8) {
+      const ds = new DecompressionStream("deflate-raw");
+      const stream = new Blob([compData]).stream().pipeThrough(ds);
+      const ab = await new Response(stream).arrayBuffer();
+      return new Uint8Array(ab);
+    }
+    throw new Error("不支持的压缩方式");
+  }
+
+  async function readEntry(buffer, name) {
+    const entries = await unzipEntries(buffer);
+    const e = entries.find(en => en.name === name);
+    if (!e) return null;
+    return await getEntryData(buffer, e);
+  }
+
+  function estimatePagesFromDocument(xmlText) {
+    const m = xmlText.match(/w:type\s*=\s*["']page["']/g);
+    return (m ? m.length : 0) + 1;
+  }
+
+  function parseAppXml(xmlBytes) {
+    const xml = new TextDecoder("utf-8").decode(xmlBytes);
+    const num = (tag) => {
+      const re = new RegExp("<" + tag + ">\\s*([0-9]+)\\s*</" + tag + ">", "i");
+      const mm = xml.match(re);
+      return mm ? parseInt(mm[1], 10) : null;
+    };
+    return {
+      pages: num("Pages"),
+      words: num("Words"),
+      characters: num("Characters"),
+      paragraphs: num("Paragraphs"),
+      lines: num("Lines"),
+    };
+  }
+
+  function parseCoreXml(xmlBytes) {
+    if (!xmlBytes) return {};
+    const xml = new TextDecoder("utf-8").decode(xmlBytes);
+    const txt = (tag) => {
+      const re = new RegExp("<" + tag + "[^>]*>([\\s\\S]*?)</" + tag + ">", "i");
+      const mm = xml.match(re);
+      return mm ? mm[1].trim() : "";
+    };
+    return {
+      author: txt("dc:creator") || txt("creator"),
+      created: txt("dcterms:created") || txt("created"),
+    };
+  }
+
+  async function parseWordFile(file) {
+    if (isDOC(file)) {
+      return {
+        name: file.name, size: file.size, status: "unsupported",
+        statusText: "不支持 .doc", pages: null, estimated: false,
+        words: null, characters: null, paragraphs: null, lines: null, author: "—"
+      };
+    }
+    if (!isDOCX(file)) {
+      return {
+        name: file.name, size: file.size, status: "error",
+        statusText: "未知格式", pages: null, estimated: false,
+        words: null, characters: null, paragraphs: null, lines: null, author: "—"
+      };
+    }
+    try {
+      const buffer = await file.arrayBuffer();
+      const head = new Uint8Array(buffer, 0, 4);
+      if (!(head[0] === 0x50 && head[1] === 0x4b)) throw new Error("非 docx 文件");
+      const appXml = await readEntry(buffer, "docProps/app.xml");
+      const coreXml = await readEntry(buffer, "docProps/core.xml");
+      if (!appXml) throw new Error("缺少 app.xml");
+      const app = parseAppXml(appXml);
+      const core = parseCoreXml(coreXml);
+
+      let pages = app.pages;
+      let estimated = false;
+      if ((!pages || pages <= 0)) {
+        const docXmlBytes = await readEntry(buffer, "word/document.xml");
+        if (docXmlBytes) {
+          const docXmlText = new TextDecoder("utf-8").decode(docXmlBytes);
+          pages = estimatePagesFromDocument(docXmlText);
+          estimated = true;
+        }
+      }
+
+      return {
+        name: file.name, size: file.size, status: "ok",
+        statusText: estimated ? "已估算" : "成功",
+        pages, estimated,
+        words: app.words, characters: app.characters,
+        paragraphs: app.paragraphs, lines: app.lines,
+        author: core.author || "—",
+      };
+    } catch (e) {
+      return {
+        name: file.name, size: file.size, status: "error",
+        statusText: e.message || "解析失败", pages: null, estimated: false,
+        words: null, characters: null, paragraphs: null, lines: null, author: "—"
+      };
+    }
+  }
+
+  // ---------- 状态管理 ----------
+  let files = [];
+  function regenIds() { files.forEach((f, i) => (f._id = i)); }
+
+  async function addFiles(fileList) {
+    const arr = Array.from(fileList);
+    if (!arr.length) return;
+    $("progressWrap").style.display = "block";
+    const start = files.length;
+    for (let i = 0; i < arr.length; i++) {
+      const f = arr[i];
+      const pct = Math.round(((start + i) / (start + arr.length)) * 100);
+      $("progressFill").style.width = pct + "%";
+      $("progressText").textContent = `正在解析：${f.name}（${start + i + 1}/${start + arr.length}）`;
+      const res = await parseWordFile(f);
+      res._id = files.length;
+      res._orig = f;
+      files.push(res);
+    }
+    $("progressFill").style.width = "100%";
+    $("progressText").textContent = `完成，共 ${files.length} 个文件。`;
+    setTimeout(() => { $("progressWrap").style.display = "none"; }, 700);
+    render();
+  }
+
+  function visibleFiles() {
+    const q = $("search").value.trim().toLowerCase();
+    const min = $("minPages").value === "" ? null : parseInt($("minPages").value, 10);
+    const max = $("maxPages").value === "" ? null : parseInt($("maxPages").value, 10);
+    let list = files.filter(f => {
+      if (q && !f.name.toLowerCase().includes(q)) return false;
+      if (min != null && (f.pages == null || f.pages < min)) return false;
+      if (max != null && (f.pages == null || f.pages > max)) return false;
+      return true;
+    });
+    const by = $("sortBy").value;
+    const dir = $("sortDir").value === "asc" ? 1 : -1;
+    list.sort((a, b) => {
+      let va, vb;
+      if (by === "name") {
+        va = a.name.toLowerCase(); vb = b.name.toLowerCase();
+        return va < vb ? -dir : va > vb ? dir : 0;
+      }
+      if (by === "size") { va = a.size || 0; vb = b.size || 0; }
+      else if (by === "words") { va = a.words || 0; vb = b.words || 0; }
+      else { va = a.pages == null ? -1 : a.pages; vb = b.pages == null ? -1 : b.pages; }
+      return (va - vb) * dir;
+    });
+    return list;
+  }
+
+  function render() {
+    const has = files.length > 0;
+    $("stats").style.display = has ? "grid" : "none";
+    $("toolbar").style.display = has ? "flex" : "none";
+    $("tableWrap").style.display = has ? "block" : "none";
+    $("empty").style.display = has ? "none" : "block";
+    $("clearBtn").disabled = !has;
+
+    const totalPages = files.reduce((s, f) => s + (f.pages ? f.pages : 0), 0);
+    const totalWords = files.reduce((s, f) => s + (f.words || 0), 0);
+    const errCount = files.filter(f => f.status === "error" || f.status === "unsupported").length;
+    const avg = files.filter(f => f.pages).length
+      ? Math.round(totalPages / files.filter(f => f.pages).length) : 0;
+
+    $("stFiles").textContent = files.length;
+    $("stPages").innerHTML = totalPages.toLocaleString("zh-CN") + ' <small>页</small>';
+    $("stAvg").innerHTML = avg.toLocaleString("zh-CN") + ' <small>页</small>';
+    $("stWords").textContent = totalWords.toLocaleString("zh-CN");
+    $("stErr").textContent = errCount;
+
+    const list = visibleFiles();
+    const tbody = $("tbody");
+    tbody.innerHTML = "";
+    list.forEach((f, idx) => {
+      const tr = document.createElement("tr");
+      const badgeCls = f.status === "ok" ? "ok" : f.status === "error" ? "err" : "uns";
+      const pagesCell = f.pages == null
+        ? '<span style="color:var(--text-faint)">—</span>'
+        : `<span class="pages-big">${f.pages}</span>${f.estimated ? '<span class="est">~估算</span>' : ''}`;
+      tr.innerHTML = `
+        <td class="num" style="color:var(--text-faint)">${idx + 1}</td>
+        <td><div class="name-cell"><span class="ficon">${isDOC(f._orig) ? '📕' : '📘'}</span><span title="${f.name}">${escapeHtml(f.name)}</span></div></td>
+        <td class="num">${fmtBytes(f.size)}</td>
+        <td class="num">${pagesCell}</td>
+        <td class="num hide-sm">${fmtNum(f.words)}</td>
+        <td class="num hide-sm">${fmtNum(f.characters)}</td>
+        <td class="num hide-sm">${fmtNum(f.paragraphs)}</td>
+        <td class="hide-sm">${escapeHtml(f.author || "—")}</td>
+        <td><span class="badge ${badgeCls}">${escapeHtml(f.statusText)}</span></td>
+        <td><button class="row-remove" data-id="${f._id}" title="移除">✕</button></td>`;
+      tbody.appendChild(tr);
+    });
+    tbody.querySelectorAll(".row-remove").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const id = parseInt(btn.getAttribute("data-id"), 10);
+        files = files.filter(f => f._id !== id);
+        regenIds();
+        render();
+      });
+    });
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  }
+
+  // 导出
+  function buildRows() {
+    return files.map(f => ({
+      文件名: f.name,
+      大小: fmtBytes(f.size),
+      页数: f.pages == null ? "" : f.pages,
+      页数是否估算: f.estimated ? "是" : "否",
+      字数: f.words == null ? "" : f.words,
+      字符数: f.characters == null ? "" : f.characters,
+      段落数: f.paragraphs == null ? "" : f.paragraphs,
+      行数: f.lines == null ? "" : f.lines,
+      作者: f.author || "",
+      状态: f.statusText,
+    }));
+  }
+  function exportCsv() {
+    const rows = buildRows();
+    if (!rows.length) return toast("无数据");
+    const headers = Object.keys(rows[0]);
+    const esc = (v) => {
+      const s = String(v == null ? "" : v);
+      return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+    };
+    const lines = [headers.join(",")];
+    rows.forEach(r => lines.push(headers.map(h => esc(r[h])).join(",")));
+    const blob = new Blob(["﻿" + lines.join("\n")], { type: "text/csv;charset=utf-8" });
+    downloadBlob(blob, `word页数统计_${new Date().toISOString().slice(0,10)}.csv`);
+    toast("已导出 CSV");
+  }
+  function exportJson() {
+    const rows = buildRows();
+    if (!rows.length) return toast("无数据");
+    const blob = new Blob([JSON.stringify(rows, null, 2)], { type: "application/json" });
+    downloadBlob(blob, `word页数统计_${new Date().toISOString().slice(0,10)}.json`);
+    toast("已导出 JSON");
+  }
+  async function copyTable() {
+    const rows = buildRows();
+    if (!rows.length) return toast("无数据");
+    const headers = Object.keys(rows[0]);
+    const lines = [headers.join("\t")];
+    rows.forEach(r => lines.push(headers.map(h => r[h]).join("\t")));
+    try {
+      await navigator.clipboard.writeText(lines.join("\n"));
+      toast("已复制到剪贴板");
+    } catch (e) {
+      toast("复制失败");
+    }
+  }
+  function downloadBlob(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click();
+    setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 100);
+  }
+  function toast(msg) {
+    const t = $("toast");
+    t.textContent = msg; t.classList.add("show");
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => t.classList.remove("show"), 1800);
+  }
+
+  // 事件绑定
+  $("pickFiles").addEventListener("click", () => $("fileInput").click());
+  $("pickFolder").addEventListener("click", () => $("folderInput").click());
+  $("fileInput").addEventListener("change", e => { addFiles(e.target.files); e.target.value = ""; });
+  $("folderInput").addEventListener("change", e => { addFiles(e.target.files); e.target.value = ""; });
+  const drop = $("drop");
+  drop.addEventListener("click", () => $("fileInput").click());
+  ["dragenter","dragover"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add("drag"); }));
+  ["dragleave","drop"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove("drag"); }));
+  drop.addEventListener("drop", e => {
+    e.preventDefault();
+    if (e.dataTransfer.files?.length) addFiles(e.dataTransfer.files);
+  });
+  $("clearBtn").addEventListener("click", () => { files = []; render(); toast("已清空"); });
+  $("search").addEventListener("input", render);
+  $("minPages").addEventListener("input", render);
+  $("maxPages").addEventListener("input", render);
+  $("sortBy").addEventListener("change", render);
+  $("sortDir").addEventListener("change", render);
+  $("exportCsv").addEventListener("click", exportCsv);
+  $("exportJson").addEventListener("click", exportJson);
+  $("copyBtn").addEventListener("click", copyTable);
+
+  function applyTheme(theme) {
+    document.documentElement.setAttribute("data-theme", theme);
+    $("themeToggle").textContent = theme === "dark" ? "🌙 深色" : "☀️ 浅色";
+    try { localStorage.setItem("wp-theme", theme); } catch (e) {}
+  }
+  $("themeToggle").addEventListener("click", () => {
+    const cur = document.documentElement.getAttribute("data-theme") || "dark";
+    applyTheme(cur === "dark" ? "light" : "dark");
+  });
+  (function initTheme() {
+    let t = "dark";
+    try { t = localStorage.getItem("wp-theme") || "dark"; } catch (e) {}
+    applyTheme(t);
+  })();
+  render();
+</script>
+</body>
+</html>

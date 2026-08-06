@@ -1,0 +1,1578 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XLS 转 XLSX - 在线转换工具</title>
+
+    <!-- 引入 SheetJS 完整版库（支持 XLS/BIFF 格式解析） -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js">
+    </script>
+
+    <style>
+        :root {
+            --bg: #f0f4f8;
+            --card-bg: #ffffff;
+            --primary: #4f6ef7;
+            --primary-dark: #3b54d4;
+            --primary-light: #eef1fd;
+            --success: #10b981;
+            --success-light: #ecfdf5;
+            --warning: #f59e0b;
+            --warning-light: #fffbeb;
+            --danger: #ef4444;
+            --danger-light: #fef2f2;
+            --text: #1e293b;
+            --text-secondary: #64748b;
+            --text-light: #94a3b8;
+            --border: #e2e8f0;
+            --border-hover: #c4d0e0;
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.07), 0 2px 4px rgba(0, 0, 0, 0.04);
+            --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.1), 0 4px 10px rgba(0, 0, 0, 0.06);
+            --shadow-xl: 0 20px 40px rgba(0, 0, 0, 0.12), 0 8px 16px rgba(0, 0, 0, 0.06);
+            --radius-sm: 8px;
+            --radius: 12px;
+            --radius-lg: 16px;
+            --radius-xl: 20px;
+            --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-bounce: 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans SC', sans-serif;
+            background: linear-gradient(135deg, #f0f4f8 0%, #e8edf5 30%, #f0f4f8 60%, #eef1fb 100%);
+            background-attachment: fixed;
+            min-height: 100vh;
+            color: var(--text);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        /* 背景装饰 */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -200px;
+            right: -200px;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(79, 110, 247, 0.04) 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 0;
+        }
+        body::after {
+            content: '';
+            position: fixed;
+            bottom: -150px;
+            left: -150px;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(16, 185, 129, 0.04) 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 860px;
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* ========== 头部 ========== */
+        .app-header {
+            text-align: center;
+            padding: 12px 0 4px;
+        }
+        .app-header .icon-wrapper {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(135deg, #4f6ef7 0%, #6d8aff 100%);
+            border-radius: 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 8px 20px rgba(79, 110, 247, 0.3);
+            transition: transform var(--transition-bounce);
+        }
+        .app-header .icon-wrapper:hover {
+            transform: scale(1.05) rotate(-3deg);
+        }
+        .app-header .icon-wrapper svg {
+            width: 28px;
+            height: 28px;
+            fill: #fff;
+        }
+        .app-header h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--text);
+            letter-spacing: -0.02em;
+            margin: 0;
+        }
+        .app-header .subtitle {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-top: 4px;
+            font-weight: 400;
+        }
+
+        /* ========== 主卡片 ========== */
+        .main-card {
+            background: var(--card-bg);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-lg);
+            padding: 28px 32px;
+            transition: box-shadow var(--transition);
+            border: 1px solid var(--border);
+        }
+        .main-card:hover {
+            box-shadow: var(--shadow-xl);
+        }
+
+        /* ========== 上传区域 ========== */
+        .upload-zone {
+            border: 2.5px dashed var(--border);
+            border-radius: var(--radius-lg);
+            padding: 44px 24px;
+            text-align: center;
+            cursor: pointer;
+            transition: all var(--transition);
+            background: #fafbfc;
+            position: relative;
+            overflow: hidden;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .upload-zone::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at center, rgba(79, 110, 247, 0.03) 0%, transparent 70%);
+            opacity: 0;
+            transition: opacity var(--transition);
+        }
+        .upload-zone:hover,
+        .upload-zone.drag-over {
+            border-color: var(--primary);
+            background: #f8faff;
+            box-shadow: inset 0 0 0 4px rgba(79, 110, 247, 0.04);
+            transform: translateY(-1px);
+        }
+        .upload-zone:hover::before,
+        .upload-zone.drag-over::before {
+            opacity: 1;
+        }
+        .upload-zone.drag-over {
+            border-style: solid;
+            background: #f5f7ff;
+            box-shadow: var(--shadow-lg), inset 0 0 0 6px rgba(79, 110, 247, 0.06);
+            transform: translateY(-2px) scale(1.005);
+        }
+        .upload-zone .upload-icon {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 14px;
+            background: var(--primary-light);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all var(--transition-bounce);
+            position: relative;
+            z-index: 1;
+        }
+        .upload-zone:hover .upload-icon,
+        .upload-zone.drag-over .upload-icon {
+            background: #e0e5ff;
+            transform: scale(1.08);
+            box-shadow: 0 6px 20px rgba(79, 110, 247, 0.2);
+        }
+        .upload-zone .upload-icon svg {
+            width: 30px;
+            height: 30px;
+            fill: none;
+            stroke: var(--primary);
+            stroke-width: 2;
+            transition: all var(--transition);
+        }
+        .upload-zone.drag-over .upload-icon svg {
+            stroke: var(--primary-dark);
+            transform: translateY(-3px);
+        }
+        .upload-zone .upload-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 6px;
+            position: relative;
+            z-index: 1;
+        }
+        .upload-zone .upload-hint {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            position: relative;
+            z-index: 1;
+        }
+        .upload-zone .upload-formats {
+            display: inline-flex;
+            gap: 6px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+            position: relative;
+            z-index: 1;
+        }
+        .upload-zone .format-badge {
+            font-size: 0.72rem;
+            background: #f1f5f9;
+            color: var(--text-secondary);
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-weight: 500;
+            letter-spacing: 0.01em;
+            border: 1px solid var(--border);
+            transition: all var(--transition);
+        }
+        .upload-zone:hover .format-badge {
+            background: #fff;
+            border-color: var(--border-hover);
+        }
+        #fileInput {
+            display: none;
+        }
+
+        /* ========== 设置行 ========== */
+        .settings-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            margin-top: 16px;
+            flex-wrap: wrap;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+        .settings-row label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            user-select: none;
+            font-weight: 500;
+        }
+        .settings-row input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            accent-color: var(--primary);
+            cursor: pointer;
+        }
+        .settings-row .badge-info {
+            background: #f1f5f9;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        /* ========== 文件列表 ========== */
+        .files-section {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .files-section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .files-section-header h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .files-section-header .file-count {
+            background: var(--primary-light);
+            color: var(--primary);
+            font-size: 0.78rem;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+        .batch-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        /* ========== 文件卡片 ========== */
+        .file-card {
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+            transition: all var(--transition);
+            box-shadow: var(--shadow-sm);
+            animation: cardSlideIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        @keyframes cardSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(16px);
+                max-height: 0;
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+                max-height: 600px;
+            }
+        }
+        .file-card:hover {
+            border-color: var(--border-hover);
+            box-shadow: var(--shadow);
+        }
+        .file-card-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 18px;
+            cursor: pointer;
+            user-select: none;
+            transition: background var(--transition);
+            -webkit-tap-highlight-color: transparent;
+        }
+        .file-card-header:hover {
+            background: #fafbfc;
+        }
+        .file-card-header .file-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background: #ecfdf5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--success);
+            transition: all var(--transition);
+        }
+        .file-card-header .file-icon.xls-icon {
+            background: #ecfdf5;
+            color: #10b981;
+        }
+        .file-card-header .file-info {
+            flex: 1;
+            min-width: 0;
+        }
+        .file-card-header .file-name {
+            font-weight: 600;
+            font-size: 0.95rem;
+            color: var(--text);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 350px;
+        }
+        .file-card-header .file-meta {
+            font-size: 0.78rem;
+            color: var(--text-light);
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .file-card-header .file-meta span {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+        }
+        .file-card-header .expand-arrow {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all var(--transition);
+            flex-shrink: 0;
+            color: var(--text-light);
+            background: #f8fafc;
+        }
+        .file-card.expanded .expand-arrow {
+            transform: rotate(180deg);
+            background: var(--primary-light);
+            color: var(--primary);
+        }
+        .file-card-body {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), padding 0.3s ease;
+            background: #fafbfc;
+            border-top: 1px solid transparent;
+        }
+        .file-card.expanded .file-card-body {
+            max-height: 800px;
+            border-top-color: var(--border);
+        }
+        .file-card-body-inner {
+            padding: 0 18px 16px;
+        }
+        .sheet-selector {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            padding: 12px 0 6px;
+        }
+        .sheet-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.82rem;
+            cursor: pointer;
+            padding: 6px 12px;
+            border-radius: 20px;
+            background: #fff;
+            border: 1px solid var(--border);
+            transition: all var(--transition);
+            user-select: none;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+        .sheet-checkbox:hover {
+            border-color: var(--primary);
+            background: #f8faff;
+        }
+        .sheet-checkbox input {
+            accent-color: var(--primary);
+            width: 14px;
+            height: 14px;
+        }
+        .sheet-checkbox.checked {
+            border-color: var(--primary);
+            background: var(--primary-light);
+            color: var(--primary-dark);
+        }
+        .sheet-count-info {
+            font-size: 0.75rem;
+            color: var(--text-light);
+            padding: 4px 0;
+        }
+        .card-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            padding-top: 10px;
+        }
+
+        /* ========== 预览模态框 ========== */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.5);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            animation: fadeIn 0.2s ease;
+            backdrop-filter: blur(2px);
+            -webkit-backdrop-filter: blur(2px);
+        }
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+        .modal-dialog {
+            background: #fff;
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-xl);
+            width: 100%;
+            max-width: 900px;
+            max-height: 85vh;
+            display: flex;
+            flex-direction: column;
+            animation: modalSlideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        @keyframes modalSlideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px) scale(0.96);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+        .modal-header h3 {
+            font-size: 1.05rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .modal-close {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            border: none;
+            background: #f1f5f9;
+            cursor: pointer;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all var(--transition);
+            color: var(--text-secondary);
+            line-height: 1;
+        }
+        .modal-close:hover {
+            background: #fee2e2;
+            color: var(--danger);
+        }
+        .modal-body {
+            overflow-y: auto;
+            padding: 16px 20px;
+            flex: 1;
+            -webkit-overflow-scrolling: touch;
+        }
+        .modal-body .preview-table-wrapper {
+            overflow-x: auto;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+            -webkit-overflow-scrolling: touch;
+        }
+        .modal-body table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.82rem;
+            white-space: nowrap;
+        }
+        .modal-body table thead {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+        }
+        .modal-body table th {
+            background: #f1f5f9;
+            padding: 10px 14px;
+            text-align: left;
+            font-weight: 600;
+            color: var(--text);
+            border-bottom: 2px solid var(--border);
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+        .modal-body table td {
+            padding: 8px 14px;
+            border-bottom: 1px solid #f1f5f9;
+            color: var(--text);
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .modal-body table tbody tr:hover {
+            background: #fafbfc;
+        }
+        .modal-body table tbody tr:nth-child(even) {
+            background: #fdfefe;
+        }
+        .modal-body table tbody tr:nth-child(even):hover {
+            background: #f8fafb;
+        }
+        .preview-row-count {
+            font-size: 0.75rem;
+            color: var(--text-light);
+            margin-top: 8px;
+            text-align: center;
+        }
+
+        /* ========== 按钮 ========== */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 9px 18px;
+            border-radius: 25px;
+            border: none;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition);
+            white-space: nowrap;
+            letter-spacing: 0.01em;
+            text-decoration: none;
+            position: relative;
+            overflow: hidden;
+            -webkit-tap-highlight-color: transparent;
+            font-family: inherit;
+        }
+        .btn:active {
+            transform: scale(0.96);
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #4f6ef7 0%, #5b7cf9 100%);
+            color: #fff;
+            box-shadow: 0 4px 14px rgba(79, 110, 247, 0.35);
+        }
+        .btn-primary:hover {
+            box-shadow: 0 6px 20px rgba(79, 110, 247, 0.45);
+            transform: translateY(-1px);
+        }
+        .btn-primary:disabled {
+            background: #c4d0e0;
+            box-shadow: none;
+            cursor: not-allowed;
+            transform: none;
+            color: #94a3b8;
+        }
+        .btn-success {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: #fff;
+            box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+        }
+        .btn-success:hover {
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.45);
+            transform: translateY(-1px);
+        }
+        .btn-outline {
+            background: #fff;
+            color: var(--text);
+            border: 1.5px solid var(--border);
+        }
+        .btn-outline:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: #f8faff;
+        }
+        .btn-sm {
+            padding: 6px 14px;
+            font-size: 0.78rem;
+            border-radius: 20px;
+            gap: 4px;
+        }
+        .btn-xs {
+            padding: 4px 10px;
+            font-size: 0.72rem;
+            border-radius: 16px;
+            gap: 3px;
+        }
+        .btn-icon {
+            width: 34px;
+            height: 34px;
+            padding: 0;
+            border-radius: 50%;
+            gap: 0;
+        }
+        .btn-danger-outline {
+            background: #fff;
+            color: var(--danger);
+            border: 1.5px solid #fecaca;
+        }
+        .btn-danger-outline:hover {
+            background: #fef2f2;
+            border-color: var(--danger);
+        }
+        .btn .spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid transparent;
+            border-top-color: currentColor;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            display: inline-block;
+        }
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* ========== Toast ========== */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            pointer-events: none;
+        }
+        .toast {
+            pointer-events: auto;
+            padding: 12px 18px;
+            border-radius: 25px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #fff;
+            box-shadow: var(--shadow-lg);
+            animation: toastSlideIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            max-width: 400px;
+            word-break: break-word;
+        }
+        @keyframes toastSlideIn {
+            from {
+                opacity: 0;
+                transform: translateX(60px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        .toast.success {
+            background: #059669;
+        }
+        .toast.error {
+            background: #dc2626;
+        }
+        .toast.info {
+            background: #3b54d4;
+        }
+        .toast.warning {
+            background: #d97706;
+        }
+        .toast-fade-out {
+            animation: toastFadeOut 0.3s ease forwards;
+        }
+        @keyframes toastFadeOut {
+            to {
+                opacity: 0;
+                transform: translateX(40px);
+            }
+        }
+
+        /* ========== 空状态 ========== */
+        .empty-state {
+            text-align: center;
+            padding: 30px 20px;
+            color: var(--text-light);
+        }
+        .empty-state svg {
+            width: 48px;
+            height: 48px;
+            margin-bottom: 10px;
+            opacity: 0.5;
+        }
+        .empty-state p {
+            font-size: 0.9rem;
+        }
+
+        /* ========== 响应式 ========== */
+        @media (max-width: 640px) {
+            body {
+                padding: 10px;
+            }
+            .app-container {
+                gap: 14px;
+            }
+            .main-card {
+                padding: 18px 14px;
+                border-radius: var(--radius-lg);
+            }
+            .upload-zone {
+                padding: 28px 16px;
+                border-radius: var(--radius);
+            }
+            .upload-zone .upload-icon {
+                width: 48px;
+                height: 48px;
+            }
+            .upload-zone .upload-title {
+                font-size: 1rem;
+            }
+            .upload-zone .upload-hint {
+                font-size: 0.78rem;
+            }
+            .app-header h1 {
+                font-size: 1.4rem;
+            }
+            .file-card-header .file-name {
+                max-width: 180px;
+            }
+            .card-actions {
+                flex-direction: column;
+            }
+            .card-actions .btn {
+                width: 100%;
+                justify-content: center;
+            }
+            .batch-actions {
+                width: 100%;
+            }
+            .batch-actions .btn {
+                flex: 1;
+                justify-content: center;
+            }
+            .modal-dialog {
+                max-height: 92vh;
+                border-radius: var(--radius-lg);
+            }
+            .modal-body {
+                padding: 10px 12px;
+            }
+            .modal-body table {
+                font-size: 0.72rem;
+            }
+            .modal-body table th,
+            .modal-body table td {
+                padding: 6px 10px;
+            }
+            .toast-container {
+                top: 10px;
+                right: 10px;
+                left: 10px;
+            }
+            .toast {
+                max-width: 100%;
+                font-size: 0.8rem;
+                padding: 10px 14px;
+            }
+        }
+        @media (max-width: 380px) {
+            .file-card-header {
+                padding: 10px 12px;
+                gap: 8px;
+            }
+            .file-card-header .file-name {
+                max-width: 130px;
+                font-size: 0.85rem;
+            }
+            .file-card-body-inner {
+                padding: 0 10px 12px;
+            }
+            .sheet-checkbox {
+                font-size: 0.74rem;
+                padding: 4px 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <!-- 头部 -->
+        <header class="app-header">
+            <div class="icon-wrapper">
+                <svg viewBox="0 0 24 24">
+                    <rect x="3" y="3" width="8" height="8" rx="1.5" fill="white" opacity="0.9"/>
+                    <rect x="13" y="3" width="8" height="8" rx="1.5" fill="white" opacity="0.7"/>
+                    <rect x="3" y="13" width="8" height="8" rx="1.5" fill="white" opacity="0.6"/>
+                    <rect x="13" y="13" width="8" height="8" rx="1.5" fill="white" opacity="0.8"/>
+                    <path d="M7 7l3 3M17 7l-3 3" stroke="white" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+                </svg>
+            </div>
+            <h1>XLS → XLSX 转换工具</h1>
+            <p class="subtitle">将旧版 Excel 文件 (.xls) 转换为新版格式 (.xlsx)</p>
+        </header>
+
+        <!-- 主卡片 -->
+        <div class="main-card">
+            <!-- 上传区域 -->
+            <div class="upload-zone" id="uploadZone" role="button" tabindex="0" aria-label="上传XLS文件">
+                <div class="upload-icon">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M12 4v12m0-12l-4 4m4-4l4 4" stroke-linecap="round" stroke-linejoin="round"/>
+                        <rect x="4" y="16" width="16" height="4" rx="1" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <div class="upload-title">拖拽 XLS 文件到此处</div>
+                <div class="upload-hint">或点击此区域选择文件</div>
+                <div class="upload-formats">
+                    <span class="format-badge">.xls</span>
+                    <span class="format-badge">BIFF 格式</span>
+                    <span class="format-badge">批量上传</span>
+                </div>
+            </div>
+            <input type="file" id="fileInput" accept=".xls,application/vnd.ms-excel" multiple>
+
+            <!-- 设置行 -->
+            <div class="settings-row">
+                <label title="转换后自动下载所有文件">
+                    <input type="checkbox" id="autoDownload" checked>
+                    转换后自动下载
+                </label>
+                <span class="badge-info">💡 支持多工作表批量转换</span>
+            </div>
+        </div>
+
+        <!-- 文件列表 -->
+        <div class="files-section" id="filesSection" style="display:none;">
+            <div class="files-section-header">
+                <h3>
+                    📁 已上传文件
+                    <span class="file-count" id="fileCount">0</span>
+                </h3>
+                <div class="batch-actions">
+                    <button class="btn btn-success btn-sm" id="btnConvertAll" title="转换并下载所有文件">
+                        ⚡ 全部转换下载
+                    </button>
+                    <button class="btn btn-danger-outline btn-sm" id="btnClearAll" title="清除所有文件">
+                        🗑 清空列表
+                    </button>
+                </div>
+            </div>
+            <div id="fileList">
+                <div class="empty-state">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <rect x="3" y="3" width="18" height="18" rx="3" stroke-linecap="round"/>
+                        <line x1="9" y1="9" x2="15" y2="9" stroke-linecap="round"/>
+                        <line x1="9" y1="13" x2="15" y2="13" stroke-linecap="round"/>
+                    </svg>
+                    <p>暂无文件，请上传 XLS 文件</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 预览模态框 -->
+    <div class="modal-overlay" id="previewModal" style="display:none;">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <h3>📋 数据预览 - <span id="previewSheetName"></span></h3>
+                <button class="modal-close" id="modalClose" aria-label="关闭">✕</button>
+            </div>
+            <div class="modal-body" id="previewBody">
+                <p style="text-align:center;color:var(--text-light);padding:30px;">加载中...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast 容器 -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script>
+        (function() {
+            // ============ DOM 元素 ============
+            const uploadZone = document.getElementById('uploadZone');
+            const fileInput = document.getElementById('fileInput');
+            const filesSection = document.getElementById('filesSection');
+            const fileList = document.getElementById('fileList');
+            const fileCountEl = document.getElementById('fileCount');
+            const btnConvertAll = document.getElementById('btnConvertAll');
+            const btnClearAll = document.getElementById('btnClearAll');
+            const autoDownloadCheck = document.getElementById('autoDownload');
+            const previewModal = document.getElementById('previewModal');
+            const previewBody = document.getElementById('previewBody');
+            const previewSheetName = document.getElementById('previewSheetName');
+            const modalClose = document.getElementById('modalClose');
+            const toastContainer = document.getElementById('toastContainer');
+
+            // ============ 状态管理 ============
+            // 存储结构: { id, file, workbook, sheetNames, selectedSheets, fileName, fileSize }
+            let fileEntries = [];
+            let entryIdCounter = 0;
+
+            // ============ 工具函数 ============
+            function formatFileSize(bytes) {
+                if (bytes === 0) return '0 B';
+                const units = ['B', 'KB', 'MB', 'GB'];
+                const k = 1024;
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                const size = (bytes / Math.pow(k, i)).toFixed(i >= 2 ? 2 : 1);
+                return `${size} ${units[i]}`;
+            }
+
+            function showToast(message, type = 'info', duration = 3000) {
+                const toast = document.createElement('div');
+                toast.className = `toast ${type}`;
+                const icons = { success: '✅', error: '❌', info: 'ℹ️', warning: '⚠️' };
+                toast.innerHTML = `<span>${icons[type] || ''}</span> ${message}`;
+                toastContainer.appendChild(toast);
+                // 自动移除
+                const timer = setTimeout(() => {
+                    toast.classList.add('toast-fade-out');
+                    toast.addEventListener('animationend', () => toast.remove());
+                }, duration);
+                // 点击提前关闭
+                toast.addEventListener('click', () => {
+                    clearTimeout(timer);
+                    toast.classList.add('toast-fade-out');
+                    toast.addEventListener('animationend', () => toast.remove());
+                });
+            }
+
+            function getFileExtension(filename) {
+                return filename.split('.').pop()?.toLowerCase() || '';
+            }
+
+            function generateOutputFilename(originalName) {
+                const dotIndex = originalName.lastIndexOf('.');
+                const baseName = dotIndex > 0 ? originalName.substring(0, dotIndex) : originalName;
+                return baseName + '.xlsx';
+            }
+
+            // ============ 核心转换逻辑 ============
+            function readXlsFile(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        try {
+                            const data = new Uint8Array(e.target.result);
+                            // 使用 XLSX.read 解析，type: 'array' 支持 XLS(BIFF) 格式
+                            const workbook = XLSX.read(data, { type: 'array' });
+                            if (!workbook || !workbook.SheetNames || workbook.SheetNames.length === 0) {
+                                reject(new Error('文件中未找到任何工作表'));
+                                return;
+                            }
+                            resolve(workbook);
+                        } catch (err) {
+                            reject(new Error('文件解析失败：' + err.message +
+                                '。请确认文件是有效的 XLS 格式。'));
+                        }
+                    };
+                    reader.onerror = function() {
+                        reject(new Error('文件读取失败，请重试。'));
+                    };
+                    reader.readAsArrayBuffer(file);
+                });
+            }
+
+            function convertToXlsx(workbook, selectedSheetNames) {
+                // 创建新的 workbook，只包含选中的工作表
+                const newWorkbook = {
+                    SheetNames: [...selectedSheetNames],
+                    Sheets: {}
+                };
+                selectedSheetNames.forEach(name => {
+                    if (workbook.Sheets[name]) {
+                        newWorkbook.Sheets[name] = workbook.Sheets[name];
+                    }
+                });
+                // 写入 XLSX 格式
+                const xlsxData = XLSX.write(newWorkbook, {
+                    type: 'array',
+                    bookType: 'xlsx'
+                });
+                return new Blob([xlsxData], {
+                    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                });
+            }
+
+            function downloadBlob(blob, filename) {
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                // 延迟释放 URL
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
+            }
+
+            // ============ 预览功能 ============
+            function getPreviewData(workbook, sheetName, maxRows = 50) {
+                const sheet = workbook.Sheets[sheetName];
+                if (!sheet) return { headers: [], rows: [], totalRows: 0 };
+                // 使用 sheet_to_json 获取数据
+                const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '', raw: false });
+                const totalRows = jsonData.length;
+                const headers = jsonData.length > 0 ? (jsonData[0] || []) : [];
+                const dataRows = jsonData.slice(1, maxRows + 1);
+                return {
+                    headers: headers.map((h, i) => h !== '' && h !== null && h !== undefined ? String(h) :
+                        `列${i + 1}`),
+                    rows: dataRows,
+                    totalRows: totalRows,
+                    displayedRows: Math.min(dataRows.length, maxRows)
+                };
+            }
+
+            function showPreview(workbook, sheetName) {
+                previewSheetName.textContent = sheetName;
+                previewBody.innerHTML =
+                    '<p style="text-align:center;color:var(--text-light);padding:30px;">正在加载预览数据...</p>';
+                previewModal.style.display = 'flex';
+                document.body.style.overflow = 'hidden';
+
+                // 使用 requestAnimationFrame 确保模态框渲染后再加载数据
+                requestAnimationFrame(() => {
+                    try {
+                        const previewData = getPreviewData(workbook, sheetName, 50);
+                        if (previewData.headers.length === 0 && previewData.rows.length === 0) {
+                            previewBody.innerHTML =
+                                '<p style="text-align:center;color:var(--text-light);padding:40px;">该工作表为空</p>';
+                            return;
+                        }
+                        let tableHTML = '<div class="preview-table-wrapper"><table><thead><tr>';
+                        previewData.headers.forEach(h => {
+                            tableHTML +=
+                                `<th>${escapeHtml(String(h).substring(0, 40))}</th>`;
+                        });
+                        tableHTML += '</tr></thead><tbody>';
+                        previewData.rows.forEach(row => {
+                            tableHTML += '<tr>';
+                            previewData.headers.forEach((_, colIndex) => {
+                                const val = row[colIndex] !== undefined && row[colIndex] !== null ? String(
+                                    row[colIndex]) : '';
+                                tableHTML +=
+                                    `<td>${escapeHtml(val.substring(0, 100))}</td>`;
+                            });
+                            tableHTML += '</tr>';
+                        });
+                        tableHTML += '</tbody></table></div>';
+                        tableHTML +=
+                            `<p class="preview-row-count">显示 ${previewData.displayedRows} 行预览数据（共 ${previewData.totalRows} 行，${previewData.headers.length} 列）</p>`;
+                        previewBody.innerHTML = tableHTML;
+                    } catch (err) {
+                        previewBody.innerHTML =
+                            `<p style="text-align:center;color:var(--danger);padding:30px;">预览加载失败：${escapeHtml(err.message)}</p>`;
+                    }
+                });
+            }
+
+            function closePreview() {
+                previewModal.style.display = 'none';
+                document.body.style.overflow = '';
+                previewBody.innerHTML = '';
+            }
+
+            function escapeHtml(str) {
+                const div = document.createElement('div');
+                div.textContent = str;
+                return div.innerHTML;
+            }
+
+            // ============ 文件条目管理 ============
+            function addFileEntry(file, workbook) {
+                const entry = {
+                    id: ++entryIdCounter,
+                    file: file,
+                    workbook: workbook,
+                    sheetNames: [...workbook.SheetNames],
+                    selectedSheets: new Set([...workbook.SheetNames]), // 默认全选
+                    fileName: file.name,
+                    fileSize: file.size
+                };
+                fileEntries.push(entry);
+                renderFileList();
+                updateUIState();
+                showToast(`✅ 成功加载：${file.name}（${workbook.SheetNames.length} 个工作表）`, 'success', 2500);
+
+                // 如果开启自动下载且只有一个文件和一个工作表，直接转换下载
+                if (autoDownloadCheck.checked && workbook.SheetNames.length === 1 && fileEntries.length === 1) {
+                    setTimeout(() => convertAndDownloadEntry(entry.id), 400);
+                }
+            }
+
+            function removeFileEntry(entryId) {
+                const index = fileEntries.findIndex(e => e.id === entryId);
+                if (index >= 0) {
+                    const removed = fileEntries.splice(index, 1)[0];
+                    showToast(`已移除：${removed.fileName}`, 'info', 2000);
+                }
+                renderFileList();
+                updateUIState();
+            }
+
+            function clearAllEntries() {
+                if (fileEntries.length === 0) return;
+                if (confirm(`确定要清空全部 ${fileEntries.length} 个文件吗？此操作不可恢复。`)) {
+                    fileEntries = [];
+                    renderFileList();
+                    updateUIState();
+                    showToast('已清空所有文件', 'info', 2000);
+                }
+            }
+
+            function toggleSheetSelection(entryId, sheetName) {
+                const entry = fileEntries.find(e => e.id === entryId);
+                if (!entry) return;
+                if (entry.selectedSheets.has(sheetName)) {
+                    if (entry.selectedSheets.size <= 1) {
+                        showToast('至少需要选择一个工作表', 'warning', 2000);
+                        return;
+                    }
+                    entry.selectedSheets.delete(sheetName);
+                } else {
+                    entry.selectedSheets.add(sheetName);
+                }
+                renderFileList();
+            }
+
+            function convertAndDownloadEntry(entryId) {
+                const entry = fileEntries.find(e => e.id === entryId);
+                if (!entry) return;
+                if (entry.selectedSheets.size === 0) {
+                    showToast('请至少选择一个工作表进行转换', 'warning', 2500);
+                    return;
+                }
+                try {
+                    const selectedNames = [...entry.selectedSheets];
+                    const blob = convertToXlsx(entry.workbook, selectedNames);
+                    const outputName = generateOutputFilename(entry.fileName);
+                    downloadBlob(blob, outputName);
+                    const sheetInfo = selectedNames.length === entry.sheetNames.length ?
+                        `全部 ${selectedNames.length} 个工作表` :
+                        `${selectedNames.length} 个工作表`;
+                    showToast(`✅ 转换完成：${outputName}（${sheetInfo}）`, 'success', 3000);
+                } catch (err) {
+                    showToast(`❌ 转换失败：${err.message}`, 'error', 4000);
+                }
+            }
+
+            function convertAllEntries() {
+                if (fileEntries.length === 0) {
+                    showToast('没有可转换的文件', 'warning', 2000);
+                    return;
+                }
+                const validEntries = fileEntries.filter(e => e.selectedSheets.size > 0);
+                if (validEntries.length === 0) {
+                    showToast('所有文件都未选择工作表，请至少为每个文件选择一个工作表', 'warning', 3000);
+                    return;
+                }
+                if (validEntries.length > 5) {
+                    if (!confirm(`将逐个下载 ${validEntries.length} 个文件，浏览器可能会拦截多个下载弹窗。\n\n建议使用"全部转换下载"前关闭弹窗拦截设置，或逐个转换。\n\n是否继续？`)) {
+                        return;
+                    }
+                }
+                showToast(`开始批量转换 ${validEntries.length} 个文件...`, 'info', 2500);
+                validEntries.forEach((entry, index) => {
+                    setTimeout(() => {
+                        try {
+                            const selectedNames = [...entry.selectedSheets];
+                            const blob = convertToXlsx(entry.workbook, selectedNames);
+                            const outputName = generateOutputFilename(entry.fileName);
+                            downloadBlob(blob, outputName);
+                            if (index === validEntries.length - 1) {
+                                showToast(`🎉 全部 ${validEntries.length} 个文件转换完成！`, 'success', 3500);
+                            }
+                        } catch (err) {
+                            showToast(`❌ ${entry.fileName} 转换失败：${err.message}`, 'error', 4000);
+                        }
+                    }, index * 350); // 间隔350ms逐个下载，避免浏览器拦截
+                });
+            }
+
+            function updateUIState() {
+                const count = fileEntries.length;
+                fileCountEl.textContent = count;
+                filesSection.style.display = count > 0 ? 'flex' : 'none';
+                btnConvertAll.disabled = count === 0;
+            }
+
+            // ============ 渲染文件列表 ============
+            function renderFileList() {
+                if (fileEntries.length === 0) {
+                    fileList.innerHTML = `
+                        <div class="empty-state">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <rect x="3" y="3" width="18" height="18" rx="3" stroke-linecap="round"/>
+                                <line x1="9" y1="9" x2="15" y2="9" stroke-linecap="round"/>
+                                <line x1="9" y1="13" x2="15" y2="13" stroke-linecap="round"/>
+                            </svg>
+                            <p>暂无文件，请上传 XLS 文件</p>
+                        </div>`;
+                    return;
+                }
+                let html = '';
+                fileEntries.forEach(entry => {
+                    const selectedCount = entry.selectedSheets.size;
+                    const totalCount = entry.sheetNames.length;
+                    const allSelected = selectedCount === totalCount;
+                    const sheetLabel = allSelected ? `全部 ${totalCount} 个工作表` :
+                        `已选 ${selectedCount}/${totalCount} 个工作表`;
+                    const isMultiSheet = totalCount > 1;
+
+                    html += `
+                    <div class="file-card ${isMultiSheet ? '' : 'expanded'}" id="fileCard-${entry.id}">
+                        <div class="file-card-header" onclick="window._toggleCard(${entry.id})" title="点击展开/收起">
+                            <div class="file-icon xls-icon">XLS</div>
+                            <div class="file-info">
+                                <div class="file-name" title="${escapeHtml(entry.fileName)}">${escapeHtml(entry.fileName)}</div>
+                                <div class="file-meta">
+                                    <span>📏 ${formatFileSize(entry.fileSize)}</span>
+                                    <span>📊 ${sheetLabel}</span>
+                                </div>
+                            </div>
+                            <div class="expand-arrow">▼</div>
+                        </div>
+                        <div class="file-card-body">
+                            <div class="file-card-body-inner">
+                                <div class="sheet-count-info">📋 选择要转换的工作表（至少选择一个）：</div>
+                                <div class="sheet-selector">
+                                    ${entry.sheetNames.map(name => `
+                                        <label class="sheet-checkbox ${entry.selectedSheets.has(name) ? 'checked' : ''}"
+                                               onclick="event.stopPropagation(); window._toggleSheet(${entry.id}, '${escapeHtml(name).replace(/'/g, "&#39;")}')">
+                                            <input type="checkbox"
+                                                   ${entry.selectedSheets.has(name) ? 'checked' : ''}
+                                                   onclick="event.stopPropagation(); window._toggleSheet(${entry.id}, '${escapeHtml(name).replace(/'/g, "&#39;")}')"
+                                                   tabindex="-1">
+                                            📄 ${escapeHtml(name)}
+                                        </label>
+                                    `).join('')}
+                                </div>
+                                <div class="card-actions">
+                                    <button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); window._previewEntry(${entry.id})" title="预览第一个选中工作表的数据">
+                                        👁 预览数据
+                                    </button>
+                                    <button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); window._convertEntry(${entry.id})" title="转换并下载为XLSX">
+                                        ⬇ 转换下载
+                                    </button>
+                                    <button class="btn btn-danger-outline btn-sm" onclick="event.stopPropagation(); window._removeEntry(${entry.id})" title="从列表中移除">
+                                        ✕ 移除
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>`;
+                });
+                fileList.innerHTML = html;
+
+                // 恢复展开状态
+                fileEntries.forEach(entry => {
+                    const card = document.getElementById(`fileCard-${entry.id}`);
+                    if (card && entry.sheetNames.length <= 1) {
+                        card.classList.add('expanded');
+                    }
+                });
+            }
+
+            // 暴露全局函数供onclick调用
+            window._toggleCard = function(entryId) {
+                const card = document.getElementById(`fileCard-${entryId}`);
+                if (card) {
+                    card.classList.toggle('expanded');
+                }
+            };
+            window._toggleSheet = function(entryId, sheetName) {
+                toggleSheetSelection(entryId, sheetName);
+            };
+            window._previewEntry = function(entryId) {
+                const entry = fileEntries.find(e => e.id === entryId);
+                if (!entry) return;
+                if (entry.selectedSheets.size === 0) {
+                    showToast('请至少选择一个工作表进行预览', 'warning', 2000);
+                    return;
+                }
+                // 预览第一个选中的工作表
+                const firstSelected = [...entry.selectedSheets][0];
+                showPreview(entry.workbook, firstSelected);
+            };
+            window._convertEntry = function(entryId) {
+                convertAndDownloadEntry(entryId);
+            };
+            window._removeEntry = function(entryId) {
+                removeFileEntry(entryId);
+            };
+
+            // ============ 文件上传处理 ============
+            function handleFiles(fileListInput) {
+                const files = Array.from(fileListInput);
+                if (files.length === 0) return;
+
+                // 过滤出 XLS 文件
+                const xlsFiles = files.filter(f => {
+                    const ext = getFileExtension(f.name);
+                    return ext === 'xls';
+                });
+                const skippedCount = files.length - xlsFiles.length;
+
+                if (xlsFiles.length === 0) {
+                    showToast('请上传 .xls 格式的文件（旧版 Excel 格式）', 'warning', 3000);
+                    return;
+                }
+                if (skippedCount > 0) {
+                    showToast(`已跳过 ${skippedCount} 个非XLS格式的文件`, 'warning', 2500);
+                }
+
+                // 检查文件大小（超过100MB给出警告）
+                const largeFiles = xlsFiles.filter(f => f.size > 100 * 1024 * 1024);
+                if (largeFiles.length > 0) {
+                    const names = largeFiles.map(f => f.name).join('、');
+                    showToast(`⚠️ 大文件警告：${names} 超过100MB，处理可能需要较长时间`, 'warning', 5000);
+                }
+
+                // 逐个处理文件
+                let processedCount = 0;
+                const totalToProcess = xlsFiles.length;
+
+                xlsFiles.forEach(file => {
+                    // 检查是否已存在同名文件
+                    const duplicate = fileEntries.find(e => e.fileName === file.name && e.fileSize ===
+                        file.size);
+                    if (duplicate) {
+                        showToast(`⏭ 跳过重复文件：${file.name}`, 'info', 2000);
+                        processedCount++;
+                        if (processedCount === totalToProcess && fileEntries.length > 0) {
+                            updateUIState();
+                            renderFileList();
+                        }
+                        return;
+                    }
+
+                    // 显示处理中状态
+                    const loadingToastId = `loading-${Date.now()}-${Math.random()}`;
+                    showToast(`⏳ 正在解析：${file.name}...`, 'info', 10000);
+
+                    readXlsFile(file)
+                        .then(workbook => {
+                            // 移除加载提示（通过更新toast）
+                            addFileEntry(file, workbook);
+                            processedCount++;
+                            if (processedCount === totalToProcess && fileEntries.length > 0) {
+                                updateUIState();
+                                renderFileList();
+                            }
+                        })
+                        .catch(err => {
+                            processedCount++;
+                            showToast(`❌ ${file.name}：${err.message}`, 'error', 5000);
+                            if (processedCount === totalToProcess && fileEntries.length > 0) {
+                                updateUIState();
+                                renderFileList();
+                            } else if (processedCount === totalToProcess && fileEntries.length === 0) {
+                                updateUIState();
+                                renderFileList();
+                            }
+                        });
+                });
+            }
+
+            // ============ 事件监听 ============
+            // 点击上传
+            uploadZone.addEventListener('click', (e) => {
+                e.stopPropagation();
+                fileInput.click();
+            });
+            fileInput.addEventListener('change', () => {
+                if (fileInput.files && fileInput.files.length > 0) {
+                    handleFiles(fileInput.files);
+                    fileInput.value = ''; // 清空以便重新选择相同文件
+                }
+            });
+
+            // 拖拽上传
+            uploadZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                uploadZone.classList.add('drag-over');
+            });
+            uploadZone.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                uploadZone.classList.remove('drag-over');
+            });
+            uploadZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                uploadZone.classList.remove('drag-over');
+                if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                    handleFiles(e.dataTransfer.files);
+                }
+            });
+
+            // 全局拖拽（防止浏览器默认打开文件）
+            document.addEventListener('dragover', (e) => {
+                e.preventDefault();
+            });
+            document.addEventListener('drop', (e) => {
+                e.preventDefault();
+            });
+
+            // 键盘可访问性
+            uploadZone.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    fileInput.click();
+                }
+            });
+
+            // 批量操作按钮
+            btnConvertAll.addEventListener('click', convertAllEntries);
+            btnClearAll.addEventListener('click', clearAllEntries);
+
+            // 模态框关闭
+            modalClose.addEventListener('click', closePreview);
+            previewModal.addEventListener('click', (e) => {
+                if (e.target === previewModal) {
+                    closePreview();
+                }
+            });
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && previewModal.style.display === 'flex') {
+                    closePreview();
+                }
+            });
+
+            // ============ 粘贴文件支持 ============
+            document.addEventListener('paste', (e) => {
+                const items = e.clipboardData?.items;
+                if (!items) return;
+                const files = [];
+                for (const item of items) {
+                    if (item.kind === 'file') {
+                        const file = item.getAsFile();
+                        if (file && getFileExtension(file.name) === 'xls') {
+                            files.push(file);
+                        }
+                    }
+                }
+                if (files.length > 0) {
+                    e.preventDefault();
+                    handleFiles(files);
+                }
+            });
+
+            // ============ 初始化 ============
+            updateUIState();
+            renderFileList();
+
+            // ============ 检测库是否加载成功 ============
+            if (typeof XLSX === 'undefined') {
+                showToast(
+                    '⚠️ 核心库加载失败，请检查网络连接后刷新页面。如果持续失败，可能需要使用兼容的浏览器。',
+                    'error', 8000);
+                uploadZone.style.pointerEvents = 'none';
+                uploadZone.style.opacity = '0.5';
+                uploadZone.querySelector('.upload-title').textContent = '库加载失败，请刷新页面';
+                uploadZone.querySelector('.upload-hint').textContent = '无法加载 SheetJS 库';
+            } else {
+                console.log('✅ SheetJS 库加载成功，版本：', XLSX.version || '未知');
+                console.log('📋 支持的文件格式：XLS (BIFF), XLSX, CSV 等');
+            }
+        })();
+    </script>
+</body>
+</html>

@@ -1,0 +1,1439 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Excel 水印工具 - 本地离线版</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+  :root{
+    --bg:#f0f2f7; --panel:#ffffff; --line:#e3e6ee; --text:#1f2430; --muted:#7a8296;
+    --brand:#3b6cff; --brand-dark:#2a53c8; --ok:#18a05e; --danger:#e14d3f;
+    --radius:12px; --shadow:0 2px 10px rgba(31,42,70,.06);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:"Microsoft YaHei","PingFang SC","Segoe UI",sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.5}
+  header{background:linear-gradient(120deg,#2a53c8,#3b6cff);color:#fff;padding:18px 26px;display:flex;align-items:center;gap:14px}
+  header .logo{width:42px;height:42px;background:rgba(255,255,255,.18);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px}
+  header h1{font-size:20px;font-weight:600}
+  header p{font-size:12.5px;opacity:.85}
+  .wrap{display:grid;grid-template-columns:300px 350px 1fr;gap:16px;padding:18px;max-width:1500px;margin:0 auto;align-items:start}
+  @media(max-width:1180px){.wrap{grid-template-columns:1fr 1fr}.wrap .right{grid-column:1/-1}}
+  @media(max-width:760px){.wrap{grid-template-columns:1fr}}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+  .panel h2{font-size:14px;font-weight:600;padding:12px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px}
+  .panel h2 .ico{font-size:16px}
+  .panel .body{padding:14px 16px}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;border:none;border-radius:8px;padding:9px 16px;font-size:14px;font-weight:500;cursor:pointer;transition:.15s;background:#eef1f8;color:var(--text)}
+  .btn:hover{filter:brightness(.97)}
+  .btn.primary{background:var(--brand);color:#fff}
+  .btn.primary:hover{background:var(--brand-dark)}
+  .btn.ok{background:var(--ok);color:#fff}
+  .btn.danger{background:#fdecea;color:var(--danger)}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+  .btn.sm{padding:6px 10px;font-size:12.5px;border-radius:6px}
+  .dropzone{border:2px dashed #c3cadb;border-radius:10px;padding:26px 12px;text-align:center;cursor:pointer;transition:.2s;background:#fafbfe}
+  .dropzone:hover,.dropzone.drag{border-color:var(--brand);background:#f2f6ff}
+  .dropzone.loaded{border-style:solid;border-color:#cfe3d8;background:#f5faf7}
+  .dropzone .big{font-size:34px}
+  .dropzone p{color:var(--muted);font-size:13px;margin-top:6px}
+  .fileinfo{margin-top:12px;font-size:12.5px;color:var(--muted);word-break:break-all}
+  .field{margin-bottom:14px}
+  .field>label{display:block;font-size:12.5px;color:var(--muted);margin-bottom:6px}
+  .row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  input[type=text],textarea,select{width:100%;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:13.5px;font-family:inherit;background:#fff;color:var(--text)}
+  textarea{min-height:72px;resize:vertical}
+  input:focus,textarea:focus,select:focus{outline:2px solid #dbe4ff;border-color:var(--brand)}
+  input[type=color]{width:42px;height:34px;border:1px solid var(--line);border-radius:8px;padding:2px;cursor:pointer;background:#fff}
+  input[type=range]{flex:1;accent-color:var(--brand)}
+  input[type=number]{width:70px;border:1px solid var(--line);border-radius:8px;padding:7px 8px}
+  input[type=checkbox]{accent-color:var(--brand);width:16px;height:16px}
+  .seg{display:flex;background:#eef1f8;border-radius:9px;padding:3px;gap:3px}
+  .seg button{flex:1;border:none;background:transparent;padding:7px 6px;border-radius:7px;font-size:13px;cursor:pointer;color:var(--muted);transition:.15s}
+  .seg button.active{background:#fff;color:var(--text);font-weight:600;box-shadow:0 1px 4px rgba(31,42,70,.12)}
+  .chips{display:flex;flex-wrap:wrap;gap:6px}
+  .chip{border:1px solid var(--line);background:#fff;border-radius:14px;padding:4px 11px;font-size:12.5px;cursor:pointer;transition:.15s;color:var(--text)}
+  .chip:hover{border-color:var(--brand);color:var(--brand)}
+  .sheets{max-height:210px;overflow:auto;border:1px solid var(--line);border-radius:8px;padding:6px}
+  .sheets label{display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:6px;cursor:pointer;font-size:13px}
+  .sheets label:hover{background:#f3f6ff}
+  .sheets .sicon{color:#28a745;font-size:13px}
+  .hint{font-size:11.5px;color:var(--muted);margin-top:4px}
+  .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
+  .tabs{display:flex;border-bottom:1px solid var(--line);margin-bottom:14px}
+  .tabs button{flex:1;background:none;border:none;padding:9px;font-size:13.5px;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent}
+  .tabs button.active{color:var(--brand);border-bottom-color:var(--brand);font-weight:600}
+  .tab-pane{display:none}
+  .tab-pane.active{display:block}
+  .preview-stage{position:relative;min-height:420px;background:#fff;padding:10px;border-radius:10px;border:1px solid var(--line)}
+  .preview-stage canvas{width:100%;display:block}
+  .preview-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px}
+  .badge{display:inline-flex;align-items:center;gap:5px;font-size:12px;background:#eef4ff;color:var(--brand-dark);border-radius:14px;padding:3px 10px}
+  .loading{position:fixed;inset:0;background:rgba(255,255,255,.7);display:none;align-items:center;justify-content:center;z-index:99;backdrop-filter:blur(2px)}
+  .loading .box{background:#fff;border-radius:12px;padding:26px 34px;box-shadow:0 8px 30px rgba(0,0,0,.12);text-align:center}
+  .spinner{width:34px;height:34px;border:3px solid #dde3f2;border-top-color:var(--brand);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .thumb{margin-top:10px;display:none}
+  .thumb img{max-height:90px;border:1px solid var(--line);border-radius:8px;background:repeating-conic-gradient(#eee 0 25%,#fff 0 50%) 0 0/14px 14px}
+  footer{padding:14px 26px;color:var(--muted);font-size:12px;text-align:center}
+  .tooltip{color:var(--muted);font-size:11.5px}
+  .actions-divider{height:1px;background:var(--line);margin:12px 0}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">🛡️</div>
+  <div>
+    <h1>Excel 水印工具</h1>
+    <p>本地离线处理 · 支持文本/图片水印 · 平铺/居中/铺满 · 可预览 · 不泄露文件</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- 左侧：文件 -->
+  <section class="panel">
+    <h2><span class="ico">📁</span> 1. 选择 Excel 文件</h2>
+    <div class="body">
+      <div class="dropzone" id="dropZone">
+        <div class="big">📄</div>
+        <p><b>点击或拖拽</b> .xlsx / .xlsm 文件到此处</p>
+        <p class="tooltip">文件仅在浏览器本地处理，不会上传服务器</p>
+        <input type="file" id="fileInput" accept=".xlsx,.xlsm" style="display:none">
+      </div>
+      <div class="fileinfo" id="fileInfo"></div>
+      <div class="field" style="margin-top:14px">
+        <label>应用工作表（默认全部）</label>
+        <div class="sheets" id="sheetList"></div>
+        <div class="row" style="margin-top:8px">
+          <button class="btn sm" id="selAll">全选</button>
+          <button class="btn sm" id="selNone">全不选</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 中间：设置 -->
+  <section class="panel">
+    <h2><span class="ico">⚙️</span> 2. 水印设置</h2>
+    <div class="body">
+      <div class="tabs">
+        <button class="active" data-tab="text">文本水印</button>
+        <button data-tab="img">图片水印</button>
+      </div>
+
+      <div class="tab-pane active" id="pane-text">
+        <div class="field">
+          <label>快捷模板（点击填充）</label>
+          <div class="chips" id="presets"></div>
+        </div>
+        <div class="field">
+          <label>水印文字（支持多行，可用 {date}、{time} 变量）</label>
+          <textarea id="wmText">内部资料 仅供内部使用</textarea>
+          <div class="hint">示例：机密\n{date}\n部门：研发部</div>
+        </div>
+        <div class="field">
+          <label>字体</label>
+          <select id="fontFamily">
+            <option>微软雅黑</option><option>宋体</option><option>黑体</option>
+            <option>楷体</option><option>仿宋</option><option>Arial</option>
+            <option>Arial Black</option><option>Times New Roman</option>
+            <option>Courier New</option><option>Georgia</option><option>Impact</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>字号（px）</label>
+          <div class="row"><input type="range" id="fontSize" min="10" max="160" value="34"><span id="fontSizeV" class="badge">34</span></div>
+        </div>
+        <div class="field">
+          <label>样式</label>
+          <div class="row">
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px"><input type="checkbox" id="bold"> 加粗</label>
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px"><input type="checkbox" id="italic"> 斜体</label>
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px"><input type="checkbox" id="border"> 边框</label>
+          </div>
+        </div>
+        <div class="field">
+          <label>颜色</label>
+          <div class="row">
+            <input type="color" id="wmColor" value="#ff0000">
+            <input type="range" id="opacity" min="0.05" max="1" step="0.05" value="0.25" style="flex:1">
+            <span id="opacityV" class="badge">25%</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-pane" id="pane-img">
+        <div class="field">
+          <label>选择水印图片（PNG / JPG，推荐透明底 PNG）</label>
+          <input type="file" id="imgInput" accept="image/*">
+          <div class="thumb" id="imgThumb"><img id="imgThumbImg" alt=""></div>
+        </div>
+        <div class="field">
+          <label>图片宽度（px）</label>
+          <div class="row"><input type="range" id="imgWidth" min="40" max="700" value="260"><span id="imgWidthV" class="badge">260</span></div>
+        </div>
+      </div>
+
+      <div class="actions-divider"></div>
+
+      <div class="field">
+        <label>水印呈现方式</label>
+        <div class="seg" id="placementSeg">
+          <button data-place="hf" class="active" title="页眉页脚方式嵌入，普通视图不可选中、无法直接删除，打印与页面布局预览可见">🛡️ 防删除水印（推荐）</button>
+          <button data-place="drawing" title="以图片浮层显示在表格上，普通视图可见，可直接选中删除">👁️ 可见水印</button>
+        </div>
+        <div class="hint" id="placementHint">以页眉页脚嵌入，普通视图下不可选中/删除，仅在“页面布局”视图与打印时显示；用户无法直接删掉，只能通过 页面布局→页眉页脚 移除。</div>
+      </div>
+
+      <div class="field">
+        <label>摆放方式</label>
+        <div class="seg">
+          <button data-mode="tile" class="active">平铺</button>
+          <button data-mode="center">居中</button>
+          <button data-mode="stretch">铺满</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>整体大小（%）</label>
+        <div class="row"><input type="range" id="scale" min="10" max="200" value="100"><span id="scaleV" class="badge">100%</span></div>
+      </div>
+
+      <div class="field">
+        <label>旋转角度（°）</label>
+        <div class="row">
+          <input type="range" id="rotation" min="-90" max="90" value="0">
+          <span id="rotationV" class="badge">0°</span>
+        </div>
+        <div class="chips" style="margin-top:6px" id="rotQuick">
+          <button class="chip" data-r="0">0°</button>
+          <button class="chip" data-r="30">30°</button>
+          <button class="chip" data-r="45">45°</button>
+          <button class="chip" data-r="60">60°</button>
+          <button class="chip" data-r="-45">-45°</button>
+        </div>
+      </div>
+
+      <div id="opt-tile">
+        <div class="field">
+          <label>平铺间距（px）</label>
+          <div class="row"><input type="range" id="gap" min="0" max="300" value="60"><span id="gapV" class="badge">60</span></div>
+        </div>
+        <div class="field">
+          <label>最大平铺数量</label>
+          <div class="row"><input type="range" id="maxTiles" min="10" max="600" step="10" value="120"><span id="maxTilesV" class="badge">120</span></div>
+        </div>
+        <div class="field">
+          <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="centerTile" checked> 平铺时整体居中</label>
+        </div>
+      </div>
+
+      <div id="opt-stretch" style="display:none">
+        <div class="field">
+          <label>边距（px）</label>
+          <div class="row"><input type="range" id="margin" min="0" max="200" value="30"><span id="marginV" class="badge">30</span></div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn ok" id="btnExport">💾 导出水印 Excel</button>
+        <button class="btn danger" id="btnClear">🧹 清除水印</button>
+        <button class="btn sm" id="btnReset">重置</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 右侧：预览 -->
+  <section class="panel right">
+    <h2><span class="ico">👁️</span> 3. 效果预览</h2>
+    <div class="body">
+      <div class="preview-bar">
+        <span class="badge" id="previewInfo">尚未加载文件</span>
+        <button class="btn sm" id="btnPreview">🔄 刷新预览</button>
+      </div>
+      <div class="preview-stage"><canvas id="previewCanvas" width="1000" height="600"></canvas></div>
+      <div class="hint" style="margin-top:8px">提示：预览为模拟效果，实际以导出后在 Excel 中打开为准。水印为半透明图片，不会遮挡正文。</div>
+    </div>
+  </section>
+</div>
+
+<footer>Excel 水印工具 · 所有处理均在浏览器本地完成 · 需联网加载 JSZip 库（仅首次）</footer>
+
+<div class="loading" id="loading">
+  <div class="box">
+    <div class="spinner"></div>
+    <div id="loadingText">处理中…</div>
+  </div>
+</div>
+
+<script>
+(function(){
+'use strict';
+const EMU = 9525;
+const REL_NS = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
+const PACK_REL = 'http://schemas.openxmlformats.org/package/2006/relationships';
+const $ = id => document.getElementById(id);
+let zipFile = null;
+let sheetsData = [];
+let watermarkImage = null;
+
+const PRESETS = [
+  ['机密', '机密'], ['绝密', '绝密'], ['内部资料', '内部资料\n仅供内部使用'],
+  ['供内部使用', '仅供内部使用'], ['请勿外传', '请勿外传\n{date}'], ['严禁复制', '严禁复制'],
+  ['Draft', 'Draft'], ['Confidential', 'Confidential'], ['For Review', 'For Review'],
+  ['Sample', 'Sample'], ['副本', '副本 {date}'], ['演示数据', '演示数据\n请勿用于实际业务']
+];
+
+function showLoading(text){ $('loading').style.display = text ? 'flex' : 'none'; if(text) $('loadingText').textContent = text; }
+function parseXML(t){ return new DOMParser().parseFromString(t, 'application/xml'); }
+function serialize(doc){ return new XMLSerializer().serializeToString(doc); }
+function wellFormed(xml){ return !(parseXML(xml).getElementsByTagName('parsererror').length > 0); }
+function xmlErrorInfo(xml){
+  try{
+    const doc = parseXML(xml);
+    const errs = doc.getElementsByTagName('parsererror');
+    if(errs.length) return errs[0].textContent || 'unknown parse error';
+  }catch(e){ return 'parse threw: ' + (e && e.message ? e.message : e); }
+  return null;
+}
+function baseName(p){ return p.split('/').pop(); }
+function nameWoExt(n){ const i = n.lastIndexOf('.'); return i > 0 ? n.slice(0, i) : n; }
+function colToIndex(s){ let n = 0; for(let i=0;i<s.length;i++) n = n*26 + (s.charCodeAt(i)-64); return n; }
+function dataUrlToUint8(d){
+  const b64 = d.split(',')[1]; const bin = atob(b64);
+  const arr = new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) arr[i] = bin.charCodeAt(i);
+  return arr;
+}
+function resolveTarget(baseDir, target){
+  if(target.charAt(0) === '/') return target.slice(1);
+  const stack = baseDir.split('/');
+  const seg = target.split('/');
+  for(const s of seg){
+    if(s === '..') stack.pop();
+    else if(s === '.' || s === '') continue;
+    else stack.push(s);
+  }
+  return stack.join('/');
+}
+function relTargetBase(baseDir, target){
+  const b = baseDir.split('/');
+  const t = target.split('/');
+  let common = 0;
+  while(common < b.length && common < t.length && b[common] === t[common]) common++;
+  const rel = [];
+  for(let i = common; i < b.length; i++) rel.push('..');
+  for(let i = common; i < t.length; i++) rel.push(t[i]);
+  return rel.join('/');
+}
+
+function getSettings(){
+  const type = document.querySelector('.tabs button.active').dataset.tab;
+  const mode = document.querySelector('.seg button.active').dataset.mode;
+  const scale = +$('scale').value, rotation = +$('rotation').value;
+  const opacity = +$('opacity').value;
+  let text = $('wmText').value;
+  const now = new Date();
+  const dateStr = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0');
+  const timeStr = dateStr + ' ' + String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+  text = text.replace(/\{date\}/g, dateStr).replace(/\{time\}/g, timeStr);
+  return {
+    type, text,
+    placement: document.querySelector('#placementSeg button.active').dataset.place,
+    fontFamily: $('fontFamily').value,
+    fontSize: +$('fontSize').value,
+    bold: $('bold').checked, italic: $('italic').checked, border: $('border').checked,
+    color: $('wmColor').value,
+    opacity, rotation,
+    image: watermarkImage,
+    imgWidth: +$('imgWidth').value,
+    mode, scale, gap: +$('gap').value,
+    maxTiles: +$('maxTiles').value,
+    centerTile: $('centerTile').checked,
+    margin: +$('margin').value
+  };
+}
+
+function rotateCanvas(src, deg){
+  const rad = deg * Math.PI / 180;
+  const cos = Math.abs(Math.cos(rad)), sin = Math.abs(Math.sin(rad));
+  const w = Math.ceil(src.width*cos + src.height*sin);
+  const h = Math.ceil(src.width*sin + src.height*cos);
+  const out = document.createElement('canvas');
+  out.width = w; out.height = h;
+  const c = out.getContext('2d');
+  c.translate(w/2, h/2); c.rotate(rad);
+  c.drawImage(src, -src.width/2, -src.height/2);
+  return out;
+}
+
+function renderText(cfg){
+  const lines = cfg.text.split('\n').filter(l => l.trim().length > 0);
+  if(!lines.length) lines.push(' ');
+  const font = (cfg.bold ? 'bold ' : '') + (cfg.italic ? 'italic ' : '') + cfg.fontSize + 'px ' + cfg.fontFamily;
+  const tmp = document.createElement('canvas');
+  let ctx = tmp.getContext('2d');
+  ctx.font = font;
+  let maxW = 0;
+  lines.forEach(l => { const w = ctx.measureText(l).width; if(w > maxW) maxW = w; });
+  const pad = cfg.fontSize * 0.9;
+  const lineH = cfg.fontSize * 1.4;
+  const w = Math.ceil(maxW + pad*2);
+  const h = Math.ceil(lines.length*lineH + pad*2);
+  const inner = document.createElement('canvas');
+  inner.width = w; inner.height = h;
+  ctx = inner.getContext('2d');
+  ctx.font = font;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  if(cfg.border){
+    ctx.strokeStyle = cfg.color;
+    ctx.globalAlpha = Math.min(1, cfg.opacity*1.4);
+    ctx.lineWidth = Math.max(2, cfg.fontSize*0.07);
+    ctx.strokeRect(pad*0.35, pad*0.35, w-pad*0.7, h-pad*0.7);
+  }
+  ctx.globalAlpha = cfg.opacity;
+  ctx.fillStyle = cfg.color;
+  lines.forEach((l, i) => { ctx.fillText(l, w/2, pad + lineH*i + lineH/2); });
+  return rotateCanvas(inner, cfg.rotation);
+}
+
+function renderImage(cfg){
+  const img = cfg.image;
+  const ratio = img.height / img.width;
+  const w = cfg.imgWidth;
+  const inner = document.createElement('canvas');
+  inner.width = Math.ceil(w); inner.height = Math.ceil(w*ratio);
+  const c = inner.getContext('2d');
+  c.globalAlpha = cfg.opacity;
+  c.drawImage(img, 0, 0, inner.width, inner.height);
+  return rotateCanvas(inner, cfg.rotation);
+}
+
+function makeWatermarkCanvas(cfg){
+  return new Promise((resolve) => {
+    if(cfg.type === 'img' && cfg.image) resolve(renderImage(cfg));
+    else resolve(renderText(cfg));
+  });
+}
+
+function getSheetMetrics(xml){
+  const defCol = 64, defRow = 20;
+  let maxCol = 0, maxRow = 0;
+  const rowHeights = {}, colDefs = [];
+  const cellRe = /<c r="([A-Z]+)\d+"/g; let m;
+  while((m = cellRe.exec(xml))){ const ci = colToIndex(m[1]); if(ci > maxCol) maxCol = ci; }
+  const rowTagRe = /<row\b[^>]*>/g;
+  while((m = rowTagRe.exec(xml))){
+    const tag = m[0];
+    const rM = /r="(\d+)"/.exec(tag); if(!rM) continue;
+    const r = +rM[1]; if(r > maxRow) maxRow = r;
+    const htM = /ht="([\d.]+)"/.exec(tag); if(htM) rowHeights[r] = +htM[1];
+  }
+  const colTagRe = /<col\b([^>]*?)\/?>/g;
+  while((m = colTagRe.exec(xml))){
+    const a = m[1];
+    const min = +((/min="(\d+)"/.exec(a)||[])[1] || 1);
+    const max = +((/max="(\d+)"/.exec(a)||[])[1] || min);
+    const width = +((/width="([\d.]+)"/.exec(a)||[])[1] || 0);
+    if(width > 0) colDefs.push({min, max, width});
+  }
+  const dimRe = /<dimension ref="([A-Z]+)(\d+)(?::([A-Z]+)(\d+))?"/;
+  const dm = dimRe.exec(xml);
+  if(dm){
+    const c2 = dm[3] ? colToIndex(dm[3]) : colToIndex(dm[1]);
+    const r2 = dm[4] ? +dm[4] : (+dm[2] || 0);
+    if(c2 > maxCol) maxCol = c2;
+    if(r2 > maxRow) maxRow = r2;
+  }
+  if(!maxCol) maxCol = 1;
+  if(!maxRow) maxRow = 1;
+  if(maxRow > 300000) maxRow = 300000;
+  if(maxCol > 2000) maxCol = 2000;
+  let totalW = 0;
+  for(let i = 0; i < maxCol; i++){
+    let w = defCol;
+    for(const d of colDefs){ if(i+1 >= d.min && i+1 <= d.max){ w = d.width*7 + 5; break; } }
+    totalW += Math.round(w * EMU);
+  }
+  let totalH = 0;
+  for(let r = 1; r <= maxRow; r++){
+    let h = defRow;
+    if(rowHeights[r]) h = rowHeights[r] * (96/72);
+    totalH += Math.round(h * EMU);
+  }
+  return {totalW, totalH, maxCol, maxRow};
+}
+
+function computeAnchors(cfg, canvasW, canvasH, metrics){
+  const scale = cfg.scale / 100;
+  const extW = Math.round(canvasW * scale * EMU);
+  const extH = Math.round(canvasH * scale * EMU);
+  const anchors = [];
+  const totalW = metrics.totalW, totalH = metrics.totalH;
+  if(cfg.mode === 'stretch'){
+    const mg = cfg.margin * EMU;
+    const cx = Math.max(extW, totalW - mg*2);
+    const cy = Math.max(extH, totalH - mg*2);
+    anchors.push({x: mg, y: mg, cx, cy});
+  } else if(cfg.mode === 'center'){
+    anchors.push({
+      x: Math.max(0, Math.round((totalW - extW)/2)),
+      y: Math.max(0, Math.round((totalH - extH)/2)),
+      cx: extW, cy: extH
+    });
+  } else {
+    const stepX = extW + Math.round(cfg.gap * EMU);
+    const stepY = extH + Math.round(cfg.gap * EMU);
+    const rows = Math.floor(totalH / stepY), cols = Math.floor(totalW / stepX);
+    const x0 = cfg.centerTile ? Math.max(0, Math.round((totalW - cols*stepX)/2)) : 0;
+    const y0 = cfg.centerTile ? Math.max(0, Math.round((totalH - rows*stepY)/2)) : 0;
+    let count = 0;
+    for(let y = y0; y < totalH && count < cfg.maxTiles; y += stepY){
+      for(let x = x0; x < totalW && count < cfg.maxTiles; x += stepX){
+        anchors.push({x, y, cx: extW, cy: extH});
+        count++;
+      }
+    }
+  }
+  return anchors;
+}
+
+function buildDrawingXml(anchors, imgRid){
+  let s = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n';
+  s += '<xdr:wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="' + REL_NS + '">';
+  anchors.forEach((an, i) => {
+    s += '<xdr:absoluteAnchor><xdr:pos x="' + an.x + '" y="' + an.y + '"/><xdr:ext cx="' + an.cx + '" cy="' + an.cy + '"/>';
+    s += '<xdr:pic><xdr:nvPicPr><xdr:cNvPr id="' + (i+1) + '" name="Watermark ' + (i+1) + '"/><xdr:cNvPicPr><a:picLocks noChangeAspect="1"/></xdr:cNvPicPr></xdr:nvPicPr>';
+    s += '<xdr:blipFill><a:blip r:embed="' + imgRid + '"/><a:stretch><a:fillRect/></a:stretch></xdr:blipFill>';
+    s += '<xdr:spPr><a:xfrm><a:off x="' + an.x + '" y="' + an.y + '"/><a:ext cx="' + an.cx + '" cy="' + an.cy + '"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></xdr:spPr>';
+    s += '</xdr:pic><xdr:clientData/></xdr:absoluteAnchor>';
+  });
+  s += '</xdr:wsDr>';
+  return s;
+}
+
+function buildAnchorXml(anchor, id, name){
+  const NS_XDR = 'http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing';
+  const NS_A = 'http://schemas.openxmlformats.org/drawingml/2006/main';
+  let s = '<xdr:absoluteAnchor xmlns:xdr="' + NS_XDR + '" xmlns:a="' + NS_A + '" xmlns:r="' + REL_NS + '"><xdr:pos x="' + anchor.x + '" y="' + anchor.y + '"/><xdr:ext cx="' + anchor.cx + '" cy="' + anchor.cy + '"/>';
+  s += '<xdr:pic><xdr:nvPicPr><xdr:cNvPr id="' + id + '" name="' + name + '"/><xdr:cNvPicPr><a:picLocks noChangeAspect="1"/></xdr:cNvPicPr></xdr:nvPicPr>';
+  s += '<xdr:blipFill><a:blip r:embed="rIdImg"/><a:stretch><a:fillRect/></a:stretch></xdr:blipFill>';
+  s += '<xdr:spPr><a:xfrm><a:off x="' + anchor.x + '" y="' + anchor.y + '"/><a:ext cx="' + anchor.cx + '" cy="' + anchor.cy + '"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></xdr:spPr>';
+  s += '</xdr:pic><xdr:clientData/></xdr:absoluteAnchor>';
+  return s;
+}
+
+function nextRid(relsDoc){
+  const ns = PACK_REL;
+  const rels = relsDoc.getElementsByTagNameNS(ns, 'Relationship');
+  let max = 0;
+  for(const r of rels){
+    const m = /^rId(\d+)$/.exec(r.getAttribute('Id') || '');
+    if(m && +m[1] > max) max = +m[1];
+  }
+  return 'rId' + (max + 1);
+}
+
+function sheetRelsPath(sheetPath){ return 'xl/worksheets/_rels/' + baseName(sheetPath) + '.rels'; }
+function drawingRelsPath(drawingPath){ return 'xl/drawings/_rels/' + baseName(drawingPath) + '.rels'; }
+
+function getDrawingInfo(sheetXml, sheetRelsXml){
+  const m = /<drawing\b([^>]*?)\/?>/i.exec(sheetXml);
+  if(!m) return null;
+  const idM = /r:id="([^"]+)"/.exec(m[1]);
+  if(!idM || !sheetRelsXml) return null;
+  const doc = parseXML(sheetRelsXml);
+  const rels = doc.getElementsByTagNameNS(PACK_REL, 'Relationship');
+  for(const r of rels){
+    if(r.getAttribute('Id') === idM[1]){
+      return {rid: idM[1], target: r.getAttribute('Target') || ''};
+    }
+  }
+  return null;
+}
+
+function getRelMap(relsXml){
+  const map = {};
+  if(!relsXml) return map;
+  const doc = parseXML(relsXml);
+  const rels = doc.getElementsByTagNameNS(PACK_REL, 'Relationship');
+  for(const r of rels) map[r.getAttribute('Id')] = r.getAttribute('Target') || '';
+  return map;
+}
+
+function removeWmFromDrawing(drawingXml){
+  const doc = parseXML(drawingXml);
+  const err = doc.getElementsByTagName('parsererror');
+  if(err.length) return {xml: drawingXml, removed: false};
+  const root = doc.documentElement;
+  const NS = 'http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing';
+  const anchors = Array.prototype.slice.call(root.children);
+  let removed = 0;
+  for(const an of anchors){
+    const cns = an.getElementsByTagNameNS(NS, 'cNvPr');
+    let isWm = false;
+    for(const cn of cns){
+      if((cn.getAttribute('name') || '').indexOf('Watermark') === 0) isWm = true;
+    }
+    if(isWm){ root.removeChild(an); removed++; }
+  }
+  if(!removed) return {xml: drawingXml, removed: false};
+  return {xml: serialize(doc), removed};
+}
+
+async function handleFile(file){
+  if(!/\.(xlsx|xlsm)$/i.test(file.name)){ alert('仅支持 .xlsx / .xlsm 文件。若是 .xls 旧格式，请先用 Excel“另存为”转换成 .xlsx。'); return; }
+  if(typeof JSZip === 'undefined'){ alert('JSZip 库未加载（需要联网）。请检查网络后刷新页面重试。'); return; }
+  showLoading('正在读取文件…');
+  try{
+    const zip = await JSZip.loadAsync(file);
+    const wbXml = await zip.file('xl/workbook.xml').async('string');
+    const wbRelsXml = await zip.file('xl/_rels/workbook.xml.rels').async('string');
+    const wbDoc = parseXML(wbXml);
+    const relsDoc = parseXML(wbRelsXml);
+    const map = {};
+    const rels = relsDoc.getElementsByTagNameNS(PACK_REL, 'Relationship');
+    for(const r of rels) map[r.getAttribute('Id')] = r.getAttribute('Target') || '';
+    sheetsData = [];
+    const sheets = wbDoc.getElementsByTagName('sheet');
+    let idx = 0;
+    for(const s of sheets){
+      idx++;
+      const name = s.getAttribute('name');
+      const rid = s.getAttributeNS(REL_NS, 'id') || s.getAttribute('r:id');
+      let target = map[rid];
+      if(target){
+        target = target.replace(/^\//, '');
+        if(target.indexOf('xl/') !== 0) target = 'xl/' + target;
+      } else {
+        target = 'xl/worksheets/sheet' + idx + '.xml';
+        if(!zip.file(target)) continue;
+      }
+      sheetsData.push({name, path: target, pos: idx, checked: true});
+    }
+    if(!sheetsData.length){
+      console.log('[Excel水印] workbook.xml 中 sheet 元素数:', sheets.length, '| rels 映射条数:', Object.keys(map).length);
+      showLoading(false);
+      alert('未找到工作表，请确认文件有效。\n（可检查文件是否为有效的 .xlsx / .xlsm，或先用 Excel 另存为后再试）');
+      return;
+    }
+    zipFile = file;
+    renderSheets();
+    $('fileInfo').textContent = file.name + ' ｜ ' + (file.size/1024).toFixed(1) + ' KB ｜ ' + sheetsData.length + ' 个工作表';
+    $('dropZone').classList.add('loaded');
+    $('previewInfo').textContent = '已加载：' + file.name;
+    renderPreview();
+    showLoading(false);
+  }catch(e){
+    showLoading(false);
+    console.error('[Excel水印] 读取文件失败:', e);
+    alert('读取失败：' + (e && e.message ? e.message : e) + '（文件可能已损坏、受密码保护，或不是有效的 Excel 文件）');
+  }
+}
+
+function renderSheets(){
+  const box = $('sheetList');
+  box.innerHTML = '';
+  if(!sheetsData.length){ box.innerHTML = '<div class="hint">请先选择文件</div>'; return; }
+  sheetsData.forEach((s, i) => {
+    const label = document.createElement('label');
+    const cb = document.createElement('input');
+    cb.type = 'checkbox'; cb.checked = s.checked;
+    cb.addEventListener('change', () => { s.checked = cb.checked; });
+    label.appendChild(cb);
+    const sp = document.createElement('span');
+    sp.className = 'sicon';
+    sp.textContent = '▦';
+    label.appendChild(sp);
+    const txt = document.createElement('span');
+    txt.textContent = s.name;
+    label.appendChild(txt);
+    box.appendChild(label);
+  });
+}
+
+function updateValueViews(){
+  $('fontSizeV').textContent = $('fontSize').value;
+  $('opacityV').textContent = Math.round(+$('opacity').value*100) + '%';
+  $('imgWidthV').textContent = $('imgWidth').value;
+  $('scaleV').textContent = $('scale').value + '%';
+  $('rotationV').textContent = $('rotation').value + '°';
+  $('gapV').textContent = $('gap').value;
+  $('maxTilesV').textContent = $('maxTiles').value;
+  $('marginV').textContent = $('margin').value;
+}
+
+function mockMetrics(){
+  return {totalW: 12*64*EMU, totalH: 18*20*EMU, maxCol: 12, maxRow: 18};
+}
+
+function renderPreview(){
+  if(!zipFile && !sheetsData.length) return;
+  const cfg = getSettings();
+  if(cfg.type === 'img' && !cfg.image){
+    $('previewInfo').textContent = '请先选择水印图片';
+    return;
+  }
+  const canvas = $('previewCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#e9edf5';
+  ctx.fillRect(0, 0, W, H);
+  if(cfg.placement === 'hf'){
+    const pageDims = {w: 794, h: 1123};
+    makePageWatermark(cfg, pageDims.w, pageDims.h).then(pageCv => {
+      const ps = Math.min(W*0.9/pageCv.width, H*0.8/pageCv.height);
+      const dw = pageCv.width*ps, dh = pageCv.height*ps;
+      const px = (W-dw)/2, py = (H-dh)/2;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(px, py, dw, dh);
+      ctx.strokeStyle = '#c6cdde';
+      ctx.strokeRect(px, py, dw, dh);
+      ctx.drawImage(pageCv, px, py, dw, dh);
+      ctx.fillStyle = '#5b6478';
+      ctx.font = '11px Microsoft YaHei';
+      ctx.textAlign = 'center';
+      ctx.fillText('—— 页面打印效果（A4 模拟）——', W/2, py + dh + 24);
+      $('previewInfo').textContent = '防删除水印 · 页眉页脚嵌入 · 打印/页面布局可见，普通视图不可选中/删除';
+    }).catch(() => { $('previewInfo').textContent = '预览失败'; });
+    return;
+  }
+  makeWatermarkCanvas(cfg).then(cv => {
+    const metrics = mockMetrics();
+    const anchors = computeAnchors(cfg, cv.width, cv.height, metrics);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, W, H);
+    const scalePx = Math.min(W/metrics.totalW, H/metrics.totalH, 1.0);
+    const gridW = metrics.totalW*scalePx, gridH = metrics.totalH*scalePx;
+    const ox = (W - gridW)/2, oy = (H - gridH)/2;
+    ctx.fillStyle = '#fafbfd';
+    ctx.fillRect(ox, oy, gridW, gridH);
+    const colW = 64*EMU*scalePx, rowH = 20*EMU*scalePx;
+    ctx.font = '11px Microsoft YaHei';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    for(let c = 0; c < 12; c++){
+      ctx.fillStyle = '#eef1f7';
+      ctx.fillRect(ox + c*colW, oy, colW, rowH);
+      ctx.fillStyle = '#5b6478';
+      ctx.fillText(String.fromCharCode(65+c), ox + c*colW + colW/2, oy + rowH/2);
+    }
+    ctx.strokeStyle = '#e3e6ee';
+    ctx.lineWidth = 1;
+    for(let c = 0; c <= 12; c++){ ctx.beginPath(); ctx.moveTo(ox + c*colW, oy); ctx.lineTo(ox + c*colW, oy + gridH); ctx.stroke(); }
+    for(let r = 0; r <= 18; r++){ ctx.beginPath(); ctx.moveTo(ox, oy + r*rowH); ctx.lineTo(ox + gridW, oy + r*rowH); ctx.stroke(); }
+    for(let r = 1; r <= 18; r++){
+      ctx.fillStyle = '#9aa2b5';
+      ctx.textAlign = 'right';
+      ctx.fillText(String(r), ox - 10, oy + r*rowH - rowH/2);
+      ctx.fillStyle = '#c3c9d6';
+      ctx.textAlign = 'left';
+      const sample = r % 3 === 0 ? '示例数据行 ' + r : '';
+      ctx.fillText(sample, ox + colW*1.5, oy + r*rowH - rowH/2);
+    }
+    anchors.forEach(an => {
+      const dx = ox + an.x*scalePx, dy = oy + an.y*scalePx;
+      const dw = an.cx*scalePx, dh = an.cy*scalePx;
+      ctx.drawImage(cv, dx, dy, dw, dh);
+    });
+    const info = $('previewInfo');
+    if(zipFile) info.textContent = '可见水印 · ' + metrics.maxCol + '列×' + metrics.maxRow + '行 · ' + (cfg.text.split('\n')[0] || zipFile.name);
+  }).catch(() => { $('previewInfo').textContent = '预览失败'; });
+}
+
+async function buildWatermark(){
+  if(!zipFile){ alert('请先选择 Excel 文件。'); return; }
+  const selected = sheetsData.filter(s => s.checked);
+  if(!selected.length){ alert('请至少选择一个工作表。'); return; }
+  const cfg = getSettings();
+  if(cfg.type === 'img' && !cfg.image){ alert('请先选择水印图片。'); return; }
+  showLoading('正在生成水印…');
+  try{
+    const zip = await JSZip.loadAsync(zipFile);
+    const createdDrawings = [];
+    const createdVml = [];
+    if(cfg.placement === 'drawing'){
+      const cv = await makeWatermarkCanvas(cfg);
+      const pngBytes = dataUrlToUint8(cv.toDataURL('image/png'));
+      const mediaPath = 'xl/media/wm_watermark.png';
+      zip.file(mediaPath, pngBytes);
+      for(const s of selected){
+        await applyToSheet(zip, s, mediaPath, cfg, cv.width, cv.height, createdDrawings);
+      }
+    } else {
+      for(const s of selected){
+        await applyHFWatermark(zip, s, cfg, createdVml);
+      }
+    }
+    await updateContentTypes(zip, createdDrawings, createdVml);
+    const out = await zip.generateAsync({type: 'blob', compression: 'DEFLATE', mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+    downloadBlob(out, nameWoExt(zipFile.name) + '_水印.xlsx');
+    showLoading(false);
+    const modeName = cfg.placement === 'hf' ? '防删除水印（页眉页脚）' : '可见水印';
+    alert('✅ 导出成功：' + nameWoExt(zipFile.name) + '_水印.xlsx\n已应用【' + modeName + '】到 ' + selected.length + ' 个工作表。');
+  }catch(e){
+    showLoading(false);
+    console.error('[Excel水印] 导出失败:', e);
+    alert('导出失败：' + (e && e.message ? e.message : e));
+  }
+}
+
+async function applyToSheet(zip, sheet, mediaPath, cfg, cw, ch, createdDrawings){
+  const sheetXml = await zip.file(sheet.path).async('string');
+  let sheetRelsXml = null;
+  const sRelsPath = sheetRelsPath(sheet.path);
+  const sRelsFile = zip.file(sRelsPath);
+  if(sRelsFile) sheetRelsXml = await sRelsFile.async('string');
+  const metrics = getSheetMetrics(sheetXml);
+  const anchors = computeAnchors(cfg, cw, ch, metrics);
+  const drawingInfo = getDrawingInfo(sheetXml, sheetRelsXml);
+
+  if(drawingInfo){
+    const drawingPath = resolveTarget('xl/worksheets', drawingInfo.target);
+    let drawingXml = await zip.file(drawingPath).async('string');
+    let relsXml = null;
+    const dRelsPath = drawingRelsPath(drawingPath);
+    const dRelsFile = zip.file(dRelsPath);
+    if(dRelsFile) relsXml = await dRelsFile.async('string');
+    const cleaned = removeWmFromDrawing(drawingXml);
+    drawingXml = cleaned.xml;
+    let relsDoc = relsXml ? parseXML(relsXml) : parseXML('<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="' + PACK_REL + '"/>');
+    let embedId = null;
+    if(relsXml){
+      const map = getRelMap(relsXml);
+      for(const k in map){ if(map[k].indexOf('wm_watermark') >= 0){ embedId = k; break; } }
+    }
+    if(!embedId){
+      embedId = nextRid(relsDoc);
+      const rel = relsDoc.createElementNS(PACK_REL, 'Relationship');
+      rel.setAttribute('Id', embedId);
+      rel.setAttribute('Type', REL_NS + '/image');
+      rel.setAttribute('Target', relTargetBase('xl/drawings', mediaPath));
+      relsDoc.documentElement.appendChild(rel);
+    }
+    const aDoc = parseXML(drawingXml);
+    const root = aDoc.documentElement;
+    let id = 1;
+    Array.prototype.forEach.call(root.children, chd => {
+      const cns = chd.getElementsByTagNameNS('http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing', 'cNvPr');
+      for(const cn of cns){ const n = +(cn.getAttribute('id')||0); if(n >= id) id = n + 1; }
+    });
+    anchors.forEach((an, i) => {
+      const frag = parseXML('<?xml version="1.0"?><root>' + buildAnchorXml(an, id + i, 'Watermark ' + (i+1)).replace(/rIdImg/g, embedId) + '</root>');
+      root.appendChild(frag.documentElement.firstChild);
+    });
+    zip.file(drawingPath, serialize(aDoc));
+    zip.file(dRelsPath, serialize(relsDoc));
+  } else {
+    const drawingPath = 'xl/drawings/wm_drawing' + sheet.pos + '.xml';
+    const dRelsPath = drawingRelsPath(drawingPath);
+    const embedId = 'rId1';
+    zip.file(drawingPath, buildDrawingXml(anchors, embedId));
+    zip.file(dRelsPath, '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="' + PACK_REL + '"><Relationship Id="' + embedId + '" Type="' + REL_NS + '/image" Target="' + relTargetBase('xl/drawings', mediaPath) + '"/></Relationships>');
+    let relsDoc = null;
+    if(sheetRelsXml){
+      relsDoc = parseXML(sheetRelsXml);
+      const rels = relsDoc.getElementsByTagNameNS(PACK_REL, 'Relationship');
+      const removeList = [];
+      for(const r of rels){
+        const t = r.getAttribute('Target') || '';
+        if(t.indexOf('wm_drawing') >= 0) removeList.push(r);
+      }
+      removeList.forEach(r => r.parentNode.removeChild(r));
+    } else {
+      relsDoc = parseXML('<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="' + PACK_REL + '"/>');
+    }
+    const newId = nextRid(relsDoc);
+    const rel = relsDoc.createElementNS(PACK_REL, 'Relationship');
+    rel.setAttribute('Id', newId);
+    rel.setAttribute('Type', REL_NS + '/drawing');
+    rel.setAttribute('Target', relTargetBase('xl/worksheets', drawingPath));
+    relsDoc.documentElement.appendChild(rel);
+    zip.file(sRelsPath, serialize(relsDoc));
+    let newSheetXml = sheetXml;
+    {
+      const tmpDoc = parseXML(newSheetXml);
+      const wsEl = tmpDoc.documentElement;
+      if(!wsEl.getAttribute('xmlns:r')){
+        wsEl.setAttribute('xmlns:r', REL_NS);
+        newSheetXml = serialize(tmpDoc);
+      }
+    }
+    if(/<drawing\b[^>]*\/>/i.test(newSheetXml)){
+      newSheetXml = newSheetXml.replace(/<drawing\b[^>]*\/>/i, '<drawing r:id="' + newId + '"/>');
+    } else {
+      const anchors2 = ['<legacyDrawing', '<picture', '<oleObjects', '<controls', '<webPublishItems', '<tableParts', '<extLst'];
+      let idx = -1;
+      for(const tag of anchors2){
+        const i = newSheetXml.indexOf(tag);
+        if(i >= 0 && (idx < 0 || i < idx)) idx = i;
+      }
+      const drawingEl = '<drawing r:id="' + newId + '"/>';
+      if(idx >= 0) newSheetXml = newSheetXml.slice(0, idx) + drawingEl + newSheetXml.slice(idx);
+      else newSheetXml = newSheetXml.replace(/<\/worksheet>/, () => drawingEl + '</worksheet>');
+    }
+    if(!wellFormed(newSheetXml)){
+      console.error('[Excel水印] 工作表XML良构检查失败:', sheet.name, xmlErrorInfo(newSheetXml));
+      console.error('[Excel水印] 完整工作表XML:', newSheetXml);
+      throw new Error('工作表 XML 生成失败：' + sheet.name + ' ｜ ' + (xmlErrorInfo(newSheetXml) || '').slice(0, 200));
+    }
+    zip.file(sheet.path, newSheetXml);
+    createdDrawings.push({part: '/xl/drawings/wm_drawing' + sheet.pos + '.xml'});
+  }
+}
+
+function getPaperDims(sheetXml){
+  const ps = /<pageSetup\b([^>]*?)\/?>/.exec(sheetXml);
+  let paper = 9, landscape = false;
+  if(ps){
+    const pm = /paperSize="(\d+)"/.exec(ps[1]); if(pm) paper = +pm[1];
+    if(/orientation="landscape"/.test(ps[1])) landscape = true;
+  }
+  const map = {
+    1:[816,1056],2:[816,1056],3:[1056,1632],4:[1632,1056],5:[816,1344],
+    6:[528,816],7:[720,960],8:[1123,1587],9:[794,1123],10:[794,1123],
+    11:[559,794],12:[945,1334],13:[665,945],15:[816,1248],16:[812,1042],
+    17:[960,1344],18:[960,1632],20:[1056,816],27:[864,1296],28:[1587,2245],
+    29:[397,559],34:[1123,794],36:[1344,960],42:[1044,1086],44:[720,720]
+  };
+  let w = 794, h = 1123;
+  if(map[paper]){ w = map[paper][0]; h = map[paper][1]; }
+  if(landscape){ const t = w; w = h; h = t; }
+  return {w, h};
+}
+
+function makePageWatermark(cfg, pageW, pageH){
+  return makeWatermarkCanvas(cfg).then(cv => {
+    const pad = 38;
+    const W = pageW + pad*2, H = pageH + pad*2;
+    const canvas = document.createElement('canvas');
+    canvas.width = W; canvas.height = H;
+    const ctx = canvas.getContext('2d');
+    const metrics = {totalW: pageW*EMU, totalH: pageH*EMU, maxCol: 0, maxRow: 0};
+    const anchors = computeAnchors(cfg, cv.width, cv.height, metrics);
+    anchors.forEach(an => {
+      ctx.drawImage(cv, an.x/EMU + pad, an.y/EMU + pad, an.cx/EMU, an.cy/EMU);
+    });
+    return canvas;
+  });
+}
+
+function insertElementAt(sheetXml, elXml, beforeTags){
+  let idx = -1;
+  for(const tag of beforeTags){
+    const i = sheetXml.indexOf(tag);
+    if(i >= 0 && (idx < 0 || i < idx)) idx = i;
+  }
+  if(idx >= 0) return sheetXml.slice(0, idx) + elXml + sheetXml.slice(idx);
+  return sheetXml.replace(/<\/worksheet>/, () => elXml + '</worksheet>');
+}
+
+function getHFInfo(sheetXml, sheetRelsXml){
+  const m = /<legacyDrawingHF\b([^>]*?)\/?>/i.exec(sheetXml);
+  if(!m) return null;
+  const idM = /r:id="([^"]+)"/.exec(m[1]);
+  if(!idM || !sheetRelsXml) return null;
+  const map = getRelMap(sheetRelsXml);
+  if(!map[idM[1]]) return null;
+  return {rid: idM[1], target: map[idM[1]]};
+}
+
+function applyHeaderFooterG(sheetXml){
+  const hfRe = /<headerFooter\b[^>]*>[\s\S]*?<\/headerFooter>/;
+  const m = hfRe.exec(sheetXml);
+  if(!m){
+    const hf = '<headerFooter differentFirst="false" differentOddEven="false"><oddHeader>&amp;C&amp;G</oddHeader></headerFooter>';
+    return insertElementAt(sheetXml, hf, ['<rowBreaks','<colBreaks','<customProperties','<cellWatches','<ignoredErrors','<smartTags','<drawing','<legacyDrawing','<legacyDrawingHF','<picture','<oleObjects','<controls','<webPublishItems','<tableParts','<extLst']);
+  }
+  let hf = m[0];
+  hf = hf.replace(/<headerFooter\b[^>]*>/, (tag) => {
+    return tag
+      .replace(/differentFirst="(true|1)"/, 'differentFirst="false"')
+      .replace(/differentOddEven="(true|1)"/, 'differentOddEven="false"')
+      .replace(/differentFirst="false"/, 'differentFirst="false"')
+      .replace(/differentOddEven="false"/, 'differentOddEven="false"');
+  });
+  if(!/differentFirst=/.test(hf)) hf = hf.replace(/<headerFooter/, '<headerFooter differentFirst="false"');
+  if(!/differentOddEven=/.test(hf)) hf = hf.replace(/<headerFooter/, '<headerFooter differentOddEven="false"');
+  const ohRe = /<oddHeader\b[^>]*>[\s\S]*?<\/oddHeader>/;
+  if(ohRe.test(hf)){
+    hf = hf.replace(ohRe, (oh) => {
+      if(oh.indexOf('&amp;G') >= 0) return oh;
+      return oh.replace(/<\/oddHeader>/, '&amp;C&amp;G</oddHeader>');
+    });
+  } else {
+    hf = hf.replace(/<\/headerFooter>/, '<oddHeader>&amp;C&amp;G</oddHeader></headerFooter>');
+  }
+  return sheetXml.replace(hfRe, () => hf);
+}
+
+function removeGFromHeaderFooter(sheetXml){
+  const hfRe = /<headerFooter\b[^>]*>[\s\S]*?<\/headerFooter>/;
+  const m = hfRe.exec(sheetXml);
+  if(!m) return sheetXml;
+  let hf = m[0];
+  hf = hf.replace(/<oddHeader>(&amp;C&amp;G|&amp;G)<\/oddHeader>/g, '');
+  hf = hf.replace(/<evenHeader>(&amp;C&amp;G|&amp;G)<\/evenHeader>/g, '');
+  hf = hf.replace(/<firstHeader>(&amp;C&amp;G|&amp;G)<\/firstHeader>/g, '');
+  hf = hf.replace(/&amp;C&amp;G/g, '').replace(/&amp;G/g, '');
+  if(!/<oddHeader|<evenHeader|<firstHeader|<oddFooter|<evenFooter|<firstFooter/i.test(hf)){
+    return sheetXml.replace(hfRe, () => '');
+  }
+  return sheetXml.replace(hfRe, () => hf);
+}
+
+function buildShapetypeBlock(){
+  const formulas = ['if lineDrawn pixelLineWidth 0','sum @0 1 0','sum 0 0 @1','prod @2 1 2',
+    'prod @3 21600 pixelWidth','prod @3 21600 pixelHeight','sum @0 0 1','prod @6 1 2',
+    'prod @7 21600 pixelWidth','sum @8 21600 0','prod @7 21600 pixelHeight','sum @10 21600 0'];
+  let s = '<v:shapetype id="_x0000_t75" coordsize="21600,21600" o:spt="75" o:preferrelative="t" path="m@4@5l@4@11@9@11@9@5xe" filled="f" stroked="f">';
+  s += '<v:stroke joinstyle="miter"/>';
+  s += '<v:formulas>';
+  formulas.forEach(f => { s += '<v:f eqn="' + f + '"/>'; });
+  s += '</v:formulas>';
+  s += '<v:path o:extrusionok="f" gradientshapeok="t" o:connecttype="rect"/>';
+  s += '<o:lock v:ext="edit" aspectratio="t"/>';
+  s += '</v:shapetype>';
+  return s;
+}
+
+function buildVmlPart(w, h, relId, idmapData, spid){
+  let s = '<xml xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel">';
+  s += '<o:shapelayout v:ext="edit"><o:idmap v:ext="edit" data="' + idmapData + '"/></o:shapelayout>';
+  s += buildShapetypeBlock();
+  s += '<v:shape id="CH" o:spid="' + spid + '" type="#_x0000_t75" style="position:absolute;margin-left:0;margin-top:0;width:' + w + 'px;height:' + h + 'px;z-index:1">';
+  s += '<v:imagedata o:relid="' + relId + '" o:title="wm_watermark"/>';
+  s += '<o:lock v:ext="edit" rotation="t"/>';
+  s += '</v:shape>';
+  s += '</xml>';
+  return s;
+}
+
+function nextVmlIndex(zip){
+  let i = 1;
+  while(zip.file('xl/drawings/vmlDrawing' + i + '.vml')) i++;
+  return i;
+}
+
+function nextSpid(vmlXml){
+  let max = 1024;
+  const re = /o:spid="_x0000_s(\d+)"/g;
+  let m;
+  while((m = re.exec(vmlXml))){ const n = +m[1]; if(n > max) max = n; }
+  return '_x0000_s' + (max + 1);
+}
+
+async function removeDrawingLayerWm(zip, sheet){
+  const sheetXml = await zip.file(sheet.path).async('string');
+  const sRelsPath = sheetRelsPath(sheet.path);
+  const sRelsFile = zip.file(sRelsPath);
+  if(!sRelsFile) return sheetXml;
+  const sheetRelsXml = await sRelsFile.async('string');
+  const drawingInfo = getDrawingInfo(sheetXml, sheetRelsXml);
+  if(!drawingInfo) return sheetXml;
+  const drawingPath = resolveTarget('xl/worksheets', drawingInfo.target);
+  const drawingFile = zip.file(drawingPath);
+  if(!drawingFile) return sheetXml;
+  const drawingXml = await drawingFile.async('string');
+  const cleaned = removeWmFromDrawing(drawingXml);
+  if(!cleaned.removed) return sheetXml;
+  const aDoc = parseXML(cleaned.xml);
+  const root = aDoc.documentElement;
+  const remaining = root.getElementsByTagNameNS('http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing', 'pic').length;
+  let newSheetXml = sheetXml;
+  if(remaining === 0){
+    zip.remove(drawingPath);
+    const dRelsPath = drawingRelsPath(drawingPath);
+    if(zip.file(dRelsPath)) zip.remove(dRelsPath);
+    const relsDoc = parseXML(sheetRelsXml);
+    const rels = relsDoc.getElementsByTagNameNS(PACK_REL, 'Relationship');
+    const removeList = [];
+    for(const r of rels){ if(r.getAttribute('Id') === drawingInfo.rid) removeList.push(r); }
+    removeList.forEach(r => r.parentNode.removeChild(r));
+    zip.file(sRelsPath, serialize(relsDoc));
+    newSheetXml = sheetXml.replace(/<drawing\b([^>]*?)\/?>/i, '');
+  } else {
+    const dRelsPath = drawingRelsPath(drawingPath);
+    let relsXml = null;
+    if(zip.file(dRelsPath)) relsXml = await zip.file(dRelsPath).async('string');
+    if(relsXml){
+      const relsDoc = parseXML(relsXml);
+      const usedIds = {};
+      const blips = root.getElementsByTagNameNS('http://schemas.openxmlformats.org/drawingml/2006/main', 'blip');
+      for(const b of blips){ const e = b.getAttributeNS(REL_NS, 'embed'); if(e) usedIds[e] = true; }
+      const rels = relsDoc.getElementsByTagNameNS(PACK_REL, 'Relationship');
+      const removeList = [];
+      for(const r of rels){
+        const t = r.getAttribute('Target') || '';
+        if(t.indexOf('wm_watermark') >= 0 && !usedIds[r.getAttribute('Id')]) removeList.push(r);
+      }
+      removeList.forEach(r => r.parentNode.removeChild(r));
+      zip.file(dRelsPath, serialize(relsDoc));
+    }
+    zip.file(drawingPath, cleaned.xml);
+  }
+  return newSheetXml;
+}
+
+async function applyHFWatermark(zip, sheet, cfg, createdVml){
+  const baseXml = await removeDrawingLayerWm(zip, sheet);
+  const pageDims = getPaperDims(baseXml);
+  const pageCanvas = await makePageWatermark(cfg, pageDims.w, pageDims.h);
+  const pngBytes = dataUrlToUint8(pageCanvas.toDataURL('image/png'));
+  const mediaPath = 'xl/media/wm_watermark_' + sheet.pos + '.png';
+  zip.file(mediaPath, pngBytes);
+  const sRelsPath = sheetRelsPath(sheet.path);
+  const sRelsFile = zip.file(sRelsPath);
+  const sheetRelsXml = sRelsFile ? await sRelsFile.async('string') : null;
+  let hfInfo = getHFInfo(baseXml, sheetRelsXml);
+  let vmlPath, vmlRelsPath, embedId;
+  let newSheetXml = baseXml;
+  {
+    const tmpDoc = parseXML(newSheetXml);
+    const wsEl = tmpDoc.documentElement;
+    if(!wsEl.getAttribute('xmlns:r')){
+      wsEl.setAttribute('xmlns:r', REL_NS);
+      newSheetXml = serialize(tmpDoc);
+    }
+  }
+
+  if(hfInfo){
+    vmlPath = resolveTarget('xl/worksheets', hfInfo.target);
+    vmlRelsPath = drawingRelsPath(vmlPath);
+    let vmlXml = await zip.file(vmlPath).async('string');
+    vmlXml = vmlXml.replace(/<v:shape[\s\S]*?o:title="wm_watermark"[\s\S]*?<\/v:shape>/gi, '');
+    const relsXml = zip.file(vmlRelsPath) ? await zip.file(vmlRelsPath).async('string') : null;
+    let relsDoc = relsXml ? parseXML(relsXml) : parseXML('<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="' + PACK_REL + '"/>');
+    embedId = null;
+    if(relsXml){
+      const map = getRelMap(relsXml);
+      for(const k in map){ if(map[k].indexOf('wm_watermark') >= 0){ embedId = k; break; } }
+    }
+    if(!embedId){
+      embedId = nextRid(relsDoc);
+      const rel = relsDoc.createElementNS(PACK_REL, 'Relationship');
+      rel.setAttribute('Id', embedId);
+      rel.setAttribute('Type', REL_NS + '/image');
+      rel.setAttribute('Target', relTargetBase('xl/drawings', mediaPath));
+      relsDoc.documentElement.appendChild(rel);
+    }
+    const pageD = pageDims;
+    const spid = nextSpid(vmlXml);
+    if(vmlXml.indexOf('_x0000_t75') < 0) vmlXml = vmlXml.replace(/<\/xml>/, buildShapetypeBlock() + '</xml>');
+    const vmlPart = '<v:shape id="CH" o:spid="' + spid + '" type="#_x0000_t75" style="position:absolute;margin-left:0;margin-top:0;width:' + (pageD.w+76) + 'px;height:' + (pageD.h+76) + 'px;z-index:1"><v:imagedata o:relid="' + embedId + '" o:title="wm_watermark"/><o:lock v:ext="edit" rotation="t"/></v:shape>';
+    vmlXml = vmlXml.replace(/<\/xml>/, vmlPart + '</xml>');
+    zip.file(vmlPath, vmlXml);
+    zip.file(vmlRelsPath, serialize(relsDoc));
+    newSheetXml = applyHeaderFooterG(newSheetXml);
+  } else {
+    const vmlIdx = nextVmlIndex(zip);
+    vmlPath = 'xl/drawings/vmlDrawing' + vmlIdx + '.vml';
+    vmlRelsPath = drawingRelsPath(vmlPath);
+    embedId = 'rId1';
+    const shapeW = pageDims.w + 76, shapeH = pageDims.h + 76;
+    zip.file(vmlPath, buildVmlPart(shapeW, shapeH, embedId, vmlIdx, '_x0000_s' + (1024 + vmlIdx*32)));
+    zip.file(vmlRelsPath, '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="' + PACK_REL + '"><Relationship Id="' + embedId + '" Type="' + REL_NS + '/image" Target="' + relTargetBase('xl/drawings', mediaPath) + '"/></Relationships>');
+    let relsDoc = sheetRelsXml ? parseXML(sheetRelsXml) : parseXML('<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="' + PACK_REL + '"/>');
+    const rels = relsDoc.getElementsByTagNameNS(PACK_REL, 'Relationship');
+    const removeList = [];
+    for(const r of rels){
+      const t = r.getAttribute('Target') || '';
+      const resolved = resolveTarget('xl/worksheets', t);
+      if(t.indexOf('wm_drawing') >= 0){
+        removeList.push(r);
+      } else if(t.indexOf('vmlDrawing') >= 0 && zip.file(resolved)){
+        const vml = await zip.file(resolved).async('string');
+        if(vml.indexOf('wm_watermark') >= 0) removeList.push(r);
+      }
+    }
+    removeList.forEach(r => r.parentNode.removeChild(r));
+    const newId = nextRid(relsDoc);
+    const rel = relsDoc.createElementNS(PACK_REL, 'Relationship');
+    rel.setAttribute('Id', newId);
+    rel.setAttribute('Type', REL_NS + '/vmlDrawing');
+    rel.setAttribute('Target', relTargetBase('xl/worksheets', vmlPath));
+    relsDoc.documentElement.appendChild(rel);
+    zip.file(sRelsPath, serialize(relsDoc));
+    newSheetXml = applyHeaderFooterG(newSheetXml);
+    if(/<legacyDrawingHF\b[^>]*\/>/i.test(newSheetXml)){
+      newSheetXml = newSheetXml.replace(/<legacyDrawingHF\b[^>]*\/>/i, '<legacyDrawingHF r:id="' + newId + '"/>');
+    } else {
+      newSheetXml = insertElementAt(newSheetXml, '<legacyDrawingHF r:id="' + newId + '"/>', ['<picture','<oleObjects','<controls','<webPublishItems','<tableParts','<extLst']);
+    }
+    createdVml.push({part: vmlPath});
+  }
+  if(!wellFormed(newSheetXml)){
+    console.error('[Excel水印] 工作表XML良构检查失败:', sheet.name, xmlErrorInfo(newSheetXml));
+    console.error('[Excel水印] 完整工作表XML:', newSheetXml);
+    throw new Error('工作表 XML 生成失败：' + sheet.name + ' ｜ ' + (xmlErrorInfo(newSheetXml) || '').slice(0, 200));
+  }
+  zip.file(sheet.path, newSheetXml);
+}
+
+function updateContentTypes(zip, createdDrawings, createdVml){
+  const file = zip.file('[Content_Types].xml');
+  if(!file) return;
+  return file.async('string').then(xml => {
+    const doc = parseXML(xml);
+    const NS = 'http://schemas.openxmlformats.org/package/2006/content-types';
+    const root = doc.documentElement;
+    let hasPng = false;
+    let hasVml = false;
+    const defaults = root.getElementsByTagNameNS(NS, 'Default');
+    let firstOverride = null;
+    const overrides = root.getElementsByTagNameNS(NS, 'Override');
+    if(overrides.length) firstOverride = overrides[0];
+    for(const d of defaults){
+      const ext = (d.getAttribute('Extension')||'').toLowerCase();
+      if(ext === 'png') hasPng = true;
+      if(ext === 'vml') hasVml = true;
+    }
+    const addDefault = (ext, ct) => {
+      const el = doc.createElementNS(NS, 'Default');
+      el.setAttribute('Extension', ext);
+      el.setAttribute('ContentType', ct);
+      if(firstOverride) root.insertBefore(el, firstOverride);
+      else root.appendChild(el);
+    };
+    if(!hasPng) addDefault('png', 'image/png');
+    if(!hasVml) addDefault('vml', 'application/vnd.openxmlformats-officedocument.vmlDrawing');
+    const existing = {};
+    for(const o of overrides) existing[o.getAttribute('PartName')] = true;
+    createdDrawings.forEach(d => {
+      if(!existing[d.part]){
+        const el = doc.createElementNS(NS, 'Override');
+        el.setAttribute('PartName', d.part);
+        el.setAttribute('ContentType', 'application/vnd.openxmlformats-officedocument.drawing+xml');
+        root.appendChild(el);
+      }
+    });
+    zip.file('[Content_Types].xml', serialize(doc));
+  });
+}
+
+async function clearWatermark(){
+  if(!zipFile){ alert('请先选择 Excel 文件。'); return; }
+  const selected = sheetsData.filter(s => s.checked);
+  if(!selected.length){ alert('请至少选择一个工作表。'); return; }
+  if(!confirm('确定清除所选工作表上的水印吗？（会一并清除工具此前添加的水印图片）')) return;
+  showLoading('正在清除水印…');
+  try{
+    const zip = await JSZip.loadAsync(zipFile);
+    for(const s of selected){
+      let sheetXml = await removeDrawingLayerWm(zip, s);
+      let sheetRelsXml = null;
+      const sRelsPath = sheetRelsPath(s.path);
+      const sRelsFile = zip.file(sRelsPath);
+      if(sRelsFile) sheetRelsXml = await sRelsFile.async('string');
+      const hfInfo = getHFInfo(sheetXml, sheetRelsXml);
+      if(hfInfo){
+        const vmlPath = resolveTarget('xl/worksheets', hfInfo.target);
+        const vmlFile = zip.file(vmlPath);
+        if(vmlFile){
+          const vmlXml = await vmlFile.async('string');
+          let removed = false;
+          const cleanedVml = vmlXml.replace(/<v:shape[\s\S]*?o:title="wm_watermark"[\s\S]*?<\/v:shape>/gi, (mm) => { removed = true; return ''; });
+          if(removed){
+            if(!/<v:shape\b/i.test(cleanedVml)){
+              zip.remove(vmlPath);
+              const vRelsPath = drawingRelsPath(vmlPath);
+              if(zip.file(vRelsPath)) zip.remove(vRelsPath);
+              if(sheetRelsXml){
+                const relsDoc = parseXML(sheetRelsXml);
+                const rels = relsDoc.getElementsByTagNameNS(PACK_REL, 'Relationship');
+                const rm = [];
+                for(const r of rels){ if(r.getAttribute('Id') === hfInfo.rid) rm.push(r); }
+                rm.forEach(r => r.parentNode.removeChild(r));
+                zip.file(sRelsPath, serialize(relsDoc));
+              }
+              sheetXml = sheetXml.replace(/<legacyDrawingHF\b[^>]*\/>/i, '');
+            } else {
+              zip.file(vmlPath, cleanedVml);
+            }
+          }
+        }
+      }
+      sheetXml = removeGFromHeaderFooter(sheetXml);
+      zip.file(s.path, sheetXml);
+    }
+    let mediaReferenced = false;
+    for(const s of sheetsData){
+      const sRel = zip.file(sheetRelsPath(s.path));
+      if(!sRel) continue;
+      const map = getRelMap(await sRel.async('string'));
+      for(const k in map){
+        const t = map[k];
+        if(t.indexOf('wm_watermark') >= 0){ mediaReferenced = true; break; }
+        if(t.indexOf('drawing') >= 0){
+          const dp = resolveTarget('xl/worksheets', t);
+          if(!dp || !zip.file(dp)) continue;
+          const dRel = zip.file(drawingRelsPath(dp));
+          if(dRel && (await dRel.async('string')).indexOf('wm_watermark') >= 0){ mediaReferenced = true; break; }
+        }
+      }
+      if(mediaReferenced) break;
+    }
+    if(!mediaReferenced){
+      const wmMedia = Object.keys(zip.files).filter(n => n.indexOf('xl/media/wm_watermark') === 0);
+      wmMedia.forEach(n => zip.remove(n));
+    }
+    const ctFile = zip.file('[Content_Types].xml');
+    if(ctFile){
+      const ctXml = await ctFile.async('string');
+      const doc = parseXML(ctXml);
+      const NS = 'http://schemas.openxmlformats.org/package/2006/content-types';
+      const root = doc.documentElement;
+      const overrides = root.getElementsByTagNameNS(NS, 'Override');
+      const removeList = [];
+      for(const o of overrides){
+        const pn = (o.getAttribute('PartName')||'');
+        if(pn.indexOf('wm_drawing') >= 0 && !zip.file(pn.replace(/^\//,''))) removeList.push(o);
+      }
+      removeList.forEach(o => o.parentNode.removeChild(o));
+      const defaults = root.getElementsByTagNameNS(NS, 'Default');
+      const anyVml = Object.keys(zip.files).some(n => /\.vml$/.test(n));
+      const anyPng = Object.keys(zip.files).some(n => /\.png$/.test(n));
+      const rmDefaults = [];
+      for(const d of defaults){
+        const ext = (d.getAttribute('Extension')||'').toLowerCase();
+        if(ext === 'vml' && !anyVml) rmDefaults.push(d);
+        if(ext === 'png' && !anyPng) rmDefaults.push(d);
+      }
+      rmDefaults.forEach(d => d.parentNode.removeChild(d));
+      zip.file('[Content_Types].xml', serialize(doc));
+    }
+    const out = await zip.generateAsync({type: 'blob', compression: 'DEFLATE', mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+    downloadBlob(out, nameWoExt(zipFile.name) + '_去水印.xlsx');
+    showLoading(false);
+    alert('✅ 已清除所选工作表上的水印。');
+  }catch(e){
+    showLoading(false);
+    alert('清除失败：' + (e && e.message ? e.message : e));
+  }
+}
+
+function downloadBlob(blob, filename){
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+}
+
+function bindEvents(){
+  const drop = $('dropZone');
+  const fileInput = $('fileInput');
+  drop.addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', () => { if(fileInput.files.length) handleFile(fileInput.files[0]); });
+  ['dragover','dragenter'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('drag'); }));
+  ['dragleave','drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('drag'); }));
+  drop.addEventListener('drop', e => {
+    const f = e.dataTransfer.files[0];
+    if(f) handleFile(f);
+  });
+
+  $('selAll').addEventListener('click', () => { sheetsData.forEach(s => s.checked = true); renderSheets(); });
+  $('selNone').addEventListener('click', () => { sheetsData.forEach(s => s.checked = false); renderSheets(); });
+
+  document.querySelectorAll('.tabs button').forEach(b => {
+    b.addEventListener('click', () => {
+      document.querySelectorAll('.tabs button').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      $('pane-text').classList.toggle('active', b.dataset.tab === 'text');
+      $('pane-img').classList.toggle('active', b.dataset.tab === 'img');
+      renderPreview();
+    });
+  });
+
+  document.querySelectorAll('.seg button').forEach(b => {
+    b.addEventListener('click', () => {
+      document.querySelectorAll('.seg button').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      $('opt-tile').style.display = b.dataset.mode === 'tile' ? 'block' : 'none';
+      $('opt-stretch').style.display = b.dataset.mode === 'stretch' ? 'block' : 'none';
+      renderPreview();
+    });
+  });
+
+  document.querySelectorAll('#placementSeg button').forEach(b => {
+    b.addEventListener('click', () => {
+      document.querySelectorAll('#placementSeg button').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      $('placementHint').textContent = b.dataset.place === 'hf'
+        ? '以页眉页脚嵌入，普通视图下不可选中/删除，仅在“页面布局”视图与打印时显示；用户无法直接删掉，只能通过 页面布局→页眉页脚 移除。'
+        : '以图片浮层显示在表格上，普通视图可见，可直接选中删除（防删除能力弱）。';
+      renderPreview();
+    });
+  });
+
+  document.querySelectorAll('#rotQuick .chip').forEach(ch => {
+    ch.addEventListener('click', () => { $('rotation').value = ch.dataset.r; updateValueViews(); renderPreview(); });
+  });
+
+  const presetsEl = $('presets');
+  PRESETS.forEach(p => {
+    const c = document.createElement('button');
+    c.className = 'chip';
+    c.textContent = p[0];
+    c.addEventListener('click', () => { $('wmText').value = p[1]; renderPreview(); });
+    presetsEl.appendChild(c);
+  });
+
+  const imgInput = $('imgInput');
+  imgInput.addEventListener('change', () => {
+    const f = imgInput.files[0];
+    if(!f) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        watermarkImage = img;
+        $('imgThumb').style.display = 'block';
+        $('imgThumbImg').src = e.target.result;
+        renderPreview();
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(f);
+  });
+
+  const updaters = ['fontSize','opacity','imgWidth','scale','rotation','gap','maxTiles','margin'];
+  updaters.forEach(id => {
+    $(id).addEventListener('input', () => { updateValueViews(); renderPreview(); });
+  });
+  ['wmText','fontFamily','wmColor','bold','italic','border','centerTile'].forEach(id => {
+    $(id).addEventListener('input', () => renderPreview());
+    $(id).addEventListener('change', () => renderPreview());
+  });
+
+  $('btnPreview').addEventListener('click', renderPreview);
+  $('btnExport').addEventListener('click', buildWatermark);
+  $('btnClear').addEventListener('click', clearWatermark);
+  $('btnReset').addEventListener('click', () => {
+    $('wmText').value = '内部资料 仅供内部使用';
+    $('fontFamily').value = '微软雅黑';
+    $('fontSize').value = 34; $('opacity').value = 0.25;
+    $('bold').checked = false; $('italic').checked = false; $('border').checked = false;
+    $('wmColor').value = '#ff0000';
+    $('scale').value = 100; $('rotation').value = 0;
+    $('gap').value = 60; $('maxTiles').value = 120; $('centerTile').checked = true;
+    $('margin').value = 30;
+    document.querySelector('.tabs button[data-tab="text"]').click();
+    document.querySelector('.seg button[data-mode="tile"]').click();
+    document.querySelector('#placementSeg button[data-place="hf"]').click();
+    updateValueViews(); renderPreview();
+  });
+}
+
+updateValueViews();
+bindEvents();
+})();
+</script>
+</body>
+</html>
