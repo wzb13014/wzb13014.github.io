@@ -953,6 +953,8 @@ const websiteData = [{
     title: "专业软件",
     icon: "fa-cogs",
     websites: [
+        { name: "Visual Studio Code", url: "https://code.visualstudio.com/", desc: "代码编辑器" },
+        { name: "Python", url: "https://www.python.org/", desc: "Python语言" },
         { name: "FMEA COACH", url: "https://www.fmeacoach.com/#/", desc: "免费版FMEA 软件（终身免费）" },
         { name: "FreeSPC", url: "https://www.comcw.cn/pcsoft/6534.html", desc: "开源免费的 SPC 软件" },
         { name: "格式工厂", url: "http://pcgeshi.com/", desc: "格式转换" },
@@ -1111,6 +1113,7 @@ const websiteData = [{
     icon: "fa-link",
     websites: [
         { name: "GitHub", url: "https://github.com/", desc: "GitHud" },
+        { name: "AxureShow", url: "https://www.axureshow.com/", desc: "HTML代码托管平台|艾可秀" },
         { name: "微软翻译", url: "https://cn.bing.com/translator", desc: "在线翻译" },
         { name: "DeepL翻译", url: "https://www.deepl.com/zh/translator", desc: "在线翻译" },
         { name: "有道翻译", url: "https://fanyi.youdao.com/#/TextTranslate", desc: "在线翻译" },
