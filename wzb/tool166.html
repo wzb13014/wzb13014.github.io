@@ -1,0 +1,2097 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📁 文件夹文件数量统计器 - 支持多层嵌套</title>
+    <style>
+        :root {
+            --bg: #f0f4f8;
+            --surface: #ffffff;
+            --surface-hover: #f8fafc;
+            --border: #e2e8f0;
+            --text: #1a202c;
+            --text-secondary: #64748b;
+            --text-muted: #94a3b8;
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --primary-light: #eef2ff;
+            --accent-green: #10b981;
+            --accent-orange: #f59e0b;
+            --accent-red: #ef4444;
+            --accent-blue: #3b82f6;
+            --accent-purple: #8b5cf6;
+            --accent-cyan: #06b6d4;
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+            --shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07), 0 2px 4px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1), 0 4px 6px rgba(0, 0, 0, 0.05);
+            --radius-sm: 8px;
+            --radius: 12px;
+            --radius-lg: 16px;
+            --radius-xl: 20px;
+            --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            --font-mono: 'SF Mono', 'Cascadia Code', 'Consolas', 'Monaco', 'Menlo', monospace;
+            --tree-indent: 20px;
+        }
+
+        [data-theme="dark"] {
+            --bg: #0f172a;
+            --surface: #1e293b;
+            --surface-hover: #273548;
+            --border: #334155;
+            --text: #f1f5f9;
+            --text-secondary: #cbd5e1;
+            --text-muted: #94a3b8;
+            --primary: #818cf8;
+            --primary-hover: #6366f1;
+            --primary-light: #1e1b4b;
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+            --shadow: 0 1px 3px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.3);
+            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4), 0 2px 4px rgba(0, 0, 0, 0.3);
+            --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.5), 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            transition: background var(--transition), color var(--transition);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* 顶部导航栏 */
+        .navbar {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 14px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+            box-shadow: var(--shadow-sm);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+            transition: background var(--transition), border-color var(--transition);
+        }
+        .navbar .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .navbar .logo-icon {
+            font-size: 28px;
+            animation: bounce-icon 2s ease-in-out infinite;
+        }
+        @keyframes bounce-icon {
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+            30% {
+                transform: translateY(-8px);
+            }
+            50% {
+                transform: translateY(0);
+            }
+            70% {
+                transform: translateY(-4px);
+            }
+        }
+        .navbar .title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            color: var(--text);
+            white-space: nowrap;
+        }
+        .navbar .subtitle {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            font-weight: 400;
+        }
+        .navbar-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 10px 18px;
+            border-radius: var(--radius-sm);
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: 1.5px solid transparent;
+            transition: all var(--transition);
+            white-space: nowrap;
+            letter-spacing: -0.01em;
+            user-select: none;
+            outline: none;
+            position: relative;
+            overflow: hidden;
+        }
+        .btn:active {
+            transform: scale(0.96);
+        }
+        .btn-primary {
+            background: var(--primary);
+            color: #fff;
+            border-color: var(--primary);
+            box-shadow: 0 2px 8px rgba(79, 70, 229, 0.3);
+        }
+        .btn-primary:hover {
+            background: var(--primary-hover);
+            border-color: var(--primary-hover);
+            box-shadow: 0 4px 16px rgba(79, 70, 229, 0.4);
+            transform: translateY(-1px);
+        }
+        .btn-outline {
+            background: var(--surface);
+            color: var(--text);
+            border-color: var(--border);
+        }
+        .btn-outline:hover {
+            background: var(--surface-hover);
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 0.8rem;
+            border-radius: 6px;
+        }
+        .btn-icon {
+            width: 38px;
+            height: 38px;
+            padding: 0;
+            border-radius: 50%;
+            justify-content: center;
+            font-size: 1.1rem;
+        }
+        .theme-toggle {
+            background: var(--surface);
+            border: 1.5px solid var(--border);
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all var(--transition);
+            color: var(--text);
+        }
+        .theme-toggle:hover {
+            border-color: var(--primary);
+            background: var(--primary-light);
+            transform: rotate(20deg);
+        }
+
+        /* 主内容区 */
+        .container {
+            max-width: 1300px;
+            margin: 0 auto;
+            padding: 24px 20px 60px;
+        }
+
+        /* 选择区域 */
+        .select-area {
+            background: var(--surface);
+            border: 2.5px dashed var(--border);
+            border-radius: var(--radius-lg);
+            padding: 50px 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all var(--transition);
+            position: relative;
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 24px;
+        }
+        .select-area:hover {
+            border-color: var(--primary);
+            background: var(--primary-light);
+            box-shadow: var(--shadow-md);
+            transform: translateY(-2px);
+        }
+        .select-area.drag-over {
+            border-color: var(--primary);
+            background: var(--primary-light);
+            box-shadow: var(--shadow-lg);
+            transform: scale(1.01);
+        }
+        .select-area .select-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+            display: block;
+            animation: float 3s ease-in-out infinite;
+        }
+        @keyframes float {
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-14px);
+            }
+        }
+        .select-area h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 6px;
+            color: var(--text);
+        }
+        .select-area p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            margin: 0;
+        }
+        .select-area .or-divider {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 16px auto;
+            max-width: 300px;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+        .select-area .or-divider::before,
+        .select-area .or-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+        .select-area input[type="file"] {
+            display: none;
+        }
+        .select-area .btn-browse {
+            margin-top: 4px;
+        }
+
+        /* 进度条 */
+        .progress-bar-wrap {
+            display: none;
+            background: var(--surface);
+            border-radius: var(--radius);
+            padding: 16px 20px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+        }
+        .progress-bar-wrap.active {
+            display: block;
+        }
+        .progress-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+        .progress-bar {
+            height: 8px;
+            background: var(--border);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .progress-bar .fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--accent-purple));
+            border-radius: 10px;
+            transition: width 0.3s ease;
+            animation: shimmer 1.5s infinite;
+        }
+        @keyframes shimmer {
+            0% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.7;
+            }
+            100% {
+                opacity: 1;
+            }
+        }
+
+        /* 统计卡片网格 */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .stat-card {
+            background: var(--surface);
+            border-radius: var(--radius);
+            padding: 20px 22px;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-sm);
+            transition: all var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+        .stat-card:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-2px);
+            border-color: var(--primary);
+        }
+        .stat-card .stat-icon {
+            font-size: 2rem;
+            margin-bottom: 8px;
+        }
+        .stat-card .stat-value {
+            font-size: 2.2rem;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            color: var(--text);
+            line-height: 1;
+            font-family: var(--font-mono);
+        }
+        .stat-card .stat-label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+        .stat-card .stat-accent {
+            position: absolute;
+            top: -20px;
+            right: -20px;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            opacity: 0.06;
+            pointer-events: none;
+        }
+        .stat-card.accent-blue .stat-accent {
+            background: var(--accent-blue);
+        }
+        .stat-card.accent-green .stat-accent {
+            background: var(--accent-green);
+        }
+        .stat-card.accent-purple .stat-accent {
+            background: var(--accent-purple);
+        }
+        .stat-card.accent-orange .stat-accent {
+            background: var(--accent-orange);
+        }
+        .stat-card.accent-cyan .stat-accent {
+            background: var(--accent-cyan);
+        }
+        .stat-card.accent-red .stat-accent {
+            background: var(--accent-red);
+        }
+
+        /* 面板 */
+        .panel {
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 20px;
+            overflow: hidden;
+            transition: all var(--transition);
+        }
+        .panel-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+            cursor: pointer;
+            user-select: none;
+            transition: background var(--transition);
+        }
+        .panel-header:hover {
+            background: var(--surface-hover);
+        }
+        .panel-header h3 {
+            font-size: 1.05rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 0;
+        }
+        .panel-header .panel-badge {
+            font-size: 0.78rem;
+            background: var(--primary-light);
+            color: var(--primary);
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+        .panel-body {
+            padding: 16px 20px;
+            max-height: 500px;
+            overflow-y: auto;
+            transition: max-height 0.35s ease, padding 0.35s ease;
+        }
+        .panel-body.collapsed {
+            max-height: 0;
+            padding-top: 0;
+            padding-bottom: 0;
+            overflow: hidden;
+        }
+        .panel-body::-webkit-scrollbar {
+            width: 6px;
+        }
+        .panel-body::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .panel-body::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 10px;
+        }
+
+        /* 文件类型分布 */
+        .file-type-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .file-type-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 0;
+        }
+        .file-type-item .type-icon {
+            font-size: 1.5rem;
+            width: 36px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+        .file-type-item .type-info {
+            flex: 1;
+            min-width: 0;
+        }
+        .file-type-item .type-name {
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: var(--text);
+        }
+        .file-type-item .type-count {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+        .file-type-item .type-bar-wrap {
+            flex: 2;
+            height: 8px;
+            background: var(--border);
+            border-radius: 10px;
+            overflow: hidden;
+            min-width: 60px;
+        }
+        .file-type-item .type-bar-fill {
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .file-type-item .type-percent {
+            font-weight: 700;
+            font-size: 0.85rem;
+            width: 44px;
+            text-align: right;
+            color: var(--text);
+            flex-shrink: 0;
+        }
+
+        /* 树形结构 */
+        .tree-container {
+            font-family: var(--font-mono);
+            font-size: 0.88rem;
+        }
+        .tree-container details {
+            margin-left: 0;
+        }
+        .tree-container details>summary {
+            cursor: pointer;
+            list-style: none;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 8px;
+            border-radius: 6px;
+            transition: background var(--transition);
+            user-select: none;
+            position: relative;
+        }
+        .tree-container details>summary::-webkit-details-marker {
+            display: none;
+        }
+        .tree-container details>summary::marker {
+            display: none;
+            content: '';
+        }
+        .tree-container details>summary:hover {
+            background: var(--surface-hover);
+        }
+        .tree-container details>summary .arrow {
+            display: inline-block;
+            width: 18px;
+            font-size: 0.7rem;
+            transition: transform 0.25s ease;
+            flex-shrink: 0;
+            text-align: center;
+            color: var(--text-muted);
+        }
+        .tree-container details[open]>summary .arrow {
+            transform: rotate(90deg);
+        }
+        .tree-container .tree-folder-icon {
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+        .tree-container .tree-folder-name {
+            font-weight: 600;
+            color: var(--text);
+        }
+        .tree-container .tree-folder-count {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-left: 2px;
+        }
+        .tree-container .tree-file {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 8px;
+            border-radius: 6px;
+            transition: background var(--transition);
+            cursor: default;
+            margin-left: 0;
+        }
+        .tree-container .tree-file:hover {
+            background: var(--surface-hover);
+        }
+        .tree-container .tree-file .tree-file-icon {
+            font-size: 0.9rem;
+            flex-shrink: 0;
+        }
+        .tree-container .tree-file .tree-file-name {
+            color: var(--text);
+            flex: 1;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .tree-container .tree-file .tree-file-size {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            flex-shrink: 0;
+        }
+        .tree-container .tree-children {
+            padding-left: var(--tree-indent);
+            border-left: 1.5px solid var(--border);
+            margin-left: 8px;
+        }
+        .tree-container .tree-empty {
+            color: var(--text-muted);
+            font-style: italic;
+            padding: 4px 8px;
+            font-size: 0.8rem;
+        }
+        .tree-search-highlight {
+            background: #fef08a;
+            border-radius: 3px;
+            padding: 1px 3px;
+            color: #000;
+        }
+        [data-theme="dark"] .tree-search-highlight {
+            background: #854d0e;
+            color: #fef9c3;
+        }
+
+        /* 搜索结果为空时的样式 */
+        .tree-node-hidden {
+            display: none !important;
+        }
+        .tree-node-dimmed {
+            opacity: 0.35;
+        }
+
+        /* Toast */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .toast {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 12px 18px;
+            box-shadow: var(--shadow-lg);
+            font-size: 0.9rem;
+            font-weight: 500;
+            animation: slideIn 0.35s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            max-width: 400px;
+        }
+        @keyframes slideIn {
+            from {
+                transform: translateX(120%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        .toast.success {
+            border-left: 4px solid var(--accent-green);
+        }
+        .toast.error {
+            border-left: 4px solid var(--accent-red);
+        }
+        .toast.info {
+            border-left: 4px solid var(--accent-blue);
+        }
+
+        /* 响应式 */
+        @media (max-width: 768px) {
+            .navbar {
+                padding: 10px 14px;
+            }
+            .navbar .title {
+                font-size: 1rem;
+            }
+            .navbar .subtitle {
+                display: none;
+            }
+            .select-area {
+                padding: 30px 16px;
+            }
+            .select-area .select-icon {
+                font-size: 42px;
+            }
+            .select-area h2 {
+                font-size: 1.2rem;
+            }
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+            }
+            .stat-card {
+                padding: 14px 16px;
+            }
+            .stat-card .stat-value {
+                font-size: 1.5rem;
+            }
+            .panel-body {
+                padding: 12px 14px;
+                max-height: 350px;
+            }
+            .btn {
+                padding: 8px 14px;
+                font-size: 0.8rem;
+            }
+            .file-type-item .type-bar-wrap {
+                flex: 1;
+                min-width: 30px;
+            }
+            .tree-container {
+                font-size: 0.8rem;
+            }
+            .tree-container .tree-children {
+                padding-left: 14px;
+                margin-left: 4px;
+            }
+        }
+        @media (max-width: 400px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            .navbar-actions {
+                gap: 6px;
+            }
+            .btn {
+                padding: 7px 10px;
+                font-size: 0.75rem;
+            }
+        }
+
+        /* 打印样式 */
+        @media print {
+            .navbar,
+            .select-area,
+            .progress-bar-wrap,
+            .btn,
+            .toast-container,
+            .theme-toggle {
+                display: none !important;
+            }
+            .panel {
+                break-inside: avoid;
+                box-shadow: none;
+                border: 1px solid #ccc;
+            }
+            body {
+                background: #fff;
+                color: #000;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 顶部导航 -->
+    <nav class="navbar">
+        <div class="logo-area">
+            <span class="logo-icon">📁</span>
+            <div>
+                <div class="title">文件夹统计器</div>
+                <div class="subtitle">支持多层嵌套扫描</div>
+            </div>
+        </div>
+        <div class="navbar-actions">
+            <button class="btn btn-sm btn-outline" id="btnExportJSON" title="导出JSON格式" disabled>📥 导出JSON</button>
+            <button class="btn btn-sm btn-outline" id="btnExportCSV" title="导出CSV格式" disabled>📊 导出CSV</button>
+            <button class="btn btn-sm btn-outline" id="btnExportTxt" title="导出文本摘要" disabled>📝 导出摘要</button>
+            <button class="btn btn-sm btn-outline" id="btnClear" style="display:none;">🗑️ 清除结果</button>
+            <button class="theme-toggle" id="btnTheme" title="切换深色/浅色模式" aria-label="切换主题">🌓</button>
+        </div>
+    </nav>
+
+    <!-- Toast容器 -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- 主内容 -->
+    <div class="container">
+        <!-- 选择区域 -->
+        <div class="select-area" id="selectArea" tabindex="0">
+            <span class="select-icon">📂</span>
+            <h2>选择或拖拽文件夹</h2>
+            <p>点击按钮选择文件夹，或直接将文件夹拖拽到此区域</p>
+            <div class="or-divider">或者</div>
+            <button class="btn btn-primary btn-browse" id="btnBrowse">📁 浏览文件夹</button>
+            <input type="file" id="inputFolder" webkitdirectory multiple hidden>
+            <p style="margin-top:10px;font-size:0.78rem;color:var(--text-muted);">
+                支持 Chrome / Edge / Firefox 等现代浏览器
+            </p>
+        </div>
+
+        <!-- 进度条 -->
+        <div class="progress-bar-wrap" id="progressWrap">
+            <div class="progress-info">
+                <span id="progressLabel">正在扫描...</span>
+                <span id="progressCount">0 个文件</span>
+            </div>
+            <div class="progress-bar">
+                <div class="fill" id="progressFill" style="width: 0%;"></div>
+            </div>
+        </div>
+
+        <!-- 统计卡片 -->
+        <div class="stats-grid" id="statsGrid" style="display:none;">
+            <div class="stat-card accent-blue">
+                <div class="stat-accent"></div>
+                <div class="stat-icon">📄</div>
+                <div class="stat-value" id="statTotalFiles">0</div>
+                <div class="stat-label">文件总数</div>
+            </div>
+            <div class="stat-card accent-purple">
+                <div class="stat-accent"></div>
+                <div class="stat-icon">📁</div>
+                <div class="stat-value" id="statTotalFolders">0</div>
+                <div class="stat-label">文件夹总数</div>
+            </div>
+            <div class="stat-card accent-green">
+                <div class="stat-accent"></div>
+                <div class="stat-icon">💾</div>
+                <div class="stat-value" id="statTotalSize">0</div>
+                <div class="stat-label">总大小</div>
+            </div>
+            <div class="stat-card accent-orange">
+                <div class="stat-accent"></div>
+                <div class="stat-icon">📏</div>
+                <div class="stat-value" id="statAvgSize">0</div>
+                <div class="stat-label">平均文件大小</div>
+            </div>
+            <div class="stat-card accent-cyan">
+                <div class="stat-accent"></div>
+                <div class="stat-icon">🏔️</div>
+                <div class="stat-value" id="statMaxDepth">0</div>
+                <div class="stat-label">最大嵌套深度</div>
+            </div>
+            <div class="stat-card accent-red">
+                <div class="stat-accent"></div>
+                <div class="stat-icon">⏱️</div>
+                <div class="stat-value" id="statScanTime">0s</div>
+                <div class="stat-label">扫描耗时</div>
+            </div>
+        </div>
+
+        <!-- 详情面板区 -->
+        <div id="resultsArea" style="display:none;">
+
+            <!-- 最大/最小文件信息 -->
+            <div class="panel" id="panelExtremes">
+                <div class="panel-header" onclick="togglePanel('panelExtremes')">
+                    <h3>🔍 文件极值</h3>
+                    <span class="panel-badge" id="badgeExtremes">详情</span>
+                </div>
+                <div class="panel-body" id="panelExtremesBody">
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:14px;" id="extremesContent">
+                        <div style="color:var(--text-secondary);">等待扫描...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 文件类型分布 -->
+            <div class="panel" id="panelFileTypes">
+                <div class="panel-header" onclick="togglePanel('panelFileTypes')">
+                    <h3>📊 文件类型分布</h3>
+                    <span class="panel-badge" id="badgeFileTypes">0 种类型</span>
+                </div>
+                <div class="panel-body" id="panelFileTypesBody">
+                    <ul class="file-type-list" id="fileTypeList"></ul>
+                </div>
+            </div>
+
+            <!-- 按层级分布 -->
+            <div class="panel" id="panelDepthDist">
+                <div class="panel-header" onclick="togglePanel('panelDepthDist')">
+                    <h3>📐 按层级分布</h3>
+                    <span class="panel-badge" id="badgeDepthDist">0 层</span>
+                </div>
+                <div class="panel-body" id="panelDepthDistBody">
+                    <ul class="file-type-list" id="depthDistList"></ul>
+                </div>
+            </div>
+
+            <!-- 树形结构 -->
+            <div class="panel" id="panelTree">
+                <div class="panel-header" onclick="togglePanel('panelTree')">
+                    <h3>🌳 文件夹结构树</h3>
+                    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                        <input type="text" id="treeSearch" placeholder="🔍 搜索文件/文件夹..."
+                        style="padding:6px 12px;border:1px solid var(--border);border-radius:20px;font-size:0.82rem;width:180px;background:var(--surface);color:var(--text);outline:none;"
+                        oninput="filterTree()">
+                        <button class="btn btn-sm btn-outline" onclick="expandAllTree()" title="全部展开">📖 全部展开</button>
+                        <button class="btn btn-sm btn-outline" onclick="collapseAllTree()" title="全部折叠">📕 全部折叠</button>
+                        <span class="panel-badge" id="badgeTree">结构</span>
+                    </div>
+                </div>
+                <div class="panel-body" id="panelTreeBody" style="max-height:600px;">
+                    <div class="tree-container" id="treeContainer"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            // ==================== 全局状态 ====================
+            let allFiles = []; // { name, path, size, extension, type, depth, lastModified }
+            let folderSet = new Set(); // 所有文件夹路径
+            let treeData = null; // 树形结构数据
+            let scanStartTime = 0;
+            let scanEndTime = 0;
+            let abortController = null;
+
+            // ==================== DOM引用 ====================
+            const $ = (sel) => document.querySelector(sel);
+            const $$ = (sel) => document.querySelectorAll(sel);
+
+            const selectArea = $('#selectArea');
+            const inputFolder = $('#inputFolder');
+            const btnBrowse = $('#btnBrowse');
+            const progressWrap = $('#progressWrap');
+            const progressLabel = $('#progressLabel');
+            const progressCount = $('#progressCount');
+            const progressFill = $('#progressFill');
+            const statsGrid = $('#statsGrid');
+            const resultsArea = $('#resultsArea');
+            const treeContainer = $('#treeContainer');
+            const fileTypeList = $('#fileTypeList');
+            const depthDistList = $('#depthDistList');
+            const extremesContent = $('#extremesContent');
+            const btnClear = $('#btnClear');
+            const btnTheme = $('#btnTheme');
+            const treeSearch = $('#treeSearch');
+            const toastContainer = $('#toastContainer');
+
+            // ==================== 工具函数 ====================
+            function formatSize(bytes) {
+                if (bytes === 0) return '0 B';
+                const units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB'];
+                const k = 1024;
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                const val = bytes / Math.pow(k, i);
+                return val.toFixed(val < 10 ? 2 : 1) + ' ' + units[i];
+            }
+
+            function formatNumber(num) {
+                return num.toLocaleString('zh-CN');
+            }
+
+            function getFileExtension(name) {
+                const idx = name.lastIndexOf('.');
+                return idx > 0 ? name.slice(idx + 1).toLowerCase() : '(无扩展名)';
+            }
+
+            function getFileCategory(ext) {
+                const categories = {
+                    '图片': ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp', 'ico', 'heic', 'heif', 'tiff', 'tif',
+                        'raw', 'cr2', 'nef', 'arw'
+                    ],
+                    '视频': ['mp4', 'avi', 'mkv', 'mov', 'wmv', 'flv', 'webm', 'm4v', 'mpg', 'mpeg', '3gp', 'ogv', 'ts'],
+                    '音频': ['mp3', 'wav', 'flac', 'aac', 'ogg', 'wma', 'm4a', 'opus', 'ape', 'aiff', 'alac'],
+                    '文档': ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'csv', 'rtf', 'odt', 'ods', 'odp',
+                        'md', 'log', 'epub', 'mobi'
+                    ],
+                    '代码': ['js', 'ts', 'jsx', 'tsx', 'py', 'java', 'c', 'cpp', 'h', 'hpp', 'html', 'htm', 'css', 'scss',
+                        'less', 'php', 'rb', 'go', 'rs', 'swift', 'kt', 'json', 'xml', 'yaml', 'yml', 'sql', 'sh',
+                        'bash', 'zsh', 'toml', 'ini', 'cfg', 'vue', 'svelte'
+                    ],
+                    '压缩包': ['zip', 'rar', '7z', 'tar', 'gz', 'bz2', 'xz', 'zst', 'lz4', 'tgz', 'tbz2'],
+                    '可执行': ['exe', 'msi', 'app', 'dmg', 'bin', 'sh', 'bat', 'cmd', 'ps1', 'apk', 'ipa'],
+                    '字体': ['ttf', 'otf', 'woff', 'woff2', 'eot'],
+                    '数据库': ['db', 'sqlite', 'sqlite3', 'mdb', 'accdb'],
+                };
+                for (const [cat, exts] of Object.entries(categories)) {
+                    if (exts.includes(ext)) return cat;
+                }
+                return '其他';
+            }
+
+            function getCategoryIcon(cat) {
+                const icons = {
+                    '图片': '🖼️',
+                    '视频': '🎬',
+                    '音频': '🎵',
+                    '文档': '📝',
+                    '代码': '💻',
+                    '压缩包': '📦',
+                    '可执行': '⚙️',
+                    '字体': '🔤',
+                    '数据库': '🗄️',
+                    '其他': '📄',
+                };
+                return icons[cat] || '📄';
+            }
+
+            function getCategoryColor(cat) {
+                const colors = {
+                    '图片': '#f43f5e',
+                    '视频': '#8b5cf6',
+                    '音频': '#06b6d4',
+                    '文档': '#3b82f6',
+                    '代码': '#10b981',
+                    '压缩包': '#f59e0b',
+                    '可执行': '#ef4444',
+                    '字体': '#ec4899',
+                    '数据库': '#6366f1',
+                    '其他': '#94a3b8',
+                };
+                return colors[cat] || '#94a3b8';
+            }
+
+            function getFileIcon(ext) {
+                const icons = {
+                    'jpg': '🖼️',
+                    'jpeg': '🖼️',
+                    'png': '🖼️',
+                    'gif': '🖼️',
+                    'svg': '🖼️',
+                    'webp': '🖼️',
+                    'mp4': '🎬',
+                    'avi': '🎬',
+                    'mkv': '🎬',
+                    'mov': '🎬',
+                    'mp3': '🎵',
+                    'wav': '🎵',
+                    'flac': '🎵',
+                    'pdf': '📕',
+                    'doc': '📘',
+                    'docx': '📘',
+                    'xls': '📗',
+                    'xlsx': '📗',
+                    'ppt': '📙',
+                    'pptx': '📙',
+                    'txt': '📄',
+                    'csv': '📊',
+                    'md': '📝',
+                    'js': '📜',
+                    'ts': '📜',
+                    'py': '🐍',
+                    'html': '🌐',
+                    'css': '🎨',
+                    'json': '📋',
+                    'zip': '📦',
+                    'rar': '📦',
+                    '7z': '📦',
+                    'tar': '📦',
+                    'gz': '📦',
+                    'exe': '⚙️',
+                    'sh': '💻',
+                    'ttf': '🔤',
+                    'woff': '🔤',
+                    'woff2': '🔤',
+                };
+                return icons[ext] || '📄';
+            }
+
+            function escapeHTML(str) {
+                const div = document.createElement('div');
+                div.textContent = str;
+                return div.innerHTML;
+            }
+
+            // ==================== Toast ====================
+            function showToast(msg, type = 'info') {
+                const toast = document.createElement('div');
+                toast.className = `toast ${type}`;
+                const icons = { success: '✅', error: '❌', info: 'ℹ️' };
+                toast.innerHTML = `${icons[type] || 'ℹ️'} ${escapeHTML(msg)}`;
+                toastContainer.appendChild(toast);
+                setTimeout(() => {
+                    toast.style.opacity = '0';
+                    toast.style.transform = 'translateX(120%)';
+                    toast.style.transition = 'all 0.35s ease';
+                    setTimeout(() => toast.remove(), 350);
+                }, 2800);
+            }
+
+            // ==================== 主题切换 ====================
+            function initTheme() {
+                const saved = localStorage.getItem('folder-stats-theme');
+                if (saved === 'dark') {
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                    btnTheme.textContent = '☀️';
+                } else {
+                    document.documentElement.removeAttribute('data-theme');
+                    btnTheme.textContent = '🌙';
+                }
+            }
+
+            function toggleTheme() {
+                const current = document.documentElement.getAttribute('data-theme');
+                if (current === 'dark') {
+                    document.documentElement.removeAttribute('data-theme');
+                    btnTheme.textContent = '🌙';
+                    localStorage.setItem('folder-stats-theme', 'light');
+                } else {
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                    btnTheme.textContent = '☀️';
+                    localStorage.setItem('folder-stats-theme', 'dark');
+                }
+            }
+            btnTheme.addEventListener('click', toggleTheme);
+            initTheme();
+
+            // ==================== 面板折叠 ====================
+            window.togglePanel = function(panelId) {
+                const body = document.getElementById(panelId + 'Body');
+                if (body) {
+                    body.classList.toggle('collapsed');
+                }
+            };
+
+            // ==================== 进度条 ====================
+            function showProgress(label) {
+                progressWrap.classList.add('active');
+                progressLabel.textContent = label || '正在扫描...';
+                progressCount.textContent = '0 个文件';
+                progressFill.style.width = '0%';
+            }
+
+            function updateProgress(count, estimatedTotal) {
+                progressCount.textContent = formatNumber(count) + ' 个文件';
+                if (estimatedTotal > 0) {
+                    const pct = Math.min(Math.round((count / estimatedTotal) * 100), 99);
+                    progressFill.style.width = pct + '%';
+                } else {
+                    progressFill.style.width = Math.min(count % 100, 95) + '%';
+                }
+            }
+
+            function hideProgress() {
+                progressFill.style.width = '100%';
+                setTimeout(() => {
+                    progressWrap.classList.remove('active');
+                    progressFill.style.width = '0%';
+                }, 400);
+            }
+
+            // ==================== 核心：使用 File System Access API 递归扫描 ====================
+            async function scanWithDirectoryHandle(dirHandle, pathPrefix = '', depth = 0, estimatedTotal = 0) {
+                const results = [];
+                const folders = new Set();
+                const rootPath = pathPrefix || '';
+
+                if (abortController && abortController.signal.aborted) {
+                    return { files: [], folders: new Set() };
+                }
+
+                try {
+                    let fileCount = 0;
+                    for await (const [name, handle] of dirHandle.entries()) {
+                        if (abortController && abortController.signal.aborted) break;
+                        const fullPath = pathPrefix ? pathPrefix + '/' + name : name;
+                        if (handle.kind === 'file') {
+                            try {
+                                const file = await handle.getFile();
+                                const ext = getFileExtension(name);
+                                results.push({
+                                    name: name,
+                                    path: fullPath,
+                                    size: file.size,
+                                    extension: ext,
+                                    type: file.type || '',
+                                    depth: depth,
+                                    lastModified: file.lastModified || 0,
+                                });
+                                fileCount++;
+                                if (fileCount % 50 === 0) {
+                                    updateProgress(results.length, estimatedTotal || results.length + 100);
+                                }
+                            } catch (e) {
+                                // 跳过无法读取的文件
+                                console.warn('无法读取文件:', fullPath, e);
+                            }
+                        } else if (handle.kind === 'directory') {
+                            folders.add(fullPath);
+                            try {
+                                const sub = await scanWithDirectoryHandle(handle, fullPath, depth + 1, estimatedTotal);
+                                results.push(...sub.files);
+                                sub.folders.forEach(f => folders.add(f));
+                            } catch (e) {
+                                console.warn('无法读取子文件夹:', fullPath, e);
+                            }
+                        }
+                        updateProgress(results.length, estimatedTotal || results.length + 100);
+                    }
+                    // 添加当前文件夹本身
+                    if (pathPrefix) folders.add(pathPrefix);
+                    else folders.add(rootPath || '(根目录)');
+                } catch (e) {
+                    console.warn('遍历文件夹出错:', pathPrefix, e);
+                    if (pathPrefix) folders.add(pathPrefix);
+                }
+                return { files: results, folders };
+            }
+
+            // ==================== 使用 input[webkitdirectory] 方式处理 ====================
+            function processFilesFromInput(fileList) {
+                const files = [];
+                const folders = new Set();
+                const seenPaths = new Set();
+
+                for (const file of fileList) {
+                    const relativePath = file.webkitRelativePath || file.name;
+                    const parts = relativePath.split('/');
+                    const name = parts[parts.length - 1];
+                    const depth = parts.length - 1;
+
+                    // 收集所有文件夹路径
+                    for (let i = 0; i < parts.length - 1; i++) {
+                        const folderPath = parts.slice(0, i + 1).join('/');
+                        if (!seenPaths.has(folderPath)) {
+                            folders.add(folderPath);
+                            seenPaths.add(folderPath);
+                        }
+                    }
+                    // 也添加深度为0时的根
+                    if (depth === 0 && !seenPaths.has('(根目录)')) {
+                        folders.add('(根目录)');
+                        seenPaths.add('(根目录)');
+                    }
+
+                    const ext = getFileExtension(name);
+                    files.push({
+                        name: name,
+                        path: relativePath,
+                        size: file.size,
+                        extension: ext,
+                        type: file.type || '',
+                        depth: depth,
+                        lastModified: file.lastModified || 0,
+                    });
+                }
+                if (folders.size === 0) folders.add('(根目录)');
+                return { files, folders };
+            }
+
+            // ==================== 拖拽处理（使用 webkitGetAsEntry） ====================
+            async function processDropEntry(entry, pathPrefix = '', depth = 0) {
+                const files = [];
+                const folders = new Set();
+
+                if (entry.isFile) {
+                    return new Promise((resolve) => {
+                        entry.file((file) => {
+                            const ext = getFileExtension(entry.name);
+                            files.push({
+                                name: entry.name,
+                                path: pathPrefix ? pathPrefix + '/' + entry.name : entry.name,
+                                size: file.size,
+                                extension: ext,
+                                type: file.type || '',
+                                depth: depth,
+                                lastModified: file.lastModified || 0,
+                            });
+                            resolve({ files, folders });
+                        }, () => {
+                            resolve({ files, folders });
+                        });
+                    });
+                } else if (entry.isDirectory) {
+                    const fullPath = pathPrefix ? pathPrefix + '/' + entry.name : entry.name;
+                    if (fullPath) folders.add(fullPath);
+                    const reader = entry.createReader();
+                    const allEntries = [];
+                    // readEntries 每次最多返回100条，需要循环
+                    await new Promise((resolve) => {
+                        function readBatch() {
+                            reader.readEntries((batch) => {
+                                if (batch.length === 0) {
+                                    resolve();
+                                    return;
+                                }
+                                allEntries.push(...batch);
+                                readBatch();
+                            }, () => {
+                                resolve();
+                            });
+                        }
+                        readBatch();
+                    });
+
+                    for (const subEntry of allEntries) {
+                        if (abortController && abortController.signal.aborted) break;
+                        const result = await processDropEntry(subEntry, fullPath, depth + 1);
+                        files.push(...result.files);
+                        result.folders.forEach(f => folders.add(f));
+                        updateProgress(files.length, files.length + 100);
+                    }
+                    return { files, folders };
+                }
+                return { files, folders };
+            }
+
+            async function handleDropItems(items) {
+                const allFiles = [];
+                const allFolders = new Set();
+
+                for (const item of items) {
+                    if (abortController && abortController.signal.aborted) break;
+                    const entry = item.webkitGetAsEntry ? item.webkitGetAsEntry() : null;
+                    if (!entry) continue;
+                    const result = await processDropEntry(entry, '', 0);
+                    allFiles.push(...result.files);
+                    result.folders.forEach(f => allFolders.add(f));
+                }
+                if (allFolders.size === 0) allFolders.add('(根目录)');
+                return { files: allFiles, folders: allFolders };
+            }
+
+            // ==================== 构建树形结构 ====================
+            function buildTree(files, folderSet) {
+                const tree = {
+                    name: '(根目录)',
+                    path: '',
+                    isFolder: true,
+                    children: [],
+                    fileCount: 0,
+                    totalSize: 0,
+                    depth: 0,
+                };
+
+                // 从所有文件夹路径构建目录树
+                const folderPaths = Array.from(folderSet).filter(p => p !== '(根目录)').sort();
+                const folderMap = new Map();
+                folderMap.set('', tree);
+
+                for (const fp of folderPaths) {
+                    const parts = fp.split('/');
+                    let currentPath = '';
+                    for (let i = 0; i < parts.length; i++) {
+                        const parentPath = currentPath;
+                        currentPath = currentPath ? currentPath + '/' + parts[i] : parts[i];
+                        if (!folderMap.has(currentPath)) {
+                            const newNode = {
+                                name: parts[i],
+                                path: currentPath,
+                                isFolder: true,
+                                children: [],
+                                fileCount: 0,
+                                totalSize: 0,
+                                depth: i + 1,
+                            };
+                            folderMap.set(currentPath, newNode);
+                            const parent = folderMap.get(parentPath);
+                            if (parent) {
+                                parent.children.push(newNode);
+                            }
+                        }
+                    }
+                }
+
+                // 将文件分配到对应的文件夹
+                for (const file of files) {
+                    const parts = file.path.split('/');
+                    let folderPath = parts.length > 1 ? parts.slice(0, -1).join('/') : '';
+                    const folder = folderMap.get(folderPath);
+                    const targetFolder = folder || tree;
+                    targetFolder.children.push({
+                        name: file.name,
+                        path: file.path,
+                        isFolder: false,
+                        size: file.size,
+                        extension: file.extension,
+                        type: file.type,
+                        depth: file.depth,
+                        lastModified: file.lastModified,
+                        fileCount: 0,
+                        totalSize: file.size,
+                        children: [],
+                    });
+                }
+
+                // 递归计算每个文件夹的文件数和总大小
+                function computeStats(node) {
+                    if (!node.isFolder) {
+                        node.fileCount = 1;
+                        node.totalSize = node.size || 0;
+                        return;
+                    }
+                    let count = 0;
+                    let totalSize = 0;
+                    // 分离文件和子文件夹
+                    const fileChildren = node.children.filter(c => !c.isFolder);
+                    const folderChildren = node.children.filter(c => c.isFolder);
+                    count += fileChildren.length;
+                    for (const fc of fileChildren) {
+                        totalSize += fc.size || 0;
+                    }
+                    for (const sc of folderChildren) {
+                        computeStats(sc);
+                        count += sc.fileCount;
+                        totalSize += sc.totalSize;
+                    }
+                    node.fileCount = count;
+                    node.totalSize = totalSize;
+                    // 排序：文件夹在前，文件在后，各自按名称排序
+                    node.children.sort((a, b) => {
+                        if (a.isFolder && !b.isFolder) return -1;
+                        if (!a.isFolder && b.isFolder) return 1;
+                        return a.name.localeCompare(b.name, 'zh-CN');
+                    });
+                }
+                computeStats(tree);
+                return tree;
+            }
+
+            // ==================== 渲染树形结构 ====================
+            function renderTree(node, searchTerm = '') {
+                if (!node) return '';
+                const matchSearch = !searchTerm ||
+                    node.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    node.path.toLowerCase().includes(searchTerm.toLowerCase());
+
+                if (node.isFolder) {
+                    const hasVisibleChildren = node.children.some(c => {
+                        if (c.isFolder) return true;
+                        return !searchTerm || c.name.toLowerCase().includes(searchTerm.toLowerCase());
+                    });
+
+                    const folderId = 'folder-' + encodeURIComponent(node.path || 'root');
+                    const displayName = node.name;
+                    const countInfo = node.fileCount > 0 ?
+                        ` <span class="tree-folder-count">(${formatNumber(node.fileCount)} 文件, ${formatSize(node.totalSize)})</span>` :
+                        ' <span class="tree-folder-count" style="color:var(--text-muted);">(空)</span>';
+
+                    let html = '<details';
+                    // 如果有搜索词且当前节点匹配，自动展开
+                    if (searchTerm && matchSearch) html += ' open';
+                    if (!searchTerm && node.depth <= 1) html += ' open';
+                    html += '>';
+                    html +=
+                        `<summary class="${!matchSearch && searchTerm ? 'tree-node-dimmed' : ''}" data-path="${escapeHTML(node.path || '(根目录)')}">`;
+                    html += `<span class="arrow">▶</span>`;
+                    html += `<span class="tree-folder-icon">${node.children.length === 0 ? '📁' : '📂'}</span>`;
+                    html +=
+                        `<span class="tree-folder-name">${escapeHTML(displayName)}</span>${countInfo}`;
+                    html += '</summary>';
+
+                    if (node.children.length > 0) {
+                        html += '<div class="tree-children">';
+                        const sortedChildren = [...node.children].sort((a, b) => {
+                            if (a.isFolder && !b.isFolder) return -1;
+                            if (!a.isFolder && b.isFolder) return 1;
+                            return a.name.localeCompare(b.name, 'zh-CN');
+                        });
+                        for (const child of sortedChildren) {
+                            html += renderTree(child, searchTerm);
+                        }
+                        html += '</div>';
+                    } else {
+                        html +=
+                            '<div class="tree-children"><span class="tree-empty">(空文件夹)</span></div>';
+                    }
+                    html += '</details>';
+                    return html;
+                } else {
+                    // 文件节点
+                    const icon = getFileIcon(node.extension);
+                    const sizeStr = formatSize(node.size || 0);
+                    const matchFile = !searchTerm || node.name.toLowerCase().includes(searchTerm.toLowerCase());
+                    if (searchTerm && !matchFile) {
+                        return `<div class="tree-file tree-node-hidden" data-path="${escapeHTML(node.path)}">
+                  <span class="tree-file-icon">${icon}</span>
+                  <span class="tree-file-name">${escapeHTML(node.name)}</span>
+                  <span class="tree-file-size">${sizeStr}</span>
+                </div>`;
+                    }
+                    let displayName = escapeHTML(node.name);
+                    if (searchTerm && matchFile) {
+                        const regex = new RegExp(`(${escapeHTML(searchTerm).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`,
+                            'gi');
+                        displayName = escapeHTML(node.name).replace(regex,
+                            '<span class="tree-search-highlight">$1</span>');
+                    }
+                    return `<div class="tree-file" data-path="${escapeHTML(node.path)}">
+                <span class="tree-file-icon">${icon}</span>
+                <span class="tree-file-name">${displayName}</span>
+                <span class="tree-file-size">${sizeStr}</span>
+              </div>`;
+                }
+            }
+
+            function refreshTree(searchTerm = '') {
+                if (!treeData) {
+                    treeContainer.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:20px;">暂无数据</p>';
+                    return;
+                }
+                const html = renderTree(treeData, searchTerm);
+                treeContainer.innerHTML = html || '<p style="color:var(--text-muted);text-align:center;padding:20px;">无匹配结果</p>';
+                updateTreeBadge();
+            }
+
+            function updateTreeBadge() {
+                const badge = $('#badgeTree');
+                if (badge && treeData) {
+                    badge.textContent = formatNumber(treeData.fileCount) + ' 个文件';
+                }
+            }
+
+            window.filterTree = function() {
+                const term = treeSearch.value.trim();
+                refreshTree(term);
+            };
+
+            window.expandAllTree = function() {
+                const allDetails = treeContainer.querySelectorAll('details');
+                allDetails.forEach(d => d.setAttribute('open', ''));
+                showToast('已展开全部节点', 'info');
+            };
+
+            window.collapseAllTree = function() {
+                const allDetails = treeContainer.querySelectorAll('details');
+                allDetails.forEach(d => {
+                    if (d.closest('.tree-children') && d.parentElement.closest('details') === null) {
+                        // 保留根级别打开
+                    } else {
+                        d.removeAttribute('open');
+                    }
+                });
+                // 全部折叠包括根级别
+                const rootDetails = treeContainer.querySelectorAll('details');
+                rootDetails.forEach(d => d.removeAttribute('open'));
+                // 重新打开第一层
+                const topLevel = treeContainer.querySelectorAll(':scope > details');
+                topLevel.forEach(d => d.setAttribute('open', ''));
+                showToast('已折叠全部节点', 'info');
+            };
+
+            // ==================== 计算并渲染统计 ====================
+            function calculateAndRender(files, folderSet, scanDuration) {
+                allFiles = files;
+                folderSet.forEach(f => folderSet.add(f));
+                // 确保folderSet是全局可用的
+                window._folderSet = folderSet;
+
+                const totalFiles = files.length;
+                const totalFolders = folderSet.size;
+                const totalSize = files.reduce((sum, f) => sum + f.size, 0);
+                const avgSize = totalFiles > 0 ? Math.round(totalSize / totalFiles) : 0;
+                const maxDepth = files.reduce((max, f) => Math.max(max, f.depth), 0);
+                const maxDepthFolders = folderSet.size > 0 ?
+                    Array.from(folderSet).reduce((max, fp) => {
+                        const d = fp === '(根目录)' ? 0 : fp.split('/').length;
+                        return Math.max(max, d);
+                    }, 0) : 0;
+                const actualMaxDepth = Math.max(maxDepth, maxDepthFolders);
+
+                // 更新统计卡片
+                $('#statTotalFiles').textContent = formatNumber(totalFiles);
+                $('#statTotalFolders').textContent = formatNumber(totalFolders);
+                $('#statTotalSize').textContent = formatSize(totalSize);
+                $('#statAvgSize').textContent = formatSize(avgSize);
+                $('#statMaxDepth').textContent = actualMaxDepth + ' 层';
+                $('#statScanTime').textContent = scanDuration.toFixed(2) + 's';
+
+                statsGrid.style.display = 'grid';
+                resultsArea.style.display = 'block';
+                btnClear.style.display = 'inline-flex';
+
+                // 文件极值
+                let largestFile = null;
+                let smallestFile = null;
+                if (files.length > 0) {
+                    largestFile = files.reduce((a, b) => a.size > b.size ? a : b);
+                    smallestFile = files.reduce((a, b) => a.size < b.size ? a : b);
+                }
+                extremesContent.innerHTML = `
+              <div style="background:var(--surface-hover);border-radius:var(--radius-sm);padding:14px;">
+                <div style="font-weight:700;color:var(--accent-red);margin-bottom:6px;">📈 最大文件</div>
+                <div style="font-family:var(--font-mono);font-size:0.85rem;word-break:break-all;">
+                  ${largestFile ? `<strong>${escapeHTML(largestFile.name)}</strong>` : 'N/A'}
+                </div>
+                <div style="font-size:0.8rem;color:var(--text-secondary);margin-top:4px;">
+                  ${largestFile ? formatSize(largestFile.size) + ' · 路径: ' + escapeHTML(largestFile.path) : ''}
+                </div>
+              </div>
+              <div style="background:var(--surface-hover);border-radius:var(--radius-sm);padding:14px;">
+                <div style="font-weight:700;color:var(--accent-green);margin-bottom:6px;">📉 最小文件</div>
+                <div style="font-family:var(--font-mono);font-size:0.85rem;word-break:break-all;">
+                  ${smallestFile ? `<strong>${escapeHTML(smallestFile.name)}</strong>` : 'N/A'}
+                </div>
+                <div style="font-size:0.8rem;color:var(--text-secondary);margin-top:4px;">
+                  ${smallestFile ? formatSize(smallestFile.size) + ' · 路径: ' + escapeHTML(smallestFile.path) : ''}
+                </div>
+              </div>
+            `;
+
+                // 文件类型分布
+                const categoryMap = new Map();
+                for (const file of files) {
+                    const cat = getFileCategory(file.extension);
+                    if (!categoryMap.has(cat)) {
+                        categoryMap.set(cat, { count: 0, totalSize: 0, extensions: new Set() });
+                    }
+                    const entry = categoryMap.get(cat);
+                    entry.count++;
+                    entry.totalSize += file.size;
+                    entry.extensions.add(file.extension);
+                }
+                const sortedCats = Array.from(categoryMap.entries()).sort((a, b) => b[1].count - a[1].count);
+                fileTypeList.innerHTML = sortedCats.map(([cat, data]) => {
+                    const pct = totalFiles > 0 ? (data.count / totalFiles * 100) : 0;
+                    const color = getCategoryColor(cat);
+                    const icon = getCategoryIcon(cat);
+                    return `
+                <li class="file-type-item">
+                  <span class="type-icon">${icon}</span>
+                  <div class="type-info">
+                    <div class="type-name">${cat}</div>
+                    <div class="type-count">${formatNumber(data.count)} 个文件 · ${formatSize(data.totalSize)} · 含 ${data.extensions.size} 种扩展名</div>
+                  </div>
+                  <div class="type-bar-wrap">
+                    <div class="type-bar-fill" style="width:${pct}%;background:${color};"></div>
+                  </div>
+                  <span class="type-percent">${pct.toFixed(1)}%</span>
+                </li>
+              `;
+                }).join('');
+                $('#badgeFileTypes').textContent = sortedCats.length + ' 种类型';
+
+                // 按层级分布
+                const depthMap = new Map();
+                for (const file of files) {
+                    const d = file.depth;
+                    if (!depthMap.has(d)) depthMap.set(d, { count: 0, totalSize: 0 });
+                    const entry = depthMap.get(d);
+                    entry.count++;
+                    entry.totalSize += file.size;
+                }
+                const sortedDepths = Array.from(depthMap.entries()).sort((a, b) => a[0] - b[0]);
+                depthDistList.innerHTML = sortedDepths.map(([depth, data]) => {
+                    const pct = totalFiles > 0 ? (data.count / totalFiles * 100) : 0;
+                    const hue = 220 + depth * 40;
+                    const color = `hsl(${hue % 360}, 65%, 55%)`;
+                    return `
+                <li class="file-type-item">
+                  <span class="type-icon" style="font-size:1.2rem;">📐</span>
+                  <div class="type-info">
+                    <div class="type-name">第 ${depth} 层${depth === 0 ? ' (根目录)' : ''}</div>
+                    <div class="type-count">${formatNumber(data.count)} 个文件 · ${formatSize(data.totalSize)}</div>
+                  </div>
+                  <div class="type-bar-wrap">
+                    <div class="type-bar-fill" style="width:${pct}%;background:${color};"></div>
+                  </div>
+                  <span class="type-percent">${pct.toFixed(1)}%</span>
+                </li>
+              `;
+                }).join('');
+                $('#badgeDepthDist').textContent = sortedDepths.length + ' 层';
+
+                // 构建树
+                treeData = buildTree(files, folderSet);
+                refreshTree(treeSearch.value.trim());
+                updateTreeBadge();
+
+                // 启用导出按钮
+                $('#btnExportJSON').disabled = false;
+                $('#btnExportCSV').disabled = false;
+                $('#btnExportTxt').disabled = false;
+            }
+
+            // ==================== 主导出函数 ====================
+            function clearResults() {
+                allFiles = [];
+                folderSet.clear();
+                treeData = null;
+                statsGrid.style.display = 'none';
+                resultsArea.style.display = 'none';
+                treeContainer.innerHTML = '';
+                fileTypeList.innerHTML = '';
+                depthDistList.innerHTML = '';
+                extremesContent.innerHTML = '<div style="color:var(--text-secondary);">等待扫描...</div>';
+                btnClear.style.display = 'none';
+                $('#btnExportJSON').disabled = true;
+                $('#btnExportCSV').disabled = true;
+                $('#btnExportTxt').disabled = true;
+                treeSearch.value = '';
+                window._folderSet = null;
+                showToast('结果已清除', 'info');
+            }
+
+            function getExportData() {
+                const files = allFiles;
+                const folderSet = window._folderSet || new Set();
+                const totalFiles = files.length;
+                const totalFolders = folderSet.size;
+                const totalSize = files.reduce((s, f) => s + f.size, 0);
+                const maxDepth = files.reduce((m, f) => Math.max(m, f.depth), 0);
+                const scanDuration = scanEndTime - scanStartTime;
+
+                const categoryMap = new Map();
+                for (const f of files) {
+                    const cat = getFileCategory(f.extension);
+                    if (!categoryMap.has(cat)) categoryMap.set(cat, 0);
+                    categoryMap.set(cat, categoryMap.get(cat) + 1);
+                }
+
+                return {
+                    summary: {
+                        totalFiles,
+                        totalFolders,
+                        totalSize,
+                        totalSizeFormatted: formatSize(totalSize),
+                        avgSize: totalFiles > 0 ? Math.round(totalSize / totalFiles) : 0,
+                        avgSizeFormatted: formatSize(totalFiles > 0 ? Math.round(totalSize / totalFiles) : 0),
+                        maxDepth,
+                        scanDurationSeconds: parseFloat(scanDuration.toFixed(3)),
+                        scanTime: new Date().toISOString(),
+                    },
+                    fileTypes: Object.fromEntries(categoryMap),
+                    depthDistribution: (() => {
+                        const dm = {};
+                        for (const f of files) {
+                            dm[f.depth] = (dm[f.depth] || 0) + 1;
+                        }
+                        return dm;
+                    })(),
+                    files: files.map(f => ({
+                        name: f.name,
+                        path: f.path,
+                        size: f.size,
+                        sizeFormatted: formatSize(f.size),
+                        extension: f.extension,
+                        category: getFileCategory(f.extension),
+                        depth: f.depth,
+                        lastModified: f.lastModified ? new Date(f.lastModified).toISOString() : null,
+                    })),
+                };
+            }
+
+            function exportJSON() {
+                const data = getExportData();
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                downloadBlob(blob, 'folder-stats-' + new Date().toISOString().slice(0, 10) + '.json');
+                showToast('JSON 导出成功！', 'success');
+            }
+
+            function exportCSV() {
+                const files = allFiles;
+                const header = '文件名,路径,大小(字节),大小(可读),扩展名,类型,深度,最后修改时间';
+                const rows = files.map(f => {
+                    const lastMod = f.lastModified ? new Date(f.lastModified).toISOString() : '';
+                    return [
+                        `"${f.name.replace(/"/g, '""')}"`,
+                        `"${f.path.replace(/"/g, '""')}"`,
+                        f.size,
+                        formatSize(f.size),
+                        f.extension,
+                        getFileCategory(f.extension),
+                        f.depth,
+                        lastMod,
+                    ].join(',');
+                });
+                const csv = '\uFEFF' + header + '\n' + rows.join('\n');
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                downloadBlob(blob, 'folder-files-' + new Date().toISOString().slice(0, 10) + '.csv');
+                showToast('CSV 导出成功！', 'success');
+            }
+
+            function exportTxt() {
+                const data = getExportData();
+                const s = data.summary;
+                let txt = '';
+                txt += '══════════════════════════════════\n';
+                txt += '   📁 文件夹统计报告\n';
+                txt += '══════════════════════════════════\n\n';
+                txt += `📅 扫描时间: ${s.scanTime}\n`;
+                txt += `⏱️ 扫描耗时: ${s.scanDurationSeconds} 秒\n\n`;
+                txt += `📄 文件总数: ${formatNumber(s.totalFiles)}\n`;
+                txt += `📁 文件夹总数: ${formatNumber(s.totalFolders)}\n`;
+                txt += `💾 总大小: ${s.totalSizeFormatted}\n`;
+                txt += `📏 平均文件大小: ${s.avgSizeFormatted}\n`;
+                txt += `🏔️ 最大嵌套深度: ${s.maxDepth} 层\n\n`;
+                txt += '── 文件类型分布 ──\n';
+                for (const [cat, count] of Object.entries(data.fileTypes).sort((a, b) => b[1] - a[1])) {
+                    const pct = s.totalFiles > 0 ? (count / s.totalFiles * 100).toFixed(1) : '0';
+                    txt += `  ${getCategoryIcon(cat)} ${cat}: ${formatNumber(count)} 个 (${pct}%)\n`;
+                }
+                txt += '\n── 按层级分布 ──\n';
+                for (const [depth, count] of Object.entries(data.depthDistribution).sort((a, b) => a[0] - b[0])) {
+                    const pct = s.totalFiles > 0 ? (count / s.totalFiles * 100).toFixed(1) : '0';
+                    txt += `  第${depth}层: ${formatNumber(count)} 个文件 (${pct}%)\n`;
+                }
+                txt += '\n══════════════════════════════════\n';
+                txt += '报告生成完毕。\n';
+
+                const blob = new Blob(['\uFEFF' + txt], { type: 'text/plain;charset=utf-8;' });
+                downloadBlob(blob, 'folder-report-' + new Date().toISOString().slice(0, 10) + '.txt');
+                showToast('文本摘要导出成功！', 'success');
+            }
+
+            function downloadBlob(blob, filename) {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
+
+            // ==================== 主流程：处理扫描 ====================
+            async function performScan(sourceType, sourceData) {
+                // 取消之前的扫描
+                if (abortController) {
+                    abortController.abort();
+                }
+                abortController = new AbortController();
+
+                scanStartTime = performance.now();
+                let result = { files: [], folders: new Set() };
+
+                try {
+                    showProgress('正在扫描文件夹...');
+                    updateProgress(0, 100);
+
+                    if (sourceType === 'directoryHandle') {
+                        // File System Access API
+                        const dirHandle = sourceData;
+                        progressLabel.textContent = '正在使用 File System API 递归扫描...';
+                        result = await scanWithDirectoryHandle(dirHandle, '', 0, 0);
+                    } else if (sourceType === 'inputFiles') {
+                        // input[webkitdirectory]
+                        progressLabel.textContent = '正在解析文件列表...';
+                        result = processFilesFromInput(sourceData);
+                        updateProgress(result.files.length, result.files.length);
+                    } else if (sourceType === 'dropItems') {
+                        // 拖拽
+                        progressLabel.textContent = '正在递归读取拖拽的文件夹...';
+                        result = await handleDropItems(sourceData);
+                    }
+
+                    if (abortController.signal.aborted) {
+                        hideProgress();
+                        return;
+                    }
+
+                    scanEndTime = performance.now();
+                    const scanDuration = (scanEndTime - scanStartTime) / 1000;
+
+                    updateProgress(result.files.length, result.files.length);
+                    await new Promise(r => setTimeout(r, 200)); // 短暂显示100%
+                    hideProgress();
+
+                    // 存储全局
+                    allFiles = result.files;
+                    folderSet = result.folders;
+                    window._folderSet = folderSet;
+
+                    calculateAndRender(result.files, result.folders, scanDuration);
+
+                    const sourceLabel = sourceType === 'directoryHandle' ? 'File System API' :
+                        sourceType === 'inputFiles' ? '文件选择器' : '拖拽';
+                    showToast(
+                        `扫描完成！共 ${formatNumber(result.files.length)} 个文件，${formatNumber(result.folders.size)} 个文件夹 (${sourceLabel})`,
+                        'success');
+
+                    // 保存最近扫描记录到localStorage
+                    try {
+                        const record = {
+                            totalFiles: result.files.length,
+                            totalFolders: result.folders.size,
+                            totalSize: result.files.reduce((s, f) => s + f.size, 0),
+                            scanTime: new Date().toISOString(),
+                            duration: scanDuration,
+                        };
+                        localStorage.setItem('folder-stats-last-scan', JSON.stringify(record));
+                    } catch (e) { /* ignore */ }
+
+                } catch (err) {
+                    hideProgress();
+                    if (err.name === 'AbortError') {
+                        showToast('扫描已取消', 'info');
+                    } else {
+                        console.error('扫描出错:', err);
+                        showToast('扫描出错: ' + (err.message || '未知错误'), 'error');
+                    }
+                } finally {
+                    abortController = null;
+                }
+            }
+
+            // ==================== 事件绑定 ====================
+
+            // 浏览按钮 - 使用 File System Access API
+            btnBrowse.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                if (typeof window.showDirectoryPicker === 'function') {
+                    try {
+                        const dirHandle = await window.showDirectoryPicker({ mode: 'read' });
+                        await performScan('directoryHandle', dirHandle);
+                    } catch (err) {
+                        if (err.name === 'AbortError') {
+                            // 用户取消
+                        } else {
+                            console.error('showDirectoryPicker 出错:', err);
+                            // 回退到input方式
+                            showToast('File System API 不可用，使用备用方式...', 'info');
+                            inputFolder.click();
+                        }
+                    }
+                } else {
+                    // 浏览器不支持showDirectoryPicker，使用input
+                    showToast('您的浏览器不支持 File System API，使用备用选择器', 'info');
+                    inputFolder.click();
+                }
+            });
+
+            // input[webkitdirectory] 变化
+            inputFolder.addEventListener('change', async (e) => {
+                const files = e.target.files;
+                if (files && files.length > 0) {
+                    await performScan('inputFiles', files);
+                }
+                // 重置input以便可以重新选择同一文件夹
+                inputFolder.value = '';
+            });
+
+            // 点击选择区域（非按钮部分）触发浏览
+            selectArea.addEventListener('click', (e) => {
+                if (e.target === btnBrowse || btnBrowse.contains(e.target)) return;
+                if (e.target === inputFolder) return;
+                // 优先使用showDirectoryPicker
+                if (typeof window.showDirectoryPicker === 'function') {
+                    btnBrowse.click();
+                } else {
+                    inputFolder.click();
+                }
+            });
+
+            // 拖拽支持
+            selectArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                selectArea.classList.add('drag-over');
+            });
+
+            selectArea.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                selectArea.classList.remove('drag-over');
+            });
+
+            selectArea.addEventListener('drop', async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                selectArea.classList.remove('drag-over');
+
+                const items = e.dataTransfer.items;
+                if (!items || items.length === 0) return;
+
+                // 检查是否包含文件夹条目
+                let hasDirectory = false;
+                for (const item of items) {
+                    const entry = item.webkitGetAsEntry ? item.webkitGetAsEntry() : null;
+                    if (entry && entry.isDirectory) {
+                        hasDirectory = true;
+                        break;
+                    }
+                }
+
+                if (hasDirectory) {
+                    await performScan('dropItems', Array.from(items));
+                } else if (items.length > 0) {
+                    // 可能拖拽了单个文件或没有webkitGetAsEntry
+                    // 尝试使用input方式
+                    const dtFiles = e.dataTransfer.files;
+                    if (dtFiles && dtFiles.length > 0 && dtFiles[0].webkitRelativePath) {
+                        await performScan('inputFiles', dtFiles);
+                    } else {
+                        showToast('请拖拽一个文件夹（而非单个文件）', 'error');
+                    }
+                }
+            });
+
+            // 键盘支持：在selectArea上按Enter或Space触发
+            selectArea.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    if (typeof window.showDirectoryPicker === 'function') {
+                        btnBrowse.click();
+                    } else {
+                        inputFolder.click();
+                    }
+                }
+            });
+
+            // 清除按钮
+            btnClear.addEventListener('click', () => {
+                if (abortController) {
+                    abortController.abort();
+                }
+                clearResults();
+            });
+
+            // 导出按钮
+            $('#btnExportJSON').addEventListener('click', exportJSON);
+            $('#btnExportCSV').addEventListener('click', exportCSV);
+            $('#btnExportTxt').addEventListener('click', exportTxt);
+
+            // 全局粘贴事件：尝试从剪贴板获取文件（某些情况下可用）
+            document.addEventListener('paste', async (e) => {
+                const items = e.clipboardData?.items;
+                if (!items) return;
+                let hasDir = false;
+                for (const item of items) {
+                    const entry = item.webkitGetAsEntry ? item.webkitGetAsEntry() : null;
+                    if (entry && entry.isDirectory) {
+                        hasDir = true;
+                        break;
+                    }
+                }
+                if (hasDir) {
+                    e.preventDefault();
+                    await performScan('dropItems', Array.from(items));
+                }
+            });
+
+            // ==================== 键盘快捷键 ====================
+            document.addEventListener('keydown', (e) => {
+                // Ctrl+Shift+O 打开文件夹
+                if (e.ctrlKey && e.shiftKey && e.key === 'O') {
+                    e.preventDefault();
+                    if (typeof window.showDirectoryPicker === 'function') {
+                        btnBrowse.click();
+                    } else {
+                        inputFolder.click();
+                    }
+                }
+                // Ctrl+Shift+E 导出JSON
+                if (e.ctrlKey && e.shiftKey && e.key === 'E') {
+                    e.preventDefault();
+                    if (allFiles.length > 0) exportJSON();
+                }
+                // Escape 清除
+                if (e.key === 'Escape' && allFiles.length > 0) {
+                    if (abortController) {
+                        abortController.abort();
+                        abortController = null;
+                        hideProgress();
+                    }
+                }
+            });
+
+            // ==================== 页面加载时恢复上次扫描摘要 ====================
+            function loadLastScanInfo() {
+                try {
+                    const lastScan = localStorage.getItem('folder-stats-last-scan');
+                    if (lastScan) {
+                        const record = JSON.parse(lastScan);
+                        const timeAgo = getTimeAgo(new Date(record.scanTime));
+                        // 在selectArea底部显示
+                        const infoEl = document.createElement('p');
+                        infoEl.style.cssText =
+                            'margin-top:8px;font-size:0.78rem;color:var(--text-muted);text-align:center;';
+                        infoEl.innerHTML =
+                            `📋 上次扫描: ${formatNumber(record.totalFiles)} 个文件, ${formatSize(record.totalSize)} · ${timeAgo}`;
+                        infoEl.id = 'lastScanInfo';
+                        selectArea.appendChild(infoEl);
+                    }
+                } catch (e) { /* ignore */ }
+            }
+
+            function getTimeAgo(date) {
+                const now = new Date();
+                const diffMs = now - date;
+                const diffMin = Math.floor(diffMs / 60000);
+                if (diffMin < 1) return '刚刚';
+                if (diffMin < 60) return diffMin + ' 分钟前';
+                const diffHours = Math.floor(diffMin / 60);
+                if (diffHours < 24) return diffHours + ' 小时前';
+                const diffDays = Math.floor(diffHours / 24);
+                if (diffDays < 30) return diffDays + ' 天前';
+                return date.toLocaleDateString('zh-CN');
+            }
+            loadLastScanInfo();
+
+            // ==================== 初始化完成 ====================
+            console.log('📁 文件夹文件数量统计器已就绪');
+            console.log('  - 支持 File System Access API (showDirectoryPicker)');
+            console.log('  - 支持拖拽文件夹');
+            console.log('  - 支持 input[webkitdirectory] 备用方案');
+            console.log('  - 快捷键: Ctrl+Shift+O 打开文件夹, Ctrl+Shift+E 导出JSON, Esc 取消扫描');
+            console.log('  - 点击统计面板标题可折叠/展开');
+            console.log('  - 树形结构支持搜索过滤');
+        })();
+    </script>
+</body>
+</html>

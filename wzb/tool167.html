@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>压缩包文件查询工具 - Archive Inspector</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"></script>
+
+    <style>
+        :root {
+            --bg: #f0f4f8;
+            --surface: #ffffff;
+            --surface-hover: #f8fafc;
+            --surface-alt: #f1f5f9;
+            --text: #1e293b;
+            --text-secondary: #64748b;
+            --text-muted: #94a3b8;
+            --border: #e2e8f0;
+            --primary: #3b82f6;
+            --primary-light: #eff6ff;
+            --accent: #8b5cf6;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --info: #06b6d4;
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+            --shadow: 0 1px 3px rgba(0,0,0,0.1);
+            --shadow-md: 0 4px 6px rgba(0,0,0,0.07);
+            --shadow-lg: 0 10px 25px rgba(0,0,0,0.1);
+            --radius: 12px;
+            --radius-lg: 16px;
+            --transition: 0.2s ease;
+            --font-mono: 'SF Mono', 'Cascadia Code', 'Consolas', monospace;
+        }
+
+        [data-theme="dark"] {
+            --bg: #0f172a;
+            --surface: #1e293b;
+            --surface-hover: #273548;
+            --surface-alt: #1a2332;
+            --text: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --border: #334155;
+            --primary: #60a5fa;
+            --primary-light: #1e3a5f;
+            --accent: #a78bfa;
+            --success: #34d399;
+            --warning: #fbbf24;
+            --danger: #f87171;
+            --info: #22d3ee;
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+            --shadow: 0 1px 3px rgba(0,0,0,0.4);
+            --shadow-md: 0 4px 6px rgba(0,0,0,0.4);
+            --shadow-lg: 0 10px 25px rgba(0,0,0,0.5);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif;
+            background: var(--bg); color: var(--text);
+            min-height: 100vh; transition: background 0.3s, color 0.3s;
+        }
+
+        .app-container { max-width: 1300px; margin: 0 auto; padding: 20px 24px 60px; }
+
+        /* 顶部导航 */
+        .app-header {
+            display: flex; align-items: center; justify-content: space-between;
+            flex-wrap: wrap; gap: 16px; margin-bottom: 28px;
+            padding: 16px 20px; background: var(--surface);
+            border-radius: var(--radius-lg); border: 1px solid var(--border);
+            box-shadow: var(--shadow-sm); position: sticky; top: 16px; z-index: 100;
+        }
+        .header-brand { display: flex; align-items: center; gap: 12px; font-weight: 700; font-size: 1.25rem; }
+        .header-icon {
+            width: 42px; height: 42px; border-radius: 8px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.4rem; color: #fff; box-shadow: 0 4px 12px rgba(59,130,246,0.3);
+        }
+        .btn {
+            padding: 10px 18px; border-radius: 8px; border: 1px solid var(--border);
+            background: var(--surface); color: var(--text); cursor: pointer;
+            font-size: 0.9rem; font-weight: 500; transition: all var(--transition);
+            white-space: nowrap; display: inline-flex; align-items: center; gap: 6px;
+        }
+        .btn:hover { background: var(--surface-hover); border-color: var(--text-muted); box-shadow: var(--shadow); }
+        .btn-primary { background: var(--primary); color: #fff; border-color: var(--primary); font-weight: 600; }
+        .btn-primary:hover { background: #2563eb; }
+        .btn-outline { background: transparent; border: 1.5px solid var(--border); }
+        .btn-sm { padding: 6px 12px; font-size: 0.8rem; border-radius: 6px; }
+        .btn:disabled { opacity: 0.5; pointer-events: none; }
+        .theme-toggle {
+            width: 44px; height: 44px; border-radius: 50%; border: 2px solid var(--border);
+            background: var(--surface); cursor: pointer; font-size: 1.3rem;
+            display: flex; align-items: center; justify-content: center; transition: all 0.3s;
+        }
+        .theme-toggle:hover { border-color: var(--primary); transform: rotate(15deg); }
+
+        /* 上传区域 */
+        .upload-zone {
+            border: 3px dashed var(--border); border-radius: var(--radius-lg);
+            padding: 50px 30px; text-align: center; cursor: pointer;
+            background: var(--surface); transition: all 0.3s; margin-bottom: 24px;
+        }
+        .upload-zone:hover, .upload-zone.drag-over {
+            border-color: var(--primary); background: var(--primary-light);
+            box-shadow: var(--shadow-lg); transform: translateY(-2px);
+        }
+        .upload-icon { font-size: 4rem; display: block; margin-bottom: 16px; }
+        .upload-zone h2 { font-size: 1.5rem; font-weight: 700; margin-bottom: 8px; }
+        .supported-formats { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 14px; }
+        .format-badge {
+            padding: 6px 14px; border-radius: 20px; font-size: 0.8rem; font-weight: 600;
+            background: var(--surface-alt); border: 1px solid var(--border); color: var(--text-secondary);
+        }
+        .format-badge.supported { background: #ecfdf5; border-color: var(--success); color: var(--success); }
+        .format-badge.partial { background: #fffbeb; border-color: var(--warning); color: var(--warning); }
+
+        /* 统计卡片 */
+        .stats-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 14px; margin-bottom: 24px;
+        }
+        .stat-card {
+            background: var(--surface); border-radius: var(--radius);
+            padding: 18px 20px; border: 1px solid var(--border);
+            box-shadow: var(--shadow-sm); transition: all 0.2s;
+        }
+        .stat-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+        .stat-value { font-size: 2rem; font-weight: 800; font-family: var(--font-mono); }
+        .stat-label { font-size: 0.82rem; color: var(--text-secondary); margin-top: 4px; }
+        .stat-card.accent-blue { border-left: 4px solid var(--primary); }
+        .stat-card.accent-green { border-left: 4px solid var(--success); }
+        .stat-card.accent-purple { border-left: 4px solid var(--accent); }
+        .stat-card.accent-orange { border-left: 4px solid var(--warning); }
+
+        /* 压缩包卡片 */
+        .archives-list { display: flex; flex-direction: column; gap: 16px; }
+        .archive-card {
+            background: var(--surface); border-radius: var(--radius-lg);
+            border: 1px solid var(--border); box-shadow: var(--shadow-sm);
+            overflow: hidden; transition: all 0.2s;
+        }
+        .archive-card-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 16px 20px; cursor: pointer; user-select: none; gap: 12px;
+        }
+        .archive-card-header:hover { background: var(--surface-hover); }
+        .archive-info { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; }
+        .archive-icon {
+            width: 44px; height: 44px; border-radius: 8px;
+            display: flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0;
+        }
+        .archive-icon.zip { background: #fef3c7; color: #d97706; }
+        .archive-icon.tar { background: #fce7f3; color: #db2777; }
+        .archive-icon.gz  { background: #dbeafe; color: #2563eb; }
+        [data-theme="dark"] .archive-icon.zip { background: #3d2e0a; color: #fbbf24; }
+        [data-theme="dark"] .archive-icon.tar { background: #3b1c2e; color: #f472b6; }
+        [data-theme="dark"] .archive-icon.gz  { background: #1e3a5f; color: #60a5fa; }
+        .archive-name { font-weight: 600; font-size: 1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .archive-badge {
+            padding: 4px 10px; border-radius: 14px; font-size: 0.75rem; font-weight: 600;
+            background: var(--primary-light); color: var(--primary);
+        }
+        .collapse-icon { transition: transform 0.3s; font-size: 0.9rem; color: var(--text-muted); }
+        .archive-card.expanded .collapse-icon { transform: rotate(180deg); }
+        .archive-card-body { display: none; border-top: 1px solid var(--border); }
+        .archive-card.expanded .archive-card-body { display: block; }
+
+        .toolbar {
+            display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+            padding: 12px 20px; background: var(--surface-alt); border-bottom: 1px solid var(--border);
+        }
+        .search-input-wrapper { position: relative; flex: 1; min-width: 200px; }
+        .search-input {
+            width: 100%; padding: 9px 14px 9px 38px; border-radius: 22px;
+            border: 1.5px solid var(--border); background: var(--surface); color: var(--text);
+            font-size: 0.9rem; outline: none;
+        }
+        .search-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+        .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); }
+        .filter-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+        .filter-chip {
+            padding: 6px 14px; border-radius: 16px; font-size: 0.78rem; font-weight: 500;
+            cursor: pointer; border: 1px solid var(--border); background: var(--surface);
+            color: var(--text-secondary); transition: all 0.2s; white-space: nowrap;
+        }
+        .filter-chip.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+        .filter-chip:hover:not(.active) { background: var(--surface-hover); }
+
+        .table-wrapper { overflow-x: auto; max-height: 55vh; overflow-y: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.88rem; min-width: 700px; }
+        thead th {
+            background: var(--surface-alt); padding: 12px 14px; text-align: left;
+            font-weight: 600; color: var(--text-secondary); border-bottom: 2px solid var(--border);
+            cursor: pointer; user-select: none; white-space: nowrap; font-size: 0.8rem;
+        }
+        thead th:hover { color: var(--text); }
+        tbody tr { border-bottom: 1px solid var(--border); transition: background 0.15s; }
+        tbody tr:hover { background: var(--surface-hover); }
+        tbody td { padding: 10px 14px; white-space: nowrap; max-width: 350px; overflow: hidden; text-overflow: ellipsis; }
+        .file-name { font-weight: 500; }
+        .file-size { font-family: var(--font-mono); text-align: right; }
+        .empty-state { text-align: center; padding: 50px; color: var(--text-muted); }
+
+        .toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; }
+        .toast {
+            background: var(--surface); border: 1px solid var(--border); padding: 12px 18px;
+            border-radius: 8px; box-shadow: var(--shadow-lg); font-size: 0.9rem; font-weight: 500;
+            animation: toastIn 0.3s ease-out;
+        }
+        @keyframes toastIn { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: translateX(0); } }
+        .toast.success { border-left: 4px solid var(--success); }
+        .toast.error { border-left: 4px solid var(--danger); }
+        .toast.info { border-left: 4px solid var(--info); }
+    </style>
+</head>
+<body>
+<div class="app-container">
+    <header class="app-header">
+        <div class="header-brand">
+            <div class="header-icon">📦</div>
+            <span>压缩包查询工具</span>
+        </div>
+        <div style="display:flex; gap:10px; align-items:center;">
+            <button class="btn btn-sm btn-outline" id="btnClear" disabled onclick="clearAll()">🗑️ 清空</button>
+            <button class="btn btn-sm btn-outline" id="btnExport" disabled onclick="exportAllCSV()">📥 导出CSV</button>
+            <button class="theme-toggle" onclick="toggleTheme()">🌓</button>
+        </div>
+    </header>
+
+    <div class="upload-zone" id="uploadZone">
+        <span class="upload-icon">📂</span>
+        <h2>拖拽压缩包到此处</h2>
+        <p>或点击这里选择文件（支持多个）</p>
+        <div class="supported-formats">
+            <span class="format-badge supported">✅ ZIP</span>
+            <span class="format-badge supported">✅ TAR</span>
+            <span class="format-badge supported">✅ TAR.GZ / TGZ</span>
+            <span class="format-badge partial">⚠️ RAR（仅检测）</span>
+            <span class="format-badge partial">⚠️ 7Z（仅检测）</span>
+        </div>
+        <input type="file" id="fileInput" multiple accept=".zip,.tar,.gz,.tgz,.rar,.7z,.bz2,.xz" style="display:none">
+    </div>
+
+    <div class="stats-grid" id="statsGrid" style="display:none;"></div>
+    <div class="archives-list" id="archivesList"></div>
+</div>
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+    (function() {
+        const archives = []; // { id, name, size, format, entries, stats, error }
+        let idCounter = 0;
+        let theme = localStorage.getItem('archive-theme') || 'light';
+        document.documentElement.setAttribute('data-theme', theme);
+
+        const uploadZone = document.getElementById('uploadZone');
+        const fileInput = document.getElementById('fileInput');
+        const statsGrid = document.getElementById('statsGrid');
+        const archivesList = document.getElementById('archivesList');
+        const btnClear = document.getElementById('btnClear');
+        const btnExport = document.getElementById('btnExport');
+        const toastContainer = document.getElementById('toastContainer');
+
+        // 事件绑定
+        uploadZone.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', e => handleFiles(e.target.files));
+        uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
+        uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
+        uploadZone.addEventListener('drop', e => {
+            e.preventDefault();
+            uploadZone.classList.remove('drag-over');
+            handleFiles(e.dataTransfer.files);
+        });
+        document.addEventListener('keydown', e => {
+            if ((e.ctrlKey||e.metaKey) && e.key === 'o') { e.preventDefault(); fileInput.click(); }
+            if (e.key === 'Escape' && archives.length > 0) { clearAll(); }
+        });
+
+        // 主题切换
+        window.toggleTheme = () => {
+            theme = theme === 'light' ? 'dark' : 'light';
+            document.documentElement.setAttribute('data-theme', theme);
+            localStorage.setItem('archive-theme', theme);
+            toast(`已切换至${theme === 'dark' ? '深色' : '浅色'}主题`, 'info');
+        };
+
+        function toast(msg, type='info') {
+            const el = document.createElement('div');
+            el.className = `toast ${type}`;
+            el.textContent = msg;
+            toastContainer.appendChild(el);
+            setTimeout(() => el.remove(), 3000);
+        }
+
+        // 核心处理
+        async function handleFiles(files) {
+            const validFiles = Array.from(files).filter(f => f.size > 0);
+            if (validFiles.length === 0) { toast('未选择有效文件', 'error'); return; }
+
+            let successCount = 0, totalFileCount = 0;
+            for (const file of validFiles) {
+                try {
+                    const archive = await processFile(file);
+                    archives.push(archive);
+                    if (archive.type === 'supported') {
+                        successCount++;
+                        totalFileCount += archive.stats.totalFiles;
+                    }
+                } catch (err) {
+                    archives.push({
+                        id: idCounter++,
+                        name: file.name,
+                        size: file.size,
+                        format: detectFormat(file.name),
+                        type: 'error',
+                        error: err.message,
+                        entries: [],
+                        stats: { totalFiles:0, totalDirs:0, totalSize:0, compressed:file.size }
+                    });
+                }
+            }
+
+            if (successCount > 0) {
+                toast(`✅ 成功处理 ${successCount} 个压缩包，共 ${totalFileCount} 个文件`, 'success');
+            } else {
+                toast('⚠️ 未能解析任何压缩包（可能格式不支持或文件损坏）', 'error');
+            }
+            renderAll();
+            btnClear.disabled = archives.length === 0;
+            btnExport.disabled = archives.length === 0;
+            fileInput.value = '';
+        }
+
+        async function processFile(file) {
+            const ext = detectFormat(file.name);
+            // 读取文件头判断真实格式
+            const magic = await detectMagic(file);
+            const format = magic.confirmed ? magic.format : ext;
+
+            if (format === 'zip') return await processZip(file);
+            if (format === 'tar') return await processTar(file);
+            if (format === 'tar.gz' || format === 'tgz') return await processTarGz(file);
+            if (format === 'gz' && !file.name.toLowerCase().includes('.tar')) return await processGz(file);
+            if (format === 'rar' || format === '7z' || format === 'bz2' || format === 'xz') {
+                throw new Error(`浏览器端暂不支持 ${format.toUpperCase()} 格式的完整解析。请转换为 ZIP 后重试。`);
+            }
+            // 兜底尝试
+            try { return await processZip(file); } catch (_) {}
+            try { return await processTar(file); } catch (_) {}
+            throw new Error('无法识别的压缩格式');
+        }
+
+        // ZIP 处理
+        async function processZip(file) {
+            const buf = await file.arrayBuffer();
+            const zip = await JSZip.loadAsync(buf);
+            const entries = [];
+            const fileTypes = {};
+            let totalFiles = 0, totalDirs = 0, totalUncompressed = 0;
+
+            for (const [path, obj] of Object.entries(zip.files)) {
+                const isDir = obj.dir || path.endsWith('/');
+                const name = isDir ? path.replace(/\/$/, '') : path;
+                if (isDir) {
+                    totalDirs++;
+                    entries.push({ name, path, isDirectory: true, size: 0, compressed: 0, ext: '' });
+                } else {
+                    totalFiles++;
+                    const ext = getExt(name);
+                    fileTypes[ext] = (fileTypes[ext] || 0) + 1;
+                    // 尝试获取大小（可能不可用）
+                    const uncompSize = obj._data?.uncompressedSize || 0;
+                    const compSize = obj._data?.compressedSize || 0;
+                    totalUncompressed += uncompSize;
+                    entries.push({
+                        name: name.split('/').pop() || name,
+                        path,
+                        isDirectory: false,
+                        size: uncompSize,
+                        compressed: compSize,
+                        ext,
+                        ratio: uncompSize > 0 ? ((1 - compSize / uncompSize) * 100) : null
+                    });
+                }
+            }
+            return {
+                id: idCounter++,
+                name: file.name,
+                size: file.size,
+                format: 'zip',
+                type: 'supported',
+                entries,
+                stats: {
+                    totalFiles, totalDirs,
+                    totalSize: totalUncompressed,
+                    compressed: file.size,
+                    ratio: totalUncompressed > 0 ? ((1 - file.size / totalUncompressed) * 100) : null,
+                    fileTypes
+                }
+            };
+        }
+
+        // TAR 解析
+        function parseTarBuffer(buffer, archiveSize) {
+            const data = new Uint8Array(buffer);
+            const entries = [];
+            const fileTypes = {};
+            let totalFiles = 0, totalDirs = 0, totalSize = 0;
+            let offset = 0;
+
+            while (offset + 512 <= data.length) {
+                const header = data.slice(offset, offset + 512);
+                if (header.every(b => b === 0)) break;
+
+                let name = '';
+                for (let i = 0; i < 100; i++) { if (header[i] === 0) break; name += String.fromCharCode(header[i]); }
+                let sizeStr = '';
+                for (let i = 124; i < 136; i++) { if (header[i] === 0) break; sizeStr += String.fromCharCode(header[i]); }
+                const fileSize = parseInt(sizeStr, 8) || 0;
+                const typeFlag = String.fromCharCode(header[156]);
+                const isDir = typeFlag === '5' || name.endsWith('/');
+
+                if (!name) { offset += 512; continue; }
+
+                if (isDir) {
+                    totalDirs++;
+                    entries.push({ name: name.replace(/\/$/, ''), path: name, isDirectory: true, size: 0, compressed: 0, ext: '' });
+                } else {
+                    totalFiles++;
+                    totalSize += fileSize;
+                    const ext = getExt(name);
+                    fileTypes[ext] = (fileTypes[ext] || 0) + 1;
+                    entries.push({
+                        name: name.split('/').pop() || name,
+                        path: name,
+                        isDirectory: false,
+                        size: fileSize,
+                        compressed: fileSize,
+                        ext,
+                        ratio: 0
+                    });
+                }
+                offset += 512 + Math.ceil(fileSize / 512) * 512;
+            }
+            return {
+                entries,
+                stats: {
+                    totalFiles, totalDirs,
+                    totalSize,
+                    compressed: archiveSize,
+                    ratio: totalSize > 0 ? ((1 - archiveSize / totalSize) * 100) : null,
+                    fileTypes
+                }
+            };
+        }
+
+        async function processTar(file) {
+            const buf = await file.arrayBuffer();
+            const parsed = parseTarBuffer(buf, file.size);
+            return { id: idCounter++, name: file.name, size: file.size, format: 'tar', type: 'supported', ...parsed };
+        }
+
+        async function processTarGz(file) {
+            const buf = await file.arrayBuffer();
+            const decompressed = pako.ungzip(new Uint8Array(buf));
+            const parsed = parseTarBuffer(decompressed.buffer, file.size);
+            return { id: idCounter++, name: file.name, size: file.size, format: 'tar.gz', type: 'supported', ...parsed };
+        }
+
+        async function processGz(file) {
+            const buf = await file.arrayBuffer();
+            const decompressed = pako.ungzip(new Uint8Array(buf));
+            const name = file.name.replace(/\.gz$/i, '');
+            const ext = getExt(name);
+            return {
+                id: idCounter++,
+                name: file.name,
+                size: file.size,
+                format: 'gz',
+                type: 'supported',
+                entries: [{
+                    name, path: name, isDirectory: false,
+                    size: decompressed.length, compressed: file.size,
+                    ext, ratio: ((1 - file.size / decompressed.length) * 100)
+                }],
+                stats: {
+                    totalFiles: 1, totalDirs: 0,
+                    totalSize: decompressed.length,
+                    compressed: file.size,
+                    ratio: ((1 - file.size / decompressed.length) * 100),
+                    fileTypes: { [ext]: 1 }
+                }
+            };
+        }
+
+        // 辅助函数
+        function detectFormat(name) {
+            const n = name.toLowerCase();
+            if (n.endsWith('.tar.gz') || n.endsWith('.tgz')) return 'tar.gz';
+            if (n.endsWith('.tar.bz2')) return 'bz2';
+            if (n.endsWith('.tar.xz')) return 'xz';
+            const ext = name.split('.').pop().toLowerCase();
+            return { zip:'zip', tar:'tar', gz:'gz', rar:'rar', '7z':'7z', bz2:'bz2', xz:'xz' }[ext] || ext;
+        }
+
+        async function detectMagic(file) {
+            if (file.size < 4) return { confirmed: false };
+            const buf = await file.slice(0, 16).arrayBuffer();
+            const b = new Uint8Array(buf);
+            if (b[0]===0x50 && b[1]===0x4B) return { format:'zip', confirmed:true };
+            if (b[0]===0x52 && b[1]===0x61 && b[2]===0x72) return { format:'rar', confirmed:true };
+            if (b[0]===0x37 && b[1]===0x7A && b[2]===0xBC) return { format:'7z', confirmed:true };
+            if (b[0]===0x1F && b[1]===0x8B) return { format:'gz', confirmed:true };
+            if (b[0]===0x42 && b[1]===0x5A) return { format:'bz2', confirmed:true };
+            return { confirmed: false };
+        }
+
+        function getExt(name) {
+            const base = name.split('/').pop() || name;
+            const idx = base.lastIndexOf('.');
+            return idx > 0 ? base.slice(idx+1).toLowerCase() : '（无扩展名）';
+        }
+
+        function formatSize(bytes) {
+            if (bytes == null || bytes === 0) return '0 B';
+            const units = ['B','KB','MB','GB']; let i = 0;
+            let val = bytes;
+            while (val >= 1024 && i < units.length-1) { val /= 1024; i++; }
+            return val.toFixed(1) + ' ' + units[i];
+        }
+
+        function formatRatio(ratio) {
+            if (ratio == null) return '—';
+            const sign = ratio > 0 ? '↓' : ratio < 0 ? '↑' : '';
+            return sign + Math.abs(ratio).toFixed(1) + '%';
+        }
+
+        // 渲染
+        function renderAll() {
+            renderStats();
+            renderArchives();
+        }
+
+        function renderStats() {
+            if (archives.length === 0) { statsGrid.style.display = 'none'; return; }
+            statsGrid.style.display = 'grid';
+
+            let totalFiles = 0, totalDirs = 0, totalUncomp = 0, totalComp = 0, supportedCount = 0;
+            const allTypes = {};
+            archives.forEach(a => {
+                if (a.type === 'supported') {
+                    supportedCount++;
+                    totalFiles += a.stats.totalFiles;
+                    totalDirs += a.stats.totalDirs;
+                    totalUncomp += a.stats.totalSize || 0;
+                    totalComp += a.stats.compressed || a.size;
+                    for (const [ext, cnt] of Object.entries(a.stats.fileTypes || {})) {
+                        allTypes[ext] = (allTypes[ext] || 0) + cnt;
+                    }
+                } else {
+                    totalComp += a.size;
+                }
+            });
+
+            const cards = [
+                { icon:'📦', value: archives.length, label:'压缩包总数', accent:'accent-blue' },
+                { icon:'📄', value: totalFiles, label:'文件总数', accent:'accent-green' },
+                { icon:'📁', value: totalDirs, label:'文件夹总数', accent:'accent-purple' },
+                { icon:'💾', value: formatSize(totalUncomp), label:'原始总大小', accent:'accent-orange' },
+                { icon:'🗜️', value: formatSize(totalComp), label:'压缩总大小', accent:'accent-blue' },
+                { icon:'📊', value: formatRatio(totalUncomp>0 ? (1 - totalComp/totalUncomp)*100 : null), label:'综合压缩率', accent:'accent-green' },
+                { icon:'🏷️', value: Object.keys(allTypes).length, label:'文件类型数', accent:'accent-purple' },
+            ];
+            statsGrid.innerHTML = cards.map(c => `
+                <div class="stat-card ${c.accent}">
+                    <div style="font-size:1.5rem; margin-bottom:6px;">${c.icon}</div>
+                    <div class="stat-value">${c.value}</div>
+                    <div class="stat-label">${c.label}</div>
+                </div>
+            `).join('');
+        }
+
+        function renderArchives() {
+            if (archives.length === 0) {
+                archivesList.innerHTML = `<div style="text-align:center; padding:40px; color:var(--text-muted);">📭 暂无压缩包</div>`;
+                return;
+            }
+            archivesList.innerHTML = archives.map((a, idx) => {
+                const isExpanded = idx === 0 && archives.length <= 3 ? 'expanded' : '';
+                const iconClass = a.type === 'supported' ? (a.format.includes('zip')?'zip': a.format.includes('tar')?'tar':'gz') : '';
+                const iconEmoji = a.type === 'supported' ? {zip:'📦',tar:'📼','tar.gz':'🗜️',gz:'🗜️'}[a.format]||'📄' : '❓';
+                const fileBadge = a.type === 'supported' 
+                    ? (a.stats.totalFiles === 0 ? '<span class="archive-badge" style="background:#fef2f2;color:#ef4444;">📭 空压缩包</span>' 
+                       : `<span class="archive-badge">📄 ${a.stats.totalFiles} 文件</span>`)
+                    : '<span class="archive-badge" style="background:#fef2f2;color:#ef4444;">⚠️ 解析失败</span>';
+
+                return `
+                <div class="archive-card ${isExpanded}" data-id="${a.id}">
+                    <div class="archive-card-header" onclick="this.parentElement.classList.toggle('expanded')">
+                        <div class="archive-info">
+                            <div class="archive-icon ${iconClass}">${iconEmoji}</div>
+                            <div>
+                                <div class="archive-name" title="${escapeHtml(a.name)}">${escapeHtml(a.name)}</div>
+                                <div style="font-size:0.8rem; color:var(--text-secondary);">${formatSize(a.size)} · ${a.format.toUpperCase()}</div>
+                            </div>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            ${fileBadge}
+                            <span class="collapse-icon">▼</span>
+                        </div>
+                    </div>
+                    <div class="archive-card-body">
+                        ${a.type === 'supported' ? renderDetail(a) : renderError(a)}
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        function renderDetail(archive) {
+            if (archive.entries.length === 0) {
+                return `<div class="empty-state"><span style="font-size:2rem;">📭</span><p>此压缩包内没有文件</p></div>`;
+            }
+            return `
+            <div class="toolbar">
+                <div class="search-input-wrapper">
+                    <span class="search-icon">🔍</span>
+                    <input class="search-input" placeholder="搜索文件名..." oninput="filterTable(this, ${archive.id})">
+                </div>
+                <div class="filter-chips">
+                    <span class="filter-chip active" onclick="setFilter('all', ${archive.id}, this)">全部</span>
+                    <span class="filter-chip" onclick="setFilter('files', ${archive.id}, this)">📄 文件</span>
+                    <span class="filter-chip" onclick="setFilter('dirs', ${archive.id}, this)">📁 目录</span>
+                </div>
+            </div>
+            <div class="table-wrapper">
+                <table>
+                    <thead><tr>
+                        <th>文件名</th><th>路径</th><th>类型</th><th style="text-align:right">原始大小</th><th style="text-align:right">压缩率</th>
+                    </tr></thead>
+                    <tbody id="tbody-${archive.id}">
+                        ${archive.entries.map(e => `
+                            <tr data-type="${e.isDirectory?'dir':'file'}" data-name="${escapeHtml(e.name).toLowerCase()}" data-ext="${e.ext}">
+                                <td class="file-name">${e.isDirectory?'📁':'📄'} ${escapeHtml(e.name)}${e.isDirectory?'/':''}</td>
+                                <td style="color:var(--text-muted);max-width:200px;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(e.path)}</td>
+                                <td>${e.isDirectory ? '目录' : e.ext||'文件'}</td>
+                                <td class="file-size">${e.isDirectory ? '—' : formatSize(e.size)}</td>
+                                <td class="file-size">${e.isDirectory ? '—' : formatRatio(e.ratio)}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>`;
+        }
+
+        function renderError(archive) {
+            return `
+            <div style="padding:30px; text-align:center;">
+                <span style="font-size:3rem;">⚠️</span>
+                <h3 style="color:var(--danger);">无法解析此压缩包</h3>
+                <p>${escapeHtml(archive.error)}</p>
+                <button class="btn btn-sm btn-outline" onclick="removeArchive(${archive.id})">🗑️ 移除</button>
+            </div>`;
+        }
+
+        // 交互
+        window.filterTable = (input, id) => {
+            const q = input.value.toLowerCase();
+            const rows = document.querySelectorAll(`#tbody-${id} tr`);
+            rows.forEach(row => {
+                const name = row.dataset.name;
+                row.style.display = name.includes(q) ? '' : 'none';
+            });
+        };
+
+        window.setFilter = (type, id, el) => {
+            const rows = document.querySelectorAll(`#tbody-${id} tr`);
+            rows.forEach(row => {
+                if (type === 'all') row.style.display = '';
+                else if (type === 'files') row.style.display = row.dataset.type === 'file' ? '' : 'none';
+                else if (type === 'dirs') row.style.display = row.dataset.type === 'dir' ? '' : 'none';
+            });
+            el.parentElement.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+            el.classList.add('active');
+        };
+
+        window.removeArchive = (id) => {
+            const idx = archives.findIndex(a => a.id === id);
+            if (idx >= 0) {
+                archives.splice(idx, 1);
+                renderAll();
+                btnClear.disabled = archives.length === 0;
+                btnExport.disabled = archives.length === 0;
+                toast('已移除压缩包', 'info');
+            }
+        };
+
+        window.clearAll = () => {
+            if (archives.length === 0) return;
+            archives.length = 0;
+            renderAll();
+            statsGrid.style.display = 'none';
+            btnClear.disabled = true;
+            btnExport.disabled = true;
+            toast('已清空所有压缩包', 'info');
+        };
+
+        function escapeHtml(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+        // 导出
+        window.exportAllCSV = () => {
+            if (archives.length === 0) return;
+            let csv = '\uFEFF压缩包,文件,路径,类型,原始大小,压缩率\n';
+            archives.forEach(a => {
+                if (a.type === 'supported') {
+                    a.entries.forEach(e => {
+                        csv += `"${a.name}","${e.name}","${e.path}","${e.isDirectory?'目录':'文件'}","${e.isDirectory?'':e.size}","${e.isDirectory?'':e.ratio}","\n`;
+                    });
+                } else {
+                    csv += `"${a.name}","—","—","错误","—","—"\n`;
+                }
+            });
+            download(csv, '压缩包汇总.csv');
+        };
+
+        function download(content, filename) {
+            const blob = new Blob([content], {type:'text/csv'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = filename;
+            a.click(); URL.revokeObjectURL(url);
+        }
+    })();
+</script>
+</body>
+</html>
