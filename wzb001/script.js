@@ -498,6 +498,7 @@ const websiteData = [{
         { name: "TUVRheinland", url: "https://www.tuv.com/greater-china/cn/", desc: "莱茵认证机构" },
         { name: "intertek", url: "https://www.intertek.com.cn/", desc: "天祥认证机构" },
         { name: "CQC", url: "https://www.cqc.com.cn/www/index.html", desc: "中国质量认证中心" },
+        { name: "ESTS", url: "https://www.estsglobal.com/zh-CN/services/all", desc: "全球性的审核认证机构" },
     ]
 }, {
     id: 11,
@@ -963,6 +964,11 @@ const websiteData = [{
         { name: "格式工厂", url: "http://pcgeshi.com/", desc: "格式转换" },
         { name: "ev录屏", url: "https://www.sootool.net/nexus/bi1/evluping.shtml?msclkid=1ea8e3bd237c12b4823d8b092c630dd1", desc: "录屏" },
         { name: "Everything", url: "https://www.voidtools.com/zh-cn/downloads/", desc: "文件检索" },
+        { name: "Rustdesk", url: "https://www.rustdesk.com.cn/index.html", desc: "远程桌面" },
+        { name: "GIMP", url: "https://gimp.org.cn/", desc: "图像处理" },
+        { name: "Handbrake", url: "https://handbrake.fr/downloads.php", desc: "视频音频转码" },  
+        { name: "OBS Studio", url: "https://s0ft.cuanfeng.cn/soft/261375.html?qhclickid=bcc94ddc253a8488", desc: "录屏" },  
+        { name: "Libreoffice", url: "https://zh-cn.libreoffice.org/", desc: "办公套件" },          
         { name: "Umi-OCR", url: "https://gitee.com/mirrors/Umi-OCR#https://gitee.com/link?target=https%3A%2F%2Fhiroi-sora.lanzoul.com%2Fs%2Fumi-ocr", desc: "OCR" },
         { name: "FastStone Capture", url: "https://www.faststonecapture.cn/", desc: "截长图" },
         { name: "小旺AI截图", url: "https://www.xiaowang.com/", desc: "截长图" },
@@ -1078,6 +1084,7 @@ const websiteData = [{
         { name: "ardot", url: "https://ardot.tencent.com/", desc: "AI-搞设计" },
         { name: "Miora", url: "https://miora.design/home", desc: "AI-搞设计" },      
         { name: "Kimi", url: "https://www.kimi.com/?chat_enter_method=change_model", desc: "在线AI" },  
+        { name: "Ollama", url: "https://ollama.com/", desc: "本地部署AI模型" },     
         { name: "千问", url: "https://www.qianwen.com/chat", desc: "在线AI" },
         { name: "WPS灵犀", url: "https://lingxi.wps.cn/echo", desc: "AI生成文档" },
         { name: "飞书多维表格", url: "https://acnkgpefayvj.feishu.cn/base", desc: "在线AI" },
