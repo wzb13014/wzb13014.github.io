@@ -1500,19 +1500,26 @@ function loadState() {
     }
 }
 
-function saveState() {
-    // 持久化部分（分类 / 设置）写入 localStorage
-    try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({
-            categories: state.categories,
-            deletedSeedUrls: state.deletedSeedUrls || [],
-            settings: state.settings
-        }));
-    } catch (e) {
-        toast('保存失败：本地存储可能已满', 'error');
-    }
-    // 会话部分（收藏 / 访问统计）单独落 sessionStorage
-    saveSession();
+// ----------- saveState 异步化：150ms 内多次写入合并为一次，避免同步 localStorage 阻塞 UI -----------
+let _saveStateTimer = null;
+function saveState(async = true) {
+    const doWrite = () => {
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify({
+                categories: state.categories,
+                deletedSeedUrls: state.deletedSeedUrls || [],
+                settings: state.settings
+            }));
+        } catch (e) {
+            toast('保存失败：本地存储可能已满', 'error');
+        }
+        saveSession();
+        _saveStateTimer = null;
+    };
+    if (!async) { doWrite(); return; }
+    if (_saveStateTimer) clearTimeout(_saveStateTimer);
+    // 去抖 150ms：连续操作（例如切换主题→切换密度→切视图）合并为一次写入
+    _saveStateTimer = setTimeout(doWrite, 150);
 }
 
 // 仅写入会话级数据（收藏 / 访问统计），无需重写全部卡片
@@ -1687,14 +1694,31 @@ function renderLevel1() {
         }
         el.dataset.group = name;
         tap(el, () => {
+            // --- 手机端提速：不调用 renderAll 全量重建，只做局部切换 + renderCardsOnly ---
+            // 1) 切换激活态：移除所有 nav-item active，当前点的加上
+            document.querySelectorAll('.nav-level1 .nav-item').forEach(n => n.classList.remove('active'));
+            el.classList.add('active');
+            // 2) 如果当前处于"仅看收藏"态 → 要移除"收藏" Pill，并退出收藏态
+            if (showFavorites) {
+                const pill = document.querySelector('.nav-level1 .nav-item.fav-pill');
+                if (pill) pill.remove();
+                showFavorites = false;
+            }
+            // 3) 记录当前分组 + 必要的分类修正
             currentGroup = name;
             const ids = getCategoriesByGroup(name).map(c => c.id);
             if (currentCategory !== 0 && !ids.includes(currentCategory)) currentCategory = 0;
             if (name === '全部') currentCategory = 0;
-            showFavorites = false;
+            // 4) 清空搜索
             searchQuery = ''; searchInput.value = '';
+            searchClear.style.display = 'none';
             pendingHighlight = null;
-            renderAll();
+            // 5) 重建二级菜单（二级数量少、DOM 轻，可以重建；但不重建一级）
+            renderLevel2();
+            // 6) 仅重绘卡片区（省掉 renderLevel1/renderLevel2/renderRecentPanel 等 60%+ DOM 操作）
+            renderCardsOnly();
+            // 7) 顶部滚动（改成 instant，手机端更跟手，不做 smooth 动画）
+            window.scrollTo({ top: 0, behavior: 'instant' });
         });
         navLevel1.appendChild(el);
     });
@@ -1702,7 +1726,16 @@ function renderLevel1() {
         const el = document.createElement('span');
         el.className = 'nav-item fav-pill active';
         el.innerHTML = ICONS.star + ' 收藏';
-        tap(el, () => { showFavorites = false; renderAll(); });
+        tap(el, () => {
+            // 从收藏态返回：重新渲染一级（因为要移除 fav-pill 并激活"全部"），但后续仍用 renderCardsOnly
+            showFavorites = false;
+            currentGroup = '全部';
+            currentCategory = 0;
+            renderLevel1();
+            renderLevel2();
+            renderCardsOnly();
+            window.scrollTo({ top: 0, behavior: 'instant' });
+        });
         navLevel1.appendChild(el);
     }
 }
@@ -1724,7 +1757,15 @@ function renderLevel2() {
     const allItem = document.createElement('span');
     allItem.className = 'sub-item' + (currentCategory === 0 ? ' active' : '');
     allItem.innerHTML = `全部`;
-    tap(allItem, () => { currentCategory = 0; pendingHighlight = null; renderAll(); });
+    tap(allItem, () => {
+        // --- 局部切换：不调用 renderAll ---
+        document.querySelectorAll('.subnav-inner .sub-item').forEach(n => n.classList.remove('active'));
+        allItem.classList.add('active');
+        currentCategory = 0;
+        pendingHighlight = null;
+        renderCardsOnly();
+        window.scrollTo({ top: 0, behavior: 'instant' });
+    });
     subnavInner.appendChild(allItem);
 
     categories.forEach(cat => {
@@ -1732,7 +1773,13 @@ function renderLevel2() {
         item.className = 'sub-item' + (cat.id === currentCategory ? ' active' : '');
         item.textContent = cat.title;
         tap(item, () => {
-            currentCategory = cat.id; pendingHighlight = null; renderAll();
+            // --- 局部切换：不调用 renderAll ---
+            document.querySelectorAll('.subnav-inner .sub-item').forEach(n => n.classList.remove('active'));
+            item.classList.add('active');
+            currentCategory = cat.id;
+            pendingHighlight = null;
+            renderCardsOnly();
+            window.scrollTo({ top: 0, behavior: 'instant' });
         });
         subnavInner.appendChild(item);
     });
@@ -2109,19 +2156,38 @@ function locateCard(categoryTitle, cardName) {
 }
 
 // ========================================================================
-//  性能调度：rAF 去抖（同一动画帧内多次渲染请求合并为 1 次，体感"反应快"）
+//  性能调度：rAF 去抖（同一帧内 / 指定时间窗口内多次渲染请求合并为 1 次，体感"反应快"）
 // ========================================================================
 let _rAFId = 0;
-const _rAFQueue = new Map(); // key(String) → fn
-function sched(key, fn) {
-    _rAFQueue.set(key, fn);
-    if (_rAFId) return;
-    _rAFId = requestAnimationFrame(() => {
-        _rAFId = 0;
-        const tasks = Array.from(_rAFQueue.values());
-        _rAFQueue.clear();
-        tasks.forEach(t => { try { t(); } catch (e) {} });
-    });
+const _rAFQueue = new Map(); // key(String) → { fn, delayTimerId? }
+/**
+ * 调度函数：合并高频渲染请求
+ * @param {string} key      任务标识（同 key 合并）
+ * @param {()=>void} fn     要执行的函数
+ * @param {number} [debounceMs=0]  额外的时间窗口（ms），用于搜索输入等连续打字场景
+ */
+function sched(key, fn, debounceMs = 0) {
+    const prev = _rAFQueue.get(key);
+    if (prev && prev.delayTimerId) clearTimeout(prev.delayTimerId);
+
+    const schedule = () => {
+        _rAFQueue.set(key, { fn }); // 进入 rAF 执行队列（清除 delay 标记）
+        if (_rAFId) return;
+        _rAFId = requestAnimationFrame(() => {
+            _rAFId = 0;
+            const tasks = Array.from(_rAFQueue.values()).map(v => v.fn);
+            _rAFQueue.clear();
+            tasks.forEach(t => { try { t(); } catch (e) {} });
+        });
+    };
+
+    if (debounceMs > 0) {
+        // 带时间窗口去抖：debounceMs 内再调用会重置计时器
+        const timerId = setTimeout(schedule, debounceMs);
+        _rAFQueue.set(key, { fn, delayTimerId: timerId });
+    } else {
+        schedule();
+    }
 }
 
 // ========================================================================
@@ -2189,6 +2255,9 @@ function renderRecentPanel(targetId = 'recentPanelItems') {
 // ========================================================================
 //  设置应用
 // ========================================================================
+// applySettings 缓存：避免每次都重新赋值大段 SVG innerHTML（手机端 innerHTML 解析较慢）
+let _appliedTheme = null;
+let _appliedViewMode = null;
 function applySettings() {
     const s = state.settings;
     document.body.classList.toggle('view-list', s.viewMode === 'list');
@@ -2196,12 +2265,20 @@ function applySettings() {
     document.body.classList.toggle('no-favicons', !s.showFavicons);
     document.body.classList.toggle('dark-mode', s.theme === 'dark');
 
-    themeIcon.innerHTML = s.theme === 'dark'
-        ? '<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><line x1="12" y1="2" x2="12" y2="5"></line><line x1="12" y1="19" x2="12" y2="22"></line><line x1="2" y1="12" x2="5" y2="12"></line><line x1="19" y1="12" x2="22" y2="12"></line><line x1="4.5" y1="4.5" x2="6.5" y2="6.5"></line><line x1="17.5" y1="17.5" x2="19.5" y2="19.5"></line><line x1="4.5" y1="19.5" x2="6.5" y2="17.5"></line><line x1="17.5" y1="6.5" x2="19.5" y2="4.5"></line></svg>'
-        : '<svg class="icon-svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>';
-    document.getElementById('viewIcon').innerHTML = s.viewMode === 'list'
-        ? '<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect></svg>'
-        : '<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="8" y1="6" x2="20" y2="6"></line><line x1="8" y1="12" x2="20" y2="12"></line><line x1="8" y1="18" x2="20" y2="18"></line><line x1="3.5" y1="6" x2="3.5" y2="6"></line><line x1="3.5" y1="12" x2="3.5" y2="12"></line><line x1="3.5" y1="18" x2="3.5" y2="18"></line></svg>';
+    // 只有主题真的变了才重新赋值主题图标 innerHTML
+    if (_appliedTheme !== s.theme) {
+        _appliedTheme = s.theme;
+        themeIcon.innerHTML = s.theme === 'dark'
+            ? '<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><line x1="12" y1="2" x2="12" y2="5"></line><line x1="12" y1="19" x2="12" y2="22"></line><line x1="2" y1="12" x2="5" y2="12"></line><line x1="19" y1="12" x2="22" y2="12"></line><line x1="4.5" y1="4.5" x2="6.5" y2="6.5"></line><line x1="17.5" y1="17.5" x2="19.5" y2="19.5"></line><line x1="4.5" y1="19.5" x2="6.5" y2="17.5"></line><line x1="17.5" y1="6.5" x2="19.5" y2="4.5"></line></svg>'
+            : '<svg class="icon-svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>';
+    }
+    // 只有视图模式真的变了才重新赋值视图图标 innerHTML
+    if (_appliedViewMode !== s.viewMode) {
+        _appliedViewMode = s.viewMode;
+        document.getElementById('viewIcon').innerHTML = s.viewMode === 'list'
+            ? '<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect></svg>'
+            : '<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="8" y1="6" x2="20" y2="6"></line><line x1="8" y1="12" x2="20" y2="12"></line><line x1="8" y1="18" x2="20" y2="18"></line><line x1="3.5" y1="6" x2="3.5" y2="6"></line><line x1="3.5" y1="12" x2="3.5" y2="12"></line><line x1="3.5" y1="18" x2="3.5" y2="18"></line></svg>';
+    }
 
     updateSettingsMenu();
 }
@@ -2239,12 +2316,22 @@ function toggleDensity() {
 }
 function toggleFavicons() {
     state.settings.showFavicons = !state.settings.showFavicons;
-    saveState(); applySettings(); renderAll();
+    saveState(); applySettings();
+    // 网站图标开关只影响卡片渲染，不用全量 renderAll
+    renderCardsOnly();
 }
 function toggleFavFilter() {
     showFavorites = !showFavorites;
     searchQuery = ''; searchInput.value = '';
-    saveState(); renderAll();
+    searchClear.style.display = 'none';
+    saveState();
+    // "仅看收藏" 会增删一级菜单的"收藏" Pill，所以重建一级菜单；但仍用 renderCardsOnly 省掉 recentPanel
+    currentGroup = '全部'; currentCategory = 0;
+    renderLevel1();
+    renderLevel2();
+    renderCardsOnly();
+    updateSettingsMenu();
+    window.scrollTo({ top: 0, behavior: 'instant' });
 }
 
 // ========================================================================
@@ -2625,7 +2712,9 @@ function renderSearchHistory() {
             if (e.target.classList.contains('sh-del')) {
                 state.settings.searchHistory = h.filter(x => x !== q); saveState(); renderSearchHistory(); return;
             }
-            searchInput.value = q; searchQuery = q; searchHistoryEl.style.display = 'none'; renderAll();
+            searchInput.value = q; searchQuery = q; searchHistoryEl.style.display = 'none';
+            // 改用 renderCardsOnly，不重建整个页面
+            sched('cards', renderCardsOnly);
         });
         searchHistoryEl.appendChild(item);
     });
@@ -2773,13 +2862,13 @@ function bindEvents() {
         });
     }
 
-    // 搜索（使用 rAF 节流 + renderCardsOnly 轻量渲染，避免搜索时连续重绘整个页面）
+    // 搜索（去抖 120ms + rAF 节流 + renderCardsOnly 轻量渲染，避免搜索打字时连续重绘）
     searchInput.addEventListener('input', (e) => {
         searchQuery = e.target.value;
         searchClear.style.display = searchQuery ? 'flex' : 'none';
         searchHistoryEl.style.display = 'none';
         pendingHighlight = null;
-        sched('cards', renderCardsOnly);
+        sched('cards', renderCardsOnly, 120);
     });
     searchInput.addEventListener('focus', renderSearchHistory);
     searchInput.addEventListener('keydown', (e) => {

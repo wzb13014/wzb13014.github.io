@@ -185,26 +185,6 @@ body {
 /* 手机端专用：数据按钮（默认桌面端隐藏） */
 #dataDropdown { display: none; }
 
-/* 设置菜单中的 <a> 标签：外观与 button 一致 */
-.settings-menu .menu-link {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    width: 100%;
-    padding: 10px 16px;
-    background: transparent;
-    border: none;
-    color: var(--text-primary);
-    font-size: 14px;
-    cursor: pointer;
-    white-space: nowrap;
-    text-decoration: none;
-    border-radius: 6px;
-    transition: background 0.15s ease;
-}
-.settings-menu .menu-link:hover { background: var(--bg-tertiary); }
-.settings-menu .menu-link .icon-svg { width: 18px; height: 18px; flex-shrink: 0; }
-
 /* 数据菜单内：最近访问子面板样式 */
 .data-menu .dm-recent-section { display: flex; flex-direction: column; }
 .data-menu .dm-recent-panel {
@@ -742,7 +722,8 @@ body.modal-open {
 .dropdown-menu.open {
     display: flex;
 }
-.dropdown-menu button {
+.dropdown-menu button,
+.settings-menu .menu-link {
     display: flex;
     align-items: center;
     gap: 10px;
@@ -755,8 +736,12 @@ body.modal-open {
     font-size: 14px;
     text-align: left;
     transition: background 0.15s;
+    text-decoration: none;
+    width: 100%;
+    white-space: nowrap;
 }
-.dropdown-menu button:hover {
+.dropdown-menu button:hover,
+.settings-menu .menu-link:hover {
     background: var(--bg-tertiary);
 }
 .dropdown-menu button.active {
@@ -765,6 +750,46 @@ body.modal-open {
 }
 .dropdown-menu button.danger {
     color: #ff453a;
+}
+/* 统一菜单项内的图标大小，确保对齐 */
+.dropdown-menu button .icon-svg,
+.settings-menu .menu-link .icon-svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+}
+
+/* ===== 设置菜单：强制所有选项严格左对齐（桌面端 + 移动端通用） ===== */
+.settings-menu button,
+.settings-menu .menu-link {
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: flex-start !important; /* 强制主轴左对齐 */
+    align-items: center !important;
+    text-align: left !important;
+    /* 防止 span 被挤压后图标和文字不对齐 */
+}
+.settings-menu button > .icon-svg,
+.settings-menu .menu-link > .icon-svg {
+    /* 图标严格左对齐，不随文字变化 */
+    margin-left: 0;
+}
+.settings-menu button > span,
+.settings-menu .menu-link > span {
+    /* 文字紧跟图标，没有额外偏移 */
+    flex: 0 1 auto;
+    margin: 0;
+}
+
+/* ===== 桌面端：设置内隐藏「切换卡片/列表视图」和「网址征集」 =====
+   桌面端顶栏已有独立的 viewBtn（切换视图）和网址征集 + 号按钮，无需在设置内重复
+   移动端：保留在设置内（因为移动端顶栏合并了按钮）
+   断点：>= 769px 视为桌面端 */
+@media (min-width: 769px) {
+    .settings-menu [data-action="viewmode"],
+    .settings-menu [data-action="solicit"] {
+        display: none !important;
+    }
 }
 
 /* ===== 二级菜单：添加分类 + 一键打开 ===== */
@@ -1758,7 +1783,8 @@ button,
         min-width: 200px;
         right: 4px;
     }
-    .settings-menu button {
+    .settings-menu button,
+    .settings-menu .menu-link {
         min-height: 46px;
         padding: 0 16px;
     }
