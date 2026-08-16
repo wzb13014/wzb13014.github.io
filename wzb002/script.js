@@ -1608,25 +1608,25 @@ const contextMenu = document.getElementById('contextMenu');
 const settingsMenuEl = document.getElementById('settingsMenu');
 
 // ========================================================================
-//  手机端：顶栏 + 一级菜单 fixed 后的高度自适应（防止遮挡最上方卡片）
-//  - 手机端 CSS 中 top-nav 和 nav-level1 都是 fixed，脱离文档流，会遮挡内容
-//  - 本函数实时计算两个控件的真实高度，写入 CSS 变量供 body padding-top / nav-level1 top 使用
+//  手机端：顶栏（含 Logo + 搜索 + 一级菜单）整体 fixed 后的高度自适应
+//  - HTML 中 #topNav 本身就包裹了 Logo 行和 .nav-level1（是同一个父 <nav>）
+//  - 所以只需读取 #topNav 一个节点的真实总高度，不需要分开算两个值；
+//    保证 Logo 与一级菜单永远是一块整体矩形，绝对不会出现缝隙或错动。
 // ========================================================================
 const IS_MOBILE = () => window.matchMedia && window.matchMedia('(max-width: 768px)').matches;
 function refreshMobileFixedTopHeights() {
     if (!IS_MOBILE()) return;
-    if (!topNav || !navLevel1) return;
-    // 强制下一帧（rAF）读取，避免布局未稳定（一级菜单刚 render 完可能还没 measure）
+    if (!topNav) return;
+    // rAF 保证在 layout 之后读取（避免 renderLevel1 刚改 DOM 高度未稳定）
     requestAnimationFrame(() => {
-        const h1 = topNav.offsetHeight || 56;         // 顶栏真实高度
-        const h2 = navLevel1.offsetHeight || 54;      // 一级菜单真实高度
-        const root = document.documentElement;
-        root.style.setProperty('--top-nav-h', h1 + 'px');
-        root.style.setProperty('--fixed-top-total-h', (h1 + h2) + 'px');
+        const totalH = topNav.offsetHeight || 110;  // 父容器真实高度：Logo 行高 + nav-level1 行高
+        document.documentElement.style.setProperty('--fixed-top-total-h', totalH + 'px');
+        // 清理上一轮遗留的单变量（不再使用）
+        document.documentElement.style.removeProperty('--top-nav-h');
     });
 }
-// 监听 resize / orientationchange（横竖屏切换时高度可能会变）
-window.addEventListener('resize', refreshMobileFixedTopHeights);
+// 窗口变化 / 横竖屏切换重新测量高度
+window.addEventListener('resize',            refreshMobileFixedTopHeights);
 window.addEventListener('orientationchange', refreshMobileFixedTopHeights);
 
 // ========================================================================

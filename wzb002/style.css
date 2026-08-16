@@ -1795,8 +1795,11 @@ button,
         padding: 0 16px;
     }
 
-    /* ======== 手机端：顶部导航 + 一级菜单整体固定（上下滑不动）======== */
-    /* 覆盖原本的 sticky top:8px，改成 position: fixed 钉死在屏幕顶端（100% 不跟随滚动） */
+    /* ======== 手机端：顶部导航（含"网址库"Logo + 搜索 + 一级菜单）整体作为单一 fixed 容器 ========
+       重要：HTML 中 .nav-level1 本身就是 #topNav 的子元素（被同一个 <nav> 包裹），
+            因此只需给父 #topNav 加一个 fixed，二者永远是同一个整体矩形，
+            绝对不会出现"橡皮筋回弹错动 / 缝隙 / 重叠分开"的情况！
+            不再给 .nav-level1 单独加 fixed（避免两个独立 fixed 原子性更新错动） */
     .top-nav {
         position: fixed !important;
         top: 0 !important;
@@ -1810,25 +1813,28 @@ button,
         border-top: none !important;
         backdrop-filter: blur(18px) saturate(160%);
         -webkit-backdrop-filter: blur(18px) saturate(160%);
-    }
-    /* 一级菜单：fixed 钉在 top-nav 正下方，不跟随滚动 */
-    .nav-level1 {
-        position: fixed !important;
-        top: var(--top-nav-h, 56px) !important;  /* 由 JS 动态写入精确值，兜底 56px */
-        left: 0 !important;
-        right: 0 !important;
-        z-index: 199 !important;
-        background: var(--bg-primary) !important;  /* 不透底，防止卡片透上来 */
-        backdrop-filter: blur(14px) saturate(150%);
-        -webkit-backdrop-filter: blur(14px) saturate(150%);
-        border-top: none !important;
+        /* 整个 fixed 容器底部边界线 + 轻投影，与卡片区视觉分隔（代替原来 nav-level1 独立的 border） */
         border-bottom: 1px solid var(--border-color) !important;
-        margin: 0 !important;
-        padding: 8px 10px 8px !important;
-        /* 预留下方 1px 阴影分隔感 */
         box-shadow: 0 3px 10px -6px var(--card-shadow);
     }
-    /* 因 fixed 脱离文档流，body 需加顶部占位 padding，否则最上面的卡片会被顶栏 + 一级菜单遮挡 */
+    /* 一级菜单：在父 fixed 容器内部正常 block 排版（不单独 fixed，不与 Logo 区分开）
+       保留背景色和 blur，使一级菜单行视觉上和 Logo 行同属一个整体面板 */
+    .nav-level1 {
+        position: static !important;   /* 取消之前错误的独立 fixed */
+        top: auto !important;
+        left: auto !important;
+        right: auto !important;
+        background: transparent !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        border-top: none !important;
+        border-bottom: none !important;   /* 底边改由父 #topNav 统一提供 */
+        margin: 0 !important;
+        padding: 6px 10px 8px !important;
+        box-shadow: none !important;
+    }
+    /* 因整个父 #topNav fixed 脱离文档流，body 顶部占位，防止遮挡第一张卡片
+       --fixed-top-total-h 由 JS 动态写入：就是整个 #topNav 父容器的真实高度（含 Logo 行 + nav-level1 行） */
     body {
         padding-top: calc(var(--fixed-top-total-h, 110px) + var(--sa-top) + 4px) !important;
     }
