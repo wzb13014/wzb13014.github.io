@@ -1686,7 +1686,7 @@ function renderLevel1() {
             el.textContent = name;
         }
         el.dataset.group = name;
-        el.addEventListener('click', () => {
+        tap(el, () => {
             currentGroup = name;
             const ids = getCategoriesByGroup(name).map(c => c.id);
             if (currentCategory !== 0 && !ids.includes(currentCategory)) currentCategory = 0;
@@ -1702,7 +1702,7 @@ function renderLevel1() {
         const el = document.createElement('span');
         el.className = 'nav-item fav-pill active';
         el.innerHTML = ICONS.star + ' 收藏';
-        el.addEventListener('click', () => { showFavorites = false; renderAll(); });
+        tap(el, () => { showFavorites = false; renderAll(); });
         navLevel1.appendChild(el);
     }
 }
@@ -1724,14 +1724,14 @@ function renderLevel2() {
     const allItem = document.createElement('span');
     allItem.className = 'sub-item' + (currentCategory === 0 ? ' active' : '');
     allItem.innerHTML = `全部`;
-    allItem.addEventListener('click', () => { currentCategory = 0; pendingHighlight = null; renderAll(); });
+    tap(allItem, () => { currentCategory = 0; pendingHighlight = null; renderAll(); });
     subnavInner.appendChild(allItem);
 
     categories.forEach(cat => {
         const item = document.createElement('span');
         item.className = 'sub-item' + (cat.id === currentCategory ? ' active' : '');
         item.textContent = cat.title;
-        item.addEventListener('click', () => {
+        tap(item, () => {
             currentCategory = cat.id; pendingHighlight = null; renderAll();
         });
         subnavInner.appendChild(item);
@@ -2143,10 +2143,15 @@ function renderCardsOnly() {
 // ========================================================================
 //  最近访问条
 // ========================================================================
-function renderRecentPanel() {
+/**
+ * 渲染最近访问 chip
+ * @param {string} [targetId] 目标容器 id，默认 'recentPanelItems'（桌面），可传 'dataRecentItems'（移动端数据菜单内）
+ */
+function renderRecentPanel(targetId = 'recentPanelItems') {
     const byUid = new Map(getAllSites().map(x => [x.site.uid, x]));
     const items = recentUids.map(u => byUid.get(u)).filter(Boolean).slice(0, 20);
-    const panel = document.getElementById('recentPanelItems');
+    const panel = document.getElementById(targetId);
+    if (!panel) return;
     panel.innerHTML = '';
     if (items.length === 0) {
         panel.innerHTML = '<div class="recent-empty">暂无最近访问记录</div>';
@@ -2160,7 +2165,11 @@ function renderRecentPanel() {
         chip.title = site.name + '\n' + site.url;
         chip.addEventListener('click', () => {
             recordVisit(site.uid);
-            document.getElementById('recentPanel').classList.remove('open');
+            // 同时关闭两个可能的父面板（桌面 recentPanel + 移动端 dataRecentPanel）
+            const rp = document.getElementById('recentPanel');
+            if (rp) rp.classList.remove('open');
+            const dm = document.getElementById('dataMenu');
+            if (dm) dm.classList.remove('open');
         });
         const host = getHostname(site.url);
         if (state.settings.showFavicons && host) {
@@ -2637,38 +2646,132 @@ function toast(msg, type = 'info') {
 }
 
 // ========================================================================
+//  点击速度优化：tap() 辅助函数
+//  - 同时绑定 click + touchend
+//  - touchend 在移动端比 click 早 100~300ms（跳过浏览器 click 300ms 等待）
+//  - touchend 触发后 preventDefault + flag，避免后续 ghost click
+// ========================================================================
+/**
+ * 为元素绑定"轻触即响应"的事件（移动端更快）
+ * @param {Element} el    目标 DOM 元素
+ * @param {(e:Event)=>void} handler  处理函数（返回 false 可阻止默认行为/冒泡）
+ */
+function tap(el, handler) {
+    if (!el) return;
+    let lastTouchEndAt = 0;
+    let handledByTouch = false;
+
+    el.addEventListener('touchend', (e) => {
+        // 若 touchstart→touchend 之间手指移动超过阈值，就不视作 tap（避免滚动误触）
+        const touch = e.changedTouches[0];
+        if (touch) {
+            const startX = typeof el.__tapStartX === 'number' ? el.__tapStartX : touch.clientX;
+            const startY = typeof el.__tapStartY === 'number' ? el.__tapStartY : touch.clientY;
+            const dx = Math.abs(touch.clientX - startX);
+            const dy = Math.abs(touch.clientY - startY);
+            if (dx > 10 || dy > 10) return; // 移动距离太大 → 不是点击
+        }
+        lastTouchEndAt = Date.now();
+        handledByTouch = true;
+        e.preventDefault();
+        e.stopPropagation();
+        try { handler.call(el, e); } catch (err) { /* 静默 */ }
+        // 下一帧重置标记（click 会紧接着很快触发）
+        setTimeout(() => { handledByTouch = false; }, 400);
+    }, { passive: false });
+
+    // touchstart 记录起始坐标
+    el.addEventListener('touchstart', (e) => {
+        const t = e.touches[0];
+        if (t) { el.__tapStartX = t.clientX; el.__tapStartY = t.clientY; }
+    }, { passive: true });
+
+    // click 兜底（桌面端 + 触控笔等非手指触发）
+    el.addEventListener('click', (e) => {
+        // 如果 400ms 内已经被 touchend 处理过，忽略这个 ghost click
+        if (handledByTouch || (Date.now() - lastTouchEndAt) < 400) return;
+        try { handler.call(el, e); } catch (err) { /* 静默 */ }
+    });
+}
+
+// ========================================================================
 //  事件绑定
 // ========================================================================
 function bindEvents() {
-    themeToggle.addEventListener('click', toggleTheme);
-    document.getElementById('statsBtn').addEventListener('click', openStats);
-    document.getElementById('viewBtn').addEventListener('click', toggleView);
+    // ==== 预先声明所有 DOM 变量（避免暂时性死区问题） ====
+    const settingsBtn   = document.getElementById('settingsBtn');
+    const recentBtn     = document.getElementById('recentBtn');
+    const recentPanel   = document.getElementById('recentPanel');
+    const dataBtn       = document.getElementById('dataBtn');
+    const dataMenuEl    = document.getElementById('dataMenu');
 
-    // 设置下拉：显示密度 / 网站图标 / 快捷键
-    const settingsBtn = document.getElementById('settingsBtn');
-    settingsBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
+    // ==== 高频按钮全部改用 tap()：移动端 touchend 直触，比 click 快 100~300ms ====
+    tap(themeToggle, toggleTheme);
+    tap(document.getElementById('statsBtn'), openStats);
+    tap(document.getElementById('viewBtn'), toggleView);
+
+    // 设置下拉：显示密度 / 网站图标 / 视图切换 / 网址征集 / 快捷键
+    tap(settingsBtn, () => {
+        // 关闭其他可能打开的下拉
+        recentPanel?.classList.remove('open');
+        dataMenuEl?.classList.remove('open');
         updateSettingsMenu();
-        settingsMenuEl.classList.toggle('open');
+        requestAnimationFrame(() => settingsMenuEl.classList.toggle('open'));
     });
+    // settingsMenu 委托：点击其中按钮/链接时处理（用 click 兜底即可，上层按钮已经 tap）
     settingsMenuEl.addEventListener('click', (e) => {
-        const action = e.target.closest('button')?.dataset.action;
+        // 兼容 button[data-action] 与 a.menu-link[data-action]
+        const btn = e.target.closest('[data-action]');
+        const action = btn?.dataset.action;
         if (!action) return;
         settingsMenuEl.classList.remove('open');
         if (action === 'density') toggleDensity();
         else if (action === 'favicon') toggleFavicons();
         else if (action === 'favfilter') toggleFavFilter();
+        else if (action === 'viewmode') toggleView();
         else if (action === 'shortcut') openModal('helpModal');
+        // solicit（网址征集）是 <a target="_blank">，浏览器原生打开新标签页，无需额外处理
     });
 
-    // 最近访问（按钮 + 下拉面板）
-    const recentBtn = document.getElementById('recentBtn');
-    const recentPanel = document.getElementById('recentPanel');
-    recentBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        renderRecentPanel();
-        recentPanel.classList.toggle('open');
+    // 最近访问（桌面端：按钮 + 下拉面板）
+    tap(recentBtn, () => {
+        // 关闭其他下拉
+        settingsMenuEl?.classList.remove('open');
+        dataMenuEl?.classList.remove('open');
+        renderRecentPanel('recentPanelItems');
+        requestAnimationFrame(() => recentPanel?.classList.toggle('open'));
     });
+
+    // 手机端数据按钮（合并数据统计 + 最近访问）
+    tap(dataBtn, () => {
+        // 关闭其他下拉
+        settingsMenuEl?.classList.remove('open');
+        recentPanel?.classList.remove('open');
+        requestAnimationFrame(() => dataMenuEl?.classList.toggle('open'));
+    });
+    // 数据菜单内委托
+    if (dataMenuEl) {
+        dataMenuEl.addEventListener('click', (e) => {
+            const btn = e.target.closest('[data-data-action]');
+            const a = btn?.dataset.dataAction;
+            if (!a) return;
+            if (a === 'stats') {
+                dataMenuEl.classList.remove('open');
+                openStats();
+            } else if (a === 'recent') {
+                // 切换最近访问子面板显示
+                const sub = document.getElementById('dataRecentPanel');
+                if (sub) {
+                    const shown = sub.style.display !== 'none';
+                    sub.style.display = shown ? 'none' : 'block';
+                    if (!shown) {
+                        // 展开时才渲染一次
+                        renderRecentPanel('dataRecentItems');
+                    }
+                }
+            }
+        });
+    }
 
     // 搜索（使用 rAF 节流 + renderCardsOnly 轻量渲染，避免搜索时连续重绘整个页面）
     searchInput.addEventListener('input', (e) => {
@@ -2682,7 +2785,7 @@ function bindEvents() {
     searchInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') { addSearchHistory(searchInput.value); searchHistoryEl.style.display = 'none'; }
     });
-    searchClear.addEventListener('click', () => {
+    tap(searchClear, () => {
         searchInput.value = ''; searchQuery = '';
         searchClear.style.display = 'none';
         sched('cards', renderCardsOnly);
@@ -2751,6 +2854,7 @@ function bindEvents() {
     document.addEventListener('click', (e) => {
         if (!e.target.closest('#recentDropdown')) document.getElementById('recentPanel').classList.remove('open');
         if (!e.target.closest('#settingsDropdown')) settingsMenuEl.classList.remove('open');
+        if (!e.target.closest('#dataDropdown')) document.getElementById('dataMenu')?.classList.remove('open');
         hideContextMenu();
     });
     document.addEventListener('scroll', hideContextMenu, true);
