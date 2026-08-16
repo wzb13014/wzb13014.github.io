@@ -221,7 +221,7 @@ const RAW_DATA = [{
     ]
 }, {
     id: 7, title: "其他标准", icon: "fa-file-alt", websites: [
-       { name: "企业标准信息公共服务平台", url: "https://www.qybz.org.cn/", desc: "标准下载" },
+        { name: "企业标准信息公共服务平台", url: "https://www.qybz.org.cn/", desc: "标准下载" },
         { name: "特种设备安全检查局", url: "https://www.samr.gov.cn/tzsbj/zcfg/aqjsgf/index.html", desc: "安全技术规范" },
         { name: "国家统计局", url: "https://www.stats.gov.cn/", desc: "标准" },
         { name: "中国民用航空适航审定中心", url: "https://acc.caac.gov.cn/ZCFG/index.html", desc: "航空政策法规" },
@@ -749,6 +749,7 @@ const RAW_DATA = [{
         { name: "XLS转换XLSX", url: "https://wzb13014.github.io/wzb/tool164", desc: "工具" },
         { name: "图片EXIF查看器", url: "https://wzb13014.github.io/wzb/tool165", desc: "工具" },
         { name: "更新日志", url: "https://wzb13014.github.io/wzb/tool168", desc: "工具" },
+        { name: "岗位职责说明书", url: "https://wzb13014.github.io/wzb/tool169", desc: "工具" },
         { name: "登山海拔与含氧量", url: "https://wzb13014.github.io/wzb/tool138", desc: "查询" },
         { name: "自驾油耗与过路费合计计算器", url: "https://wzb13014.github.io/wzb/tool139", desc: "查询" },
         { name: "行李重量尺寸合规检查器", url: "https://wzb13014.github.io/wzb/tool140", desc: "查询" },
