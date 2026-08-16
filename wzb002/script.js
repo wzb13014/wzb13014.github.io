@@ -1628,6 +1628,18 @@ function refreshMobileFixedTopHeights() {
 // 窗口变化 / 横竖屏切换重新测量高度
 window.addEventListener('resize',            refreshMobileFixedTopHeights);
 window.addEventListener('orientationchange', refreshMobileFixedTopHeights);
+// 关键修复：用 ResizeObserver 持续盯住顶栏真实高度。
+// 首屏冷加载时，CSS/字体/一级菜单项渲染完成的时机不确定，单次测量（init / load）可能拿到
+// 布局未稳定时的偏大值，导致"进入时间隙大、刷新后才正常"。
+// 顶栏高度一旦因任何原因变化（布局稳定、字体图标加载、菜单项渲染完、横竖屏改变），
+// 这里都会自动重新写入正确的 --fixed-top-total-h，彻底消除时序差异。
+// 注：写入的是 body 的 padding-top 变量，不会改变 topNav 自身尺寸，不会触发回环。
+if (window.ResizeObserver && topNav) {
+    const _mobileTopRO = new ResizeObserver(() => refreshMobileFixedTopHeights());
+    _mobileTopRO.observe(topNav);
+}
+// bfcache 前进/后退恢复页面时也重新测量（此时 DOMContentLoaded / load 不会再次触发）
+window.addEventListener('pageshow', refreshMobileFixedTopHeights);
 
 // ========================================================================
 //  数据辅助
