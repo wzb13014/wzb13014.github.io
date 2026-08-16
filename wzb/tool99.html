@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="zh-CN" data-theme="dark" data-trae-theme="dark"><head>
 <meta charset="UTF-8">
@@ -321,11 +322,185 @@ body {
 }
 
 .preview-iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: #fff;
+}
+
+/* 设备预览舞台 */
+.preview-stage {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  overflow: auto;
+  padding: 20px;
+  background:
+    radial-gradient(120% 80% at 50% 0%, rgba(99, 102, 241, 0.10), transparent 55%),
+    var(--bg-primary);
+}
+
+/* 设备外壳：桌面模式 flex 撑满；设备模式由 body 类切换为固定尺寸机身 */
+.device-frame {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+}
+
+/* 屏幕（设备内部显示区：圆角裁剪 + 轻微高光） */
+.device-screen {
+  position: relative;
   flex: 1;
   width: 100%;
-  border: none;
-  background: white;
+  height: 100%;
+  background: #000;
+  border-radius: 0;
+  overflow: hidden;
 }
+
+.device-screen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.10) 0%, rgba(255, 255, 255, 0) 38%);
+}
+
+/* 设备切换控件 */
+.device-switch {
+  display: inline-flex;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-md);
+  padding: 2px;
+  gap: 2px;
+}
+
+.device-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  width: 32px;
+  height: 28px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.device-btn svg { width: 16px; height: 16px; }
+
+.device-btn:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.device-btn.active {
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 2px 8px var(--accent-glow);
+}
+
+/* 设备尺寸标签 */
+.device-label {
+  display: none;
+  font-size: 12px;
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  padding: 4px 14px;
+  border-radius: 999px;
+  white-space: nowrap;
+  letter-spacing: 0.3px;
+}
+
+/* ===== 平板 / 手机 设备框 ===== */
+body.device-tablet .preview-stage,
+body.device-mobile .preview-stage {
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 16px;
+  padding: 40px 20px 52px;
+}
+
+/* 机身：深色金属质感 + 圆角 + 真实投影 */
+body.device-tablet .device-frame,
+body.device-mobile .device-frame {
+  flex: 0 0 auto;
+  display: block;
+  background: linear-gradient(145deg, #2b2e35 0%, #17191e 48%, #0b0c0f 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.06),
+    0 1px 1px rgba(255, 255, 255, 0.10),
+    0 34px 64px -22px rgba(0, 0, 0, 0.72),
+    0 12px 28px -14px rgba(0, 0, 0, 0.55);
+}
+
+/* 平板：768×1024 屏幕 + 18px 边框 → 804×1060 */
+body.device-tablet .device-frame {
+  width: 804px;
+  height: 1060px;
+  padding: 18px;
+  border-radius: 38px;
+}
+
+/* 手机：390×844 屏幕 + 12px 边框 → 414×868 */
+body.device-mobile .device-frame {
+  width: 414px;
+  height: 868px;
+  padding: 12px;
+  border-radius: 40px;
+}
+
+/* 屏幕圆角（贴合真机） */
+/* 平板：外框 38px − 18px 边框 = 内屏 20px，同心贴合外圆角 */
+body.device-tablet .device-screen { border-radius: 20px; }
+body.device-mobile .device-screen { border-radius: 30px; }
+body.device-desktop .device-frame { background: #fff; box-shadow: none; }
+
+/* 灵动岛（手机） */
+.device-island {
+  position: absolute;
+  top: 23px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 120px;
+  height: 34px;
+  background: #000;
+  border-radius: 20px;
+  z-index: 6;
+}
+
+/* 摄像头（平板，置于边框中央） */
+.device-camera {
+  position: absolute;
+  top: 9px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #434953, #0a0c10);
+  z-index: 6;
+}
+
+/* 默认隐藏装饰，按设备显示（手机不再显示刘海） */
+.device-island,
+.device-camera { display: none; }
+body.device-tablet .device-camera { display: block; }
+
+body.device-tablet .device-label,
+body.device-mobile .device-label { display: none; }
 
 /* 状态栏 */
 .status-bar {
@@ -3013,6 +3188,17 @@ body.vertical-layout .resizer.active::before {
     <div class="preview-header">
       <span class="preview-title">实时预览</span>
       <div class="preview-actions">
+        <div class="device-switch" role="group" aria-label="设备预览模式">
+          <button class="device-btn active" data-device="desktop" onclick="setDevice('desktop')" title="桌面端预览">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          </button>
+          <button class="device-btn" data-device="tablet" onclick="setDevice('tablet')" title="平板端预览">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18"/></svg>
+          </button>
+          <button class="device-btn" data-device="mobile" onclick="setDevice('mobile')" title="手机端预览">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2" width="10" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18"/></svg>
+          </button>
+        </div>
         <button class="toolbar-btn icon-only" onclick="refreshPreview()" title="刷新预览">🔄</button>
         <button class="toolbar-btn icon-only" onclick="openInNewTab()" title="在新标签页打开">⎋</button>
       </div>
@@ -3055,6 +3241,7 @@ var state = {
   theme: 'dark',
   view: 'split',
   layout: 'horizontal',
+  device: 'desktop',
   history: { html: [], css: [], js: [] },
   historyIndex: { html: -1, css: -1, js: -1 },
   maxHistory: 50,
@@ -3410,6 +3597,71 @@ function setView(view) {
   saveToStorage();
 }
 
+/* 设备预览模式：桌面 / 平板 / 手机 */
+var DEVICE_DIMS = {
+  desktop: '',
+  tablet: '',
+  mobile: ''
+};
+
+function setupDeviceFrame() {
+  var iframe = document.getElementById('previewFrame');
+  if (!iframe || iframe.parentNode.classList.contains('device-screen')) return;
+  var stage = document.createElement('div');
+  stage.className = 'preview-stage';
+  stage.id = 'previewStage';
+  var frame = document.createElement('div');
+  frame.className = 'device-frame';
+  frame.id = 'deviceFrame';
+  var label = document.createElement('span');
+  label.className = 'device-label';
+  label.id = 'deviceLabel';
+  var island = document.createElement('div');
+  island.className = 'device-island';
+  var camera = document.createElement('div');
+  camera.className = 'device-camera';
+  var screen = document.createElement('div');
+  screen.className = 'device-screen';
+  iframe.parentNode.insertBefore(stage, iframe);
+  stage.appendChild(label);
+  stage.appendChild(frame);
+  frame.appendChild(island);
+  frame.appendChild(camera);
+  frame.appendChild(screen);
+  screen.appendChild(iframe);
+}
+
+function applyDevice(device) {
+  document.body.classList.remove('device-desktop', 'device-tablet', 'device-mobile');
+  document.body.classList.add('device-' + device);
+  document.querySelectorAll('.device-btn').forEach(function(b) {
+    b.classList.toggle('active', b.dataset.device === device);
+  });
+  var label = document.getElementById('deviceLabel');
+  if (label) label.textContent = DEVICE_DIMS[device] || '';
+  fitDevice();
+}
+
+function fitDevice() {
+  var stage = document.getElementById('previewStage');
+  var frame = document.getElementById('deviceFrame');
+  if (!stage || !frame) return;
+  if (state.device === 'desktop') { frame.style.zoom = ''; return; }
+  var outer = state.device === 'tablet' ? { w: 804, h: 1060 } : { w: 414, h: 868 };
+  var availW = stage.clientWidth - 48;
+  if (availW <= 0) return;
+  // 按预览区宽度自适应：缩放到完整可见；平板可放大至 1.5x 避免两侧被截，手机仅缩放到合适尺寸（上限 1.0x，不放大，整体更小巧）
+  var maxZoom = state.device === 'tablet' ? 1.5 : 1.0;
+  var scale = Math.min(availW / outer.w, maxZoom);
+  frame.style.zoom = scale;
+}
+
+function setDevice(device) {
+  state.device = device;
+  applyDevice(device);
+  saveToStorage();
+}
+
 function toggleLayout() {
   state.layout = state.layout === 'horizontal' ? 'vertical' : 'horizontal';
   document.body.classList.toggle('vertical-layout', state.layout === 'vertical');
@@ -3529,6 +3781,7 @@ function saveToStorage() {
     fontSize: state.fontSize,
     view: state.view,
     layout: state.layout,
+    device: state.device,
     currentTab: state.currentTab
   };
   try { localStorage.setItem('htmlEditorData', JSON.stringify(data)); } catch(e) {}
@@ -3549,6 +3802,7 @@ function loadFromStorage() {
       }
       if (data.view) setView(data.view);
       if (data.layout) { state.layout = data.layout; document.body.classList.toggle('vertical-layout', data.layout === 'vertical'); }
+      if (data.device) state.device = data.device;
       if (data.currentTab) switchTab(data.currentTab);
     } else {
       useDefault();
@@ -3635,11 +3889,21 @@ function showToast(message, type) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+  setupDeviceFrame();
   loadFromStorage();
+  applyDevice(state.device);
   updateLineNumbers();
   updatePreview();
   setupResizer();
   updateStatus();
+  if (window.ResizeObserver) {
+    var st = document.getElementById('previewStage');
+    if (st) {
+      var ro = new ResizeObserver(function() { fitDevice(); });
+      ro.observe(st);
+    }
+  }
+  requestAnimationFrame(fitDevice);
 });
 </script>
 
