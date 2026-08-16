@@ -1487,3 +1487,268 @@ body.modal-open {
     .toolbar { gap: 6px; }
     .tool-btn { padding: 6px 9px; font-size: 12px; }
 }
+
+/* ================================================================
+   手机端兼容性 & 性能优化（全局 + 响应式）
+   ================================================================ */
+
+/* ---------- 全局触摸性能优化 ---------- */
+/* 去除 iOS 点击后高亮灰块（消除"卡"的视觉感受） */
+* {
+    -webkit-tap-highlight-color: transparent !important;
+    -webkit-touch-callout: none;
+}
+html, body {
+    /* 去除移动端双击缩放 300ms 延迟 */
+    touch-action: manipulation;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    overscroll-behavior-y: contain;
+}
+/* 安全区：刘海屏/灵动岛/底部横条 */
+:root {
+    --sa-top: env(safe-area-inset-top, 0px);
+    --sa-right: env(safe-area-inset-right, 0px);
+    --sa-bottom: env(safe-area-inset-bottom, 0px);
+    --sa-left: env(safe-area-inset-left, 0px);
+}
+body {
+    padding-top: calc(10px + var(--sa-top));
+    padding-right: calc(8px + var(--sa-right));
+    padding-bottom: calc(30px + var(--sa-bottom));
+    padding-left: calc(8px + var(--sa-left));
+}
+
+/* ---------- 触摸目标：>= 44×44px（Apple HIG 标准）
+   注意：一二级菜单按钮（.nav-item / .sub-item）不强制此规则，
+         保持原有视觉大小，仅通过 padding 提供接近 HIG 的热区 ---------- */
+.icon-btn,
+.action-btn,
+.tool-btn,
+.mini-btn,
+.fav-btn,
+.locate,
+button,
+.recent-chip,
+.sh-del,
+.settings-btn {
+    min-width: 44px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+/* 恢复一二级菜单的原始尺寸（不被 44px 最小高宽撑大） */
+.nav-item,
+.sub-item {
+    min-width: 0;
+    min-height: 0;
+    width: auto;
+    height: auto;
+    display: inline-flex;
+}
+/* 卡片内 mini-btn 保持比例 */
+.bookmark-card .mini-btn,
+.bookmark-card .fav-btn {
+    min-width: 36px;
+    min-height: 36px;
+}
+
+/* ---------- 按钮即时触摸反馈（比 :hover 更适合触摸设备） ---------- */
+.icon-btn:active,
+.action-btn:active,
+.tool-btn:active,
+.mini-btn:active,
+.fav-btn:active,
+.nav-item:active,
+.sub-item:active,
+.recent-chip:active,
+.bookmark-card:active {
+    transform: scale(0.97);
+    filter: brightness(0.92);
+    transition: transform 0.06s linear, filter 0.06s linear;
+}
+.bookmark-card {
+    will-change: transform;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+}
+
+/* ---------- 性能：减少不必要的模糊/阴影重绘 ---------- */
+.top-nav,
+.bookmark-card,
+.modal,
+.panel {
+    will-change: transform, opacity;
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+}
+
+/* ---------- 导航横向滚动（小屏一级菜单不换行，支持左右滑） ---------- */
+.nav-level1 {
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    -webkit-overflow-scrolling: touch;
+    white-space: nowrap;
+    padding-bottom: 2px;
+}
+.nav-level1::-webkit-scrollbar { display: none; }
+.nav-level1 .nav-item {
+    display: inline-flex;
+    flex: 0 0 auto;
+    white-space: nowrap;
+}
+.subnav-inner {
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    -webkit-overflow-scrolling: touch;
+    white-space: nowrap;
+}
+.subnav-inner::-webkit-scrollbar { display: none; }
+.subnav-inner .sub-item {
+    display: inline-flex;
+    flex: 0 0 auto;
+    white-space: nowrap;
+}
+
+/* ---------- 最近访问条横向滚动 ---------- */
+.recent-panel, #recentPanelItems {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+}
+#recentPanelItems::-webkit-scrollbar { display: none; }
+.recent-chip {
+    flex: 0 0 auto;
+    white-space: nowrap;
+}
+
+/* ---------- 移动端媒体查询增强 ---------- */
+@media (max-width: 768px) {
+    :root {
+        --transition-speed: 0.15s; /* 移动端过渡更快，体感"反应快" */
+        --nav-height: 46px;
+        --subnav-height: 40px;
+    }
+    body {
+        padding: calc(6px + var(--sa-top)) 4px calc(20px + var(--sa-bottom));
+    }
+    /* 降低 backdrop-filter 强度，移动端更流畅 */
+    .top-nav {
+        backdrop-filter: blur(14px) saturate(150%);
+        -webkit-backdrop-filter: blur(14px) saturate(150%);
+    }
+    /* 顶部导航在超窄屏上改为 logo / search / actions 三列自适应不挤 */
+    .top-nav {
+        grid-template-columns: auto 1fr auto;
+    }
+    /* 搜索框聚焦时不放大输入（防止 iOS 自动缩放） */
+    .top-nav .search-wrap input,
+    .search-wrap input {
+        font-size: 16px !important; /* iOS 要求 >= 16px 才不自动缩放 */
+    }
+    /* 弹窗：全屏展开，更好触摸 */
+    .modal-overlay {
+        padding: calc(var(--sa-top) + 6px) 4px calc(var(--sa-bottom) + 6px);
+    }
+    .modal {
+        margin: 0;
+        width: 100%;
+        max-height: calc(100vh - var(--sa-top) - var(--sa-bottom) - 12px);
+        border-radius: 16px;
+    }
+    .modal-body {
+        max-height: calc(100vh - 260px - var(--sa-top) - var(--sa-bottom));
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    /* 搜索历史面板移动端适配 */
+    .search-history {
+        max-height: 50vh;
+        left: 8px;
+        right: 8px;
+        width: auto;
+    }
+    /* 卡片组在移动端减少 gap 以节省空间 */
+    .bookmarks-grid {
+        padding: 0 2px;
+    }
+    /* 数据统计（stats）面板移动端适配 */
+    #statsModal .stat-row,
+    #statsModal .stat-bar {
+        font-size: 13px;
+    }
+    /* 设置菜单移动端：更宽更大按钮 */
+    .settings-menu {
+        min-width: 200px;
+        right: 4px;
+    }
+    .settings-menu button {
+        min-height: 46px;
+        padding: 0 16px;
+    }
+}
+
+@media (max-width: 480px) {
+    .top-nav {
+        padding: 3px 6px;
+        gap: 3px 5px;
+    }
+    .top-nav .logo {
+        font-size: 13px;
+        gap: 3px;
+    }
+    .top-nav .logo .icon-svg {
+        width: 18px;
+        height: 18px;
+    }
+    .top-nav .search-wrap input {
+        height: 38px;
+        padding: 4px 10px 4px 30px;
+    }
+    .top-nav .right-actions .icon-btn {
+        width: 40px;
+        height: 40px;
+    }
+    .bookmark-card {
+        border-radius: 16px;
+        padding: 10px 12px;
+    }
+    .category-title {
+        font-size: 17px;
+        margin: 4px 0 10px 0;
+    }
+    /* 更紧凑的卡片行内文字：避免挤压换行 */
+    .bookmark-title {
+        font-size: 16px;
+        line-height: 1.35;
+    }
+    .bookmark-desc {
+        font-size: 12.5px;
+        line-height: 1.4;
+    }
+    .count-text {
+        font-size: 12px;
+    }
+    .bookmark-footer {
+        flex-wrap: wrap;
+        gap: 4px;
+    }
+    .bookmark-category {
+        font-size: 11px;
+    }
+}
+
+/* 超窄屏（360px 以下）进一步优化 */
+@media (max-width: 360px) {
+    .nav-level1 .nav-item {
+        font-size: 11px;
+        padding: 3px 7px;
+    }
+    .bookmark-title { font-size: 15px; }
+    .bookmark-desc  { font-size: 12px; }
+}
