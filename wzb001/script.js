@@ -1077,6 +1077,7 @@ const websiteData = [{
         { name: "WorkBuddy", url: "https://www.codebuddy.cn/work/?fromSource=gwzcw.12117220.12117220.12117220&utm_medium=cpc&utm_id=gwzcw.12117220.12117220.12117220&msclkid=c334d204d0941fbf4f34b8417e9f9a37", desc: "自动化AI-软件" },
         { name: "Agnes", url: "https://agnes-ai.com/", desc: "AI API" },  
         { name: "智谱", url: "https://bigmodel.cn/usercenter/settings/auth", desc: "AI API" },  
+       { name: "WorkSwarm", url: "https://www.openjiuwen.com/workswarm", desc: "AI软件" }, 
         { name: "Agnes Code", url: "https://agnes-ai.com/agnescode", desc: "软件" },     
         { name: "Opencode", url: "https://opencode.ai/zh/download", desc: "软件" },    
         { name: "元宝", url: "https://yuanbao.tencent.com/chat/naQivTmsDa", desc: "在线AI" },
