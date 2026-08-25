@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mermaid 图表工作室（SVG / PNG / JPG / PDF）</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<style>
+:root{
+  --bg:#e9eef6;
+  --app:#f7f9fc;
+  --surface:#ffffff;
+  --surface-2:#f1f4f9;
+  --border:#e3e8f0;
+  --text:#16233b;
+  --muted:#697a93;
+  --acc:#4f46e5;
+  --acc-2:#7c3aed;
+  --ok-bg:#d9f5e5;--ok-tx:#0c7a43;
+  --err-bg:#fde3e3;--err-tx:#b42323;
+  --chk1:#eef1f6;--chk2:#ffffff;
+  --shadow:0 8px 28px rgba(23,35,66,.09);
+}
+body.dark{
+  --bg:#070d1a;
+  --app:#0d1526;
+  --surface:#131e33;
+  --surface-2:#1a2742;
+  --border:#253352;
+  --text:#e7edf8;
+  --muted:#93a5c2;
+  --acc:#818cf8;
+  --acc-2:#a78bfa;
+  --ok-bg:#123c28;--ok-tx:#5fe3a1;
+  --err-bg:#46181c;--err-tx:#ff9b9b;
+  --chk1:#182441;--chk2:#101a30;
+  --shadow:0 10px 32px rgba(0,0,0,.45);
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;height:100%;}
+body{
+  padding:12px;font-family:"Microsoft YaHei","PingFang SC","Segoe UI",Arial,sans-serif;
+  background:
+    radial-gradient(1100px 500px at 85% -10%,rgba(124,58,237,.14),transparent 60%),
+    radial-gradient(900px 420px at -10% 110%,rgba(79,70,229,.12),transparent 60%),
+    var(--bg);
+  color:var(--text);font-size:14px;
+}
+button{font-family:inherit;}
+a{text-decoration:none;color:inherit;}
+
+.app{height:100%;display:flex;flex-direction:column;min-height:0;border-radius:16px;background:var(--app);
+  box-shadow:var(--shadow);overflow:hidden;border:1px solid var(--border);}
+
+/* ===== 顶栏 ===== */
+.top{display:flex;align-items:center;gap:14px;padding:12px 18px;flex-wrap:wrap;
+  background:linear-gradient(120deg,#3730a3,#6d28d9 55%,#9333ea);color:#fff;}
+.brand{display:flex;align-items:center;gap:11px;margin-right:auto;}
+.brand .logo{width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,.16);
+  display:flex;align-items:center;justify-content:center;font-size:19px;}
+.brand h1{margin:0;font-size:17px;font-weight:700;line-height:1.25;}
+.brand p{margin:1px 0 0;font-size:12px;opacity:.82;}
+.top-acts{display:flex;gap:7px;align-items:center;flex-wrap:wrap;}
+.icon-btn{width:34px;height:34px;border:none;border-radius:9px;background:rgba(255,255,255,.15);
+  color:#fff;font-size:16px;cursor:pointer;transition:.15s;}
+.icon-btn:hover{background:rgba(255,255,255,.28);}
+.exp-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 13px;border:none;border-radius:9px;
+  font-size:13px;font-weight:600;cursor:pointer;background:rgba(255,255,255,.14);color:#fff;transition:.15s;}
+.exp-btn:hover{background:rgba(255,255,255,.26);}
+.exp-btn.main-x{background:#fff;color:#4c1d95;box-shadow:0 3px 12px rgba(0,0,0,.18);}
+.exp-btn.main-x:hover{transform:translateY(-1px);}
+
+/* ===== 三栏 ===== */
+.main{flex:1;display:grid;gap:12px;padding:12px;min-height:0;
+  grid-template-columns:minmax(290px,360px) minmax(380px,1fr) minmax(270px,330px);}
+.pane{display:flex;flex-direction:column;min-height:0;background:var(--surface);
+  border:1px solid var(--border);border-radius:13px;overflow:hidden;}
+.pane-h{display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding:10px 14px;font-size:13px;font-weight:700;color:var(--text);
+  background:var(--surface-2);border-bottom:1px solid var(--border);flex:none;}
+.status{font-size:11px;padding:2px 9px;border-radius:20px;font-weight:600;flex:none;}
+.status.ok{background:var(--ok-bg);color:var(--ok-tx);}
+.status.err{background:var(--err-bg);color:var(--err-tx);}
+
+/* 编辑器 */
+#code{flex:1;width:100%;border:none;outline:none;resize:none;padding:13px 14px;min-height:0;
+  font-family:"Consolas","Monaco","Courier New",monospace;font-size:13px;line-height:1.65;
+  background:#0c1424;color:#dbe6f5;tab-size:4;}
+.ed-foot{display:flex;gap:6px;padding:9px;border-top:1px solid var(--border);background:var(--surface-2);flex:none;}
+.ed-foot .btn{flex:1;}
+
+/* 预览 */
+.preview-body{flex:1;overflow:auto;display:flex;align-items:flex-start;justify-content:center;padding:18px;min-height:0;
+  background:linear-gradient(45deg,var(--chk1) 25%,transparent 25%,transparent 75%,var(--chk1) 75%),linear-gradient(45deg,var(--chk1) 25%,transparent 25%,transparent 75%,var(--chk1) 75%);
+  background-size:22px 22px;background-position:0 0,11px 11px;}
+.preview-card{display:inline-block;background:#fff;padding:16px;border-radius:11px;
+  border:1px solid var(--border);box-shadow:0 2px 14px rgba(0,0,0,.07);max-width:100%;}
+.preview-card svg{max-width:100%;height:auto;display:block;}
+.preview-card .rerr{padding:18px;color:#b91c1c;font-family:monospace;font-size:12.5px;text-align:left;
+  background:#fef2f2;border-radius:8px;border:1px solid #fecaca;}
+body.dark .preview-card .rerr{background:#2a1418;border-color:#5b2226;color:#ff9b9b;}
+
+/* 设置栏 */
+.tabs{display:flex;gap:4px;background:var(--surface-2);border:1px solid var(--border);
+  padding:4px;border-radius:10px;margin:10px 12px 0;flex:none;}
+.tb{flex:1;padding:7px 0;border:none;border-radius:8px;background:transparent;color:var(--muted);
+  font-size:12.5px;font-weight:600;cursor:pointer;transition:.15s;}
+.tb.on{background:var(--surface);color:var(--acc);box-shadow:0 1px 5px rgba(15,25,50,.10);}
+.panels{flex:1;overflow:auto;padding:11px 12px;min-height:0;}
+.pnl{display:none;}
+.pnl.on{display:block;}
+.group{margin-bottom:11px;padding:11px 12px;background:var(--surface);border:1px solid var(--border);border-radius:10px;}
+.group h4{margin:-11px -12px 10px;padding:8px 12px;background:var(--surface-2);font-size:12.5px;
+  color:var(--text);font-weight:700;border-bottom:1px solid var(--border);border-radius:10px 10px 0 0;}
+.field{margin-bottom:9px;}
+.field label{display:block;font-size:12px;color:var(--muted);font-weight:600;margin-bottom:4px;}
+.field input[type=text],.field input[type=number],.field select,.field textarea{
+  width:100%;padding:6px 9px;border:1px solid var(--border);border-radius:7px;font-size:12.5px;
+  background:var(--surface);color:var(--text);outline:none;font-family:inherit;}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--acc);box-shadow:0 0 0 2px rgba(99,102,241,.18);}
+.field input[type=color]{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;}
+.cpick{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.cp-swatch{width:36px;height:30px;border:1px solid var(--border);border-radius:7px;cursor:pointer;flex:none;padding:0;}
+.cp-swatch:hover{border-color:var(--acc);}
+.cp-hex{width:88px;padding:6px 8px;border:1px solid var(--border);border-radius:7px;font-size:12.5px;
+  background:var(--surface);color:var(--text);font-family:Consolas,monospace;text-transform:uppercase;outline:none;}
+.cp-hex:focus{border-color:var(--acc);box-shadow:0 0 0 2px rgba(99,102,241,.18);}
+.cp-pal{display:flex;gap:4px;flex-wrap:wrap;width:100%;margin-top:2px;}
+.cp-dot{width:18px;height:18px;border-radius:50%;border:1px solid rgba(0,0,0,.18);cursor:pointer;padding:0;flex:none;transition:.12s;}
+.cp-dot:hover{transform:scale(1.2);}
+.r2{display:flex;gap:7px;}
+.r2>div{flex:1;}
+.cb{display:flex;align-items:center;gap:6px;padding:3px 0;font-size:12.5px;color:var(--text);cursor:pointer;}
+.cb input{accent-color:var(--acc);}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:7px 12px;border:none;
+  border-radius:7px;font-size:12.5px;font-weight:600;cursor:pointer;transition:.15s;}
+.btn.sec{background:var(--surface-2);color:var(--text);border:1px solid var(--border);}
+.btn.sec:hover{border-color:var(--acc);color:var(--acc);}
+.btn.primary{background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff;}
+.btn.warn{background:linear-gradient(135deg,#d97706,#b45309);color:#fff;}
+.btn.full{width:100%;margin-bottom:6px;}
+.b2{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px;}
+
+.tpls{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.tpl{padding:8px 5px;background:var(--surface-2);border:1px solid var(--border);color:var(--text);
+  border-radius:8px;cursor:pointer;font-size:11.5px;font-weight:600;text-align:center;transition:.15s;}
+.tpl:hover{border-color:var(--acc);color:var(--acc);transform:translateY(-1px);}
+
+.feat{font-size:11.5px;color:var(--muted);padding:9px;background:var(--surface-2);
+  border:1px dashed var(--border);border-radius:8px;line-height:1.8;}
+.feat b{color:var(--acc);}
+
+.log{margin-top:8px;padding:8px;background:#0c1424;color:#7dd3fc;border-radius:8px;
+  font-family:"Consolas",monospace;font-size:11px;max-height:140px;overflow:auto;
+  white-space:pre-wrap;word-break:break-all;}
+.log:empty{display:none;}
+
+@media (max-width:1180px){
+  body{height:auto;}
+  .app{height:auto;}
+  .main{grid-template-columns:1fr 1fr;}
+  .pane.editor{height:52vh;}
+  .pane.preview{height:52vh;}
+  .pane.ctrl{grid-column:1/-1;height:430px;}
+}
+@media (max-width:800px){
+  body{padding:6px;height:auto;}
+  .main{grid-template-columns:1fr;}
+  .pane.editor,.pane.preview,.pane.ctrl{grid-column:1/-1;height:56vh;}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="top">
+    <div class="brand">
+      <div class="logo">🔀</div>
+      <div>
+        <h1>Mermaid 图表工作室</h1>
+        <p>实时预览 · 参数即调即见 · 一键导出 SVG / PNG / JPG / PDF</p>
+      </div>
+    </div>
+    <div class="top-acts">
+      <button class="icon-btn" id="modeBtn" title="切换深色/浅色模式">🌙</button>
+      <button class="exp-btn" onclick="esvg()">SVG</button>
+      <button class="exp-btn" onclick="epng()">PNG</button>
+      <button class="exp-btn" onclick="ejpg()">JPG</button>
+      <button class="exp-btn main-x" onclick="epdf()">PDF</button>
+    </div>
+  </header>
+
+  <main class="main">
+
+    <!-- 编辑器 -->
+    <section class="pane editor">
+      <div class="pane-h">📝 Mermaid 源码 <span id="es" class="status ok">就绪</span></div>
+      <textarea id="code" spellcheck="false" placeholder="在此输入 Mermaid 代码..."></textarea>
+      <div class="ed-foot">
+        <button class="btn sec" onclick="fmt()">格式化</button>
+        <button class="btn sec" onclick="clrClear()">清空</button>
+        <button class="btn sec" onclick="cp()">复制</button>
+        <button class="btn sec" onclick="ld()">导入 .mmd</button>
+        <input type="file" id="fi" accept=".mmd,.md,.mermaid,.txt" style="display:none">
+      </div>
+    </section>
+
+    <!-- 预览 -->
+    <section class="pane preview">
+      <div class="pane-h">👀 实时预览 <span id="ps" class="status ok">渲染中</span></div>
+      <div class="preview-body">
+        <div class="preview-card" id="pv"><div style="padding:40px;color:#94a3b8;">正在渲染...</div></div>
+      </div>
+    </section>
+
+    <!-- 设置 -->
+    <aside class="pane ctrl">
+      <div class="pane-h">⚙️ 设置</div>
+      <div class="tabs">
+        <button class="tb on" data-t="tpl">模板</button>
+        <button class="tb" data-t="sty">样式</button>
+        <button class="tb" data-t="adv">高级</button>
+      </div>
+      <div class="panels">
+
+        <div class="pnl on" id="pnl-tpl">
+          <div class="group"><h4>快速模板</h4>
+            <div class="tpls" id="tpls"></div>
+          </div>
+          <div class="group"><h4>特性</h4>
+            <div class="feat">
+              • <b>实时联动</b>：主色调/字色/字号/线宽/主题即调即见<br>
+              • <b>深浅模式</b>：右上角一键切换界面主题<br>
+              • <b>所见即所得</b>：导出与预览像素级一致<br>
+              • <b>PDF 导出</b>：自动 A4 排版居中<br>
+              • <b>纯浏览器端</b>：不上传任何数据
+            </div>
+          </div>
+        </div>
+
+        <div class="pnl" id="pnl-sty">
+          <div class="group"><h4>主题 &amp; 颜色（实时生效）</h4>
+            <div class="field"><label>Mermaid 主题</label>
+              <select id="mtheme">
+                <option value="default" selected>Default (默认)</option>
+                <option value="dark">Dark (暗色)</option>
+                <option value="forest">Forest (森林)</option>
+                <option value="neutral">Neutral (中性)</option>
+              </select>
+            </div>
+            <div class="r2">
+              <div class="field"><label>主色调</label><input type="color" id="pcol" value="#4f46e5"></div>
+              <div class="field"><label>预览背景</label><input type="color" id="bgcol" value="#ffffff"></div>
+            </div>
+            <div class="r2">
+              <div class="field"><label>字色</label><input type="color" id="fcol" value="#1f2937"></div>
+              <div class="field"><label>字号 px</label><input type="number" id="fsz" value="16" min="8" max="48"></div>
+            </div>
+            <div class="field"><label>线条宽 px</label><input type="number" id="sw" value="2" min="0.5" step="0.5"></div>
+            <div class="field"><label>字体</label>
+              <select id="zfont">
+                <option value="Microsoft YaHei" selected>微软雅黑</option>
+                <option value="SimSun">宋体</option>
+                <option value="SimHei">黑体</option>
+                <option value="FangSong">仿宋</option>
+                <option value="KaiTi">楷体</option>
+                <option value="Source Han Sans CN">思源黑体</option>
+              </select>
+            </div>
+            <button class="btn primary full" onclick="applyTheme()">🔄 立即重新渲染</button>
+          </div>
+        </div>
+
+        <div class="pnl" id="pnl-adv">
+          <div class="group"><h4>导出设置</h4>
+            <div class="field"><label>文件名</label><input type="text" id="fn" value="mermaid-diagram"></div>
+            <label class="cb"><input type="checkbox" id="auto" checked>自动实时渲染（编辑代码后）</label>
+            <div class="field"><label>代码渲染延迟 ms</label><input type="number" id="rd" value="700" min="150" step="50"></div>
+          </div>
+          <div class="group"><h4>调试</h4>
+            <div class="b2">
+              <button class="btn warn" onclick="fr()">🎯 强制渲染</button>
+              <button class="btn sec" onclick="cl()">🧹 清空日志</button>
+            </div>
+            <div class="log" id="log"></div>
+          </div>
+        </div>
+
+      </div>
+    </aside>
+  </main>
+</div>
+
+<script>
+/* ============== 基础工具 ============== */
+const $=id=>document.getElementById(id);
+const L=$('log'); let rT=null, tT=null, svgNd=null, mmInit=false, sId=100;
+function log(m,t='i'){
+  const s=new Date().toLocaleTimeString();
+  const c=t==='e'?'#fca5a5':t==='o'?'#86efac':'#7dd3fc';
+  L.innerHTML+=`<span style="color:#64748b">[${s}]</span> <span style="color:${c}">${m}</span>\n`;
+  L.scrollTop=L.scrollHeight;
+}
+function cl(){L.innerHTML='';}
+document.querySelectorAll('.tb').forEach(t=>t.onclick=()=>{
+  document.querySelectorAll('.tb').forEach(x=>x.classList.remove('on'));
+  document.querySelectorAll('.pnl').forEach(x=>x.classList.remove('on'));
+  t.classList.add('on'); $('pnl-'+t.dataset.t).classList.add('on');
+});
+
+/* ============== 深浅色模式 ============== */
+function setMode(dark){
+  document.body.classList.toggle('dark',dark);
+  $('modeBtn').textContent=dark?'☀️':'🌙';
+  try{localStorage.setItem('mm-mode',dark?'dark':'light');}catch(e){}
+}
+$('modeBtn').onclick=()=>setMode(!document.body.classList.contains('dark'));
+(function(){let m=null;try{m=localStorage.getItem('mm-mode');}catch(e){}
+  setMode(m?m==='dark':(window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches));
+})();
+
+/* ============== Mermaid 渲染 ============== */
+// 预设主题统一映射到 theme:'base'（base 完整支持 themeVariables），
+// 使主色调/字色等用户参数与预设调色板走同一条生效管线，实时可调
+const PALETTES={
+  default:{primaryColor:'#ECECFF',primaryTextColor:'#333333',secondaryColor:'#EEEEEE',tertiaryColor:'#F8F8F8',lineColor:'#9370DB',textColor:'#333333',nodeBorder:'#9370DB',clusterBkg:'#FBFBFB',edgeLabelBackground:'#F8F8F8',noteBkgColor:'#FFF5AD',noteTextColor:'#333333',noteBorderColor:'#aaaa33'},
+  dark:{primaryColor:'#1f2020',primaryTextColor:'#dddddd',secondaryColor:'#28324a',tertiaryColor:'#20242e',lineColor:'#bbbbbb',textColor:'#dddddd',nodeBorder:'#81B1DB',clusterBkg:'#3f4a5e',clusterBorder:'#55627a',edgeLabelBackground:'#262b33',titleColor:'#dddddd',noteBkgColor:'#36393f',noteTextColor:'#dddddd',noteBorderColor:'#7c7c7c'},
+  forest:{primaryColor:'#cde498',primaryTextColor:'#333333',secondaryColor:'#cdccb2',tertiaryColor:'#EBF3EE',lineColor:'#316d2f',textColor:'#333333',nodeBorder:'#13540c',clusterBkg:'#e6ecdd',edgeLabelBackground:'#e8f5dc',noteBkgColor:'#fff5ad',noteTextColor:'#333333',noteBorderColor:'#aaaa33'},
+  neutral:{primaryColor:'#eeeeee',primaryTextColor:'#333333',secondaryColor:'#eeeeee',tertiaryColor:'#fafafa',lineColor:'#333333',textColor:'#333333',nodeBorder:'#9c9c9c',clusterBkg:'#f5f5f5',edgeLabelBackground:'#f8f8f8',noteBkgColor:'#f5f5cc',noteTextColor:'#333333',noteBorderColor:'#cccc99'}
+};
+function mmCfg(){
+  try{
+    const zfont=($('zfont')||{}).value||'Microsoft YaHei';
+    const fsz=($('fsz')||{}).value||'16';
+    const preset=($('mtheme')||{}).value||'default';
+    const tv={
+      ...(PALETTES[preset]||PALETTES.default),
+      fontFamily:zfont,
+      fontSize:fsz+'px',
+      // 用户参数优先级最高：覆盖预设中的同名变量
+      primaryColor:($('pcol')||{}).value||'#4f46e5',
+      primaryTextColor:($('fcol')||{}).value||'#1f2937',
+      lineColor:'#6b7280'
+    };
+    mermaid.initialize({
+      startOnLoad:false,
+      theme:'base',
+      securityLevel:'loose',
+      themeVariables:tv,
+      flowchart:{curve:'basis',htmlLabels:false,diagramPadding:16,useMaxWidth:true},
+      sequence:{useMaxWidth:true,htmlLabels:false},
+      class:{useMaxWidth:true,htmlLabels:false},
+      state:{useMaxWidth:true,htmlLabels:false},
+      journey:{useMaxWidth:true,htmlLabels:false},
+      er:{useMaxWidth:true,htmlLabels:false},
+      gantt:{axisFormat:'%m/%d',useMaxWidth:true,htmlLabels:false}
+    });
+    mmInit=true;
+  }catch(e){log('Mermaid 初始化失败:'+e.message,'e');}
+}
+// 线条宽覆盖样式注入到 SVG 内部，保证导出与预览一致
+function applyStrokeOverlay(svg){
+  if(!svg)return;
+  const swv=Math.max(0.3,parseFloat(($('sw')||{}).value)||2);
+  let st=svg.querySelector('style[data-sw]');
+  if(!st){st=document.createElementNS('http://www.w3.org/2000/svg','style');st.setAttribute('data-sw','1');svg.appendChild(st);}
+  st.textContent=`.flowchart-link,.edgePath path,.edgePaths path,.relation,.transition,.messageLine0,.messageLine1,.actor-line,.er.relationshipLine{stroke-width:${swv}px!important;}`;
+}
+async function render(code){
+  try{
+    if(!mmInit)mmCfg();
+    const id='mm'+Date.now()+(++sId);
+    const r=await mermaid.render(id, code);
+    $('pv').innerHTML=r.svg;
+    svgNd=$('pv').querySelector('svg');
+    applyStrokeOverlay(svgNd);
+    if($('bgcol'))$('pv').style.background=$('bgcol').value;
+    $('ps').className='status ok';$('ps').textContent='渲染成功';
+    $('es').className='status ok';$('es').textContent='语法正确';
+    return svgNd;
+  }catch(e){
+    const m=e.message||String(e);
+    $('pv').innerHTML=`<div class="rerr"><b>⚠️ 渲染错误</b><br><br>${m.replace(/</g,'&lt;')}</div>`;
+    $('ps').className='status err';$('ps').textContent='失败';
+    $('es').className='status err';$('es').textContent='语法有误';
+    log('渲染失败:'+m.split('\n')[0],'e');
+    return null;
+  }
+}
+function sched(){
+  if(!$('auto').checked)return;
+  clearTimeout(rT);
+  const d=parseInt($('rd').value)||700;
+  rT=setTimeout(()=>render($('code').value),d);
+}
+function fr(){log('强制渲染');render($('code').value);}
+function applyTheme(){mmInit=false;mmCfg();render($('code').value);}
+// 实时联动：所有样式参数调整后自动重渲染（轻量防抖）
+['mtheme','zfont','fsz','pcol','fcol','sw'].forEach(id=>{
+  $(id).addEventListener('input',()=>{clearTimeout(tT);tT=setTimeout(applyTheme,220);});
+});
+$('bgcol').addEventListener('input',()=>{$('pv').style.background=$('bgcol').value;});
+$('code').addEventListener('input', sched);
+
+/* ============== 自定义取色组件（兼容不支持原生 color 控件的浏览器） ============== */
+const CP_PRESETS=['#4f46e5','#7c3aed','#db2777','#dc2626','#ea580c','#d97706','#16a34a','#0d9488','#0891b2','#2563eb','#6b7280','#111827','#9ca3af','#e5e7eb','#ffffff'];
+function initColorPickers(){
+  document.querySelectorAll('.field input[type=color]').forEach(inp=>{
+    const wrap=document.createElement('div');wrap.className='cpick';
+    const sw=document.createElement('button');sw.type='button';sw.className='cp-swatch';
+    const hex=document.createElement('input');hex.type='text';hex.className='cp-hex';
+    hex.maxLength=7;hex.spellcheck=false;hex.value=inp.value.toUpperCase();
+    sw.style.background=inp.value;
+    const pal=document.createElement('div');pal.className='cp-pal';
+    const set=v=>{
+      v=(v||'').trim();
+      if(!/^#[0-9a-fA-F]{6}$/.test(v))return false;
+      inp.value=v;sw.style.background=v;hex.value=v.toUpperCase();
+      inp.dispatchEvent(new Event('input',{bubbles:true}));
+      return true;
+    };
+    CP_PRESETS.forEach(c=>{
+      const b=document.createElement('button');b.type='button';b.className='cp-dot';
+      b.style.background=c;b.title=c;
+      b.onclick=()=>set(c);
+      pal.appendChild(b);
+    });
+    sw.onclick=()=>{
+      if(typeof inp.showPicker==='function'){try{inp.showPicker();return;}catch(e){}}
+      hex.focus();hex.select();
+    };
+    hex.addEventListener('input',()=>{if(/^#[0-9a-fA-F]{6}$/.test(hex.value.trim()))set(hex.value);});
+    hex.addEventListener('change',()=>{if(!set(hex.value))hex.value=inp.value.toUpperCase();});
+    inp.after(wrap);wrap.appendChild(sw);wrap.appendChild(hex);wrap.appendChild(pal);
+  });
+}
+initColorPickers();
+
+/* ============== 模板 ============== */
+const TPL={
+flow:`graph TD
+    A([开始]) --> B{条件判断}
+    B -->|成立| C[分支A]
+    B -->|不成立| D[分支B]
+    C --> E[汇总]
+    D --> E
+    E --> F[输出]
+    F --> G([结束])
+    style A fill:#4ade80,stroke:#166534
+    style B fill:#fbbf24,stroke:#92400e
+    style C fill:#60a5fa,stroke:#1e40af
+    style D fill:#a78bfa,stroke:#5b21b6
+    style E fill:#f472b6,stroke:#9d174d
+    style G fill:#f87171,stroke:#991b1b`,
+seq:`sequenceDiagram
+    participant U as 用户
+    participant F as 前端
+    participant G as API网关
+    participant S as 服务端
+    participant D as 数据库
+    U->>F: 提交请求
+    F->>G: HTTP + Token
+    G->>G: 鉴权与限流
+    alt Token 无效
+      G-->>F: 401
+      F-->>U: 弹窗登录
+    else 有效
+      G->>S: 转发
+      S->>D: 查询
+      D-->>S: 结果集
+      S->>S: 业务处理
+      S-->>G: 返回 JSON
+      G-->>F: 200 OK
+      F-->>U: 渲染结果
+    end
+    Note over U,F: 用户交互层
+    Note over G,S: 服务层`,
+gantt:`gantt
+    title 项目甘特图
+    dateFormat  YYYY-MM-DD
+    axisFormat  %m-%d
+    section 需求
+    需求调研      :a1, 2026-08-01, 7d
+    需求评审      :after a1, 3d
+    section 开发
+    后端开发      :c1, after a1, 20d
+    前端开发      :c2, after a1, 18d
+    section 测试上线
+    测试          :d1, after c1, 7d
+    上线          :milestone, after d1, 1d`,
+cls:`classDiagram
+    class Animal{
+        +String name
+        +int age
+        +makeSound()
+    }
+    class Dog{ +String breed +bark() }
+    class Cat{ +int lives +meow() }
+    class Person{ +String name +adoptPet(a:Animal) }
+    Animal <|-- Dog
+    Animal <|-- Cat
+    Person o-- Animal : owns`,
+pie:`pie title 技术栈占比
+    "前端" : 38
+    "Node.js" : 22
+    "Python" : 18
+    "Java" : 12
+    "Go/Rust" : 7
+    "其他" : 3`,
+mind:`mindmap
+  root((Mermaid图表))
+    核心能力
+      实时预览
+      主题定制
+      多格式导出
+    图表
+      流程图
+      时序图
+      甘特图
+      类图
+    使用
+      技术文档
+      产品PRD
+      教学课件`,
+er:`erDiagram
+    CUSTOMER ||--o{ ORDER : places
+    CUSTOMER{ string id PK string name string phone }
+    ORDER ||--|{ ORDER_ITEM : contains
+    ORDER_ITEM }o--|| PRODUCT : refs
+    PRODUCT{ string id PK string name decimal price int stock }`,
+jour:`journey
+    title 网购旅程
+    section 浏览
+      打开网站:5:用户
+      搜索:3:用户
+      查看详情:5:用户
+      加入购物车:4:用户
+    section 支付
+      提交订单:5:用户
+      付款:4:用户,支付
+      付款成功:5:系统
+    section 收货
+      发货:4:系统,物流
+      签收:5:用户
+      评价:4:用户`,
+flow2:`graph LR
+    S([开始])-->I[/输入数据/]-->V{验证}
+    V-->|有效|P1[清洗]-->P2[转换]-->P3[分析]-->D{OK?}
+    V-->|无效|E[错误提示]-->I
+    D-->|否|X[重试]-->P1
+    D-->|是|DB[(入库)]-->R[/生成报告/]-->END([结束])
+    classDef g fill:#4ade80,stroke:#166534,color:#052e16
+    classDef y fill:#fbbf24,stroke:#92400e,color:#451a03
+    classDef b fill:#60a5fa,stroke:#1e40af,color:#fff
+    class S,END g; class V,D y; class P1,P2,P3,DB b`
+};
+const TN={flow:'基础流程',seq:'时序图',gantt:'甘特图',cls:'类图',pie:'饼图',mind:'思维导图',er:'ER图',jour:'旅程图',flow2:'复杂流程'};
+(function initTpl(){
+  const c=$('tpls'); Object.keys(TPL).forEach(k=>{
+    const b=document.createElement('button');b.className='tpl';b.textContent=TN[k];
+    b.onclick=()=>{$('code').value=TPL[k];log('加载模板:'+TN[k]);renderNow();};
+    c.appendChild(b);
+  });
+  $('code').value=TPL.flow;
+})();
+
+/* ============== 编辑器工具 ============== */
+function fmt(){
+  const lines=$('code').value.split('\n');let d=0,out=[];
+  for(const ln of lines){const l=ln.trim();if(!l){out.push('');continue;}
+    if(/^(\}|\)|end)/.test(l))d=Math.max(0,d-1);
+    out.push('    '.repeat(d)+l);
+    if(/(\{|\()([^}]*)$/.test(l)&&!/^\}/.test(l))d++;
+    if(/^end\s*$/.test(l))d=Math.max(0,d-1);
+  }
+  $('code').value=out.join('\n');sched();
+}
+function clrClear(){if(confirm('确认清空?')){$('code').value='';$('pv').innerHTML='';svgNd=null;}}
+function cp(){navigator.clipboard.writeText($('code').value).then(()=>log('已复制','o'));}
+function ld(){$('fi').click();}
+$('fi').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{$('code').value=ev.target.result;log('导入:'+f.name);sched();};r.readAsText(f);};
+
+/* ============== SVG/PNG/JPG/PDF 导出 ============== */
+function saveBlob(b,n){const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=n;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},600);}
+function cleanSvgClone(){
+  if(!svgNd)return null;
+  const vb=(svgNd.getAttribute('viewBox')||'').split(/[\s,]+/).map(parseFloat);
+  let W=vb[2],H=vb[3];
+  if(!W||!H){
+    const num=s=>{const v=parseFloat(s);return(v>0&&!/%$/.test(String(s||'')))?v:0;};
+    const rc=svgNd.getBoundingClientRect();
+    W=num(svgNd.getAttribute('width'))||rc.width||800;
+    H=num(svgNd.getAttribute('height'))||rc.height||600;
+  }
+  if(!(W>0)||!(H>0))return null;
+  const clone=svgNd.cloneNode(true);
+  clone.setAttribute('xmlns','http://www.w3.org/2000/svg');
+  clone.setAttribute('xmlns:xlink','http://www.w3.org/1999/xlink');
+  clone.setAttribute('width',W);
+  clone.setAttribute('height',H);
+  clone.removeAttribute('style');
+  return {str:'<?xml version="1.0" encoding="UTF-8"?>\n'+new XMLSerializer().serializeToString(clone),W,H};
+}
+function sv(){const c=cleanSvgClone();return c?c.str:null;}
+function esvg(){const s=sv();if(s){saveBlob(new Blob([s],{type:'image/svg+xml'}),($('fn').value||'diagram')+'.svg');log('导出SVG','o');}else log('无渲染结果，无法导出SVG','e');}
+async function raster(type,scale=2){
+  const c=cleanSvgClone();
+  if(!c)return Promise.reject(new Error('无渲染结果，请先成功渲染图表'));
+  const W=Math.round(c.W*scale),H=Math.round(c.H*scale);
+  if(!(W>0&&H>0))return Promise.reject(new Error('SVG 尺寸无效: '+c.W+'x'+c.H));
+  const bytes=new TextEncoder().encode(c.str);
+  let bin='';for(let i=0;i<bytes.length;i++)bin+=String.fromCharCode(bytes[i]);
+  const u='data:image/svg+xml;base64,'+btoa(bin);
+  const img=new Image();
+  await new Promise((ok,er)=>{img.onload=ok;img.onerror=()=>er(new Error('SVG 图像数据解码失败'));img.src=u;});
+  if(img.decode){try{await img.decode();}catch(e){}}
+  const cv=document.createElement('canvas');cv.width=W;cv.height=H;
+  const ctx=cv.getContext('2d');
+  ctx.fillStyle=($('bgcol')&&$('bgcol').value)||'#ffffff';
+  ctx.fillRect(0,0,W,H);
+  ctx.drawImage(img,0,0,W,H);
+  const b=await new Promise((res,rej)=>cv.toBlob(bb=>bb?res(bb):rej(new Error('canvas.toBlob 失败')),type,0.95));
+  return {b,W,H,scale};
+}
+async function epng(){try{const r=await raster('image/png',2);saveBlob(r.b,($('fn').value||'diagram')+'.png');log(`导出PNG (${r.W}x${r.H})`,'o');}catch(e){log('PNG失败:'+e.message,'e');}}
+async function ejpg(){try{const r=await raster('image/jpeg',2);saveBlob(r.b,($('fn').value||'diagram')+'.jpg');log(`导出JPG (${r.W}x${r.H})`,'o');}catch(e){log('JPG失败:'+e.message,'e');}}
+const blobToDataURL=b=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(b);});
+async function epdf(){
+  try{
+    if(!(window.jspdf&&window.jspdf.jsPDF))throw new Error('jsPDF 库未加载（检查网络）');
+    const c=cleanSvgClone();
+    if(!c)throw new Error('无渲染结果，请先成功渲染图表');
+    const r=await raster('image/png',Math.min(4,Math.max(2,2400/Math.max(c.W,c.H))));
+    const ori=r.W>=r.H?'landscape':'portrait';
+    const pdf=new window.jspdf.jsPDF({orientation:ori,unit:'mm',format:'a4'});
+    const pw=pdf.internal.pageSize.getWidth(),ph=pdf.internal.pageSize.getHeight();
+    const m=12;
+    const k=Math.min((pw-2*m)/r.W,(ph-2*m)/r.H);
+    const w=r.W*k,h=r.H*k,x=(pw-w)/2,y=Math.max(m*0.6,(ph-h)/2);
+    pdf.setFillColor(255,255,255);pdf.rect(0,0,pw,ph,'F');
+    pdf.addImage(await blobToDataURL(r.b),'PNG',x,y,w,h);
+    pdf.save(($('fn').value||'diagram')+'.pdf');
+    log(`导出PDF (A4 ${ori==='landscape'?'横向':'纵向'}, 图 ${w.toFixed(0)}×${h.toFixed(0)}mm)`,'o');
+  }catch(e){log('PDF失败:'+e.message,'e');}
+}
+
+/* ============== 启动 ============== */
+function renderNow(){clearTimeout(rT);render($('code').value);}
+window.addEventListener('load', async ()=>{
+  log('工具启动，等待渲染...');
+  try{ await render($('code').value); log('初始渲染成功','o'); }catch(e){log(e.message,'e');}
+});
+</script>
+</body>
+</html>
