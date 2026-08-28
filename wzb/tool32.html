@@ -1,0 +1,2083 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>车间限高标识生成器</title>
+<style>
+:root{
+  --bg:#0a0c12; --bg2:#0f131c; --bg3:#141a25; --bg4:#1a2230;
+  --inp:#0c1017;
+  --line:#1f2836; --line2:#2c3849;
+  --fg:#e9eef8; --fg2:#93a0b6; --fg3:#66738c;
+  --acc:#ffb020; --acc2:#3d8bfd; --ok:#2ec27e; --danger:#f0616d;
+  --r:12px; --r2:9px; --r3:7px;
+  --sh1:0 1px 2px rgba(0,0,0,.4);
+  --sh2:0 10px 30px rgba(0,0,0,.5);
+}
+body.light{
+  --bg:#e9edf4; --bg2:#ffffff; --bg3:#f6f8fc; --bg4:#ffffff;
+  --inp:#ffffff;
+  --line:#e0e6f0; --line2:#c6d0e0;
+  --fg:#111827; --fg2:#4a5769; --fg3:#7d899b;
+  --sh2:0 8px 24px rgba(28,44,80,.12);
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;background:var(--bg);color:var(--fg);
+  font:13px/1.55 "Microsoft YaHei","PingFang SC",-apple-system,Segoe UI,sans-serif;
+  overflow:hidden;-webkit-font-smoothing:antialiased;
+}
+button,input,select,textarea{font-family:inherit;font-size:12px;color:var(--fg)}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:var(--line2);border-radius:6px;border:2px solid var(--bg2)}
+::-webkit-scrollbar-thumb:hover{background:#3a4a61}
+::-webkit-scrollbar-track{background:transparent}
+
+/* ---------------- 布局 ---------------- */
+.app{display:flex;flex-direction:column;height:100vh}
+.topbar{
+  display:flex;align-items:center;gap:10px;padding:0 14px;height:54px;flex:0 0 54px;
+  background:linear-gradient(180deg,#121826,#0f131c);
+  border-bottom:1px solid var(--line);box-shadow:0 1px 0 rgba(255,255,255,.02) inset;z-index:10;
+}
+body.light .topbar{background:linear-gradient(180deg,#ffffff,#f7f9fc)}
+.logo{display:flex;align-items:center;gap:10px;font-size:15px;font-weight:700;letter-spacing:.4px}
+.logo i{
+  width:28px;height:28px;border-radius:8px;
+  background:linear-gradient(145deg,#ffc94d,#f08a0c);
+  display:grid;place-items:center;font-style:normal;color:#2b1a00;font-size:15px;font-weight:900;
+  box-shadow:0 2px 8px rgba(240,138,12,.35);
+}
+.logo small{font-weight:400;color:var(--fg3);font-size:11px;margin-left:2px;letter-spacing:0}
+.spacer{flex:1}
+.body{flex:1;display:grid;grid-template-columns:352px minmax(340px,1fr) 318px;min-height:0}
+.panel,.side{background:var(--bg2);overflow-y:auto;min-height:0}
+.panel{border-right:1px solid var(--line)}
+.side{border-left:1px solid var(--line)}
+.stage{display:flex;flex-direction:column;min-width:0;background:var(--bg)}
+
+/* ---------------- 通用控件 ---------------- */
+.btn{
+  background:var(--bg4);border:1px solid var(--line);color:var(--fg);
+  padding:6px 11px;border-radius:var(--r3);cursor:pointer;transition:.13s;white-space:nowrap;
+  font-size:12px;line-height:1.5;
+}
+.btn:hover{background:var(--line);border-color:var(--line2)}
+.btn:active{transform:translateY(1px)}
+.btn.primary{
+  background:linear-gradient(180deg,#ffc450,#f59e0b);border-color:#dd8f07;color:#3a2400;font-weight:700;
+}
+.btn.primary:hover{filter:brightness(1.07);background:linear-gradient(180deg,#ffcd62,#f8a61a)}
+.btn.ghost{background:transparent}
+.btn.danger{color:var(--danger);border-color:#4d2a30}
+.btn.danger:hover{background:#3a1f24;border-color:#6b3a42}
+.btn.sm{padding:4px 9px;font-size:11.5px;border-radius:6px}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.on{background:var(--acc);color:#3a2400;border-color:var(--acc);font-weight:700}
+
+.tabs{
+  display:flex;gap:3px;padding:9px;position:sticky;top:0;z-index:6;
+  background:var(--bg2);border-bottom:1px solid var(--line);
+}
+.tabs .tabs-in{display:flex;gap:3px;background:var(--inp);border:1px solid var(--line);padding:3px;border-radius:10px;width:100%}
+.tabs button{
+  flex:1 1 auto;min-width:46px;background:transparent;border:0;color:var(--fg2);
+  padding:6px 4px;border-radius:7px;cursor:pointer;font-size:12px;transition:.13s;
+}
+.tabs button:hover{color:var(--fg)}
+.tabs button.on{background:var(--bg4);border:1px solid var(--line2);color:var(--acc);font-weight:700;box-shadow:var(--sh1)}
+.tabpane{display:none;padding:11px}
+.tabpane.on{display:block}
+
+/* 分组卡片（可折叠） */
+.grp{
+  border:1px solid var(--line);border-radius:var(--r);margin-bottom:10px;
+  background:var(--bg3);overflow:hidden;
+}
+.grp>h4{
+  margin:0;padding:9px 12px;font-size:12.5px;font-weight:700;color:var(--fg);
+  border-bottom:1px solid var(--line);display:flex;align-items:center;gap:7px;
+  cursor:pointer;user-select:none;transition:background .13s;
+}
+.grp>h4:hover{background:var(--bg4)}
+.grp>h4 .tag{font-weight:400;font-size:10.5px;color:var(--fg3);margin-left:auto;background:var(--inp);border:1px solid var(--line);padding:1px 7px;border-radius:20px}
+.grp>h4:after{
+  content:"";width:0;height:0;border-left:4px solid var(--fg3);border-top:4px solid transparent;
+  border-bottom:4px solid transparent;order:3;transition:transform .18s;margin-left:8px;flex:0 0 auto;
+}
+.grp.collapsed>h4{border-bottom-color:transparent}
+.grp.collapsed>h4:after{transform:rotate(-90deg)}
+.grp.collapsed>.in{display:none}
+.grp .in{padding:11px 12px}
+
+.row{display:flex;align-items:center;gap:9px;margin:8px 0}
+.row:first-child{margin-top:0}
+.row:last-child{margin-bottom:0}
+.row>label:not(.switch):not(.lockrow){flex:0 0 64px;color:var(--fg2);font-size:12px}
+/* 固定宽度的下拉：禁止被 flex 压缩（否则「单位 / 自动-手动」会被挤扁） */
+.sel{width:78px;flex:0 0 78px}
+.row>input[type=number],.row>input[type=text]{flex:1 1 auto;min-width:52px}
+.row.col{flex-direction:column;align-items:stretch;gap:5px}
+.row.col>label{flex:none}
+.rv{color:var(--acc);font-weight:700;font-size:11px;font-variant-numeric:tabular-nums;flex:0 0 auto;min-width:38px;text-align:right}
+.hint{color:var(--fg3);font-size:11px;line-height:1.6}
+.hint b{color:var(--fg2);font-weight:700}
+.chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}
+.chip{
+  background:var(--inp);border:1px solid var(--line);border-radius:20px;padding:3px 10px;
+  font-size:11px;cursor:pointer;color:var(--fg2);transition:.13s;
+}
+.chip:hover{border-color:var(--acc);color:var(--acc);background:rgba(255,176,32,.09)}
+
+input[type=text],input[type=number],select,textarea{
+  background:var(--inp);border:1px solid var(--line);color:var(--fg);
+  padding:5px 9px;border-radius:var(--r3);outline:none;min-width:0;width:100%;transition:.13s;
+}
+input[type=text]:focus,input[type=number]:focus,select:focus,textarea:focus{
+  border-color:var(--acc);box-shadow:0 0 0 3px rgba(255,176,32,.13);
+}
+select{cursor:pointer}
+textarea{resize:vertical;line-height:1.65}
+
+input[type=range]{
+  -webkit-appearance:none;appearance:none;width:100%;height:20px;background:transparent;cursor:pointer;
+}
+input[type=range]::-webkit-slider-runnable-track{height:4px;border-radius:4px;background:var(--line2)}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:14px;height:14px;margin-top:-5px;border-radius:50%;
+  background:var(--acc);border:2px solid var(--bg3);box-shadow:0 1px 4px rgba(0,0,0,.5);transition:.12s;
+}
+input[type=range]:hover::-webkit-slider-thumb{transform:scale(1.18)}
+input[type=range]::-moz-range-track{height:4px;border-radius:4px;background:var(--line2)}
+input[type=range]::-moz-range-thumb{width:12px;height:12px;border:2px solid var(--bg3);border-radius:50%;background:var(--acc)}
+
+input[type=color]{
+  width:34px;height:26px;padding:0;border:1px solid var(--line);border-radius:var(--r3);
+  background:var(--inp);cursor:pointer;flex:0 0 34px;
+}
+input[type=color]::-webkit-color-swatch-wrapper{padding:2px}
+input[type=color]::-webkit-color-swatch{border:none;border-radius:4px}
+
+/* 开关（注意：必须压过 .row>label 的 flex，否则会被拉宽） */
+.switch{position:relative;display:inline-block;width:34px;height:20px;flex:0 0 34px;cursor:pointer;vertical-align:middle}
+.switch input{position:absolute;opacity:0;width:0;height:0}
+.switch span{position:absolute;inset:0;background:var(--line2);border-radius:20px;transition:background .18s}
+.switch span:after{
+  content:"";position:absolute;left:2px;top:2px;width:16px;height:16px;background:#fff;
+  border-radius:50%;box-shadow:0 1px 3px rgba(0,0,0,.45);transition:transform .18s;
+}
+.switch input:checked+span{background:var(--acc)}
+.switch input:checked+span:after{transform:translateX(14px)}
+
+.seg{display:flex;gap:3px;flex-wrap:wrap;background:var(--inp);border:1px solid var(--line);padding:3px;border-radius:10px}
+.seg button{
+  flex:1 1 auto;min-width:42px;background:transparent;border:0;color:var(--fg2);
+  padding:5px 6px;border-radius:7px;cursor:pointer;font-size:11.5px;transition:.13s;
+}
+.seg button:hover{color:var(--fg);background:rgba(255,255,255,.05)}
+.seg button.on{background:var(--acc);color:#3a2400;font-weight:700;box-shadow:var(--sh1)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+[hidden]{display:none!important}
+
+/* ---------------- 舞台 ---------------- */
+.stagebar{
+  display:flex;align-items:center;gap:8px;padding:9px 13px;
+  border-bottom:1px solid var(--line);background:var(--bg2);flex-wrap:wrap;
+}
+.stagebar .sep{width:1px;height:20px;background:var(--line);margin:0 3px}
+.canvas-wrap{
+  flex:1;position:relative;overflow:auto;display:grid;place-items:center;padding:34px;min-height:0;
+}
+/* 投影：暗色背景下纯黑阴影不可见，故叠加一条高光「厚度边」+ 两层暗影 */
+#holder{
+  position:relative;
+  filter:drop-shadow(0 4px 0 rgba(255,255,255,.20)) drop-shadow(0 12px 18px rgba(0,0,0,.85)) drop-shadow(0 28px 50px rgba(0,0,0,.9));
+  transition:filter .18s;
+}
+#holder.noshadow{filter:none}
+#holder svg{display:block}
+/* 亮色主题：白色高光边不可见，改用暗色厚度边，保证「投影」开关在明暗两种主题下都有明显差别 */
+body.light #holder{
+  filter:drop-shadow(0 4px 0 rgba(60,52,38,.30)) drop-shadow(0 12px 18px rgba(40,32,20,.30)) drop-shadow(0 28px 50px rgba(30,24,14,.28));
+}
+body.light #holder.noshadow{filter:none}
+/* 标注层与标牌分离，避免被标牌的投影滤镜一起处理 */
+#frame{position:relative}
+.bg-grid{
+  background-color:var(--bg);
+  background-image:linear-gradient(rgba(255,255,255,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.04) 1px,transparent 1px);
+  background-size:22px 22px;
+}
+body.light .bg-grid{background-image:linear-gradient(rgba(0,0,0,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(0,0,0,.045) 1px,transparent 1px)}
+.bg-wall{background:linear-gradient(160deg,#efebe3,#c9c2b4)}
+.bg-concrete{background:radial-gradient(120% 100% at 30% 0%,#7d838d,#494f58 70%,#31363d)}
+.bg-night{background:radial-gradient(110% 90% at 50% 0%,#1d2637,#070a11 78%)}
+.bg-checker{
+  background-color:#262b36;
+  background-image:linear-gradient(45deg,#1e222b 25%,transparent 25%,transparent 75%,#1e222b 75%),
+                   linear-gradient(45deg,#1e222b 25%,transparent 25%,transparent 75%,#1e222b 75%);
+  background-size:22px 22px;background-position:0 0,11px 11px;
+}
+/* 尺寸标注：CAD 风格（虚线 + 端部界标 + 居中胶囊标签） */
+.dim{position:absolute;pointer-events:none;opacity:.92}
+.dim b{
+  position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  font-size:10.5px;font-weight:700;color:var(--acc);background:var(--bg2);
+  padding:1px 9px;border-radius:20px;border:1px solid rgba(255,176,32,.40);
+  white-space:nowrap;letter-spacing:.3px;line-height:1.6;
+}
+.dim.dh{left:-9px;right:-9px;top:-32px;height:0;border-top:1px dashed var(--acc)}
+.dim.dh:before,.dim.dh:after{content:"";position:absolute;top:-5px;width:1px;height:10px;background:var(--acc)}
+.dim.dh:before{left:0}
+.dim.dh:after{right:0}
+.dim.dv{top:-9px;bottom:-9px;left:-32px;width:0;border-left:1px dashed var(--acc)}
+.dim.dv:before,.dim.dv:after{content:"";position:absolute;left:-5px;width:10px;height:1px;background:var(--acc)}
+.dim.dv:before{top:0}
+.dim.dv:after{bottom:0}
+.dim.dv b{writing-mode:vertical-rl;text-orientation:mixed}
+.stagefoot{
+  padding:7px 13px;border-top:1px solid var(--line);background:var(--bg2);
+  color:var(--fg3);font-size:11px;display:flex;gap:14px;flex-wrap:wrap;
+}
+
+/* ---------------- 批量 / 方案 ---------------- */
+.thumbgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:8px;margin-top:8px}
+.thumb{
+  border:1px solid var(--line);border-radius:9px;overflow:hidden;background:#fff;
+  cursor:pointer;position:relative;padding:5px;transition:.13s;
+}
+.thumb:hover{border-color:var(--acc);transform:translateY(-2px);box-shadow:var(--sh1)}
+.thumb svg{width:100%;height:auto;display:block}
+.thumb b{display:block;text-align:center;font-size:10px;color:var(--fg2);padding-top:4px;font-weight:700}
+.plist{display:flex;flex-direction:column;gap:6px}
+.pitem{
+  display:flex;align-items:center;gap:6px;background:var(--inp);
+  border:1px solid var(--line);border-radius:var(--r3);padding:5px 6px 5px 9px;
+}
+.pitem span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px}
+
+#spec{
+  white-space:pre-wrap;font-size:12px;line-height:1.85;background:var(--inp);
+  border:1px solid var(--line);border-radius:var(--r2);padding:11px;max-height:340px;overflow:auto;
+  font-family:Consolas,"Microsoft YaHei",monospace;
+}
+#toast{
+  position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(18px);
+  background:#171d29;color:#fff;border:1px solid var(--line2);padding:10px 20px;border-radius:9px;
+  opacity:0;pointer-events:none;transition:.22s;z-index:999;box-shadow:var(--sh2);font-size:12.5px;
+}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#toast.err{background:#3d1a1e;border-color:#7a3038}
+.lockrow{display:flex;align-items:center;gap:6px;color:var(--fg2);font-size:12px;cursor:pointer;user-select:none}
+.lockrow input{width:auto;margin:0;cursor:pointer;accent-color:var(--acc)}
+@media(max-width:1180px){
+  .body{grid-template-columns:320px 1fr}
+  .side{display:none}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="topbar">
+    <div class="logo"><i>H</i>车间限高标识生成器<small>Height Limit Sign Studio</small></div>
+    <div class="spacer"></div>
+    <select id="tplSel" style="width:190px" title="选择模板"></select>
+    <button class="btn" id="btnApplyTpl">套用模板</button>
+    <div class="sep"></div>
+    <button class="btn sm" id="btnUndo" title="撤销 Ctrl+Z">↶ 撤销</button>
+    <button class="btn sm" id="btnRedo" title="重做 Ctrl+Y">↷ 重做</button>
+    <button class="btn sm" id="btnReset" title="恢复默认">⟲ 重置</button>
+    <button class="btn sm" id="btnTheme" title="切换明暗">◐</button>
+  </header>
+
+  <div class="body">
+
+    <!-- ============ 左：参数面板 ============ -->
+    <aside class="panel">
+      <div class="tabs">
+        <div class="tabs-in">
+          <button data-tab="content" class="on">内容</button>
+          <button data-tab="layout">版式</button>
+          <button data-tab="style">外观</button>
+          <button data-tab="graph">图形</button>
+          <button data-tab="batch">批量</button>
+          <button data-tab="spec">说明</button>
+        </div>
+      </div>
+
+      <!-- ---------- 内容 ---------- -->
+      <div class="tabpane on" id="tab-content">
+
+        <div class="grp"><h4>限高数值 <span class="tag">核心</span></h4><div class="in">
+          <div class="row"><label>数值</label>
+            <input type="number" step="0.1" min="0.1" max="99" data-path="content.value.num">
+            <select data-path="content.value.unit" class="sel">
+              <option value="m">m</option><option value="M">M</option>
+              <option value="cm">cm</option><option value="mm">mm</option>
+              <option value="米">米</option><option value="">无</option>
+            </select>
+          </div>
+          <div class="row"><label>小数位</label>
+            <select data-path="content.value.decimals">
+              <option value="auto">自动</option><option value="0">0</option>
+              <option value="1">1</option><option value="2">2</option>
+            </select>
+            <label style="flex:0 0 auto">显示单位</label>
+            <label class="switch"><input type="checkbox" data-path="content.value.showUnit"><span></span></label>
+          </div>
+          <div class="chips" data-fill="value">
+            <span class="chip">1.8</span><span class="chip">2.0</span><span class="chip">2.2</span>
+            <span class="chip">2.5</span><span class="chip">2.8</span><span class="chip">3.0</span>
+            <span class="chip">3.5</span><span class="chip">4.0</span><span class="chip">4.5</span>
+            <span class="chip">5.0</span><span class="chip">6.0</span>
+          </div>
+          <div class="hint" id="valHint" style="margin-top:7px"></div>
+        </div></div>
+
+        <div class="grp"><h4>主标题</h4><div class="in">
+          <div class="row"><label>显示</label>
+            <label class="switch"><input type="checkbox" data-path="content.title.show"><span></span></label>
+            <input type="text" data-path="content.title.text">
+          </div>
+          <div class="chips" data-fill="title">
+            <span class="chip">限高</span><span class="chip">限制高度</span><span class="chip">注意限高</span>
+            <span class="chip">限高通行</span><span class="chip">门洞限高</span><span class="chip">通道限高</span>
+            <span class="chip">车辆限高</span>
+          </div>
+        </div></div>
+
+        <div class="grp"><h4>副标题 / 警示语</h4><div class="in">
+          <div class="row"><label>显示</label>
+            <label class="switch"><input type="checkbox" data-path="content.sub.show"><span></span></label>
+            <input type="text" data-path="content.sub.text">
+          </div>
+          <div class="chips" data-fill="sub">
+            <span class="chip">超高车辆禁止通行</span><span class="chip">超高车辆请勿驶入</span>
+            <span class="chip">注意限高 谨慎驾驶</span><span class="chip">车辆高度不得超过</span>
+            <span class="chip">减速慢行 注意限高</span><span class="chip">小心碰头</span>
+          </div>
+        </div></div>
+
+        <div class="grp"><h4>补充说明</h4><div class="in">
+          <div class="row"><label>显示</label>
+            <label class="switch"><input type="checkbox" data-path="content.extra.show"><span></span></label>
+            <span class="hint">支持多行：输入 \n 或直接回车换行</span>
+          </div>
+          <textarea rows="2" data-path="content.extra.text" placeholder="如：装载高度含货物&#10;违规停放后果自负"></textarea>
+        </div></div>
+
+        <div class="grp"><h4>英文 / 双语</h4><div class="in">
+          <div class="row"><label>显示</label>
+            <label class="switch"><input type="checkbox" data-path="content.en.show"><span></span></label>
+            <input type="text" data-path="content.en.text">
+          </div>
+          <div class="chips" data-fill="en">
+            <span class="chip">HEIGHT LIMIT</span><span class="chip">MAX HEIGHT</span>
+            <span class="chip">LOW CLEARANCE</span><span class="chip">注意安全 CAUTION</span>
+          </div>
+        </div></div>
+
+        <div class="grp"><h4>底部信息</h4><div class="in">
+          <div class="row"><label>显示</label>
+            <label class="switch"><input type="checkbox" data-path="content.footer.show"><span></span></label>
+            <input type="text" data-path="content.footer.text">
+          </div>
+          <div class="chips" data-fill="footer">
+            <span class="chip">安全生产办公室</span><span class="chip">设备管理部 宣</span>
+            <span class="chip">安全第一 预防为主</span><span class="chip">仓库管理部</span>
+          </div>
+        </div></div>
+
+        <div class="grp"><h4>编号 / 日期 <span class="tag">自动</span></h4><div class="in">
+          <div class="row"><label>显示</label>
+            <label class="switch"><input type="checkbox" data-path="content.no.show"><span></span></label>
+            <span class="hint">生成 No.XG-20260828-01 形式</span>
+          </div>
+          <div class="row"><label>前缀</label><input type="text" data-path="content.no.prefix" style="width:70px">
+            <label style="flex:0 0 auto">序号</label><input type="number" min="1" max="999" data-path="content.no.serial" style="width:70px">
+          </div>
+          <div class="row"><label>日期</label><input type="text" data-path="content.no.date" placeholder="留空=今天">
+            <button class="btn sm" id="btnToday">今天</button>
+          </div>
+        </div></div>
+
+      </div>
+
+      <!-- ---------- 版式 ---------- -->
+      <div class="tabpane" id="tab-layout">
+
+        <div class="grp"><h4>外形</h4><div class="in">
+          <div class="seg" data-seg="shape">
+            <button data-v="rect">矩形</button>
+            <button data-v="rounded">圆角</button>
+            <button data-v="circle">圆形</button>
+            <button data-v="triangle">三角</button>
+            <button data-v="octagon">八角</button>
+            <button data-v="arch">拱形</button>
+          </div>
+          <div class="row" style="margin-top:10px" data-when-not="shape:rect"><label>圆角</label>
+            <input type="range" min="0" max="140" step="1" data-path="radius" data-unit="mm">
+          </div>
+          <div class="hint" data-when="shape:rect">「矩形」为硬直角，不参与圆角设置；切到「圆角」即可调整。</div>
+          <div class="row" data-when-not="shape:circle,triangle,arch"><label>切角</label>
+            <input type="range" min="0.05" max="0.45" step="0.01" data-path="octCut">
+          </div>
+        </div></div>
+
+        <div class="grp"><h4>尺寸</h4><div class="in">
+          <div class="row"><label>规格预设</label>
+            <select id="sizePreset">
+              <option value="">— 自定义 —</option>
+              <option value="300,400">300 × 400 mm</option>
+              <option value="400,500">400 × 500 mm</option>
+              <option value="400,600">400 × 600 mm</option>
+              <option value="500,700">500 × 700 mm</option>
+              <option value="600,800">600 × 800 mm</option>
+              <option value="600,900">600 × 900 mm</option>
+              <option value="800,1000">800 × 1000 mm</option>
+              <option value="900,500">900 × 500 mm（横版）</option>
+              <option value="1200,400">1200 × 400 mm（横版）</option>
+              <option value="200,800">200 × 800 mm（立柱窄条）</option>
+              <option value="600,600" data-shape="circle">Φ600 圆形</option>
+              <option value="800,800" data-shape="circle">Φ800 圆形</option>
+              <option value="700,606" data-shape="triangle">△700 三角</option>
+              <option value="900,779" data-shape="triangle">△900 三角</option>
+            </select>
+          </div>
+          <div class="grid2">
+            <div><div class="hint">宽 (mm)</div><input type="number" min="40" max="4000" step="10" data-path="size.w"></div>
+            <div><div class="hint">高 (mm)</div><input type="number" min="40" max="4000" step="10" data-path="size.h"></div>
+          </div>
+          <div class="row"><label class="lockrow"><input type="checkbox" data-path="size.lock" style="width:auto"> 锁定宽高比</label>
+            <div class="spacer"></div>
+            <button class="btn sm" id="btnSwap">⇄ 横竖互换</button>
+          </div>
+        </div></div>
+
+        <div class="grp"><h4>排版</h4><div class="in">
+          <div class="row"><label>内边距</label><input type="range" min="0" max="160" step="1" data-path="layout.pad" data-unit="mm"></div>
+          <div class="row"><label>垂直分布</label>
+            <select data-path="layout.vdist">
+              <option value="center">居中</option>
+              <option value="spread">分散对齐</option>
+              <option value="top">顶部对齐</option>
+              <option value="bottom">底部对齐</option>
+            </select>
+          </div>
+          <div class="row"><label>行距</label><input type="range" min="0" max="1" step="0.02" data-path="layout.lineGap"></div>
+        </div></div>
+
+        <div class="grp"><h4>字号 <span class="tag">自动 / 手动</span></h4><div class="in">
+          <div class="row"><label>数值</label>
+            <select data-path="content.value.sizeMode" class="sel">
+              <option value="auto">自动</option><option value="manual">手动</option>
+            </select>
+            <input type="range" min="20" max="700" step="1" data-path="content.value.size" data-unit="mm" data-when="content.value.sizeMode:manual">
+          </div>
+          <div class="row"><label>标题</label>
+            <select data-path="content.title.sizeMode" class="sel"><option value="auto">自动</option><option value="manual">手动</option></select>
+            <input type="range" min="10" max="400" step="1" data-path="content.title.size" data-unit="mm" data-when="content.title.sizeMode:manual">
+          </div>
+          <div class="row"><label>副标题</label>
+            <select data-path="content.sub.sizeMode" class="sel"><option value="auto">自动</option><option value="manual">手动</option></select>
+            <input type="range" min="8" max="300" step="1" data-path="content.sub.size" data-unit="mm" data-when="content.sub.sizeMode:manual">
+          </div>
+          <div class="row"><label>补充</label>
+            <select data-path="content.extra.sizeMode" class="sel"><option value="auto">自动</option><option value="manual">手动</option></select>
+            <input type="range" min="8" max="300" step="1" data-path="content.extra.size" data-unit="mm" data-when="content.extra.sizeMode:manual">
+          </div>
+          <div class="row"><label>英文</label>
+            <select data-path="content.en.sizeMode" class="sel"><option value="auto">自动</option><option value="manual">手动</option></select>
+            <input type="range" min="8" max="300" step="1" data-path="content.en.size" data-unit="mm" data-when="content.en.sizeMode:manual">
+          </div>
+          <div class="row"><label>底部</label>
+            <select data-path="content.footer.sizeMode" class="sel"><option value="auto">自动</option><option value="manual">手动</option></select>
+            <input type="range" min="6" max="200" step="1" data-path="content.footer.size" data-unit="mm" data-when="content.footer.sizeMode:manual">
+          </div>
+          <div class="row"><label>编号</label>
+            <select data-path="content.no.sizeMode" class="sel"><option value="auto">自动</option><option value="manual">手动</option></select>
+            <input type="range" min="6" max="200" step="1" data-path="content.no.size" data-unit="mm" data-when="content.no.sizeMode:manual">
+          </div>
+          <div class="hint">自动模式：按可用空间等比缩放，保证不溢出。</div>
+        </div></div>
+
+        <div class="grp"><h4>数值样式</h4><div class="in">
+          <div class="row"><label>单位比例</label><input type="range" min="0.2" max="0.9" step="0.02" data-path="content.value.unitScale"></div>
+          <div class="row"><label>单位间距</label><input type="range" min="0" max="60" step="1" data-path="content.value.unitGap" data-unit="mm"></div>
+          <div class="row"><label>数字字距</label><input type="range" min="-10" max="60" step="1" data-path="content.value.ls" data-unit="mm"></div>
+          <div class="row"><label>数字字重</label>
+            <select data-path="content.value.weight"><option value="400">常规</option><option value="700">粗体</option><option value="900">特粗</option></select>
+            <label style="flex:0 0 auto">单位同行</label>
+            <label class="switch"><input type="checkbox" data-path="content.value.inlineUnit"><span></span></label>
+          </div>
+        </div></div>
+
+        <div class="grp"><h4>字体</h4><div class="in">
+          <div class="row col"><label>数字 / 标题</label>
+            <select data-path="typo.family"></select>
+          </div>
+          <div class="row col"><label>中文说明</label>
+            <select data-path="typo.familyCJK"></select>
+          </div>
+          <div class="row"><label>标题字距</label><input type="range" min="0" max="60" step="1" data-path="content.title.ls" data-unit="mm"></div>
+          <div class="row"><label>标题字重</label>
+            <select data-path="content.title.weight"><option value="400">常规</option><option value="700">粗体</option><option value="900">特粗</option></select>
+          </div>
+        </div></div>
+      </div>
+
+      <!-- ---------- 外观 ---------- -->
+      <div class="tabpane" id="tab-style">
+
+        <div class="grp"><h4>配色主题 <span class="tag">一键</span></h4><div class="in">
+          <div class="chips" id="themeChips"></div>
+        </div></div>
+
+        <div class="grp"><h4>颜色</h4><div class="in" id="colorIn"></div></div>
+
+        <div class="grp"><h4>边框</h4><div class="in">
+          <div class="row"><label>显示</label>
+            <label class="switch"><input type="checkbox" data-path="border.show"><span></span></label>
+            <div class="spacer"></div><span class="hint" data-when="border.show">沿轮廓内侧描边，圆角处自动贴合</span>
+          </div>
+          <div class="row"><label>边框宽</label><input type="range" min="0" max="80" step="1" data-path="border.w" data-unit="mm"></div>
+          <div class="row"><label>内框线</label>
+            <label class="switch"><input type="checkbox" data-path="border.inner"><span></span></label>
+            <label style="flex:0 0 auto">内缩</label>
+            <input type="range" min="4" max="120" step="1" data-path="border.inset" data-unit="mm">
+          </div>
+          <div class="row"><label>内框宽</label><input type="range" min="1" max="30" step="1" data-path="border.innerW" data-unit="mm">
+            <label style="flex:0 0 auto">虚线</label>
+            <label class="switch"><input type="checkbox" data-path="border.innerDash"><span></span></label>
+          </div>
+        </div></div>
+
+        <div class="grp"><h4>反光膜 / 质感</h4><div class="in">
+          <div class="row"><label>等级</label>
+            <select data-path="reflect">
+              <option value="none">无光泽（普通喷涂）</option>
+              <option value="engineer">工程级反光膜</option>
+              <option value="high">高强级反光膜</option>
+              <option value="super">超强级（钻石级）</option>
+            </select>
+          </div>
+          <div class="row"><label>光泽强度</label><input type="range" min="0.1" max="1.6" step="0.05" data-path="reflectK"></div>
+          <div class="hint">仅模拟视觉效果，用于向领导/客户展示材质差异。</div>
+        </div></div>
+
+        <div class="grp"><h4>自定义图片</h4><div class="in">
+          <div class="row"><label>显示</label>
+            <label class="switch"><input type="checkbox" data-path="image.show"><span></span></label>
+            <button class="btn sm" id="btnPickImg">选择图片…</button>
+            <button class="btn sm danger" id="btnClrImg">清除</button>
+            <input type="file" id="imgFile" accept="image/*" hidden>
+          </div>
+          <div class="row"><label>位置</label>
+            <select data-path="image.pos">
+              <option value="top">顶部</option><option value="bottom">底部</option>
+              <option value="center">图标位</option><option value="bg">背景水印</option>
+            </select>
+          </div>
+          <div class="row"><label>大小</label><input type="range" min="10" max="400" step="1" data-path="image.size" data-unit="mm"></div>
+          <div class="row"><label>不透明度</label><input type="range" min="0.05" max="1" step="0.05" data-path="image.opacity"></div>
+          <div class="hint">可用于放公司 Logo、二维码、部门标识。</div>
+        </div></div>
+      </div>
+
+      <!-- ---------- 图形 ---------- -->
+      <div class="tabpane" id="tab-graph">
+
+        <div class="grp"><h4>警示图标</h4><div class="in">
+          <div class="row"><label>显示</label>
+            <label class="switch"><input type="checkbox" data-path="content.icon.show"><span></span></label>
+            <div class="spacer"></div>
+          </div>
+          <div class="seg" data-seg="content.icon.type" style="margin-top:4px">
+            <button data-v="bar">限高杆</button>
+            <button data-v="truck">车辆</button>
+            <button data-v="arrow">顶高箭头</button>
+            <button data-v="warn">警示</button>
+            <button data-v="gate">门洞</button>
+            <button data-v="none">无</button>
+          </div>
+          <div class="row"><label>图标大小</label><input type="range" min="0.1" max="0.95" step="0.01" data-path="content.icon.size"></div>
+          <div class="row"><label>上下留白</label><input type="range" min="0" max="120" step="1" data-path="content.icon.gap" data-unit="mm"></div>
+        </div></div>
+
+        <div class="grp"><h4>警示斜纹</h4><div class="in">
+          <div class="row"><label>模式</label>
+            <select data-path="stripes.mode">
+              <option value="none">无</option>
+              <option value="top">顶部带</option>
+              <option value="bottom">底部带</option>
+              <option value="both">上下带</option>
+              <option value="corners">对角块</option>
+              <option value="frame">四周框</option>
+            </select>
+          </div>
+          <div class="hint" data-when="shape:circle,triangle,octagon,arch">该形状下斜纹沿边缘整圈显示（上带/下带/四周框均等效）。</div>
+          <div class="row"><label>带宽</label><input type="range" min="4" max="200" step="1" data-path="stripes.h" data-unit="mm"></div>
+          <div class="row"><label>条纹周期</label><input type="range" min="6" max="120" step="1" data-path="stripes.p" data-unit="mm"></div>
+          <div class="row"><label>角度</label><input type="range" min="0" max="90" step="5" data-path="stripes.angle" data-unit="°"></div>
+        </div></div>
+
+        <div class="grp"><h4>装饰</h4><div class="in">
+          <div class="row"><label>四角铆钉</label>
+            <label class="switch"><input type="checkbox" data-path="deco.rivets"><span></span></label>
+            <label style="flex:0 0 auto">直径</label>
+            <input type="range" min="2" max="24" step="1" data-path="deco.rivetR" data-unit="mm">
+          </div>
+          <div class="row"><label>底部色条</label>
+            <label class="switch"><input type="checkbox" data-path="deco.underline"><span></span></label>
+            <label style="flex:0 0 auto">厚度</label>
+            <input type="range" min="2" max="40" step="1" data-path="deco.underlineH" data-unit="mm">
+          </div>
+          <div class="row"><label>分隔线</label>
+            <label class="switch"><input type="checkbox" data-path="deco.divider"><span></span></label>
+          </div>
+        </div></div>
+      </div>
+
+      <!-- ---------- 批量 ---------- -->
+      <div class="tabpane" id="tab-batch">
+        <div class="grp"><h4>批量数据 <span class="tag">每行一张</span></h4><div class="in">
+          <textarea rows="7" id="batchData" placeholder="4.5&#10;3.8,限高,超高车辆禁止通行&#10;2.5,门洞限高,小心碰头,仓库管理部"></textarea>
+          <div class="hint">格式：<b>数值</b> 或 <b>数值,标题,副标题,底部信息</b>（逗号/制表符/竖线分隔均可）</div>
+          <div class="chips" style="margin-top:8px">
+            <button class="btn sm" id="bFillRange">2.0~6.0 步长 0.2</button>
+            <button class="btn sm" id="bFillCommon">常用限高</button>
+            <button class="btn sm" id="bFillInt">2.0~6.0 步长 0.5</button>
+            <button class="btn sm" id="bClearB">清空</button>
+          </div>
+        </div></div>
+
+        <div class="grp"><h4>输出</h4><div class="in">
+          <div class="row"><label>文件名</label>
+            <input type="text" id="batchName" value="{value}{unit}_{title}">
+          </div>
+          <div class="hint">变量：{value} {unit} {title} {sub} {footer} {w} {h} {n} {date}</div>
+          <div class="row" style="margin-top:8px"><label>格式</label>
+            <select id="batchFmt"><option value="png">PNG</option><option value="svg">SVG</option><option value="jpg">JPG</option></select>
+            <label style="flex:0 0 auto">DPI</label>
+            <input type="number" id="batchDpi" value="150" min="30" max="1200" step="10" style="width:72px">
+          </div>
+          <div class="row" style="margin-top:8px">
+            <button class="btn primary" id="btnBatchZip">⤓ 打包下载 ZIP</button>
+            <button class="btn" id="btnBatchPrint">🖨 排版打印</button>
+          </div>
+          <div id="batchProg" class="hint" style="margin-top:6px"></div>
+        </div></div>
+
+        <div class="grp"><h4>预览 <span class="tag">点击载入编辑</span></h4><div class="in">
+          <div class="thumbgrid" id="thumbs"></div>
+        </div></div>
+      </div>
+
+      <!-- ---------- 说明 ---------- -->
+      <div class="tabpane" id="tab-spec">
+        <div class="grp"><h4>制作参数</h4><div class="in">
+          <div class="row"><label>材质</label>
+            <select data-path="spec.material">
+              <option>1.5mm 铝合金板</option><option>2.0mm 铝合金板</option>
+              <option>3mm PVC 板</option><option>1.0mm 不锈钢板</option>
+              <option>反光膜 + 铁皮</option><option>5mm 亚克力</option>
+            </select>
+          </div>
+          <div class="row"><label>工艺</label>
+            <select data-path="spec.process">
+              <option>UV 平板打印</option><option>丝网印刷</option>
+              <option>反光膜刻字贴覆</option><option>腐蚀填漆</option>
+            </select>
+          </div>
+          <div class="row"><label>安装方式</label>
+            <select data-path="spec.mount">
+              <option>壁挂（膨胀螺栓）</option><option>立柱抱箍</option>
+              <option>龙门架悬挂</option><option>链条吊装</option><option>磁吸 / 3M 胶</option>
+            </select>
+          </div>
+          <div class="row"><label>安装高度</label>
+            <input type="number" step="50" min="0" max="12000" data-path="spec.mountH" style="width:90px">
+            <span class="hint">标识下沿距地 mm</span>
+          </div>
+          <div class="row"><label>执行标准</label><input type="text" data-path="spec.std"></div>
+          <div class="row"><label>数量</label><input type="number" min="1" max="999" data-path="spec.qty" style="width:80px">
+            <label style="flex:0 0 auto">制作日期</label><input type="text" data-path="spec.date" style="width:110px">
+          </div>
+          <div class="row col"><label>备注</label><textarea rows="2" data-path="spec.note"></textarea></div>
+        </div></div>
+
+        <div class="grp"><h4>生成结果</h4><div class="in">
+          <div id="spec"></div>
+          <div class="row" style="margin-top:8px">
+            <button class="btn primary" id="btnSpecGen">生成说明</button>
+            <button class="btn" id="btnSpecCopy">复制</button>
+            <button class="btn" id="btnSpecTxt">导出 TXT</button>
+            <button class="btn" id="btnSpecPrint">打印</button>
+          </div>
+        </div></div>
+      </div>
+    </aside>
+
+    <!-- ============ 中：预览 ============ -->
+    <main class="stage">
+      <div class="stagebar">
+        <select id="bgSel" style="width:120px">
+          <option value="bg-grid">网格背景</option>
+          <option value="bg-wall">白墙实景</option>
+          <option value="bg-concrete">水泥墙</option>
+          <option value="bg-night">夜间</option>
+          <option value="bg-checker">透明棋盘</option>
+        </select>
+        <button class="btn sm" id="btnZoomOut">－</button>
+        <span id="zoomTxt" style="min-width:52px;text-align:center;color:var(--acc);font-weight:700">100%</span>
+        <button class="btn sm" id="btnZoomIn">＋</button>
+        <button class="btn sm" id="btnFit">适应</button>
+        <div class="sep"></div>
+        <label class="lockrow"><input type="checkbox" id="ckShadow" checked style="width:auto"> 投影</label>
+        <label class="lockrow"><input type="checkbox" id="ckSafe" style="width:auto"> 安全边距</label>
+        <label class="lockrow"><input type="checkbox" id="ckDim" checked style="width:auto"> 尺寸标注</label>
+        <div class="spacer"></div>
+        <span class="hint" id="physTxt"></span>
+      </div>
+      <div class="canvas-wrap bg-grid" id="wrap">
+        <div id="frame"><div id="holder"></div></div>
+      </div>
+      <div class="stagefoot">
+        <span id="ftInfo"></span>
+        <span class="spacer"></span>
+        <span>快捷键：Ctrl+Z 撤销 · Ctrl+Y 重做 · Ctrl+S 导出 · +/− 缩放 · F 适应</span>
+      </div>
+    </main>
+
+    <!-- ============ 右：导出 / 方案 ============ -->
+    <aside class="side">
+      <div class="grp" style="margin:12px"><h4>导出当前标识</h4><div class="in">
+        <div class="row"><label>格式</label>
+          <select id="expFmt"><option value="png">PNG 位图</option><option value="jpg">JPG 位图</option><option value="svg">SVG 矢量</option></select>
+        </div>
+        <div class="row" data-when-fmt="png,jpg"><label>DPI</label>
+          <input type="number" id="expDpi" value="300" min="30" max="1200" step="10" style="width:80px">
+          <span class="hint" id="pxHint"></span>
+        </div>
+        <div class="row" data-when-fmt="png"><label>透明底</label>
+          <label class="switch"><input type="checkbox" id="ckAlpha"><span></span></label>
+        </div>
+        <div class="row"><label>文件名</label><input type="text" id="expName" value="限高标识_4.5m"></div>
+        <button class="btn primary" id="btnExport" style="width:100%;padding:8px">⤓ 导出</button>
+        <div class="grid2" style="margin-top:7px">
+          <button class="btn sm" id="btnCopy">复制到剪贴板</button>
+          <button class="btn sm" id="btnPrint1">打印 1:1</button>
+        </div>
+        <div class="grid2" style="margin-top:6px">
+          <button class="btn sm" id="btnPrintSheet">排版打印</button>
+          <button class="btn sm" id="btnToBatch">加入批量</button>
+        </div>
+        <div class="grid2" style="margin-top:8px">
+          <button class="btn sm" id="btnExportCfg">导出配置</button>
+          <button class="btn sm" id="btnImportCfg">导入配置</button>
+        </div>
+        <input type="file" id="cfgFile" accept=".json" hidden>
+      </div></div>
+
+      <div class="grp" style="margin:0 12px 12px"><h4>使用提示</h4><div class="in">
+        <div class="hint">
+          · 车间常用限高牌：500×700mm 或 600×800mm，黄底黑字最醒目。<br>
+          · 室外/厂区道路建议遵循 GB 5768.2：圆形禁令或三角警告。<br>
+          · 反光膜等级越高，夜间可视距离越远（工程级≈100m，超强级≈300m）。<br>
+          · 导出 SVG 可直接交广告公司出图，无损放大。<br>
+          · DPI 建议：喷绘 72–150，写真 150–300，印刷 300。
+        </div>
+      </div></div>
+    </aside>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+"use strict";
+/* =========================================================================
+   车间限高标识生成器  —  单文件版
+   渲染核心：SVG（用户单位 = mm），预览内联 / 导出可转位图
+   ========================================================================= */
+
+/* ---------------- 通用工具 ---------------- */
+const $  = (s,r=document)=>r.querySelector(s);
+const $$ = (s,r=document)=>Array.prototype.slice.call(r.querySelectorAll(s));
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const n2  = v=>Math.round(v*100)/100;
+const esc = s=>String(s==null?'':s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[m]));
+const clone=o=>JSON.parse(JSON.stringify(o));
+function deepMerge(base,patch){
+  const out=clone(base);
+  for(const k in patch){
+    const v=patch[k];
+    if(v && typeof v==='object' && !Array.isArray(v) && out[k] && typeof out[k]==='object' && !Array.isArray(out[k])) out[k]=deepMerge(out[k],v);
+    else out[k]=v;
+  }
+  return out;
+}
+function getPath(o,p){ return p.split('.').reduce((a,k)=>a==null?a:a[k],o); }
+function setPath(o,p,v){
+  const ks=p.split('.'); const last=ks.pop();
+  let t=o; for(const k of ks){ if(t[k]==null) t[k]={}; t=t[k]; }
+  t[last]=v;
+}
+function toast(msg,err){
+  const t=$('#toast'); t.textContent=msg; t.className='show'+(err?' err':'');
+  clearTimeout(t._t); t._t=setTimeout(()=>t.className='',2000);
+}
+
+/* ---------------- 默认状态 ---------------- */
+const TODAY=(()=>{const d=new Date();return d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0');})();
+const DEFAULT={
+  size:{w:500,h:700,lock:false},
+  shape:'rounded', radius:24, octCut:0.29,
+  layout:{pad:38, vdist:'center', lineGap:0.18},
+  colors:{bg:'#ffd400', border:'#111111', title:'#111111', value:'#111111',
+          unit:'#111111', sub:'#111111', footer:'#333333', stripeA:'#111111',
+          stripeB:'#ffd400', icon:'#111111', accent:'#d81e06'},
+  border:{show:true, w:16, inset:24, inner:false, innerW:3, innerDash:false},
+  content:{
+    icon:{show:true, type:'bar', size:0.42, gap:16},
+    title:{show:true, text:'限高', sizeMode:'auto', size:96, weight:'900', ls:8, capH:0.115},
+    value:{show:true, num:4.5, unit:'m', showUnit:true, decimals:'auto', sizeMode:'auto',
+           size:230, weight:'900', ls:2, unitScale:0.42, unitGap:10, inlineUnit:true, capH:0.30},
+    sub:{show:true, text:'超高车辆禁止通行', sizeMode:'auto', size:52, weight:'700', ls:3, color:'', capH:0.085},
+    extra:{show:false, text:'', sizeMode:'auto', size:32, weight:'400', ls:1, capH:0.06},
+    en:{show:false, text:'HEIGHT LIMIT', sizeMode:'auto', size:30, weight:'700', ls:2, capH:0.055},
+    footer:{show:true, text:'安全生产办公室 宣', sizeMode:'auto', size:28, weight:'400', ls:1, capH:0.05},
+    no:{show:false, prefix:'XG', serial:1, date:'', sizeMode:'auto', size:22, weight:'400', ls:1, capH:0.045}
+  },
+  stripes:{mode:'both', h:34, p:26, angle:45},
+  deco:{rivets:false, rivetR:9, underline:false, underlineH:10, divider:false},
+  image:{show:false, data:'', pos:'bottom', size:70, opacity:1},
+  reflect:'engineer', reflectK:0.8,
+  typo:{family:'Arial Black,Microsoft YaHei,sans-serif', familyCJK:'Microsoft YaHei,SimHei,sans-serif'},
+  spec:{material:'1.5mm 铝合金板', process:'UV 平板打印', mount:'壁挂（膨胀螺栓）',
+        mountH:2200, std:'GB 5768.2-2022 / GB 2894-2008', qty:2, date:TODAY, note:''}
+};
+const VIEW={zoom:1, fit:1, bg:'bg-grid', shadow:true, safe:false, dim:true};
+let S=clone(DEFAULT);
+
+/* ---------------- 模板 ---------------- */
+const TEMPLATES=[
+  {name:'① 黄底黑字·车间警示牌（推荐）', patch:{
+    shape:'rounded', radius:24, size:{w:500,h:700,lock:false},
+    colors:{bg:'#ffd400',border:'#111111',title:'#111111',value:'#111111',unit:'#111111',sub:'#111111',footer:'#333333',stripeA:'#111111',stripeB:'#ffd400',icon:'#111111',accent:'#d81e06'},
+    border:{show:true,w:16,inset:24,inner:false}, stripes:{mode:'both',h:34,p:26,angle:45},
+    content:{icon:{show:true,type:'bar',size:0.42},title:{show:true,text:'限高'},sub:{show:true,text:'超高车辆禁止通行'},footer:{show:true,text:'安全生产办公室 宣'},en:{show:false}},
+    reflect:'engineer'
+  }},
+  {name:'② 国标禁令·限制高度（圆形）', patch:{
+    shape:'circle', size:{w:600,h:600,lock:true}, radius:0,
+    colors:{bg:'#ffffff',border:'#d81e06',title:'#111111',value:'#111111',unit:'#111111',sub:'#111111',footer:'#666666',stripeA:'#d81e06',stripeB:'#ffffff',icon:'#111111',accent:'#d81e06'},
+    border:{show:true,w:42,inset:52,inner:false}, stripes:{mode:'none'},
+    content:{icon:{show:false},title:{show:false},value:{show:true,unit:'m',sizeMode:'auto',capH:0.34},sub:{show:false},footer:{show:false},en:{show:false}},
+    reflect:'high', layout:{pad:60}
+  }},
+  {name:'③ 国标警告·注意限高（三角）', patch:{
+    shape:'triangle', size:{w:700,h:606,lock:true}, radius:30,
+    colors:{bg:'#ffd400',border:'#111111',value:'#111111',stripeA:'#111111',stripeB:'#ffd400',icon:'#111111'},
+    border:{show:true,w:38,inset:0,inner:false}, stripes:{mode:'none'},
+    content:{icon:{show:true,type:'bar',size:0.66},title:{show:false},value:{show:false},sub:{show:false},footer:{show:false},en:{show:false}},
+    reflect:'high', layout:{pad:30}
+  }},
+  {name:'④ 厂区蓝底·提示牌', patch:{
+    shape:'rounded', radius:18, size:{w:600,h:800,lock:false},
+    colors:{bg:'#12508f',border:'#ffffff',title:'#ffffff',value:'#ffffff',unit:'#ffffff',sub:'#d7e6f7',footer:'#a9c6e4',stripeA:'#ffffff',stripeB:'#12508f',icon:'#ffffff',accent:'#ffd400'},
+    border:{show:true,w:10,inset:20,inner:true,innerW:2}, stripes:{mode:'none'},
+    content:{icon:{show:true,type:'bar',size:0.36},title:{show:true,text:'限高'},sub:{show:true,text:'超高车辆禁止通行'},footer:{show:true,text:'设备管理部 宣'},en:{show:true,text:'HEIGHT LIMIT'}},
+    reflect:'engineer', layout:{pad:44}
+  }},
+  {name:'⑤ 红白斜纹·强警示', patch:{
+    shape:'rect', radius:0, size:{w:600,h:800,lock:false},
+    colors:{bg:'#ffffff',border:'#d81e06',title:'#111111',value:'#d81e06',unit:'#d81e06',sub:'#111111',footer:'#444444',stripeA:'#d81e06',stripeB:'#ffffff',icon:'#111111',accent:'#d81e06'},
+    border:{show:true,w:18,inset:26,inner:false}, stripes:{mode:'both',h:46,p:30,angle:45},
+    content:{icon:{show:true,type:'truck',size:0.44},title:{show:true,text:'限高'},sub:{show:true,text:'超高车辆禁止通行'},footer:{show:true,text:'安全第一 预防为主'},en:{show:false}},
+    reflect:'super', layout:{pad:40}
+  }},
+  {name:'⑥ 荧光黄绿·通道限高', patch:{
+    shape:'rounded', radius:22, size:{w:500,h:700,lock:false},
+    colors:{bg:'#ccff00',border:'#111111',title:'#111111',value:'#111111',unit:'#111111',sub:'#1b1b1b',footer:'#3d3d3d',stripeA:'#111111',stripeB:'#ccff00',icon:'#111111',accent:'#d81e06'},
+    border:{show:true,w:14,inset:22,inner:false}, stripes:{mode:'bottom',h:30,p:24,angle:45},
+    content:{icon:{show:true,type:'gate',size:0.40},title:{show:true,text:'通道限高'},sub:{show:true,text:'小心碰头 减速慢行'},footer:{show:true,text:'安全生产办公室 宣'},en:{show:false}},
+    reflect:'super'
+  }},
+  {name:'⑦ 立柱窄条·门洞贴', patch:{
+    shape:'rounded', radius:14, size:{w:200,h:800,lock:false},
+    colors:{bg:'#ffd400',border:'#111111',title:'#111111',value:'#111111',unit:'#111111',sub:'#111111',footer:'#333333',stripeA:'#111111',stripeB:'#ffd400',icon:'#111111',accent:'#d81e06'},
+    border:{show:true,w:10,inset:16,inner:false}, stripes:{mode:'both',h:24,p:20,angle:45},
+    content:{icon:{show:true,type:'arrow',size:0.55},title:{show:true,text:'限高'},sub:{show:true,text:'小心碰头'},footer:{show:false},en:{show:false},extra:{show:false}},
+    layout:{pad:22}, reflect:'engineer'
+  }},
+  {name:'⑧ 横版双语·厂区主入口', patch:{
+    shape:'rounded', radius:20, size:{w:900,h:500,lock:false},
+    colors:{bg:'#ffd400',border:'#111111',title:'#111111',value:'#111111',unit:'#111111',sub:'#111111',footer:'#333333',stripeA:'#111111',stripeB:'#ffd400',icon:'#111111',accent:'#d81e06'},
+    border:{show:true,w:16,inset:24,inner:false}, stripes:{mode:'none'},
+    content:{icon:{show:true,type:'truck',size:0.26},title:{show:true,text:'限高'},sub:{show:true,text:'超高车辆禁止通行'},en:{show:true,text:'HEIGHT LIMIT'},footer:{show:true,text:'安全生产办公室 宣'},value:{capH:0.34}},
+    layout:{pad:34}, reflect:'high'
+  }},
+  {name:'⑨ 深色工业风·车间内部', patch:{
+    shape:'rounded', radius:16, size:{w:500,h:700,lock:false},
+    colors:{bg:'#1c242f',border:'#f5a524',title:'#f5a524',value:'#ffffff',unit:'#f5a524',sub:'#c9d3e0',footer:'#7f8b9c',stripeA:'#f5a524',stripeB:'#1c242f',icon:'#f5a524',accent:'#f5a524'},
+    border:{show:true,w:10,inset:18,inner:true,innerW:2}, stripes:{mode:'top',h:22,p:20,angle:45},
+    content:{icon:{show:true,type:'bar',size:0.38},title:{show:true,text:'限高'},sub:{show:true,text:'超高车辆禁止通行'},footer:{show:true,text:'设备管理部 宣'},en:{show:true,text:'HEIGHT LIMIT'}},
+    reflect:'none', layout:{pad:40}
+  }},
+  {name:'⑩ 拱形·安全通道门洞', patch:{
+    shape:'arch', size:{w:600,h:800,lock:false}, radius:0,
+    colors:{bg:'#ffd400',border:'#111111',title:'#111111',value:'#111111',unit:'#111111',sub:'#111111',footer:'#333333',stripeA:'#111111',stripeB:'#ffd400',icon:'#111111',accent:'#d81e06'},
+    border:{show:true,w:16,inset:24,inner:false}, stripes:{mode:'none'},
+    content:{icon:{show:true,type:'gate',size:0.36},title:{show:true,text:'门洞限高'},sub:{show:true,text:'小心碰头 减速慢行'},footer:{show:true,text:'安全生产办公室 宣'},en:{show:false}},
+    layout:{pad:40}, reflect:'engineer'
+  }}
+];
+const THEMES=[
+  {n:'黄底黑字', c:{bg:'#ffd400',border:'#111111',title:'#111111',value:'#111111',unit:'#111111',sub:'#111111',footer:'#333333',stripeA:'#111111',stripeB:'#ffd400',icon:'#111111',accent:'#d81e06'}},
+  {n:'红白警示', c:{bg:'#ffffff',border:'#d81e06',title:'#111111',value:'#d81e06',unit:'#d81e06',sub:'#111111',footer:'#444444',stripeA:'#d81e06',stripeB:'#ffffff',icon:'#111111',accent:'#d81e06'}},
+  {n:'蓝底白字', c:{bg:'#12508f',border:'#ffffff',title:'#ffffff',value:'#ffffff',unit:'#ffffff',sub:'#d7e6f7',footer:'#a9c6e4',stripeA:'#ffffff',stripeB:'#12508f',icon:'#ffffff',accent:'#ffd400'}},
+  {n:'红圈禁令', c:{bg:'#ffffff',border:'#d81e06',title:'#111111',value:'#111111',unit:'#111111',sub:'#111111',footer:'#666666',stripeA:'#d81e06',stripeB:'#ffffff',icon:'#111111',accent:'#d81e06'}},
+  {n:'荧光黄绿', c:{bg:'#ccff00',border:'#111111',title:'#111111',value:'#111111',unit:'#111111',sub:'#1b1b1b',footer:'#3d3d3d',stripeA:'#111111',stripeB:'#ccff00',icon:'#111111',accent:'#d81e06'}},
+  {n:'深色金属', c:{bg:'#1c242f',border:'#f5a524',title:'#f5a524',value:'#ffffff',unit:'#f5a524',sub:'#c9d3e0',footer:'#7f8b9c',stripeA:'#f5a524',stripeB:'#1c242f',icon:'#f5a524',accent:'#f5a524'}},
+  {n:'橙底黑字', c:{bg:'#ff7a00',border:'#111111',title:'#111111',value:'#111111',unit:'#111111',sub:'#111111',footer:'#333333',stripeA:'#111111',stripeB:'#ff7a00',icon:'#111111',accent:'#ffffff'}},
+  {n:'绿底安全', c:{bg:'#0f8a4a',border:'#ffffff',title:'#ffffff',value:'#ffffff',unit:'#ffffff',sub:'#d9f5e5',footer:'#a8d8c0',stripeA:'#ffffff',stripeB:'#0f8a4a',icon:'#ffffff',accent:'#ffd400'}}
+];
+const FONTS=[
+  ['Arial Black,Microsoft YaHei,sans-serif','Arial Black（特粗黑）'],
+  ['Impact,Haettenschweiler,sans-serif','Impact（窄粗）'],
+  ['Microsoft YaHei,Microsoft YaHei,sans-serif','微软雅黑'],
+  ['SimHei,Microsoft YaHei,sans-serif','黑体'],
+  ['SimSun,SimSun,serif','宋体'],
+  ['KaiTi,STKaiti,serif','楷体'],
+  ['FangSong,SimSun,serif','仿宋'],
+  ['Arial,Helvetica,sans-serif','Arial'],
+  ['Times New Roman,serif','Times New Roman'],
+  ['Consolas,monospace','等宽 Consolas']
+];
+
+/* ---------------- 文本度量 ---------------- */
+const MCTX=document.createElement('canvas').getContext('2d');
+function measure(text,family,weight,size,ls){
+  if(!text) return 0;
+  MCTX.font=weight+' '+size+'px '+family;
+  return MCTX.measureText(text).width + (ls||0)*String(text).length;
+}
+function fmtNum(v,dec){
+  const n=Number(v);
+  if(!isFinite(n)) return '0';
+  if(dec==='auto'){
+    const r=Math.round(n*100)/100;
+    return String(Math.abs(r%1)<1e-9 ? Math.round(r) : (Math.abs(r*10%1)<1e-9 ? r.toFixed(1) : r.toFixed(2)));
+  }
+  return n.toFixed(parseInt(dec,10));
+}
+
+/* ---------------- 形状路径 ---------------- */
+function f(v){ return Math.round(v*100)/100; }
+function roundedPoly(pts,r){
+  const n=pts.length;
+  if(!(r>0)) return 'M'+pts.map(p=>f(p[0])+' '+f(p[1])).join('L')+'Z';
+  let d='';
+  for(let i=0;i<n;i++){
+    const p0=pts[(i-1+n)%n], p1=pts[i], p2=pts[(i+1)%n];
+    const v1=[p0[0]-p1[0],p0[1]-p1[1]], v2=[p2[0]-p1[0],p2[1]-p1[1]];
+    const l1=Math.hypot(v1[0],v1[1])||1, l2=Math.hypot(v2[0],v2[1])||1;
+    const rr=Math.min(r,l1/2,l2/2);
+    const a=[p1[0]+v1[0]/l1*rr, p1[1]+v1[1]/l1*rr];
+    const b=[p1[0]+v2[0]/l2*rr, p1[1]+v2[1]/l2*rr];
+    d+=(i===0?'M':'L')+f(a[0])+' '+f(a[1])+'Q'+f(p1[0])+' '+f(p1[1])+' '+f(b[0])+' '+f(b[1]);
+  }
+  return d+'Z';
+}
+function shapePath(shape,box,radius,octCut){
+  const x=box.x,y=box.y,w=box.w,h=box.h;
+  if(shape==='circle'){
+    const r=Math.min(w,h)/2, cx=x+w/2, cy=y+h/2;
+    return 'M'+f(cx-r)+' '+f(cy)+'a'+f(r)+' '+f(r)+' 0 1 0 '+f(2*r)+' 0a'+f(r)+' '+f(r)+' 0 1 0 '+f(-2*r)+' 0Z';
+  }
+  if(shape==='triangle') return roundedPoly([[x+w/2,y],[x+w,y+h],[x,y+h]],radius);
+  if(shape==='triInset'){
+    /* 三角真正向内偏移 r：以内心为中心做相似缩放（缩放后内切圆半径 = inr - r），
+       保证斜边/底边/两腰的环带宽度一致 */
+    const hyp=Math.hypot(w/2,h), s=(h+w+hyp)/2, inr=(w*h/2)/s;
+    const k=Math.max(0.10,(inr-radius)/inr);
+    const ix=x+w/2, iy=y+h-inr;
+    return roundedPoly([[ix+(x+w/2-ix)*k, iy+(y-iy)*k],[ix+(x+w-ix)*k, iy+(y+h-iy)*k],[ix+(x-ix)*k, iy+(y+h-iy)*k]],Math.min(10,Math.max(0,radius)));
+  }
+  if(shape==='octagon'){
+    const c=Math.min(w,h)*octCut;
+    return roundedPoly([[x+c,y],[x+w-c,y],[x+w,y+c],[x+w,y+h-c],[x+w-c,y+h],[x+c,y+h],[x,y+h-c],[x,y+c]],Math.min(radius,20));
+  }
+  if(shape==='arch'){
+    const r=Math.min(w/2,h*0.62);
+    return 'M'+f(x)+' '+f(y+h)+'L'+f(x)+' '+f(y+r)+'A'+f(r)+' '+f(r)+' 0 0 1 '+f(x+w)+' '+f(y+r)+'L'+f(x+w)+' '+f(y+h)+'Z';
+  }
+  /* rect = 硬直角，忽略圆角设置；rounded 才使用 radius */
+  if(shape==='rect') return roundedPoly([[x,y],[x+w,y],[x+w,y+h],[x,y+h]],0);
+  return roundedPoly([[x,y],[x+w,y],[x+w,y+h],[x,y+h]],Math.min(radius,Math.min(w,h)/2));
+}
+function innerBox(c){
+  const W=c.size.w,H=c.size.h,pad=Math.min(c.layout.pad,Math.min(W,H)*0.32);
+  let b;
+  if(c.shape==='circle'){ const s=Math.min(W,H)*0.72; b={x:(W-s)/2,y:(H-s)/2,w:s,h:s}; }
+  /* 三角：内容盒必须落在「该高度处三角宽度」之内（高度 y 处宽度 = W*y/H）
+     故盒顶 y 决定最大宽度：box.w ≤ W*(box.y/H)。取 y=0.50H、w=0.48W、h=0.40H */
+  else if(c.shape==='triangle'){ const s=W*0.48, hh=H*0.40; b={x:(W-s)/2,y:H*0.50,w:s,h:hh}; }
+  else if(c.shape==='octagon'){ const cut=Math.min(W,H)*c.octCut*0.85; b={x:pad+cut*0.5,y:pad+cut*0.5,w:W-2*pad-cut,h:H-2*pad-cut}; }
+  else if(c.shape==='arch'){ const dy=Math.min(W,H)*0.16; b={x:pad,y:pad+dy,w:W-2*pad,h:H-2*pad-dy}; }
+  else b={x:pad,y:pad,w:W-2*pad,h:H-2*pad};
+  b.w=Math.max(20,b.w); b.h=Math.max(20,b.h);
+  return b;
+}
+
+/* ---------------- 图标 ---------------- */
+function iconMarkup(type,box,color,bg){
+  const s=box.w/100;
+  const wrap=inner=>'<g transform="translate('+f(box.x)+' '+f(box.y)+') scale('+f(s/1)+')">'+inner+'</g>';
+  const S=(x,y,w,hh)=>'<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+hh+'" fill="'+color+'"/>';
+  if(type==='bar'){
+    let stripes='';
+    for(let i=0;i<6;i++) stripes+='<path d="M'+(8+i*16)+' 22 l8 0 l-6 10 l-8 0 Z" fill="'+bg+'" opacity=".9"/>';
+    return wrap(
+      S(0,10,100,14)+stripes+
+      S(6,10,10,82)+S(84,10,10,82)+
+      '<path d="M50 34 L34 60 L43 60 L43 92 L57 92 L57 60 L66 60 Z" fill="'+color+'"/>'
+    );
+  }
+  if(type==='truck'){
+    return wrap(
+      S(0,8,100,9)+S(5,8,8,22)+S(87,8,8,22)+
+      '<rect x="12" y="46" width="54" height="26" rx="3" fill="'+color+'"/>'+
+      '<path d="M66 46 L80 46 L94 58 L94 72 L66 72 Z" fill="'+color+'"/>'+
+      '<rect x="74" y="50" width="15" height="10" rx="2" fill="'+bg+'" opacity=".85"/>'+
+      '<circle cx="30" cy="78" r="9" fill="'+color+'"/><circle cx="80" cy="78" r="9" fill="'+color+'"/>'+
+      '<rect x="6" y="90" width="88" height="4" rx="2" fill="'+color+'"/>'
+    );
+  }
+  if(type==='arrow'){
+    return wrap(
+      S(4,10,92,8)+
+      '<path d="M50 26 L28 56 L41 56 L41 92 L59 92 L59 56 L72 56 Z" fill="'+color+'"/>'
+    );
+  }
+  if(type==='warn'){
+    return wrap(
+      '<path d="M50 6 L97 90 L3 90 Z" fill="none" stroke="'+color+'" stroke-width="9" stroke-linejoin="round"/>'+
+      '<rect x="44.5" y="36" width="11" height="30" rx="3" fill="'+color+'"/>'+
+      '<circle cx="50" cy="76" r="6.5" fill="'+color+'"/>'
+    );
+  }
+  if(type==='gate'){
+    return wrap(
+      '<path d="M6 96 L6 34 A44 44 0 0 1 94 34 L94 96 Z" fill="none" stroke="'+color+'" stroke-width="10"/>'+
+      '<rect x="0" y="34" width="100" height="12" fill="'+color+'"/>'+
+      '<path d="M50 52 L36 74 L44 74 L44 96 L56 96 L56 74 L64 74 Z" fill="'+color+'" opacity=".9"/>'
+    );
+  }
+  return '';
+}
+
+/* ---------------- 主渲染 ---------------- */
+let UID=0;
+/* 最近一次渲染中，因空间不足被自动隐藏的元素（供状态栏提示） */
+let LAST_DROPPED=[];
+const DROP_NAME={icon:'图标',image:'图片',divider:'分隔线',extra:'补充说明',en:'英文',
+                 no:'编号',footer:'底部信息',sub:'副标题',title:'标题'};
+function buildSVG(c,opt){
+  opt=opt||{};
+  const uid='g'+(++UID);
+  const W=c.size.w,H=c.size.h;
+  const path=shapePath(c.shape,{x:0,y:0,w:W,h:H},c.radius,c.octCut);
+  const defs=[],body=[];
+  defs.push('<clipPath id="cp'+uid+'"><path d="'+path+'"/></clipPath>');
+
+  /* 背景 */
+  body.push('<path d="'+path+'" fill="'+c.colors.bg+'"/>');
+
+  /* 背景水印图 */
+  if(c.image.show&&c.image.data&&c.image.pos==='bg'){
+    body.push('<g clip-path="url(#cp'+uid+')" opacity="'+c.image.opacity+'">'+
+      '<image href="'+c.image.data+'" x="0" y="0" width="'+W+'" height="'+H+'" preserveAspectRatio="xMidYMid slice"/></g>');
+  }
+
+  /* 斜纹 */
+  const st=c.stripes;
+  /* 圆 / 拱形 / 三角 / 八角：直条纹带会被轮廓裁成怪形状，统一改为「沿轮廓的环形斜纹」 */
+  const follow = (c.shape==='circle'||c.shape==='arch'||c.shape==='triangle'||c.shape==='octagon');
+  let sTop=0, sBot=0, sSide=0;            /* 斜纹为内容预留的空间 */
+  if(st.mode!=='none'){
+    const band=Math.min(st.h, Math.min(W,H)*0.20);
+    defs.push('<pattern id="st'+uid+'" width="'+st.p+'" height="'+st.p+'" patternUnits="userSpaceOnUse" patternTransform="rotate('+st.angle+')">'+
+      '<rect width="'+st.p+'" height="'+st.p+'" fill="'+c.colors.stripeB+'"/>'+
+      '<rect width="'+st.p/2+'" height="'+st.p+'" fill="'+c.colors.stripeA+'"/></pattern>');
+    const P='url(#st'+uid+')';
+    let sh='';
+    if(follow||st.mode==='frame'){
+      /* 圆/三角/八角/拱形：斜纹一律沿形状边缘整圈显示，不做上下裁切 */
+      const o=shapePath(c.shape,{x:0,y:0,w:W,h:H},c.radius,c.octCut);
+      let inner;
+      if(c.shape==='triangle'){
+        /* 三角真正向内偏移（相似缩放），保证斜边与底边环带等宽 */
+        inner=shapePath('triInset',{x:0,y:0,w:W,h:H},band,c.octCut);
+      }else if(c.shape==='octagon'){
+        /* 八角：直边内缩 band 后，45° 斜切边要外扩 0.586*band 才能保持等宽 */
+        const co=Math.min(W,H)*c.octCut;
+        const ib=Math.min(W-2*band,H-2*band);
+        const octCutI=ib>0?Math.max(0,co-0.586*band)/ib:0;
+        inner=shapePath('octagon',{x:band,y:band,w:W-2*band,h:H-2*band},Math.max(0,Math.min(20,c.radius-band*0.3)),octCutI);
+      }else{
+        inner=shapePath(c.shape,{x:band,y:band,w:W-2*band,h:H-2*band},Math.max(0,c.radius-band*0.4),c.octCut);
+      }
+      sh='<path d="'+o+' '+inner+'" fill="'+P+'" fill-rule="evenodd"/>';
+      sTop=sBot=sSide=band*1.04;
+    }else{
+      if(st.mode==='top'||st.mode==='both'){ sh+='<rect x="0" y="0" width="'+W+'" height="'+band+'" fill="'+P+'"/>'; sTop=band*1.14; }
+      if(st.mode==='bottom'||st.mode==='both'){ sh+='<rect x="0" y="'+(H-band)+'" width="'+W+'" height="'+band+'" fill="'+P+'"/>'; sBot=band*1.14; }
+      if(st.mode==='corners'){
+        const L=band*2.6;
+        sh+='<path d="M0 0 L'+L+' 0 L0 '+L+' Z" fill="'+P+'"/><path d="M'+W+' '+H+' L'+(W-L)+' '+H+' L'+W+' '+(H-L)+' Z" fill="'+P+'"/>';
+      }
+    }
+    body.push('<g clip-path="url(#cp'+uid+')">'+sh+'</g>');
+  }
+
+  /* 内容区（扣掉斜纹占位） */
+  const raw=innerBox(c);
+  const box={x:raw.x+sSide, y:raw.y+sTop,
+             w:Math.max(20,raw.w-sSide*2), h:Math.max(20,raw.h-sTop-sBot)};
+
+  const C=c.content, T=c.typo, LH=1+c.layout.lineGap;
+  let FX=1;                 /* 图标/图片的整体压缩系数（空间不足时优先压缩它们） */
+  /* 顺序序列：type = fixed（图标/图片/分隔线） | text | value */
+  const seq=[];
+  function addFixed(o){ o.type='fixed'; o.raw=o.base; seq.push(o); }
+  function addText(key,text,style,gap){
+    if(!text) return;
+    const cfg=C[key]||{};
+    const fam=style.fam, wt=style.weight, ls=cfg.ls||0;
+    const lines=String(text).split(/\\n|\r?\n/);   /* 支持 \n 转义与直接回车两种换行 */
+    let maxW=0; lines.forEach(l=>{ maxW=Math.max(maxW,measure(l,fam,wt,100,ls)); });
+    seq.push({type:'text',key:key,lines:lines,fam:fam,wt:wt,ls:ls,gap:gap,
+      color:style.color, capH:cfg.capH||0.08,
+      sizeW:maxW>0?(box.w/maxW)*100:1e4,
+      manual:(cfg.sizeMode==='manual'&&cfg.size>0)?cfg.size:0});
+  }
+  function addImage(gap){
+    const iw=Math.min(box.w,c.image.size);
+    addFixed({gap:gap, base:iw*0.5, kind:'image', prio:1.3, draw:(y,k)=>{
+      const s=iw*k*FX;
+      return '<image href="'+c.image.data+'" x="'+f(box.x+(box.w-s)/2)+'" y="'+f(y)+'" width="'+f(s)+'" height="'+f(s*0.5)+
+             '" preserveAspectRatio="xMidYMid meet" opacity="'+c.image.opacity+'"/>';
+    }});
+  }
+
+  /* 图标 */
+  if(C.icon.show&&C.icon.type!=='none'){
+    const iw=Math.min(box.w*C.icon.size, box.h*0.55);
+    addFixed({gap:C.icon.gap, base:iw, kind:'icon', prio:1.5, draw:(y,k)=>{
+      const s=iw*k*FX;
+      return iconMarkup(C.icon.type,{x:box.x+(box.w-s)/2, y:y, w:s, h:s}, c.colors.icon, c.colors.bg);
+    }});
+  }
+  if(c.image.show&&c.image.data&&c.image.pos==='top') addImage(10);
+
+  addText('title',C.title.show?C.title.text:'',{fam:T.family,weight:C.title.weight,color:c.colors.title},14);
+  addText('en',C.en.show?C.en.text:'',{fam:T.family,weight:C.en.weight||'700',color:c.colors.sub},8);
+
+  /* 数值行（数字 + 单位） */
+  if(C.value.show){
+    const vText=fmtNum(C.value.num,C.value.decimals);
+    const uText=(C.value.showUnit&&C.value.unit)?C.value.unit:'';
+    const fam=T.family, wt=C.value.weight, ls=C.value.ls||0;
+    const us=C.value.unitScale, ug=C.value.unitGap;
+    let sizeW=1e4;
+    const w100=measure(vText,fam,wt,100,ls);
+    const u100=uText?measure(uText,fam,wt,100*us,0):0;
+    const t100=w100+u100+ug;
+    if(t100>0) sizeW=(box.w/t100)*100;
+    for(let i=0;i<3;i++){        /* 单位间距不随字号缩放，迭代收敛 */
+      const tw=measure(vText,fam,wt,sizeW,ls)+(uText?measure(uText,fam,wt,sizeW*us,0)+ug:0);
+      if(tw>box.w) sizeW*=box.w/tw*0.998;
+    }
+    seq.push({type:'value',key:'value',fam:fam,wt:wt,ls:ls,gap:12,
+      capH:C.value.capH||0.30, sizeW:sizeW,
+      manual:(C.value.sizeMode==='manual'&&C.value.size>0)?C.value.size:0,
+      vText:vText,uText:uText,us:us,ug:ug});
+  }
+
+  if(c.deco.divider){
+    addFixed({gap:10, base:3, kind:'divider', draw:(y,k)=>
+      '<rect x="'+f(box.x+box.w*0.28)+'" y="'+f(y)+'" width="'+f(box.w*0.44)+'" height="'+f(Math.max(0.8,3*k))+'" fill="'+c.colors.accent+'"/>'});
+  }
+  addText('sub',C.sub.show?C.sub.text:'',{fam:T.familyCJK,weight:C.sub.weight||'700',color:C.sub.color||c.colors.sub},12);
+  addText('extra',C.extra.show?C.extra.text:'',{fam:T.familyCJK,weight:C.extra.weight||'400',color:c.colors.sub},10);
+  if(c.image.show&&c.image.data&&c.image.pos==='bottom') addImage(10);
+
+  const noText=(C.no.show)?('No.'+C.no.prefix+'-'+(C.no.date||TODAY)+'-'+String(C.no.serial).padStart(2,'0')):'';
+  addText('no',noText,{fam:T.familyCJK,weight:'400',color:c.colors.footer},6);
+  addText('footer',C.footer.show?C.footer.text:'',{fam:T.familyCJK,weight:C.footer.weight||'400',color:c.colors.footer},0);
+
+  /* ---- 定字号 ----
+     1) 间隙按内容盒高度缩放：小牌上间隙必须跟着变小，否则会吃掉大量空间；
+     2) 图标/图片最多占用 42% 高度，超出时整体等比压缩（FX），优先让位给文字；
+     3) 剩余高度按 capH 权重分给各文本块，再与「宽度允许的最大字号」取小值；
+     4) 若最小字号已小到看不清（< 短边 1.8%），按重要性倒序自动隐藏次要元素后重算。 */
+  LAST_DROPPED=[];
+  const GS=clamp(box.h/520, 0.30, 1.30);
+  seq.forEach(it=>{ it.gap*=GS; });
+  const MINTEXT=Math.max(5, Math.min(W,H)*(follow?0.022:0.018));
+  const DROP2=['icon','image','divider','extra','en','no','footer','sub','title'];
+
+  function layoutOnce(){
+    let fixedH=0, gapSum=0, capSum=0;
+    seq.forEach((it,i)=>{
+      if(it.type==='fixed') fixedH+=it.raw; else capSum+=(it.capH||0.08);
+      if(i<seq.length-1) gapSum+=it.gap;
+    });
+    /* 圆/拱/三角/八角可用面积小，图标占比再收紧一些，文字优先 */
+    const maxFixed=Math.min(fixedH, box.h*(follow?0.22:0.42));
+    FX = fixedH>0 ? maxFixed/fixedH : 1;
+    const budget=Math.max(16, box.h-fixedH*FX-gapSum);
+    let mn=Infinity;
+    seq.forEach(it=>{
+      if(it.type==='fixed'){ it.base=it.raw*FX; return; }
+      const share=budget*((it.capH||0.08)/(capSum||1));
+      const n=(it.type==='value')?1:it.lines.length;
+      it.size=(it.manual>0)?it.manual:Math.max(4,Math.min(it.sizeW, share/(LH*n)));
+      if(it.size<mn) mn=it.size;
+    });
+    return mn;
+  }
+  let minText=layoutOnce();
+  let g2=0;
+  while(minText<MINTEXT&&seq.length>1&&g2++<8){
+    let idx=-1;
+    for(let d=0;d<DROP2.length;d++){
+      const i2=seq.findIndex(it=>it.kind===DROP2[d]||it.key===DROP2[d]);
+      if(i2>=0){ idx=i2; break; }
+    }
+    if(idx<0) break;
+    LAST_DROPPED.push(seq[idx].kind||seq[idx].key);
+    seq.splice(idx,1);
+    minText=layoutOnce();
+  }
+
+  /* ---- 生成渲染项 ---- */
+  const items=seq.map(it=>{
+    if(it.type==='fixed') return it;
+    if(it.type==='value'){
+      const s0=it.size;
+      return {gap:it.gap, base:s0*LH, kind:'value', draw:(y,k)=>{
+        const s=s0*k, sk=Math.max(1,s*it.us);
+        const vw=measure(it.vText,it.fam,it.wt,s,it.ls*k);
+        const uw=it.uText?measure(it.uText,it.fam,it.wt,sk,0):0;
+        const tw=vw+(it.uText?uw+it.ug*k:0);
+        const x=box.x+(box.w-tw)/2;
+        const by=y+s*0.80;
+        let out='<text x="'+f(x-it.ls*k/2)+'" y="'+f(by)+'" font-family="'+it.fam+'" font-size="'+f(s)+
+                '" font-weight="'+it.wt+'" fill="'+c.colors.value+'" letter-spacing="'+f(it.ls*k)+
+                '" text-anchor="start">'+esc(it.vText)+'</text>';
+        if(it.uText&&C.value.inlineUnit){
+          out+='<text x="'+f(x+vw+it.ug*k)+'" y="'+f(by)+'" font-family="'+it.fam+'" font-size="'+f(sk)+
+               '" font-weight="'+it.wt+'" fill="'+c.colors.unit+'" text-anchor="start">'+esc(it.uText)+'</text>';
+        }else if(it.uText){
+          out+='<text x="'+f(x+vw+it.ug*k+uw/2)+'" y="'+f(by+sk*0.14)+'" font-family="'+it.fam+'" font-size="'+f(sk)+
+               '" font-weight="'+it.wt+'" fill="'+c.colors.unit+'" text-anchor="middle">'+esc(it.uText)+'</text>';
+        }
+        return out;
+      }};
+    }
+    const s0=it.size;
+    return {gap:it.gap, base:s0*LH*it.lines.length, kind:it.key, draw:(y,k)=>{
+      const s=s0*k; let out='';
+      it.lines.forEach((l,i)=>{
+        const by=y+s*(i*LH+0.80);
+        out+='<text x="'+f(box.x+box.w/2-it.ls*k/2)+'" y="'+f(by)+'" font-family="'+it.fam+'" font-size="'+f(s)+
+             '" font-weight="'+it.wt+'" fill="'+it.color+'" letter-spacing="'+f(it.ls*k)+
+             '" text-anchor="middle">'+esc(l)+'</text>';
+      });
+      return out;
+    }};
+  });
+
+  /* 垂直布局：二分求整体收缩系数 k。
+     · prio>1 的元素（图标 1.5 / 图片 1.3）在拥挤时缩得比文字更快，把空间让给文字；
+     · 元素间隙同步压缩，避免小尺寸牌上文字被间隙挤到过小。 */
+  const kpOf=it=>Math.pow(k,it.prio||1);
+  const gapAt=kk=>kk>=1?1:(0.38+0.62*kk);
+  function totalAt(kk){
+    let t=0;
+    items.forEach((it,i)=>{
+      t+=it.base*Math.pow(kk,it.prio||1);
+      if(i<items.length-1) t+=it.gap*gapAt(kk);
+    });
+    return t;
+  }
+  function solveK(){
+    if(totalAt(1)<=box.h){ k=1; return; }
+    let lo=0.22, hi=1;
+    for(let i=0;i<26;i++){ const mid=(lo+hi)/2; if(totalAt(mid)>box.h) hi=mid; else lo=mid; }
+    k=lo;
+  }
+  let k=1;
+  solveK();
+  /* 圆 / 三角 / 八角可用面积有限：若缩放后字号已小到看不清，
+     按「重要性倒序」自动隐藏次要元素，而不是把文字缩成蚂蚁字。
+     丢弃顺序：图标 → 图片 → 分隔线 → 补充说明 → 英文 → 编号 → 底部 → 副标题 → 标题（数值永保留） */
+  const DROP=['icon','image','divider','extra','en','no','footer','sub','title'];
+  let guard=0;
+  while(k<0.55&&items.length>1&&guard++<8){
+    let idx=-1;
+    for(let d=0;d<DROP.length;d++){
+      const i2=items.findIndex(it=>it.kind===DROP[d]);
+      if(i2>=0){ idx=i2; break; }
+    }
+    if(idx<0) break;
+    LAST_DROPPED.push(items[idx].kind);
+    items.splice(idx,1);
+    solveK();
+  }
+  const gf=gapAt(k);
+  let total=0;
+  items.forEach((it,i)=>{ total+=it.base*kpOf(it)+(i<items.length-1?it.gap*gf:0); });
+  if(items.length>1&&c.layout.vdist==='spread'&&total<box.h){
+    const add=(box.h-total)/(items.length-1);
+    items.forEach((it,i)=>{ if(i<items.length-1) it.gap+=add/gf; });
+    total=box.h;
+  }
+  let y0;
+  if(c.layout.vdist==='top') y0=box.y;
+  else if(c.layout.vdist==='bottom') y0=box.y+box.h-total;
+  else y0=box.y+(box.h-total)/2;
+  let cur=y0;
+  items.forEach(it=>{ const kp=kpOf(it); body.push(it.draw(cur,kp)); cur+=it.base*kp+it.gap*gf; });
+
+  /* 底部色条 */
+  if(c.deco.underline){
+    body.push('<g clip-path="url(#cp'+uid+')"><rect x="0" y="'+f(H-c.deco.underlineH)+'" width="'+W+'" height="'+f(c.deco.underlineH)+'" fill="'+c.colors.accent+'"/></g>');
+  }
+  /* 铆钉 */
+  if(c.deco.rivets){
+    const r=c.deco.rivetR;
+    const m=clamp(Math.max(r*2.4, c.border.w+c.border.inset*0.6), r+1, Math.min(W,H)/2-r-1);
+    const pts=[[m,m],[W-m,m],[m,H-m],[W-m,H-m]];
+    body.push('<g clip-path="url(#cp'+uid+')" fill="'+c.colors.icon+'" opacity=".85">'+
+      pts.map(p=>'<circle cx="'+f(p[0])+'" cy="'+f(p[1])+'" r="'+f(r)+'"/>').join('')+'</g>');
+  }
+  /* 反光质感 */
+  if(c.reflect!=='none'){
+    const k={engineer:0.55,high:0.85,super:1.25}[c.reflect]*(c.reflectK||0.8);
+    defs.push('<linearGradient id="rf'+uid+'" x1="0" y1="0" x2="1" y2="1">'+
+      '<stop offset="0" stop-color="#ffffff" stop-opacity="'+f(0.34*k)+'"/>'+
+      '<stop offset="0.30" stop-color="#ffffff" stop-opacity="'+f(0.05*k)+'"/>'+
+      '<stop offset="0.52" stop-color="#ffffff" stop-opacity="'+f(0.30*k)+'"/>'+
+      '<stop offset="0.72" stop-color="#dbe8ff" stop-opacity="'+f(0.06*k)+'"/>'+
+      '<stop offset="1" stop-color="#ffffff" stop-opacity="0"/></linearGradient>');
+    body.push('<path d="'+path+'" fill="url(#rf'+uid+')"/>');
+  }
+  /* 边框（外半侧裁切，故 stroke-width 用 2 倍） */
+  if(c.border.show&&c.border.w>0){
+    body.push('<g clip-path="url(#cp'+uid+')"><path d="'+path+'" fill="none" stroke="'+c.colors.border+
+      '" stroke-width="'+f(c.border.w*2)+'" stroke-linejoin="round"/></g>');
+  }
+  if(c.border.inner&&c.border.innerW>0){
+    const ins=c.border.inset;
+    const ip=shapePath(c.shape,{x:ins,y:ins,w:W-2*ins,h:H-2*ins},Math.max(0,c.radius-ins*0.4),c.octCut);
+    body.push('<path d="'+ip+'" fill="none" stroke="'+c.colors.border+'" stroke-width="'+c.border.innerW+
+      '" stroke-linejoin="round"'+(c.border.innerDash?' stroke-dasharray="'+(c.border.innerW*3)+' '+(c.border.innerW*2)+'"':'')+'/>');
+  }
+  /* 安全边距（仅预览） */
+  if(opt.decor&&VIEW.safe){
+    const ins=c.border.inset;
+    const sp=shapePath(c.shape,{x:ins,y:ins,w:W-2*ins,h:H-2*ins},Math.max(0,c.radius-ins*0.4),c.octCut);
+    body.push('<path d="'+sp+'" fill="none" stroke="#f5a524" stroke-width="1.5" stroke-dasharray="10 8" opacity=".9"/>');
+  }
+
+  /* 输出尺寸 */
+  let wAttr,hAttr;
+  if(opt.mode==='raster'){ wAttr=opt.pxW+'px'; hAttr=opt.pxH+'px'; }
+  else if(opt.mode==='svg'){ wAttr=W+'mm'; hAttr=H+'mm'; }
+  else { wAttr=f(W*opt.scale)+'px'; hAttr=f(H*opt.scale)+'px'; }
+
+  return '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" '+
+         'width="'+wAttr+'" height="'+hAttr+'" viewBox="0 0 '+W+' '+H+'">'+
+         '<defs>'+defs.join('')+'</defs>'+body.join('')+'</svg>';
+}
+
+/* ---------------- 预览 ---------------- */
+const holder=$('#holder'), wrap=$('#wrap');
+function fitScale(){
+  const pr=46;
+  const aw=wrap.clientWidth-pr*2, ah=wrap.clientHeight-pr*2;
+  return Math.min(aw/S.size.w, ah/S.size.h, 3);
+}
+function render(){
+  VIEW.fit=fitScale();
+  const scale=VIEW.fit*VIEW.zoom;
+  holder.innerHTML=buildSVG(S,{mode:'preview',scale:scale,decor:true});
+  holder.classList.toggle('noshadow',!VIEW.shadow);
+  // 尺寸标注（挂在 #frame 上，不进 #holder，避免被投影滤镜影响）
+  const frame=$('#frame');
+  $$('.dim',frame).forEach(e=>e.remove());
+  if(VIEW.dim){
+    const a=document.createElement('div'); a.className='dim dh';
+    a.innerHTML='<b>'+S.size.w+' mm</b>';
+    const b=document.createElement('div'); b.className='dim dv';
+    b.innerHTML='<b>'+S.size.h+' mm</b>';
+    frame.appendChild(a); frame.appendChild(b);
+  }
+  $('#zoomTxt').textContent=Math.round(VIEW.zoom*100)+'%';
+  $('#physTxt').textContent=S.size.w+' × '+S.size.h+' mm';
+  const v=S.content.value;
+  let warn='';
+  const n=Number(v.num);
+  if(v.unit==='m'||v.unit==='M'||v.unit==='米'){
+    if(n<1.8) warn='⚠ 低于 1.8m，人员通行易碰头';
+    else if(n>6) warn='⚠ 高于 6m，一般车间少见，请确认';
+    else warn='✔ 常规车间限高范围（1.8–6.0m）';
+  }
+  $('#valHint').innerHTML=warn;
+  const px=mm2px(S.size.w,300), py=mm2px(S.size.h,300);
+  let ft='内容元素 '+countItems()+' 个 · 300DPI 时约 '+px+' × '+py+' px';
+  if(LAST_DROPPED.length){
+    ft+=' · ⚠ 当前形状空间不足，已自动隐藏：'+LAST_DROPPED.map(x=>DROP_NAME[x]||x).join('、');
+  }
+  $('#ftInfo').textContent=ft;
+  updatePxHint();
+  save();
+}
+function countItems(){
+  const C=S.content; let n=0;
+  ['icon','title','value','sub','extra','en','footer','no'].forEach(k=>{ if(C[k]&&C[k].show&&k!=='icon') n++; });
+  if(C.icon.show&&C.icon.type!=='none') n++;
+  return n;
+}
+function mm2px(mm,dpi){ return Math.round(mm/25.4*dpi); }
+function updatePxHint(){
+  const dpi=parseInt($('#expDpi').value,10)||300;
+  $('#pxHint').textContent=mm2px(S.size.w,dpi)+' × '+mm2px(S.size.h,dpi)+' px';
+}
+
+/* ---------------- UI 同步 ---------------- */
+function syncPathUI(path,src){
+  const v=getPath(S,path);
+  $$('[data-path="'+path+'"]').forEach(el=>{
+    if(el===src) return;
+    if(el.type==='checkbox') el.checked=!!v;
+    else if(el.tagName==='SELECT'||el.tagName==='TEXTAREA'||el.type==='text') el.value=v==null?'':v;
+    else el.value=v;
+  });
+}
+function refreshRanges(){
+  $$('input[type=range][data-path]').forEach(el=>{
+    const row=el.closest('.row');
+    if(!row) return;
+    let rv=row.querySelector('.rv');
+    if(!rv){ rv=document.createElement('span'); rv.className='rv'; row.insertBefore(rv, el.nextSibling); }
+    rv.textContent=el.value+(el.dataset.unit||'');
+  });
+}
+/* 条件显示：
+   data-when        "path"                 → 真值才显示
+   data-when        "path:v1,v2"           → 值属于集合才显示
+   data-when        "a:x|b:y"              → 多条件全部满足
+   data-when-not    "path:v1,v2"           → 值属于集合时隐藏
+   解析必须容错：缺 ":" 时按真值判断，绝不抛异常（曾因一处缺 ":" 导致整条渲染链中断） */
+function condMatch(expr){
+  let ok=true;
+  String(expr).split('|').forEach(alt=>{
+    alt=alt.trim(); if(!alt) return;
+    const i=alt.indexOf(':');
+    if(i<0){ if(!getPath(S,alt)) ok=false; return; }
+    const key=alt.slice(0,i).trim(), vals=alt.slice(i+1).split(',').map(s=>s.trim());
+    if(vals.indexOf(String(getPath(S,key)))===-1) ok=false;
+  });
+  return ok;
+}
+function refreshConditions(){
+  try{
+    $$('[data-when]').forEach(el=>{ el.hidden=!condMatch(el.dataset.when); });
+    $$('[data-when-not]').forEach(el=>{ el.hidden=condMatch(el.dataset.whenNot); });
+    const fmt=$('#expFmt')?$('#expFmt').value:'png';
+    $$('[data-when-fmt]').forEach(el=>{ el.hidden=el.dataset.whenFmt.split(',').indexOf(fmt)===-1; });
+  }catch(err){ console.warn('refreshConditions:',err); }
+}
+function refreshSegs(){
+  $$('.seg[data-seg]').forEach(seg=>{
+    const p=seg.dataset.seg;
+    const v=String(getPath(S,p));
+    $$('button',seg).forEach(b=>b.classList.toggle('on',b.dataset.v===v));
+  });
+}
+function syncUI(){
+  $$('[data-path]').forEach(el=>{
+    const v=getPath(S,el.dataset.path);
+    if(el.type==='checkbox') el.checked=!!v;
+    else if(el.type==='number'||el.type==='range') el.value=v;
+    else el.value=v==null?'':v;
+  });
+  refreshRanges(); refreshConditions(); refreshSegs(); refreshColorInputs();
+}
+let colorDefs=[
+  ['colors.bg','背景'],['colors.border','边框'],['colors.title','标题'],
+  ['colors.value','数值'],['colors.unit','单位'],['colors.sub','说明'],
+  ['colors.footer','底部'],['colors.icon','图标'],
+  ['colors.stripeA','条纹A'],['colors.stripeB','条纹B'],['colors.accent','强调色']
+];
+function refreshColorInputs(){
+  const box=$('#colorIn');
+  if(!box.dataset.built){
+    box.innerHTML='';
+    colorDefs.forEach(([p,n])=>{
+      const row=document.createElement('div'); row.className='row';
+      row.innerHTML='<label style="flex:0 0 58px">'+n+'</label>'+
+        '<input type="color" data-path="'+p+'">'+
+        '<input type="text" data-path="'+p+'" style="font-family:Consolas,monospace">';
+      box.appendChild(row);
+    });
+    box.dataset.built='1';
+  }
+  $$('[data-path]',box).forEach(el=>{
+    const v=getPath(S,el.dataset.path);
+    if(el.type==='color') el.value=/^#[0-9a-f]{6}$/i.test(v)?v:'#000000';
+    else el.value=v;
+  });
+}
+
+/* ---------------- 历史 / 存储 ---------------- */
+let hist=[], hidx=-1, histLock=false;
+function pushHist(){
+  if(histLock) return;
+  const snap=JSON.stringify(S);
+  if(hist[hidx]===snap) return;
+  hist=hist.slice(0,hidx+1); hist.push(snap);
+  if(hist.length>100) hist.shift();
+  hidx=hist.length-1;
+  refreshHistBtns();
+}
+function refreshHistBtns(){
+  $('#btnUndo').disabled=hidx<=0;
+  $('#btnRedo').disabled=hidx>=hist.length-1;
+}
+function undo(){ if(hidx<=0)return; hidx--; histLock=true; S=JSON.parse(hist[hidx]); syncUI(); render(); histLock=false; refreshHistBtns(); }
+function redo(){ if(hidx>=hist.length-1)return; hidx++; histLock=true; S=JSON.parse(hist[hidx]); syncUI(); render(); histLock=false; refreshHistBtns(); }
+let saveT=0;
+function save(){ clearTimeout(saveT); saveT=setTimeout(()=>{ try{ localStorage.setItem('hls_state',JSON.stringify(S)); }catch(e){} },350); }
+
+/* ---------------- 事件绑定 ---------------- */
+document.addEventListener('input',e=>{
+  const el=e.target;
+  if(!el.dataset.path) { if(el.id==='expDpi') updatePxHint(); if(el.id==='expFmt') refreshConditions(); return; }
+  let v;
+  if(el.type==='checkbox') v=el.checked;
+  else if(el.type==='number'||el.type==='range') v=el.value===''?0:parseFloat(el.value);
+  else v=el.value;
+  setPath(S,el.dataset.path,v);
+  try{
+    if(el.dataset.path==='size.w'&&S.size.lock){ S.size.h=Math.round(S.size.w*(lockRatio||1)); syncPathUI('size.h'); }
+    if(el.dataset.path==='size.h'&&S.size.lock){ S.size.w=Math.round(S.size.h/(lockRatio||1)); syncPathUI('size.w'); }
+    if(el.dataset.path==='shape'){
+      if(v==='circle'&&S.size.w!==S.size.h){ S.size.h=S.size.w; syncPathUI('size.h'); }
+      if(v==='triangle'){ S.size.h=Math.round(S.size.w*0.866); syncPathUI('size.h'); }
+    }
+    syncPathUI(el.dataset.path,el);
+    refreshRanges(); refreshConditions(); refreshSegs();
+  }catch(err){ console.warn('参数同步出错:',err); }
+  render(); pushHist();   /* 渲染必须执行，不能因个别控件异常而中断 */
+});
+document.addEventListener('change',e=>{
+  if(e.target.id==='expFmt') refreshConditions();
+});
+/* 全局兜底：任何未捕获错误都弹提示，避免界面「静默死亡」 */
+window.addEventListener('error',ev=>{
+  console.error(ev.error||ev.message);
+  try{ toast('脚本异常：'+(ev.message||'未知')+'（详见控制台）',true); }catch(e){}
+});
+let lockRatio=0;
+function updateLockRatio(){ lockRatio=S.size.h/S.size.w; }
+
+/* 分段控件等 */
+document.addEventListener('click',e=>{
+  /* 点击分组标题折叠 / 展开 */
+  const hd=e.target.closest('h4');
+  if(hd&&hd.parentElement&&hd.parentElement.classList.contains('grp')){
+    hd.parentElement.classList.toggle('collapsed');
+    return;
+  }
+  const b=e.target.closest('.seg[data-seg] button');
+  if(b){
+    const seg=b.closest('.seg');
+    if(seg.dataset.seg==='shape') updateLockRatio();
+    setPath(S,seg.dataset.seg,b.dataset.v);
+    const path=seg.dataset.seg;
+    if(path==='shape'){
+      if(b.dataset.v==='circle'&&S.size.w!==S.size.h){ S.size.h=S.size.w; syncPathUI('size.h'); }
+      if(b.dataset.v==='triangle'){ S.size.h=Math.round(S.size.w*0.866); syncPathUI('size.h'); }
+    }
+    syncUI(); render(); pushHist(); return;
+  }
+  const chip=e.target.closest('.chip');
+  if(chip){
+    const fill=chip.parentElement.dataset.fill;
+    if(fill==='value'){ S.content.value.num=parseFloat(chip.textContent); syncPathUI('content.value.num'); }
+    else if(fill) { setPath(S,'content.'+fill+'.text',chip.textContent); syncPathUI('content.'+fill+'.text'); }
+    else if(chip.parentElement.id==='themeChips'){
+      const th=THEMES[parseInt(chip.dataset.i,10)];
+      S.colors=clone(th.c); syncUI();
+    }
+    render(); pushHist(); return;
+  }
+  const tab=e.target.closest('.tabs button');
+  if(tab){
+    $$('.tabs button').forEach(x=>x.classList.remove('on'));
+    $$('.tabpane').forEach(x=>x.classList.remove('on'));
+    tab.classList.add('on'); $('#tab-'+tab.dataset.tab).classList.add('on');
+  }
+});
+
+/* 顶部按钮 */
+$('#btnUndo').onclick=undo;
+$('#btnRedo').onclick=redo;
+$('#btnReset').onclick=()=>{ if(confirm('确定恢复默认设置？当前内容将被覆盖。')){ S=clone(DEFAULT); syncUI(); render(); pushHist(); toast('已恢复默认'); } };
+$('#btnTheme').onclick=()=>{ document.body.classList.toggle('light'); };
+$('#btnApplyTpl').onclick=()=>{
+  const i=parseInt($('#tplSel').value,10);
+  S=deepMerge(DEFAULT,TEMPLATES[i].patch);
+  updateLockRatio(); syncUI(); render(); pushHist(); toast('已套用：'+TEMPLATES[i].name);
+};
+$('#tplSel').onchange=()=>{ $('#btnApplyTpl').click(); };
+
+/* 尺寸 */
+$('#sizePreset').onchange=e=>{
+  if(!e.target.value) return;
+  const [w,h]=e.target.value.split(',').map(Number);
+  S.size.w=w; S.size.h=h;
+  const opt=e.target.selectedOptions&&e.target.selectedOptions[0];
+  if(opt&&opt.dataset.shape) S.shape=opt.dataset.shape;   /* 选 Φ/△ 规格时同步切换形状 */
+  updateLockRatio(); syncUI(); render(); pushHist();
+};
+$('#btnSwap').onclick=()=>{ const t=S.size.w; S.size.w=S.size.h; S.size.h=t; updateLockRatio(); syncUI(); render(); pushHist(); };
+
+/* 舞台 */
+$('#bgSel').onchange=e=>{ wrap.className='canvas-wrap '+e.target.value; };
+function setZoom(z){ VIEW.zoom=clamp(z,0.15,4); render(); }
+$('#btnZoomIn').onclick=()=>setZoom(VIEW.zoom*1.2);
+$('#btnZoomOut').onclick=()=>setZoom(VIEW.zoom/1.2);
+$('#btnFit').onclick=()=>{ VIEW.zoom=1; render(); };
+$('#ckShadow').onchange=e=>{ VIEW.shadow=e.target.checked; render(); };
+$('#ckSafe').onchange=e=>{ VIEW.safe=e.target.checked; render(); };
+$('#ckDim').onchange=e=>{ VIEW.dim=e.target.checked; render(); };
+window.addEventListener('resize',()=>render());
+
+/* 图片 */
+$('#btnPickImg').onclick=()=>$('#imgFile').click();
+$('#imgFile').onchange=e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=()=>{ S.image.data=r.result; S.image.show=true; syncUI(); render(); pushHist(); toast('图片已载入'); };
+  r.readAsDataURL(f);
+};
+$('#btnClrImg').onclick=()=>{ S.image.data=''; S.image.show=false; syncUI(); render(); pushHist(); };
+$('#btnToday').onclick=()=>{ S.content.no.date=TODAY; S.spec.date=TODAY; syncUI(); render(); pushHist(); };
+
+/* ---------------- 导出 ---------------- */
+function dl(blob,name){
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob); a.download=name;
+  document.body.appendChild(a); a.click();
+  setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },1500);
+}
+function svgFileName(ext){
+  let n=($('#expName').value||'限高标识').replace(/[\\/:*?"<>|]/g,'_');
+  return n+'.'+ext;
+}
+async function rasterize(svg,pxW,pxH,bg){
+  const img=new Image();
+  await new Promise((res,rej)=>{
+    img.onload=res; img.onerror=()=>rej(new Error('SVG 渲染失败'));
+    img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
+  });
+  const cv=document.createElement('canvas');
+  cv.width=pxW; cv.height=pxH;
+  const ctx=cv.getContext('2d');
+  if(bg){ ctx.fillStyle=bg; ctx.fillRect(0,0,pxW,pxH); }
+  ctx.drawImage(img,0,0,pxW,pxH);
+  return cv;
+}
+$('#btnExport').onclick=async()=>{
+  const fmt=$('#expFmt').value, dpi=parseInt($('#expDpi').value,10)||300;
+  try{
+    if(fmt==='svg'){
+      const svg=buildSVG(S,{mode:'svg'});
+      dl(new Blob([svg],{type:'image/svg+xml'}), svgFileName('svg'));
+      toast('SVG 已导出');
+    }else{
+      const pxW=mm2px(S.size.w,dpi), pxH=mm2px(S.size.h,dpi);
+      const svg=buildSVG(S,{mode:'raster',pxW:pxW,pxH:pxH});
+      const bg=(fmt==='jpg')?'#ffffff':($('#ckAlpha').checked?null:'#ffffff');
+      const cv=await rasterize(svg,pxW,pxH,bg);
+      const type=fmt==='jpg'?'image/jpeg':'image/png';
+      const blob=await new Promise(r=>cv.toBlob(r,type,fmt==='jpg'?0.94:undefined));
+      if(!blob){ toast('导出失败',true); return; }
+      dl(blob, svgFileName(fmt));
+      toast(fmt.toUpperCase()+' 已导出（'+pxW+'×'+pxH+'px）');
+    }
+  }catch(err){ toast('导出失败：'+err.message,true); }
+};
+$('#btnCopy').onclick=async()=>{
+  try{
+    const dpi=parseInt($('#expDpi').value,10)||300;
+    const pxW=Math.min(mm2px(S.size.w,dpi),3000), pxH=Math.round(pxW*S.size.h/S.size.w);
+    const svg=buildSVG(S,{mode:'raster',pxW:pxW,pxH:pxH});
+    const cv=await rasterize(svg,pxW,pxH,'#ffffff');
+    const blob=await new Promise(r=>cv.toBlob(r,'image/png'));
+    await navigator.clipboard.write([new ClipboardItem({'image/png':blob})]);
+    toast('已复制到剪贴板');
+  }catch(e){ toast('复制失败（需 HTTPS 或本地文件权限）',true); }
+};
+
+/* ---------------- 打印 ---------------- */
+function printWindow(html,title){
+  const w=window.open('','_blank','width=900,height=700');
+  if(!w){ toast('请允许弹出窗口',true); return; }
+  w.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>'+esc(title)+'</title>'+
+    '<style>@page{margin:0}body{margin:0;background:#fff;font-family:"Microsoft YaHei",sans-serif}'+
+    '.pg{page-break-after:always}.sheet{display:flex;flex-wrap:wrap;gap:0}.cell{display:flex;align-items:center;justify-content:center;overflow:hidden}'+
+    '.cell svg{display:block}.cut{outline:1px dashed #bbb;outline-offset:-1px}'+
+    '@media print{.noprint{display:none}}</style></head><body>'+html+'</body></html>');
+  w.document.close();
+  setTimeout(()=>w.print(),400);
+}
+$('#btnPrint1').onclick=()=>{
+  const svg=buildSVG(S,{mode:'svg'});
+  printWindow('<div class="pg" style="width:'+S.size.w+'mm;height:'+S.size.h+'mm">'+svg+'</div>','限高标识 1:1');
+};
+$('#btnPrintSheet').onclick=()=>{
+  const P={A4:[210,297],A3:[297,420]};
+  const paper=P[$('#sheetPaper')?$('#sheetPaper').value:'A4']||P.A4;
+  const html=layoutSheet([S],paper[0],paper[1],8,true);
+  printWindow(html,'限高标识 排版打印');
+};
+function layoutSheet(cfgs,pw,ph,margin,cutMark){
+  const usableW=pw-margin*2, usableH=ph-margin*2;
+  let cols=Math.max(1,Math.floor(usableW/S.size.w));
+  let rows=Math.max(1,Math.floor(usableH/S.size.h));
+  if(cols*rows<1){ cols=1; rows=1; }
+  let scale=1;
+  if(S.size.w>usableW||S.size.h>usableH) scale=Math.min(usableW/S.size.w,usableH/S.size.h);
+  const cw=usableW/cols, ch=usableH/rows;
+  let cells='';
+  const n=cols*rows;
+  for(let i=0;i<Math.max(n,cfgs.length);i++){
+    const cfg=cfgs[i%cfgs.length];
+    const svg=buildSVG(cfg,{mode:'svg'});
+    cells+='<div class="cell'+(cutMark?' cut':'')+'" style="width:'+cw+'mm;height:'+ch+'mm">'+
+      '<div style="transform:scale('+scale+');transform-origin:center">'+svg+'</div></div>';
+  }
+  return '<div class="pg sheet" style="width:'+pw+'mm;height:'+ph+'mm;padding:'+margin+'mm;box-sizing:border-box">'+cells+'</div>';
+}
+
+/* ---------------- ZIP（STORE，纯 JS） ---------------- */
+const CRCT=(()=>{ const t=new Uint32Array(256);
+  for(let n=0;n<256;n++){ let c=n; for(let k=0;k<8;k++) c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1); t[n]=c>>>0; }
+  return t; })();
+function crc32(buf){ let c=0xFFFFFFFF; for(let i=0;i<buf.length;i++) c=CRCT[(c^buf[i])&0xFF]^(c>>>8); return (c^0xFFFFFFFF)>>>0; }
+function dosTime(d){
+  const t=((d.getHours()<<11)|(d.getMinutes()<<5)|(Math.floor(d.getSeconds()/2)))&0xFFFF;
+  const dd=(((d.getFullYear()-1980)<<9)|((d.getMonth()+1)<<5)|d.getDate())&0xFFFF;
+  return [t,dd];
+}
+function makeZip(files){
+  const enc=new TextEncoder();
+  const chunks=[],central=[]; let offset=0;
+  const d=new Date(), [dt,dd]=dosTime(d);
+  files.forEach(file=>{
+    const name=enc.encode(file.name), data=file.data;
+    const crc=crc32(data);
+    const lh=new Uint8Array(30+name.length);
+    const dv=new DataView(lh.buffer);
+    dv.setUint32(0,0x04034b50,true); dv.setUint16(4,20,true); dv.setUint16(6,0x0800,true);
+    dv.setUint16(8,0,true); dv.setUint16(10,dt,true); dv.setUint16(12,dd,true);
+    dv.setUint32(14,crc,true); dv.setUint32(18,data.length,true); dv.setUint32(22,data.length,true);
+    dv.setUint16(26,name.length,true); dv.setUint16(28,0,true);
+    lh.set(name,30);
+    chunks.push(lh,data);
+    const ch=new Uint8Array(46+name.length);
+    const cv=new DataView(ch.buffer);
+    cv.setUint32(0,0x02014b50,true); cv.setUint16(4,20,true); cv.setUint16(6,20,true);
+    cv.setUint16(8,0x0800,true); cv.setUint16(10,0,true); cv.setUint16(12,dt,true); cv.setUint16(14,dd,true);
+    cv.setUint32(16,crc,true); cv.setUint32(20,data.length,true); cv.setUint32(24,data.length,true);
+    cv.setUint16(28,name.length,true); cv.setUint16(30,0,true); cv.setUint16(32,0,true);
+    cv.setUint16(34,0,true); cv.setUint16(36,0,true); cv.setUint32(38,0,true); cv.setUint32(42,offset,true);
+    ch.set(name,46);
+    central.push(ch);
+    offset+=lh.length+data.length;
+  });
+  const cdSize=central.reduce((a,b)=>a+b.length,0);
+  const eocd=new Uint8Array(22);
+  const ev=new DataView(eocd.buffer);
+  ev.setUint32(0,0x06054b50,true); ev.setUint16(4,0,true); ev.setUint16(6,0,true);
+  ev.setUint16(8,files.length,true); ev.setUint16(10,files.length,true);
+  ev.setUint32(12,cdSize,true); ev.setUint32(16,offset,true); ev.setUint16(20,0,true);
+  return new Blob(chunks.concat(central,[eocd]),{type:'application/zip'});
+}
+
+/* ---------------- 批量 ---------------- */
+function parseBatch(txt){
+  return txt.split(/\r?\n/).map(l=>l.trim()).filter(Boolean).map((l,i)=>{
+    const p=l.split(/[,，\t|]/).map(s=>s.trim());
+    const num=parseFloat(p[0]);
+    if(!isFinite(num)) return null;
+    return {i:i, num:num, title:p[1]||'', sub:p[2]||'', footer:p[3]||''};
+  }).filter(Boolean);
+}
+function batchCfgs(){
+  const rows=parseBatch($('#batchData').value);
+  return rows.map(r=>{
+    const c=clone(S);
+    c.content.value.num=r.num;
+    if(r.title) c.content.title.text=r.title;
+    if(r.sub) c.content.sub.text=r.sub;
+    if(r.footer) c.content.footer.text=r.footer;
+    c._row=r;
+    return c;
+  });
+}
+function batchName(c,tpl,i){
+  const d=TODAY;
+  const unit=(c.content.value.showUnit&&c.content.value.unit)?c.content.value.unit:'';
+  const map={
+    value:fmtNum(c.content.value.num,c.content.value.decimals),
+    unit:unit,
+    title:c.content.title.show?c.content.title.text:'',
+    sub:c.content.sub.show?c.content.sub.text:'',
+    footer:c.content.footer.show?c.content.footer.text:'',
+    w:c.size.w, h:c.size.h, date:d, n:String(i+1).padStart(2,'0')
+  };
+  let s=tpl||'{value}{unit}_{title}';
+  Object.keys(map).forEach(k=>{ s=s.split('{'+k+'}').join(String(map[k]).replace(/[\\/:*?"<>|]/g,'_')); });
+  return s;
+}
+function renderThumbs(){
+  const cfgs=batchCfgs();
+  const box=$('#thumbs'); box.innerHTML='';
+  cfgs.slice(0,60).forEach(c=>{
+    const d=document.createElement('div'); d.className='thumb';
+    d.innerHTML=buildSVG(c,{mode:'preview',scale:Math.min(140/c.size.w,160/c.size.h)});
+    const b=document.createElement('b');
+    b.textContent=fmtNum(c.content.value.num,c.content.value.decimals)+(c.content.value.unit||'');
+    d.appendChild(b);
+    d.onclick=()=>{
+      S=clone(c); delete S._row; syncUI(); render(); pushHist();
+      $$('.tabs button').forEach(x=>x.classList.remove('on'));
+      $$('.tabpane').forEach(x=>x.classList.remove('on'));
+      $$('.tabs button')[0].classList.add('on'); $('#tab-content').classList.add('on');
+      toast('已载入编辑器');
+    };
+    box.appendChild(d);
+  });
+  $('#batchProg').textContent='共 '+cfgs.length+' 张'+(cfgs.length>60?'（仅预览前 60 张）':'');
+  return cfgs;
+}
+$('#batchData').oninput=()=>renderThumbs();
+$('#bFillRange').onclick=()=>{ let a=[]; for(let v=2.0;v<=6.001;v+=0.2) a.push(v.toFixed(1)); $('#batchData').value=a.join('\n'); renderThumbs(); };
+$('#bFillInt').onclick=()=>{ let a=[]; for(let v=2.0;v<=6.001;v+=0.5) a.push(v.toFixed(1)); $('#batchData').value=a.join('\n'); renderThumbs(); };
+$('#bFillCommon').onclick=()=>{ $('#batchData').value='1.8\n2.0\n2.2\n2.5\n2.8\n3.0\n3.5\n4.0\n4.5\n5.0\n6.0'; renderThumbs(); };
+$('#bClearB').onclick=()=>{ $('#batchData').value=''; renderThumbs(); };
+
+$('#btnBatchZip').onclick=async()=>{
+  const cfgs=batchCfgs();
+  if(!cfgs.length){ toast('请先输入批量数据',true); return; }
+  const fmt=$('#batchFmt').value, dpi=parseInt($('#batchDpi').value,10)||150;
+  const tpl=$('#batchName').value;
+  const btn=$('#btnBatchZip'); btn.disabled=true;
+  const files=[];
+  try{
+    for(let i=0;i<cfgs.length;i++){
+      const c=cfgs[i];
+      const base=batchName(c,tpl,i);
+      $('#batchProg').textContent='处理中 '+(i+1)+' / '+cfgs.length;
+      if(fmt==='svg'){
+        const svg=buildSVG(c,{mode:'svg'});
+        files.push({name:base+'.svg', data:new TextEncoder().encode(svg)});
+      }else{
+        const pxW=mm2px(c.size.w,dpi), pxH=mm2px(c.size.h,dpi);
+        const svg=buildSVG(c,{mode:'raster',pxW:pxW,pxH:pxH});
+        const cv=await rasterize(svg,pxW,pxH, fmt==='jpg'?'#ffffff':null);
+        const blob=await new Promise(r=>cv.toBlob(r, fmt==='jpg'?'image/jpeg':'image/png', 0.94));
+        files.push({name:base+'.'+(fmt==='jpg'?'jpg':'png'), data:new Uint8Array(await blob.arrayBuffer())});
+      }
+      if(i%4===0) await new Promise(r=>setTimeout(r,0));
+    }
+    dl(makeZip(files),'限高标识_'+cfgs.length+'张_'+TODAY+'.zip');
+    toast('已打包 '+files.length+' 个文件');
+  }catch(e){ toast('批量导出失败：'+e.message,true); }
+  btn.disabled=false; renderThumbs();
+};
+$('#btnBatchPrint').onclick=()=>{
+  const cfgs=batchCfgs();
+  if(!cfgs.length){ toast('请先输入批量数据',true); return; }
+  const P={A4:[210,297],A3:[297,420]};
+  const paper=P.A4;
+  const usableW=paper[0]-16, usableH=paper[1]-16;
+  let cols=Math.max(1,Math.floor(usableW/S.size.w));
+  let rows=Math.max(1,Math.floor(usableH/S.size.h));
+  if(cols*rows<1){cols=rows=1;}
+  let scale=1;
+  if(S.size.w>usableW/cols||S.size.h>usableH/rows) scale=Math.min(usableW/cols/S.size.w,usableH/rows/S.size.h);
+  const cw=usableW/cols, ch=usableH/rows;
+  const per=cols*rows;
+  let pages='';
+  for(let i=0;i<cfgs.length;i+=per){
+    let cells='';
+    for(let j=0;j<per;j++){
+      const c=cfgs[i+j];
+      if(!c){ cells+='<div class="cell" style="width:'+cw+'mm;height:'+ch+'mm"></div>'; continue; }
+      cells+='<div class="cell cut" style="width:'+cw+'mm;height:'+ch+'mm"><div style="transform:scale('+scale+');transform-origin:center">'+
+        buildSVG(c,{mode:'svg'})+'</div></div>';
+    }
+    pages+='<div class="pg sheet" style="width:'+paper[0]+'mm;height:'+paper[1]+'mm;padding:8mm;box-sizing:border-box">'+cells+'</div>';
+  }
+  printWindow(pages,'限高标识 批量打印（'+cfgs.length+'张）');
+};
+$('#btnToBatch').onclick=()=>{
+  const cur=fmtNum(S.content.value.num,S.content.value.decimals);
+  const line=[cur,S.content.title.show?S.content.title.text:'',S.content.sub.show?S.content.sub.text:'',S.content.footer.show?S.content.footer.text:''].join(',');
+  const ta=$('#batchData');
+  ta.value=(ta.value?ta.value+'\n':'')+line;
+  renderThumbs(); toast('已加入批量列表');
+};
+
+/* ---------------- 制作说明 ---------------- */
+function buildSpecText(){
+  const c=S, sp=c.spec, C=c.content;
+  const v=fmtNum(C.value.num,C.value.decimals), u=(C.value.showUnit&&C.value.unit)?C.value.unit:'';
+  const shapeName={rect:'矩形',rounded:'圆角矩形',circle:'圆形',triangle:'正三角形',octagon:'八角形',arch:'拱形'}[c.shape];
+  const refl={none:'无（普通喷涂/UV）',engineer:'工程级反光膜（≈5年，夜间可视≈100m）',
+              high:'高强级反光膜（≈7年，夜间可视≈200m）',super:'超强级/钻石级（≈10年，夜间可视≈300m+）'}[c.reflect];
+  const mountH=Number(sp.mountH)||0;
+  const limitMm=(u==='m'||u==='M'||u==='米')?Math.round(C.value.num*1000):(u==='cm'?Math.round(C.value.num*10):Math.round(C.value.num));
+  const lines=[
+    '【车间限高标识 制作说明】',
+    '',
+    '一、基本信息',
+    '  标识名称    ：'+(C.title.show?(C.title.text+' '+v+u):(v+u+' 限高标识')),
+    '  限高数值    ：'+v+' '+u+'（约 '+limitMm+' mm）',
+    '  制作数量    ：'+sp.qty+' 块',
+    '  制作日期    ：'+sp.date,
+    '  执行标准    ：'+sp.std,
+    '',
+    '二、版面与内容',
+    '  标牌内容    ：'+(C.title.show?C.title.text:'（无标题）')+' / '+(C.value.show?v+u:'（无数值）')+
+        (C.sub.show&&C.sub.text?' / '+C.sub.text:'')+(C.en.show&&C.en.text?' / '+C.en.text:'')+
+        (C.footer.show&&C.footer.text?' / '+C.footer.text:''),
+    '  外形尺寸    ：'+c.size.w+' × '+c.size.h+' mm（'+shapeName+'）',
+    '  版面底色    ：'+c.colors.bg+'，边框 '+c.colors.border+'，文字 '+c.colors.title,
+    '  反光等级    ：'+refl,
+    '',
+    '三、材料与工艺',
+    '  基材        ：'+sp.material,
+    '  表面工艺    ：'+sp.process,
+    '  边框        ：'+(c.border.show?('四周 '+c.border.w+'mm '+(c.border.inner?('，内框线内缩 '+c.border.inset+'mm'):'')):'无边框'),
+    '  警示斜纹    ：'+(c.stripes.mode==='none'?'无':
+        ((c.shape==='circle'||c.shape==='arch'||c.shape==='triangle'||c.shape==='octagon')
+          ?('沿轮廓环形边，带宽 '+c.stripes.h+'mm')
+          :({top:'顶部带',bottom:'底部带',both:'上下带',corners:'对角块',frame:'四周框'}[c.stripes.mode]+'，带宽 '+c.stripes.h+'mm'))),
+    '',
+    '四、安装要求',
+    '  安装方式    ：'+sp.mount,
+    '  安装位置    ：限高杆 / 门洞上方居中，正面朝向来车方向',
+    '  下沿距地    ：'+mountH+' mm'+(limitMm?('（限高面 '+limitMm+' mm，'+(mountH>=limitMm?'高于限高面 '+(mountH-limitMm)+'mm，符合要求':'⚠ 低于限高值，需复核')):''),
+    '  视线要求    ：前方 20m 处清晰可辨，无遮挡、无逆光眩目',
+    '  固定要求    ：四角固定，螺栓紧固无松动，边角无翘曲',
+    '',
+    '五、验收标准',
+    '  1. 版面平整、无气泡、无划痕，颜色均匀一致；',
+    '  2. 文字、数字、图形完整清晰，无断笔、无糊字；',
+    '  3. 尺寸偏差 ≤ ±2mm，对角线偏差 ≤ ±3mm；',
+    '  4. 反光膜粘贴牢固，边角无起翘，逆反射系数符合等级要求；',
+    '  5. 安装牢固，轻推无晃动，高度与限高面一致。',
+    '',
+    '六、备注',
+    '  '+(sp.note||'（无）'),
+    '',
+    '—— 由「车间限高标识生成器」自动生成 '+TODAY
+  ];
+  return lines.join('\n');
+}
+$('#btnSpecGen').onclick=()=>{ $('#spec').textContent=buildSpecText(); toast('说明已生成'); };
+$('#btnSpecCopy').onclick=async()=>{
+  const t=$('#spec').textContent||buildSpecText();
+  $('#spec').textContent=t;
+  try{ await navigator.clipboard.writeText(t); toast('已复制'); }
+  catch(e){
+    const ta=document.createElement('textarea'); ta.value=t; document.body.appendChild(ta);
+    ta.select(); document.execCommand('copy'); ta.remove(); toast('已复制');
+  }
+};
+$('#btnSpecTxt').onclick=()=>{ dl(new Blob([buildSpecText()],{type:'text/plain;charset=utf-8'}),'限高标识制作说明_'+TODAY+'.txt'); toast('TXT 已导出'); };
+$('#btnSpecPrint').onclick=()=>{
+  const t=buildSpecText();
+  printWindow('<div style="padding:20mm;font-size:12pt;line-height:1.9;white-space:pre-wrap">'+esc(t)+'</div>','制作说明');
+};
+
+/* ---------------- 配置导入 / 导出 ---------------- */
+$('#btnExportCfg').onclick=()=>{
+  dl(new Blob([JSON.stringify(S,null,2)],{type:'application/json'}),'限高标识配置_'+TODAY+'.json');
+};
+$('#btnImportCfg').onclick=()=>$('#cfgFile').click();
+$('#cfgFile').onchange=e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=()=>{
+    try{ S=deepMerge(DEFAULT,JSON.parse(r.result)); updateLockRatio(); syncUI(); render(); pushHist(); toast('配置已导入'); }
+    catch(err){ toast('JSON 解析失败',true); }
+  };
+  r.readAsText(f);
+};
+
+/* ---------------- 快捷键 ---------------- */
+document.addEventListener('keydown',e=>{
+  if(/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) return;
+  const ctrl=e.ctrlKey||e.metaKey;
+  if(ctrl&&e.key.toLowerCase()==='z'){ e.preventDefault(); e.shiftKey?redo():undo(); }
+  else if(ctrl&&e.key.toLowerCase()==='y'){ e.preventDefault(); redo(); }
+  else if(ctrl&&e.key.toLowerCase()==='s'){ e.preventDefault(); $('#btnExport').click(); }
+  else if(e.key==='+'||e.key==='='){ setZoom(VIEW.zoom*1.15); }
+  else if(e.key==='-'){ setZoom(VIEW.zoom/1.15); }
+  else if(e.key.toLowerCase()==='f'){ VIEW.zoom=1; render(); }
+});
+
+/* ---------------- 初始化 ---------------- */
+(function init(){
+  // 下拉选项
+  const tplSel=$('#tplSel');
+  TEMPLATES.forEach((t,i)=>{ const o=document.createElement('option'); o.value=String(i); o.textContent=t.name; tplSel.appendChild(o); });
+  const fs=$$('select[data-path="typo.family"],select[data-path="typo.familyCJK"]');
+  fs.forEach(sel=>{ FONTS.forEach(([v,n])=>{ const o=document.createElement('option'); o.value=v; o.textContent=n; sel.appendChild(o); }); });
+  const tc=$('#themeChips');
+  THEMES.forEach((t,i)=>{ const s=document.createElement('span'); s.className='chip'; s.dataset.i=i; s.textContent=t.n; tc.appendChild(s); });
+
+  // 恢复上次状态
+  let restored=false;
+  try{
+    const raw=localStorage.getItem('hls_state');
+    if(raw){ S=deepMerge(DEFAULT,JSON.parse(raw)); restored=true; }
+  }catch(e){}
+  updateLockRatio();
+  syncUI();
+  hist=[JSON.stringify(S)]; hidx=0; refreshHistBtns();
+  render();
+  renderThumbs();
+  $('#spec').textContent=buildSpecText();
+  $('#batchData').value='2.2\n2.5\n3.0\n3.5\n4.0\n4.5';
+  renderThumbs();
+  if(restored) toast('已恢复上次编辑内容');
+})();
+</script>
+</body>
+</html>
