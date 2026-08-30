@@ -1,0 +1,3071 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ColorStudio · 专业配色方案生成器</title>
+<style>
+/* ============ 基础与主题变量 ============ */
+*,*::before,*::after{box-sizing:border-box}
+:root{
+  --r-s:8px; --r:12px; --r-l:18px;
+  --accent:#6366f1; --accent-2:#a855f7;
+  --font:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono","Courier New",monospace;
+  --t:.18s cubic-bezier(.4,0,.2,1);
+}
+html[data-theme="dark"]{
+  --bg:#0b0d14; --bg-grad:radial-gradient(1100px 620px at 8% -12%,#1a2035 0%,transparent 62%),radial-gradient(900px 520px at 105% -5%,#241a38 0%,transparent 58%);
+  --panel:#12151f; --panel-2:#171b28; --panel-3:#1e2333; --panel-4:#262c3f;
+  --border:#252b3d; --border-2:#333b52;
+  --text:#e9ecf5; --text-2:#a4adc4; --text-3:#6b7490;
+  --shadow:0 12px 34px rgba(0,0,0,.5); --shadow-s:0 4px 14px rgba(0,0,0,.35);
+  --input:#0f121c; --ok:#34d399; --warn:#fbbf24; --err:#f87171;
+}
+html[data-theme="light"]{
+  --bg:#f2f4fa; --bg-grad:radial-gradient(1000px 560px at 5% -10%,#e3e9ff 0%,transparent 60%),radial-gradient(800px 460px at 102% -4%,#f7e3ff 0%,transparent 58%);
+  --panel:#ffffff; --panel-2:#f7f9fd; --panel-3:#eef1f8; --panel-4:#e4e9f4;
+  --border:#e2e7f1; --border-2:#ccd4e6;
+  --text:#141828; --text-2:#5a637a; --text-3:#8a92a8;
+  --shadow:0 10px 30px rgba(30,40,80,.10); --shadow-s:0 3px 10px rgba(30,40,80,.08);
+  --input:#fbfcfe; --ok:#059669; --warn:#b45309; --err:#dc2626;
+}
+html,body{height:100%}
+body{
+  margin:0;font-family:var(--font);background:var(--bg);color:var(--text);
+  font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;overflow-x:hidden;
+}
+body::before{content:"";position:fixed;inset:0;background:var(--bg-grad);pointer-events:none;z-index:0}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border-2);border-radius:8px;border:2px solid transparent;background-clip:padding-box}
+::-webkit-scrollbar-thumb:hover{background:var(--text-3);background-clip:padding-box}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;background:none;border:none}
+a{color:var(--accent);text-decoration:none}
+
+/* ============ 通用组件 ============ */
+.mono{font-family:var(--mono);font-size:12.5px;letter-spacing:.2px}
+.muted{color:var(--text-2)}
+.dim{color:var(--text-3)}
+.hidden{display:none !important}
+.row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.row.tight{gap:5px}
+.between{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.col{display:flex;flex-direction:column;gap:8px}
+.grow{flex:1;min-width:0}
+.center{display:flex;align-items:center;justify-content:center}
+.gap6{gap:6px}.gap10{gap:10px}.gap14{gap:14px}.gap18{gap:18px}
+.mt6{margin-top:6px}.mt10{margin-top:10px}.mt14{margin-top:14px}.mt18{margin-top:18px}
+.mb6{margin-bottom:6px}.mb10{margin-bottom:10px}.mb14{margin-bottom:14px}.mb18{margin-bottom:18px}
+.w100{width:100%}
+.tc{text-align:center}
+.small{font-size:12px}
+.xsmall{font-size:11px}
+
+.card{background:var(--panel);border:1px solid var(--border);border-radius:var(--r-l);box-shadow:var(--shadow-s)}
+.card-h{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:13px 16px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.card-h h3{margin:0;font-size:13.5px;font-weight:650;letter-spacing:.3px;display:flex;align-items:center;gap:8px}
+.card-b{padding:16px}
+.card-b.sm{padding:12px}
+
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  padding:8px 13px;border-radius:var(--r-s);border:1px solid var(--border-2);
+  background:var(--panel-2);color:var(--text);font-size:13px;font-weight:550;
+  transition:var(--t);white-space:nowrap;user-select:none;
+}
+.btn:hover{background:var(--panel-3);border-color:var(--accent);transform:translateY(-1px)}
+.btn:active{transform:translateY(0)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 4px 14px color-mix(in srgb,var(--accent) 40%,transparent)}
+.btn.primary:hover{filter:brightness(1.1)}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--text-2)}
+.btn.ghost:hover{background:var(--panel-3);color:var(--text)}
+.btn.sm{padding:5px 9px;font-size:12px;border-radius:7px}
+.btn.xs{padding:3px 7px;font-size:11px;border-radius:6px}
+.btn.icon{padding:7px;width:32px;height:32px}
+.btn.icon.sm{width:26px;height:26px;padding:0}
+.btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
+.btn.active{background:var(--accent);border-color:var(--accent);color:#fff}
+
+.input,.select{
+  width:100%;padding:8px 10px;border-radius:var(--r-s);border:1px solid var(--border-2);
+  background:var(--input);color:var(--text);outline:none;transition:var(--t);font-size:13px;
+}
+.input:focus,.select:focus{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 18%,transparent)}
+.select{cursor:pointer;appearance:none;-webkit-appearance:none;
+  background-image:linear-gradient(45deg,transparent 50%,var(--text-2) 50%),linear-gradient(135deg,var(--text-2) 50%,transparent 50%);
+  background-position:calc(100% - 15px) calc(50% - 2px),calc(100% - 10px) calc(50% - 2px);
+  background-size:5px 5px,5px 5px;background-repeat:no-repeat;padding-right:28px}
+.select option{background:var(--panel);color:var(--text)}
+textarea.input{resize:vertical;min-height:70px;font-family:var(--mono);font-size:12px;line-height:1.6}
+
+.field{display:flex;flex-direction:column;gap:5px}
+.field>label{font-size:11.5px;font-weight:600;color:var(--text-2);letter-spacing:.4px;text-transform:uppercase;display:flex;justify-content:space-between;align-items:center}
+.field>label .v{font-family:var(--mono);color:var(--text);font-size:11.5px;text-transform:none;letter-spacing:0}
+
+input[type=range]{
+  -webkit-appearance:none;appearance:none;width:100%;height:22px;background:transparent;cursor:pointer;margin:0;
+}
+input[type=range]::-webkit-slider-runnable-track{height:6px;border-radius:99px;background:var(--panel-4)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--accent);border:2px solid var(--panel);margin-top:-5px;box-shadow:0 1px 6px rgba(0,0,0,.4);transition:var(--t)}
+input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.18)}
+input[type=range]::-moz-range-track{height:6px;border-radius:99px;background:var(--panel-4)}
+input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:var(--accent);border:2px solid var(--panel)}
+input[type=range].hue::-webkit-slider-runnable-track{background:linear-gradient(90deg,#f00 0%,#ff0 17%,#0f0 33%,#0ff 50%,#00f 67%,#f0f 83%,#f00 100%)}
+input[type=range].hue::-moz-range-track{background:linear-gradient(90deg,#f00 0%,#ff0 17%,#0f0 33%,#0ff 50%,#00f 67%,#f0f 83%,#f00 100%)}
+input[type=color]{width:100%;height:38px;padding:2px;border:1px solid var(--border-2);border-radius:var(--r-s);background:var(--input);cursor:pointer}
+input[type=color]::-webkit-color-swatch-wrapper{padding:0}
+input[type=color]::-webkit-color-swatch{border:none;border-radius:5px}
+
+.seg{display:inline-flex;background:var(--panel-3);border:1px solid var(--border);border-radius:var(--r-s);padding:2px;gap:2px;flex-wrap:wrap}
+.seg button{padding:5px 11px;border-radius:6px;font-size:12.5px;color:var(--text-2);transition:var(--t);font-weight:550}
+.seg button:hover{color:var(--text)}
+.seg button.on{background:var(--accent);color:#fff;box-shadow:var(--shadow-s)}
+.seg.sm button{padding:3px 8px;font-size:11.5px}
+
+.chip{
+  padding:4px 10px;border-radius:99px;border:1px solid var(--border-2);background:var(--panel-2);
+  font-size:12px;color:var(--text-2);transition:var(--t);cursor:pointer;white-space:nowrap
+}
+.chip:hover{border-color:var(--accent);color:var(--text)}
+.chip.on{background:var(--accent);border-color:var(--accent);color:#fff}
+
+.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600;letter-spacing:.3px}
+.badge.ok{background:color-mix(in srgb,var(--ok) 18%,transparent);color:var(--ok)}
+.badge.no{background:color-mix(in srgb,var(--err) 18%,transparent);color:var(--err)}
+.badge.mid{background:color-mix(in srgb,var(--warn) 20%,transparent);color:var(--warn)}
+.badge.neu{background:var(--panel-3);color:var(--text-2)}
+
+kbd{font-family:var(--mono);font-size:10.5px;padding:1.5px 5px;border:1px solid var(--border-2);border-bottom-width:2px;border-radius:5px;background:var(--panel-3);color:var(--text-2)}
+
+.tooltip{position:relative}
+.tooltip::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 7px);left:50%;transform:translateX(-50%) translateY(3px);
+  background:var(--panel-4);color:var(--text);border:1px solid var(--border-2);padding:5px 9px;border-radius:6px;font-size:11.5px;
+  white-space:nowrap;opacity:0;pointer-events:none;transition:var(--t);z-index:60;box-shadow:var(--shadow)}
+.tooltip:hover::after{opacity:1;transform:translateX(-50%) translateY(0)}
+/* 顶栏按钮的提示改为向下弹出，避免被页面顶部裁剪 */
+header.top .tooltip::after{bottom:auto;top:calc(100% + 7px)}
+/* 靠近右缘的按钮提示改为右对齐，避免横向溢出被裁剪 */
+header.top .tooltip-r::after{left:auto;right:0;transform:translateX(0) translateY(3px)}
+header.top .tooltip-r:hover::after{transform:translateX(0) translateY(0)}
+
+/* ============ 布局 ============ */
+.app{position:relative;z-index:1;display:flex;flex-direction:column;min-height:100vh}
+header.top{
+  position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  padding:11px 20px;background:color-mix(in srgb,var(--panel) 82%,transparent);
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid var(--border);
+}
+.brand{display:flex;align-items:center;gap:10px;font-weight:750;font-size:15.5px;letter-spacing:.3px;white-space:nowrap}
+.brand .dot{width:26px;height:26px;border-radius:8px;background:conic-gradient(from 210deg,#f43f5e,#f59e0b,#10b981,#3b82f6,#8b5cf6,#f43f5e);
+  box-shadow:0 0 0 1px var(--border-2),0 3px 12px rgba(0,0,0,.35)}
+.brand small{display:block;font-size:10.5px;font-weight:500;color:var(--text-3);letter-spacing:1.2px;margin-top:-2px}
+
+.tabs{display:flex;gap:3px;overflow-x:auto;scrollbar-width:none;padding:2px}
+.tabs::-webkit-scrollbar{display:none}
+.tab{padding:8px 13px;border-radius:var(--r-s);font-size:13px;font-weight:550;color:var(--text-2);white-space:nowrap;transition:var(--t);display:flex;align-items:center;gap:6px}
+.tab:hover{background:var(--panel-3);color:var(--text)}
+.tab.on{background:var(--accent);color:#fff;box-shadow:var(--shadow-s)}
+.tab .n{font-size:10px;opacity:.7;font-family:var(--mono)}
+
+main{flex:1;display:grid;grid-template-columns:334px minmax(0,1fr);gap:18px;padding:18px 20px 40px;align-items:start}
+aside.side{display:flex;flex-direction:column;gap:14px;position:sticky;top:74px;max-height:calc(100vh - 92px);overflow-y:auto;padding-right:4px}
+section.view{display:none;flex-direction:column;gap:16px}
+section.view.on{display:flex;animation:fadeUp .28s var(--t)}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+/* ============ 色轮 ============ */
+.wheel-wrap{position:relative;width:100%;aspect-ratio:1/1;max-width:290px;margin:0 auto;touch-action:none}
+#wheel{width:100%;height:100%;display:block;cursor:crosshair;border-radius:50%;
+  box-shadow:0 0 0 1px var(--border-2),0 8px 26px rgba(0,0,0,.4)}
+.wheel-cursor{position:absolute;width:16px;height:16px;border-radius:50%;border:3px solid #fff;
+  box-shadow:0 0 0 1.5px rgba(0,0,0,.55),0 2px 8px rgba(0,0,0,.5);transform:translate(-50%,-50%);pointer-events:none}
+
+/* ============ 当前色信息 ============ */
+.cur-color{display:flex;gap:12px;align-items:center}
+.cur-swatch{width:58px;height:58px;border-radius:var(--r);flex:none;box-shadow:inset 0 0 0 1px rgba(255,255,255,.16),0 6px 18px rgba(0,0,0,.35);position:relative;overflow:hidden}
+.fmt-list{display:grid;grid-template-columns:1fr;gap:4px}
+.fmt{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:4px 8px;border-radius:7px;
+  background:var(--panel-2);border:1px solid var(--border);cursor:pointer;transition:var(--t)}
+.fmt:hover{border-color:var(--accent);background:var(--panel-3)}
+.fmt .k{font-size:10px;font-weight:700;color:var(--text-3);letter-spacing:.6px;width:44px;flex:none}
+.fmt .val{font-family:var(--mono);font-size:11.5px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ============ 调色板 ============ */
+.palette{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(158px,1fr))}
+.sw{background:var(--panel-2);border:1px solid var(--border);border-radius:var(--r-l);overflow:hidden;
+  transition:var(--t);box-shadow:var(--shadow-s);position:relative}
+.sw:hover{transform:translateY(-3px);box-shadow:var(--shadow);border-color:var(--border-2)}
+.sw.locked{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 28%,transparent)}
+.sw.drag{opacity:.4}
+.sw .c{height:118px;position:relative;cursor:pointer;display:flex;align-items:flex-start;justify-content:flex-end;padding:7px;gap:5px;user-select:none;-webkit-user-select:none}
+.sw .c .lock,.sw .c .idx{width:24px;height:24px;border-radius:7px;display:grid;place-items:center;font-size:12px;
+  background:rgba(0,0,0,.28);color:#fff;backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.2);transition:var(--t)}
+.sw .c .lock:hover,.sw .c .idx:hover{background:rgba(0,0,0,.55)}
+.sw .c .idx{position:absolute;left:7px;top:7px;background:rgba(0,0,0,.28);font-family:var(--mono);font-size:11px}
+.sw .c .lock.on{background:var(--accent);border-color:#fff}
+.sw .c .hex{position:absolute;bottom:8px;left:8px;font-family:var(--mono);font-size:12px;font-weight:600;
+  padding:3px 8px;border-radius:6px;background:rgba(0,0,0,.3);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.16)}
+.sw .meta{padding:9px 10px;display:flex;flex-direction:column;gap:6px}
+.sw .alt{display:flex;gap:5px;flex-wrap:wrap}
+.sw .alt span{font-family:var(--mono);font-size:10.5px;color:var(--text-2);background:var(--panel-3);padding:2px 6px;border-radius:5px;cursor:pointer;transition:var(--t)}
+.sw .alt span:hover{background:var(--accent);color:#fff}
+.sw .acts{display:flex;gap:4px;padding:0 10px 10px;flex-wrap:wrap}
+.sw-edit{display:none;padding:10px;border-top:1px solid var(--border);background:var(--panel-3);flex-direction:column;gap:7px}
+.sw.open .sw-edit{display:flex}
+
+.palette-bar{display:flex;border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow-s);border:1px solid var(--border)}
+.palette-bar>div{flex:1;height:56px;display:grid;place-items:center;font-family:var(--mono);font-size:11px;cursor:pointer;transition:var(--t)}
+.palette-bar>div:hover{flex:1.5}
+
+/* ============ 色阶 ============ */
+.scale-row{display:grid;grid-template-columns:74px repeat(11,minmax(0,1fr));gap:3px;align-items:stretch}
+.scale-row .nm{display:flex;flex-direction:column;justify-content:center;gap:2px;padding-left:2px;cursor:pointer}
+.scale-row .nm b{font-size:12px;font-family:var(--mono)}
+.scale-row .nm em{font-size:9.5px;font-style:normal;color:var(--text-3)}
+.sc-cell{height:46px;border-radius:6px;display:grid;place-items:center;font-family:var(--mono);font-size:9.5px;cursor:pointer;
+  transition:var(--t);position:relative;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(255,255,255,.07)}
+.sc-cell:hover{transform:scale(1.06);z-index:2;box-shadow:0 4px 14px rgba(0,0,0,.4),inset 0 0 0 1px rgba(255,255,255,.3)}
+.scale-head{display:grid;grid-template-columns:74px repeat(11,minmax(0,1fr));gap:3px;margin-bottom:4px}
+.scale-head div{font-size:9.5px;color:var(--text-3);text-align:center;font-family:var(--mono)}
+
+/* ============ 渐变 ============ */
+.grad-preview{height:170px;border-radius:var(--r-l);border:1px solid var(--border);box-shadow:inset 0 0 0 1px rgba(255,255,255,.06),var(--shadow-s)}
+.grad-stops{display:flex;flex-direction:column;gap:6px}
+.stop{display:flex;align-items:center;gap:8px;padding:6px 9px;background:var(--panel-2);border:1px solid var(--border);border-radius:var(--r-s)}
+.stop .pv{width:30px;height:30px;border-radius:7px;flex:none;box-shadow:inset 0 0 0 1px rgba(255,255,255,.2);cursor:pointer;position:relative;overflow:hidden}
+.stop .pv input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
+
+/* ============ 对比度 ============ */
+.ct-pair{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.ct-box{border:1px solid var(--border);border-radius:var(--r-l);overflow:hidden;background:var(--panel-2)}
+.ct-box .hd{padding:8px 12px;font-size:11.5px;font-weight:650;letter-spacing:.5px;text-transform:uppercase;color:var(--text-2);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.ct-box .bd{padding:14px}
+.ratio-big{font-family:var(--mono);font-size:40px;font-weight:700;line-height:1;letter-spacing:-1px}
+.checks{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.check{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 12px;background:var(--panel-2);border:1px solid var(--border);border-radius:var(--r-s)}
+.suggest{display:flex;gap:5px;flex-wrap:wrap}
+
+/* ============ 图片取色 ============ */
+.drop{border:2px dashed var(--border-2);border-radius:var(--r-l);padding:34px 20px;text-align:center;transition:var(--t);cursor:pointer;background:var(--panel-2)}
+.drop:hover,.drop.over{border-color:var(--accent);background:var(--panel-3)}
+#imgCanvas{max-width:100%;border-radius:var(--r);display:block;margin:0 auto;box-shadow:var(--shadow-s)}
+.img-wrap{position:relative;display:inline-block;max-width:100%}
+.img-wrap .marker{position:absolute;width:14px;height:14px;border-radius:50%;border:2px solid #fff;transform:translate(-50%,-50%);pointer-events:none;box-shadow:0 0 0 1px rgba(0,0,0,.5)}
+
+/* ============ 混色 ============ */
+.mix-bar{height:64px;border-radius:var(--r);display:flex;overflow:hidden;border:1px solid var(--border);box-shadow:var(--shadow-s)}
+.mix-bar>div{flex:1;cursor:pointer;transition:var(--t);display:flex;align-items:flex-end;justify-content:center;padding-bottom:4px;font-family:var(--mono);font-size:9px}
+.mix-bar>div:hover{flex:1.6}
+
+/* ============ 预览 ============ */
+.mock{border-radius:var(--r-l);overflow:hidden;border:1px solid var(--border);box-shadow:var(--shadow)}
+.mock-top{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--mk-border)}
+.mock-top .dots{display:flex;gap:5px}
+.mock-top .dots i{width:10px;height:10px;border-radius:50%;display:block}
+.mock-body{display:grid;grid-template-columns:190px 1fr;min-height:400px}
+.mock-side{padding:14px;display:flex;flex-direction:column;gap:6px;border-right:1px solid var(--mk-border)}
+.mock-main{padding:16px;display:flex;flex-direction:column;gap:14px}
+.mk-nav{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;font-size:12px;transition:var(--t)}
+.mk-card{border:1px solid var(--mk-border);border-radius:12px;padding:14px}
+.mk-chart{display:flex;align-items:flex-end;gap:8px;height:110px}
+.mk-chart i{flex:1;border-radius:5px 5px 0 0;transition:var(--t)}
+.mk-ring{width:88px;height:88px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:16px}
+
+/* ============ 导出 ============ */
+.code{position:relative;background:var(--panel-3);border:1px solid var(--border);border-radius:var(--r);padding:13px;
+  font-family:var(--mono);font-size:12px;line-height:1.65;white-space:pre;overflow:auto;max-height:340px;color:var(--text)}
+.code::-webkit-scrollbar{height:8px}
+
+/* ============ 收藏 ============ */
+.saved{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.sv{background:var(--panel-2);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;transition:var(--t)}
+.sv:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:var(--shadow)}
+.sv .strip{display:flex;height:52px;cursor:pointer}
+.sv .strip>div{flex:1}
+.sv .info{padding:9px 11px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+
+/* ============ Toast ============ */
+#toasts{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);z-index:999;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none}
+.toast{background:var(--panel-4);border:1px solid var(--border-2);color:var(--text);padding:9px 16px;border-radius:99px;
+  font-size:13px;box-shadow:var(--shadow);animation:tin .3s var(--t);display:flex;align-items:center;gap:8px;backdrop-filter:blur(10px)}
+.toast .sq{width:14px;height:14px;border-radius:4px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.25)}
+@keyframes tin{from{opacity:0;transform:translateY(14px) scale(.94)}to{opacity:1;transform:none}}
+.toast.out{animation:tout .25s var(--t) forwards}
+@keyframes tout{to{opacity:0;transform:translateY(10px) scale(.96)}}
+
+/* ============ 模态 ============ */
+.modal-bg{position:fixed;inset:0;background:rgba(5,7,12,.66);backdrop-filter:blur(6px);z-index:200;display:grid;place-items:center;padding:20px;animation:fadeIn .2s}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.modal{background:var(--panel);border:1px solid var(--border-2);border-radius:var(--r-l);box-shadow:var(--shadow);
+  width:min(560px,100%);max-height:86vh;overflow:auto;animation:fadeUp .25s var(--t)}
+.modal-h{padding:15px 18px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:var(--panel);z-index:2}
+.modal-h h3{margin:0;font-size:15px}
+.modal-b{padding:18px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:9px 14px;align-items:center}
+.kv .k{font-size:12.5px;color:var(--text-2);white-space:nowrap}
+
+/* ============ 响应式 ============ */
+@media(max-width:1080px){
+  main{grid-template-columns:1fr;padding:14px}
+  aside.side{position:static;max-height:none;overflow:visible;order:-1}
+  .wheel-wrap{max-width:250px}
+}
+@media(max-width:640px){
+  header.top{padding:9px 12px;gap:9px}
+  .brand small{display:none}
+  .palette{grid-template-columns:repeat(auto-fit,minmax(135px,1fr))}
+  .ct-pair{grid-template-columns:1fr}
+  .mock-body{grid-template-columns:1fr}
+  .mock-side{display:none}
+  .scale-row,.scale-head{grid-template-columns:56px repeat(11,minmax(0,1fr))}
+  .sc-cell{height:36px}
+  .ratio-big{font-size:32px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+<header class="top">
+  <div class="brand">
+    <span class="dot"></span>
+    <span>ColorStudio<small>配色方案生成器</small></span>
+  </div>
+
+  <div class="row tight grow" style="flex:0 1 auto">
+    <input type="color" id="basePicker" class="tooltip" data-tip="主色选择" value="#6366f1" style="width:46px;height:36px">
+    <input type="text" id="baseHex" class="input mono" style="width:112px;text-transform:uppercase" value="#6366F1" spellcheck="false" maxlength="7">
+    <button class="btn icon tooltip" id="btnEyedrop" data-tip="屏幕取色器 (I)">💧</button>
+    <button class="btn icon tooltip" id="btnRandom" data-tip="随机生成 (空格)">🎲</button>
+    <button class="btn icon tooltip" id="btnCopyAll" data-tip="复制全部色值">📋</button>
+    <button class="btn icon tooltip" id="btnSave" data-tip="收藏当前方案 (S)">⭐</button>
+  </div>
+
+  <nav class="tabs grow" id="tabs">
+    <button class="tab on" data-v="palette">🎨 调色板</button>
+    <button class="tab" data-v="scale">📊 色阶</button>
+    <button class="tab" data-v="gradient">🌈 渐变</button>
+    <button class="tab" data-v="contrast">⚖️ 对比度</button>
+    <button class="tab" data-v="image">🖼️ 图片取色</button>
+    <button class="tab" data-v="mix">🔀 混色</button>
+    <button class="tab" data-v="preview">🖥️ 预览</button>
+    <button class="tab" data-v="export">📦 导出</button>
+    <button class="tab" data-v="saved">💾 收藏 <span class="n" id="favCount">0</span></button>
+  </nav>
+
+  <div class="row tight">
+    <button class="btn icon tooltip tooltip-r" id="btnHelp" data-tip="快捷键与说明 (?)">❓</button>
+    <button class="btn icon tooltip tooltip-r" id="btnTheme" data-tip="切换明暗主题">🌙</button>
+  </div>
+</header>
+
+<main>
+  <!-- ================= 侧栏 ================= -->
+  <aside class="side">
+    <div class="card">
+      <div class="card-h"><h3>🎯 拾色器</h3><span class="xsmall dim mono" id="curName">—</span></div>
+      <div class="card-b">
+        <div class="wheel-wrap">
+          <canvas id="wheel" width="580" height="580"></canvas>
+        </div>
+        <div class="col mt14" style="gap:10px">
+          <div class="field"><label>色相 H <span class="v" id="vH">245°</span></label><input type="range" class="hue" id="sH" min="0" max="360" step="1" value="245"></div>
+          <div class="field"><label>饱和度 S <span class="v" id="vS">70%</span></label><input type="range" id="sS" min="0" max="100" step="1" value="70"></div>
+          <div class="field"><label>明度 V <span class="v" id="vV">93%</span></label><input type="range" id="sV" min="0" max="100" step="1" value="93"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-h"><h3>🧩 当前颜色</h3><button class="btn xs" id="btnToPalette">加入调色板</button></div>
+      <div class="card-b sm">
+        <div class="cur-color">
+          <div class="cur-swatch" id="curSwatch"></div>
+          <div class="grow col" style="gap:6px">
+            <div class="row tight">
+              <span class="badge neu" id="curTemp">—</span>
+              <span class="xsmall dim mono" id="curLum">L 0%</span>
+            </div>
+            <div class="xsmall dim" id="curNameCn">—</div>
+          </div>
+        </div>
+        <div class="fmt-list mt10" id="fmtList"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-h"><h3>⚙️ 生成规则</h3></div>
+      <div class="card-b">
+        <div class="field">
+          <label>和谐规则</label>
+          <select class="select" id="harmony">
+            <option value="analogous">类似色 Analogous</option>
+            <option value="complementary">互补色 Complementary</option>
+            <option value="split">分裂互补 Split Complementary</option>
+            <option value="triadic">三等分 Triadic</option>
+            <option value="tetradic">四等分 Tetradic</option>
+            <option value="square">正方形 Square</option>
+            <option value="rectangle">矩形 Rectangle</option>
+            <option value="monochrome">单色系 Monochromatic</option>
+            <option value="double">双互补 Double Complementary</option>
+            <option value="golden">黄金比例 Golden Ratio</option>
+            <option value="compound">复合色 Compound</option>
+            <option value="six">六色均衡 Hexadic</option>
+          </select>
+        </div>
+        <div class="row mt10" style="gap:10px">
+          <div class="field grow"><label>数量 <span class="v" id="vCount">5</span></label><input type="range" id="sCount" min="2" max="12" step="1" value="5"></div>
+        </div>
+        <div class="field mt10"><label>色相跨度 <span class="v" id="vSpread">28°</span></label><input type="range" id="sSpread" min="0" max="180" step="1" value="28"></div>
+        <div class="field mt10"><label>明度变化 <span class="v" id="vVar">18</span></label><input type="range" id="sVar" min="0" max="45" step="1" value="18"></div>
+
+        <div class="field mt10">
+          <label>风格预设</label>
+          <select class="select" id="style">
+            <option value="none">— 不限制 —</option>
+            <option value="pastel">柔和粉彩 Pastel</option>
+            <option value="vivid">鲜艳明快 Vivid</option>
+            <option value="muted">莫兰迪 Muted</option>
+            <option value="earth">大地色 Earth</option>
+            <option value="neon">霓虹赛博 Neon</option>
+            <option value="retro">复古怀旧 Retro</option>
+            <option value="ocean">海洋清风 Ocean</option>
+            <option value="sunset">日落暖阳 Sunset</option>
+            <option value="forest">森林自然 Forest</option>
+            <option value="jewel">宝石浓彩 Jewel</option>
+            <option value="mono">极简黑白 Mono</option>
+            <option value="candy">糖果甜心 Candy</option>
+          </select>
+        </div>
+
+        <div class="row mt14">
+          <button class="btn primary grow" id="btnGenerate">✨ 生成方案</button>
+          <button class="btn icon" id="btnShuffle" title="随机打乱顺序">🔀</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-h"><h3>🎛️ 全局调整</h3><button class="btn xs" id="btnResetAdj">重置</button></div>
+      <div class="card-b">
+        <div class="field"><label>色相偏移 <span class="v" id="vAH">0°</span></label><input type="range" id="aH" min="-180" max="180" step="1" value="0"></div>
+        <div class="field mt10"><label>饱和度 <span class="v" id="vAS">1.00×</span></label><input type="range" id="aS" min="0" max="200" step="1" value="100"></div>
+        <div class="field mt10"><label>明度 <span class="v" id="vAL">1.00×</span></label><input type="range" id="aL" min="0" max="200" step="1" value="100"></div>
+        <div class="field mt10"><label>对比增强 <span class="v" id="vAC">0</span></label><input type="range" id="aC" min="-50" max="50" step="1" value="0"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-h"><h3>👁️ 视觉模拟</h3></div>
+      <div class="card-b sm">
+        <div class="seg w100" id="cvdSeg">
+          <button class="on" data-cvd="none">正常</button>
+          <button data-cvd="protan">红色盲</button>
+          <button data-cvd="deutan">绿色盲</button>
+          <button data-cvd="tritan">蓝色盲</button>
+          <button data-cvd="achroma">全色盲</button>
+        </div>
+        <div class="xsmall dim mt10" id="cvdNote">切换可预览色觉障碍人群看到的颜色效果。</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ================= 主区 ================= -->
+  <div>
+    <!-- 调色板 -->
+    <section class="view on" id="v-palette">
+      <div class="card">
+        <div class="card-h">
+          <h3>🎨 当前方案</h3>
+          <div class="row tight">
+            <span class="xsmall dim" id="palInfo">5 色</span>
+            <button class="btn xs" id="btnSortHue">按色相</button>
+            <button class="btn xs" id="btnSortLum">按明度</button>
+            <button class="btn xs" id="btnReverse">反转</button>
+            <button class="btn xs" id="btnUnlockAll">全部解锁</button>
+            <button class="btn xs" id="btnDedupe">去重</button>
+          </div>
+        </div>
+        <div class="card-b"><div class="palette-bar" id="paletteBar"></div></div>
+        <div class="card-b" style="padding-top:0"><div class="palette" id="palette"></div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-h"><h3>🔍 命名色检索</h3><span class="xsmall dim">输入颜色名或 HEX，查找最接近的标准色</span></div>
+        <div class="card-b">
+          <div class="row">
+            <input class="input mono grow" id="nameSearch" placeholder="例如 navy / #334155 / 珊瑚红" spellcheck="false">
+            <button class="btn" id="btnNameSearch">查找</button>
+          </div>
+          <div id="nameResult" class="mt10 row" style="gap:6px"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 色阶 -->
+    <section class="view" id="v-scale">
+      <div class="card">
+        <div class="card-h">
+          <h3>📊 色阶系统 50–950</h3>
+          <div class="row tight">
+            <div class="seg sm" id="scaleModeSeg">
+              <button class="on" data-m="lch">感知均匀</button>
+              <button data-m="hsl">HSL 线性</button>
+              <button data-m="tint">混白/混黑</button>
+            </div>
+            <button class="btn xs" id="btnScaleCopyCss">复制 CSS</button>
+          </div>
+        </div>
+        <div class="card-b"><div id="scales"></div></div>
+      </div>
+      <div class="card">
+        <div class="card-h"><h3>🌗 明暗色阶（Tints &amp; Shades）</h3><span class="xsmall dim">点击任意格复制</span></div>
+        <div class="card-b" id="tintsShades"></div>
+      </div>
+      <div class="card">
+        <div class="card-h"><h3>♿ 可读性矩阵</h3><span class="xsmall dim">各色阶与白/黑文字的 WCAG 对比度</span></div>
+        <div class="card-b" id="readMatrix"></div>
+      </div>
+    </section>
+
+    <!-- 渐变 -->
+    <section class="view" id="v-gradient">
+      <div class="card">
+        <div class="card-h">
+          <h3>🌈 渐变生成器</h3>
+          <div class="row tight">
+            <div class="seg sm" id="gradTypeSeg">
+              <button class="on" data-t="linear">线性</button>
+              <button data-t="radial">径向</button>
+              <button data-t="conic">锥形</button>
+            </div>
+            <button class="btn xs" id="btnGradFromPal">用调色板</button>
+            <button class="btn xs" id="btnGradRandom">随机</button>
+          </div>
+        </div>
+        <div class="card-b">
+          <div class="grad-preview" id="gradPreview"></div>
+          <div class="row mt14" style="gap:14px">
+            <div class="field grow"><label>角度 <span class="v" id="vGradAngle">135°</span></label><input type="range" id="sGradAngle" min="0" max="360" step="1" value="135"></div>
+            <div class="row tight">
+              <button class="btn icon" id="btnGradTurn" title="旋转 45°">↻</button>
+              <button class="btn icon" id="btnGradRev" title="反转方向">⇄</button>
+            </div>
+          </div>
+          <div class="field mt10"><label>停靠点 <span class="v" id="vGradStops">2</span></label></div>
+          <div class="grad-stops mt6" id="gradStops"></div>
+          <div class="row mt10">
+            <button class="btn sm" id="btnGradAdd">+ 添加色标</button>
+            <button class="btn sm" id="btnGradCopy">复制 CSS</button>
+            <button class="btn sm" id="btnGradDownload">下载 PNG</button>
+            <button class="btn sm" id="btnGradToPalette">应用到调色板</button>
+          </div>
+          <div class="code mt10" id="gradCode"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h"><h3>✨ 预设渐变</h3></div>
+        <div class="card-b"><div class="palette" id="gradPresets"></div></div>
+      </div>
+    </section>
+
+    <!-- 对比度 -->
+    <section class="view" id="v-contrast">
+      <div class="card">
+        <div class="card-h"><h3>⚖️ WCAG 对比度检查</h3><span class="xsmall dim">选择前景与背景颜色</span></div>
+        <div class="card-b">
+          <div class="ct-pair">
+            <div class="ct-box">
+              <div class="hd"><span>前景文字</span><input type="color" id="fgPick" value="#ffffff" style="width:34px;height:24px"></div>
+              <div class="bd col" style="gap:10px">
+                <input class="input mono" id="fgHex" value="#FFFFFF" maxlength="7" spellcheck="false" style="text-transform:uppercase">
+                <div class="row tight" id="fgSwatches"></div>
+              </div>
+            </div>
+            <div class="ct-box">
+              <div class="hd"><span>背景</span><input type="color" id="bgPick" value="#6366f1" style="width:34px;height:24px"></div>
+              <div class="bd col" style="gap:10px">
+                <input class="input mono" id="bgHex" value="#6366F1" maxlength="7" spellcheck="false" style="text-transform:uppercase">
+                <div class="row tight" id="bgSwatches"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card mt14" style="background:var(--panel-2)">
+            <div class="card-b">
+              <div class="between" style="flex-wrap:wrap;gap:14px">
+                <div class="col" style="gap:4px">
+                  <div class="xsmall dim">对比度比值</div>
+                  <div class="ratio-big" id="ctRatio">—</div>
+                  <div class="xsmall dim" id="ctApca">APCA Lc —</div>
+                </div>
+                <div class="mock-sample" id="ctSample" style="flex:1;min-width:220px;padding:20px;border-radius:12px;text-align:center">
+                  <div style="font-size:19px;font-weight:700">大标题文字 Aa</div>
+                  <div style="font-size:14px;margin-top:5px">正文段落示例文字 sample text 123</div>
+                  <div style="font-size:11.5px;margin-top:5px;opacity:.85">辅助说明小字 caption</div>
+                </div>
+              </div>
+              <div class="checks mt14" id="ctChecks"></div>
+            </div>
+          </div>
+
+          <div class="field mt14"><label>✅ 自动修正建议 <span class="v dim" style="font-weight:400">点击应用：保持色相，调整明度至通过</span></label></div>
+          <div class="suggest mt6" id="ctSuggest"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h"><h3>🧮 全方案对比度矩阵</h3><span class="xsmall dim">当前调色板两两之间的对比度</span></div>
+        <div class="card-b"><div id="ctMatrix" style="overflow:auto"></div></div>
+      </div>
+    </section>
+
+    <!-- 图片取色 -->
+    <section class="view" id="v-image">
+      <div class="card">
+        <div class="card-h">
+          <h3>🖼️ 从图片提取配色</h3>
+          <div class="row tight">
+            <button class="btn xs" id="btnImgDemo">示例图</button>
+            <button class="btn xs" id="btnImgClear">清除</button>
+          </div>
+        </div>
+        <div class="card-b">
+          <div class="drop" id="dropZone">
+            <div style="font-size:30px">📁</div>
+            <div style="font-weight:600;margin-top:6px">点击选择、拖拽或 Ctrl+V 粘贴图片</div>
+            <div class="xsmall dim mt6">支持 JPG / PNG / WebP / GIF，图片仅在本地处理，不会上传</div>
+          </div>
+          <input type="file" id="fileInput" accept="image/*" class="hidden">
+          <div class="row mt14" style="gap:14px;align-items:flex-start;flex-wrap:wrap">
+            <div class="field" style="width:150px"><label>提取数量 <span class="v" id="vImgCount">6</span></label><input type="range" id="sImgCount" min="3" max="12" step="1" value="6"></div>
+            <div class="field" style="width:170px"><label>算法</label>
+              <select class="select" id="imgAlgo">
+                <option value="mediancut">中位切分 Median Cut</option>
+                <option value="kmeans">K-Means 聚类</option>
+                <option value="popularity">高频色 Popularity</option>
+              </select>
+            </div>
+            <div class="field" style="width:170px"><label>排序</label>
+              <select class="select" id="imgSort">
+                <option value="dominant">按占比</option>
+                <option value="hue">按色相</option>
+                <option value="light">按明度</option>
+                <option value="saturation">按饱和度</option>
+              </select>
+            </div>
+            <button class="btn primary" id="btnExtract" style="align-self:flex-end">提取主色</button>
+          </div>
+          <div class="mt14 center" id="imgHolder"><div class="img-wrap hidden" id="imgWrap"><canvas id="imgCanvas"></canvas></div></div>
+          <div id="imgPaletteWrap" class="hidden mt14">
+            <div class="between mb6"><b class="small">提取结果</b><button class="btn xs" id="btnImgUse">应用到调色板</button></div>
+            <div class="palette-bar" id="imgBar"></div>
+            <div class="palette mt10" id="imgPalette"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 混色 -->
+    <section class="view" id="v-mix">
+      <div class="card">
+        <div class="card-h">
+          <h3>🔀 颜色混合与插值</h3>
+          <div class="row tight">
+            <button class="btn xs" id="btnMixSwap">⇄ 交换</button>
+            <button class="btn xs" id="btnMixToGrad">生成渐变</button>
+            <button class="btn xs" id="btnMixToPalette">设为调色板</button>
+          </div>
+        </div>
+        <div class="card-b">
+          <div class="ct-pair">
+            <div class="field">
+              <label>颜色 A</label>
+              <div class="row tight">
+                <input type="color" id="mixA" value="#6366f1" style="width:52px;height:38px">
+                <input class="input mono grow" id="mixAHex" value="#6366F1" maxlength="7" spellcheck="false" style="text-transform:uppercase">
+              </div>
+            </div>
+            <div class="field">
+              <label>颜色 B</label>
+              <div class="row tight">
+                <input type="color" id="mixB" value="#f43f5e" style="width:52px;height:38px">
+                <input class="input mono grow" id="mixBHex" value="#F43F5E" maxlength="7" spellcheck="false" style="text-transform:uppercase">
+              </div>
+            </div>
+          </div>
+          <div class="row mt14" style="gap:16px">
+            <div class="field grow"><label>插值空间 / 模式</label>
+              <select class="select" id="mixMode">
+                <option value="lab">Lab（感知均匀，推荐）</option>
+                <option value="lch">LCH（色相环最短路径）</option>
+                <option value="hsl">HSL</option>
+                <option value="rgb">sRGB 线性</option>
+                <option value="multiply">正片叠底 Multiply</option>
+                <option value="screen">滤色 Screen</option>
+                <option value="overlay">叠加 Overlay</option>
+                <option value="difference">差值 Difference</option>
+              </select>
+            </div>
+            <div class="field grow"><label>步数 <span class="v" id="vMixSteps">9</span></label><input type="range" id="sMixSteps" min="3" max="24" step="1" value="9"></div>
+          </div>
+          <div class="field mt10"><label>混合位置 <span class="v" id="vMixT">50%</span></label><input type="range" id="sMixT" min="0" max="100" step="1" value="50"></div>
+          <div class="center mt14 col" style="gap:10px">
+            <div style="font-size:30px" id="mixResultEmoji">🎯</div>
+            <div id="mixPreview" style="width:110px;height:110px;border-radius:20px;box-shadow:var(--shadow);border:1px solid var(--border-2)"></div>
+            <div class="mono" id="mixResultHex" style="font-size:19px;font-weight:700">#000000</div>
+            <div class="small dim" id="mixDelta">色差 ΔE —</div>
+            <button class="btn sm" id="btnMixCopy">复制结果</button>
+          </div>
+          <div class="mix-bar mt18" id="mixBar"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 预览 -->
+    <section class="view" id="v-preview">
+      <div class="card">
+        <div class="card-h">
+          <h3>🖥️ 界面预览</h3>
+          <div class="row tight">
+            <div class="seg sm" id="prevThemeSeg">
+              <button class="on" data-p="light">浅色界面</button>
+              <button data-p="dark">深色界面</button>
+            </div>
+            <div class="seg sm" id="prevRoleSeg">
+              <button class="on" data-r="auto">自动分配</button>
+              <button data-r="cycle">循环取色</button>
+            </div>
+          </div>
+        </div>
+        <div class="card-b"><div class="mock" id="mock"></div></div>
+      </div>
+      <div class="card">
+        <div class="card-h"><h3>🎴 色卡展示</h3><span class="xsmall dim">品牌规范视图</span></div>
+        <div class="card-b" id="swatchSheet"></div>
+      </div>
+    </section>
+
+    <!-- 导出 -->
+    <section class="view" id="v-export">
+      <div class="card">
+        <div class="card-h">
+          <h3>📦 代码导出</h3>
+          <div class="row tight">
+            <select class="select" id="expFormat" style="width:auto;min-width:190px">
+              <option value="css">CSS 变量</option>
+              <option value="scss">SCSS</option>
+              <option value="less">LESS</option>
+              <option value="tailwind">Tailwind config</option>
+              <option value="json">JSON</option>
+              <option value="yaml">YAML</option>
+              <option value="android">Android colors.xml</option>
+              <option value="swift">Swift UIColor</option>
+              <option value="kotlin">Kotlin</option>
+              <option value="dart">Flutter Dart</option>
+              <option value="gpl">GIMP / Inkscape .gpl</option>
+              <option value="svg">SVG 色卡</option>
+              <option value="csv">CSV</option>
+              <option value="hexlist">纯 HEX 列表</option>
+              <option value="ase">Adobe .aco 文本</option>
+            </select>
+            <button class="btn sm" id="btnExpCopy">复制</button>
+            <button class="btn sm primary" id="btnExpDownload">下载文件</button>
+          </div>
+        </div>
+        <div class="card-b">
+          <div class="row mb10" style="gap:14px">
+            <label class="row tight small"><input type="checkbox" id="expNaming" checked> 语义化命名（primary/secondary…）</label>
+            <label class="row tight small"><input type="checkbox" id="expScales"> 包含 50–950 色阶</label>
+            <label class="row tight small">前缀 <input class="input mono" id="expPrefix" value="brand" style="width:100px;padding:4px 8px"></label>
+          </div>
+          <div class="code" id="expCode"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h"><h3>🖼️ 图片导出</h3></div>
+        <div class="card-b">
+          <div class="row" style="gap:14px;align-items:flex-end;flex-wrap:wrap">
+            <div class="field" style="width:150px"><label>样式</label>
+              <select class="select" id="pngStyle">
+                <option value="bar">色条</option>
+                <option value="cards">卡片（含色值）</option>
+                <option value="scales">色阶表</option>
+                <option value="poster">海报（含信息）</option>
+              </select>
+            </div>
+            <div class="field" style="width:150px"><label>宽度 <span class="v" id="vPngW">1600</span></label><input type="range" id="sPngW" min="600" max="3000" step="100" value="1600"></div>
+            <button class="btn primary" id="btnPng">生成并下载 PNG</button>
+          </div>
+          <div class="mt14 center"><canvas id="pngCanvas" style="max-width:100%;border-radius:12px;box-shadow:var(--shadow);display:none"></canvas></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h"><h3>🔗 分享</h3></div>
+        <div class="card-b">
+          <div class="field"><label>分享链接（包含全部颜色）</label>
+            <div class="row tight">
+              <input class="input mono grow" id="shareUrl" readonly>
+              <button class="btn" id="btnShareCopy">复制</button>
+            </div>
+          </div>
+          <div class="row mt10">
+            <button class="btn sm" id="btnImportJson">导入 JSON</button>
+            <button class="btn sm" id="btnExportJson">导出 JSON（含收藏）</button>
+            <button class="btn sm" id="btnClearStorage">清空本地数据</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 收藏 -->
+    <section class="view" id="v-saved">
+      <div class="card">
+        <div class="card-h">
+          <h3>💾 收藏的方案</h3>
+          <div class="row tight">
+            <button class="btn xs" id="btnFavExport">导出全部</button>
+            <button class="btn xs" id="btnFavClear">清空</button>
+          </div>
+        </div>
+        <div class="card-b"><div class="saved" id="savedList"></div></div>
+      </div>
+      <div class="card">
+        <div class="card-h"><h3>🕘 历史记录</h3><button class="btn xs" id="btnHisClear">清空</button></div>
+        <div class="card-b"><div class="saved" id="historyList"></div></div>
+      </div>
+    </section>
+  </div>
+</main>
+</div>
+
+<div id="toasts"></div>
+<div id="modalHost"></div>
+
+<script>
+'use strict';
+/* ============================================================
+   0. 通用工具
+   ============================================================ */
+const $  = (s,r=document)=>r.querySelector(s);
+const $$ = (s,r=document)=>[...r.querySelectorAll(s)];
+const clamp=(v,a,b)=>v<a?a:(v>b?b:v);
+const rnd=(a,b)=>a+Math.random()*(b-a);
+const ri=(a,b)=>Math.floor(a+Math.random()*(b-a+1));
+const b2h=v=>Math.round(clamp(v,0,255)).toString(16).padStart(2,'0');
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pickOne=a=>a[Math.floor(Math.random()*a.length)];
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+
+/* ============================================================
+   1. 颜色空间转换核心库
+   ============================================================ */
+function normHex(h){
+  h=String(h||'').trim().replace(/^#/,'').replace(/\s+/g,'');
+  if(/^[0-9a-fA-F]{3}$/.test(h)) h=h.split('').map(c=>c+c).join('');
+  if(!/^[0-9a-fA-F]{6}$/.test(h)) return null;
+  return '#'+h.toLowerCase();
+}
+function hexToRgb(hex){
+  hex=normHex(hex)||'#000000';
+  const n=parseInt(hex.slice(1),16);
+  return {r:(n>>16)&255,g:(n>>8)&255,b:n&255};
+}
+function rgbToHex(c){return '#'+b2h(c.r)+b2h(c.g)+b2h(c.b);}
+function rgbToHsl({r,g,b}){
+  r/=255;g/=255;b/=255;
+  const mx=Math.max(r,g,b),mn=Math.min(r,g,b),d=mx-mn,l=(mx+mn)/2;
+  let h=0,s=0;
+  if(d){
+    s = l>0.5 ? d/(2-mx-mn) : d/(mx+mn);
+    if(mx===r)      h=((g-b)/d+(g<b?6:0));
+    else if(mx===g) h=((b-r)/d+2);
+    else            h=((r-g)/d+4);
+    h*=60;
+  }
+  return {h:(h+360)%360,s:s*100,l:l*100};
+}
+function hslToRgb({h,s,l}){
+  h=((h%360)+360)%360; s=clamp(s,0,100)/100; l=clamp(l,0,100)/100;
+  const c=(1-Math.abs(2*l-1))*s, x=c*(1-Math.abs(((h/60)%2)-1)), m=l-c/2;
+  let r=0,g=0,b=0;
+  switch(Math.floor(h/60)%6){
+    case 0:r=c;g=x;break; case 1:r=x;g=c;break; case 2:g=c;b=x;break;
+    case 3:g=x;b=c;break; case 4:r=x;b=c;break; default:r=c;b=x;
+  }
+  return {r:(r+m)*255,g:(g+m)*255,b:(b+m)*255};
+}
+function rgbToHsv({r,g,b}){
+  r/=255;g/=255;b/=255;
+  const mx=Math.max(r,g,b),mn=Math.min(r,g,b),d=mx-mn;
+  let h=0;
+  if(d){
+    if(mx===r)      h=((g-b)/d+(g<b?6:0));
+    else if(mx===g) h=((b-r)/d+2);
+    else            h=((r-g)/d+4);
+    h*=60;
+  }
+  return {h:(h+360)%360, s:mx?d/mx*100:0, v:mx*100};
+}
+function hsvToRgb({h,s,v}){
+  h=((h%360)+360)%360; s=clamp(s,0,100)/100; v=clamp(v,0,100)/100;
+  const c=v*s, x=c*(1-Math.abs(((h/60)%2)-1)), m=v-c;
+  let r=0,g=0,b=0;
+  switch(Math.floor(h/60)%6){
+    case 0:r=c;g=x;break; case 1:r=x;g=c;break; case 2:g=c;b=x;break;
+    case 3:g=x;b=c;break; case 4:r=x;b=c;break; default:r=c;b=x;
+  }
+  return {r:(r+m)*255,g:(g+m)*255,b:(b+m)*255};
+}
+const srgbToLin=c=>{c/=255;return c<=0.04045?c/12.92:Math.pow((c+0.055)/1.055,2.4);};
+const linToSrgb=c=>{c=clamp(c,0,1);return (c<=0.0031308?c*12.92:1.055*Math.pow(c,1/2.4)-0.055)*255;};
+/* XYZ 统一使用 0–100 尺度（D65 白点 95.047 / 100 / 108.883） */
+function rgbToXyz({r,g,b}){
+  const R=srgbToLin(r),G=srgbToLin(g),B=srgbToLin(b);
+  return {x:(R*0.4124564+G*0.3575761+B*0.1804375)*100,
+          y:(R*0.2126729+G*0.7151522+B*0.0721750)*100,
+          z:(R*0.0193339+G*0.1191920+B*0.9503041)*100};
+}
+function xyzToRgb({x,y,z}){
+  x/=100;y/=100;z/=100;
+  return {r:linToSrgb( x*3.2404542+y*-1.5371385+z*-0.4985314),
+          g:linToSrgb(x*-0.9692660+y* 1.8760108+z* 0.0415560),
+          b:linToSrgb(x* 0.0556434+y*-0.2040259+z* 1.0572252)};
+}
+const WP={x:95.047,y:100,z:108.883};
+function xyzToLab({x,y,z}){
+  const f=t=>t>0.008856?Math.cbrt(t):(7.787*t+16/116);
+  x/=WP.x;y/=WP.y;z/=WP.z;
+  const fx=f(x),fy=f(y),fz=f(z);
+  return {L:116*fy-16, a:500*(fx-fy), b:200*(fy-fz)};
+}
+function labToXyz({L,a,b}){
+  const fy=(L+16)/116, fx=fy+a/500, fz=fy-b/200;
+  const i=t=>{const v=t*t*t;return v>0.008856?v:(t-16/116)/7.787;};
+  return {x:i(fx)*WP.x, y:(L>8?Math.pow((L+16)/116,3):L/903.3)*WP.y, z:i(fz)*WP.z};
+}
+const rgbToLab=c=>xyzToLab(rgbToXyz(c));
+const labToRgb=c=>xyzToRgb(labToXyz(c));
+function rgbToLch(c){
+  const {L,a,b}=rgbToLab(c);
+  let h=Math.atan2(b,a)*180/Math.PI; if(h<0)h+=360;
+  return {L, C:Math.sqrt(a*a+b*b), h};
+}
+function lchToRgb({L,C,h}){
+  h=h*Math.PI/180;
+  return labToRgb({L, a:Math.cos(h)*C, b:Math.sin(h)*C});
+}
+function rgbToCmyk({r,g,b}){
+  r/=255;g/=255;b/=255;
+  const k=1-Math.max(r,g,b);
+  if(k===1) return {c:0,m:0,y:0,k:100};
+  return {c:(1-r-k)/(1-k)*100, m:(1-g-k)/(1-k)*100, y:(1-b-k)/(1-k)*100, k:k*100};
+}
+function cmykToRgb({c,m,y,k}){
+  c=clamp(c,0,100)/100;m=clamp(m,0,100)/100;y=clamp(y,0,100)/100;k=clamp(k,0,100)/100;
+  return {r:(1-c)*(1-k)*255, g:(1-m)*(1-k)*255, b:(1-y)*(1-k)*255};
+}
+function rgbToHwb(c){
+  const {h}=rgbToHsv(c), mx=Math.max(c.r,c.g,c.b)/255, mn=Math.min(c.r,c.g,c.b)/255;
+  return {h, w:mn*100, b:(1-mx)*100};
+}
+/* 便捷封装 */
+const hexToHsl=h=>rgbToHsl(hexToRgb(h));
+const hslToHex=c=>rgbToHex(hslToRgb(c));
+const hexToHsv=h=>rgbToHsv(hexToRgb(h));
+const hsvToHex=c=>rgbToHex(hsvToRgb(c));
+const hexToLab=h=>rgbToLab(hexToRgb(h));
+const hexToLch=h=>rgbToLch(hexToRgb(h));
+const lchToHex=c=>rgbToHex(lchToRgb(c));
+const hexToCmyk=h=>rgbToCmyk(hexToRgb(h));
+
+/* 相对亮度 & 对比度 */
+function relLum(c){
+  const R=srgbToLin(c.r),G=srgbToLin(c.g),B=srgbToLin(c.b);
+  return 0.2126*R+0.7152*G+0.0722*B;
+}
+function contrastRatio(c1,c2){
+  const l1=relLum(c1),l2=relLum(c2);
+  return (Math.max(l1,l2)+0.05)/(Math.min(l1,l2)+0.05);
+}
+const hexContrast=(a,b)=>contrastRatio(hexToRgb(a),hexToRgb(b));
+/* APCA 0.1.9 近似实现 */
+function apca(fg,bg){
+  const Y=c=>{
+    const y=0.2126729*Math.pow(c.r/255,2.4)+0.7151522*Math.pow(c.g/255,2.4)+0.0721750*Math.pow(c.b/255,2.4);
+    return y<0.022? y+Math.pow(0.022-y,1.414) : y;
+  };
+  const Yt=Y(fg), Yb=Y(bg);
+  let out;
+  if(Yb>Yt){ out=(Math.pow(Yb,0.56)-Math.pow(Yt,0.57))*1.14; out = out<0.1?0:out-0.027; }
+  else     { out=(Math.pow(Yb,0.65)-Math.pow(Yt,0.62))*1.14; out = out>-0.1?0:out+0.027; }
+  return Math.round(out*100);
+}
+/* CIEDE2000 色差 */
+function deltaE2000(l1,l2){
+  const kL=1,kC=1,kH=1;
+  const C1=Math.sqrt(l1.a**2+l1.b**2), C2=Math.sqrt(l2.a**2+l2.b**2);
+  const Cb=(C1+C2)/2, G=0.5*(1-Math.sqrt(Cb**7/(Cb**7+25**7)));
+  const a1=(1+G)*l1.a, a2=(1+G)*l2.a;
+  const C1p=Math.sqrt(a1**2+l1.b**2), C2p=Math.sqrt(a2**2+l2.b**2);
+  const h1=Math.atan2(l1.b,a1)*180/Math.PI, h2=Math.atan2(l2.b,a2)*180/Math.PI;
+  const h1p=h1>=0?h1:h1+360, h2p=h2>=0?h2:h2+360;
+  const dLp=l2.L-l1.L, dCp=C2p-C1p;
+  let dhp=0;
+  if(C1p*C2p!==0){
+    dhp=h2p-h1p;
+    if(dhp>180)dhp-=360; else if(dhp<-180)dhp+=360;
+  }
+  const dHp=2*Math.sqrt(C1p*C2p)*Math.sin(dhp*Math.PI/360);
+  const Lbp=(l1.L+l2.L)/2, Cbp=(C1p+C2p)/2;
+  let hbp;
+  if(C1p*C2p===0) hbp=h1p+h2p;
+  else if(Math.abs(h1p-h2p)<=180) hbp=(h1p+h2p)/2;
+  else hbp = (h1p+h2p)<360 ? (h1p+h2p+360)/2 : (h1p+h2p-360)/2;
+  const T=1-0.17*Math.cos((hbp-30)*Math.PI/180)+0.24*Math.cos(2*hbp*Math.PI/180)
+        +0.32*Math.cos((3*hbp+6)*Math.PI/180)-0.20*Math.cos((4*hbp-63)*Math.PI/180);
+  const dTh=30*Math.exp(-Math.pow((hbp-275)/25,2));
+  const Rc=2*Math.sqrt(Cbp**7/(Cbp**7+25**7));
+  const Sl=1+(0.015*(Lbp-50)**2)/Math.sqrt(20+(Lbp-50)**2);
+  const Sc=1+0.045*Cbp, Sh=1+0.015*Cbp*T;
+  const Rt=-Math.sin(2*dTh*Math.PI/180)*Rc;
+  return Math.sqrt((dLp/(kL*Sl))**2+(dCp/(kC*Sc))**2+(dHp/(kH*Sh))**2
+        +Rt*(dCp/(kC*Sc))*(dHp/(kH*Sh)));
+}
+const hexDeltaE=(a,b)=>deltaE2000(hexToLab(a),hexToLab(b));
+
+/* 色彩操作 */
+function shiftHue(hex,deg){const c=hexToHsl(hex);return hslToHex({h:c.h+deg,s:c.s,l:c.l});}
+function scaleSat(hex,f){const c=hexToHsl(hex);return hslToHex({h:c.h,s:clamp(c.s*f,0,100),l:c.l});}
+function scaleLight(hex,f){const c=hexToHsl(hex);return hslToHex({h:c.h,s:c.s,l:clamp(c.l*f,0,100)});}
+function lighten(hex,n){const c=hexToHsl(hex);return hslToHex({h:c.h,s:c.s,l:clamp(c.l+n,0,100)});}
+function saturate(hex,n){const c=hexToHsl(hex);return hslToHex({h:c.h,s:clamp(c.s+n,0,100),l:c.l});}
+function contrastBoost(hex,amt){ // amt: -50..50 向两端拉伸明度
+  const c=hexToHsl(hex);
+  const l=c.l + (c.l-50)*(amt/100)*2;
+  return hslToHex({h:c.h,s:clamp(c.s*(1+Math.abs(amt)/260),0,100),l:clamp(l,0,100)});
+}
+function invertHex(hex){const c=hexToRgb(hex);return rgbToHex({r:255-c.r,g:255-c.g,b:255-c.b});}
+function grayHex(hex){const y=relLum(hexToRgb(hex))*255;return rgbToHex({r:y,g:y,b:y});}
+function readableInk(bg){return hexContrast(bg,'#ffffff')>=hexContrast(bg,'#000000')?'#ffffff':'#000000';}
+function hexA(hex,a){const c=hexToRgb(hex);return `rgba(${Math.round(c.r)},${Math.round(c.g)},${Math.round(c.b)},${a})`;}
+function isLight(hex){return relLum(hexToRgb(hex))>0.42;}
+function mixColors(a,b,t,mode='lab'){
+  const A=hexToRgb(a),B=hexToRgb(b);
+  if(mode==='lab'){const l1=hexToLab(a),l2=hexToLab(b);
+    return rgbToHex(labToRgb({L:l1.L+(l2.L-l1.L)*t,a:l1.a+(l2.a-l1.a)*t,b:l1.b+(l2.b-l1.b)*t}));}
+  if(mode==='lch'){
+    let c1=hexToLch(a),c2=hexToLch(b);
+    let dh=c2.h-c1.h; if(dh>180)dh-=360; if(dh<-180)dh+=360;
+    return lchToHex({L:c1.L+(c2.L-c1.L)*t, C:c1.C+(c2.C-c1.C)*t, h:c1.h+dh*t});
+  }
+  if(mode==='hsl'){
+    let c1=hexToHsl(a),c2=hexToHsl(b);
+    let dh=c2.h-c1.h; if(dh>180)dh-=360; if(dh<-180)dh+=360;
+    return hslToHex({h:c1.h+dh*t,s:c1.s+(c2.s-c1.s)*t,l:c1.l+(c2.l-c1.l)*t});
+  }
+  if(mode==='rgb') return rgbToHex({r:A.r+(B.r-A.r)*t,g:A.g+(B.g-A.g)*t,b:A.b+(B.b-A.b)*t});
+  const ch=(x,y)=>{
+    const f=(u,v)=>{
+      switch(mode){
+        case 'multiply':  return u*v/255;
+        case 'screen':    return 255-(255-u)*(255-v)/255;
+        case 'overlay':   return u<128? 2*u*v/255 : 255-2*(255-u)*(255-v)/255;
+        case 'difference':return Math.abs(u-v);
+        default:          return u+(v-u)*t;
+      }
+    };
+    return {r:f(x.r,y.r),g:f(x.g,y.g),b:f(x.b,y.b)};
+  };
+  const M=ch(A,B);
+  return rgbToHex({r:A.r+(M.r-A.r)*t,g:A.g+(M.g-A.g)*t,b:A.b+(M.b-A.b)*t});
+}
+/* 色觉障碍模拟（Viénot LMS 矩阵，线性光空间） */
+const CVD_M={
+  protan:[0.567,0.433,0, 0.558,0.442,0, 0,0.242,0.758],
+  deutan:[0.625,0.375,0, 0.700,0.300,0, 0,0.300,0.700],
+  tritan:[0.950,0.050,0, 0,0.43333,0.56667, 0,0.475,0.525],
+};
+function simulateCVD(rgb,type){
+  if(type==='none'||!CVD_M[type]) return rgb;
+  if(type==='achroma'){const y=relLum(rgb)*255;return {r:y,g:y,b:y};}
+  const m=CVD_M[type];
+  const R=srgbToLin(rgb.r),G=srgbToLin(rgb.g),B=srgbToLin(rgb.b);
+  return {r:linToSrgb(m[0]*R+m[1]*G+m[2]*B),
+          g:linToSrgb(m[3]*R+m[4]*G+m[5]*B),
+          b:linToSrgb(m[6]*R+m[7]*G+m[8]*B)};
+}
+const cvdHex=(hex,type)=>rgbToHex(simulateCVD(hexToRgb(hex),type));
+
+/* ============================================================
+   2. 命名色库
+   ============================================================ */
+const NAMED=[
+['red','ff0000','红'],['crimson','dc143c','深红'],['darkred','8b0000','暗红'],['firebrick','b22222','砖红'],
+['indianred','cd5c5c','印度红'],['lightcoral','f08080','浅珊瑚'],['salmon','fa8072','鲑红'],['darksalmon','e9967a','深鲑红'],
+['lightsalmon','ffa07a','浅鲑红'],['orange','ffa500','橙'],['darkorange','ff8c00','深橙'],['orangered','ff4500','橙红'],
+['tomato','ff6347','番茄红'],['coral','ff7f50','珊瑚红'],['gold','ffd700','金'],['yellow','ffff00','黄'],
+['lightyellow','ffffe0','浅黄'],['lemonchiffon','fffacd','柠檬绸'],['khaki','f0e68c','卡其'],['darkkhaki','bdb76b','深卡其'],
+['goldenrod','daa520','金菊'],['darkgoldenrod','b8860b','暗金菊'],['olive','808000','橄榄'],['olivedrab','6b8e23','橄榄褐'],
+['yellowgreen','9acd32','黄绿'],['greenyellow','adff2f','绿黄'],['chartreuse','7fff00','查特酒绿'],['lawngreen','7cfc00','草坪绿'],
+['lime','00ff00','酸橙'],['limegreen','32cd32','橙绿'],['palegreen','98fb98','苍白绿'],['lightgreen','90ee90','浅绿'],
+['mediumspringgreen','00fa9a','中春绿'],['springgreen','00ff7f','春绿'],['mediumseagreen','3cb371','中海绿'],['seagreen','2e8b57','海绿'],
+['forestgreen','228b22','森林绿'],['green','008000','绿'],['darkgreen','006400','深绿'],['teal','008080','青'],
+['darkcyan','008b8b','暗青'],['cyan','00ffff','青'],['aqua','00ffff','水蓝'],['lightcyan','e0ffff','浅青'],
+['darkturquoise','00ced1','暗宝石绿'],['turquoise','40e0d0','宝石绿'],['mediumturquoise','48d1cc','中宝石绿'],['paleturquoise','afeeee','苍白宝石绿'],
+['aquamarine','7fffd4','碧绿'],['mediumaquamarine','66cdaa','中碧绿'],['powderblue','b0e0e6','粉蓝'],['lightblue','add8e6','浅蓝'],
+['skyblue','87ceeb','天蓝'],['lightskyblue','87cefa','浅天蓝'],['deepskyblue','00bfff','深天蓝'],['dodgerblue','1e90ff','道奇蓝'],
+['cornflowerblue','6495ed','矢车菊蓝'],['steelblue','4682b4','钢蓝'],['royalblue','4169e1','宝蓝'],['blue','0000ff','蓝'],
+['mediumblue','0000cd','中蓝'],['darkblue','00008b','深蓝'],['navy','000080','藏青'],['midnightblue','191970','午夜蓝'],
+['slateblue','6a5acd','石板蓝'],['darkslateblue','483d8b','深石板蓝'],['mediumslateblue','7b68ee','中石板蓝'],['mediumpurple','9370db','中紫'],
+['blueviolet','8a2be2','蓝紫'],['indigo','4b0082','靛蓝'],['darkviolet','9400d3','暗紫'],['darkorchid','9932cc','暗兰紫'],
+['mediumorchid','ba55d3','中兰紫'],['orchid','da70d6','兰紫'],['violet','ee82ee','紫罗兰'],['plum','dda0dd','梅紫'],
+['thistle','d8bfd8','蓟紫'],['lavender','e6e6fa','薰衣草'],['magenta','ff00ff','洋红'],['fuchsia','ff00ff','紫红'],
+['deeppink','ff1493','深粉'],['hotpink','ff69b4','亮粉'],['pink','ffc0cb','粉'],['lightpink','ffb6c1','浅粉'],
+['palevioletred','db7093','苍白紫红'],['mediumvioletred','c71585','中紫红'],['maroon','800000','栗'],['brown','a52a2a','棕'],
+['saddlebrown','8b4513','鞍棕'],['sienna','a0522d','黄土'],['chocolate','d2691e','巧克力'],['peru','cd853f','秘鲁棕'],
+['sandybrown','f4a460','沙棕'],['burlywood','deb887','实木'],['tan','d2b48c','棕褐'],['wheat','f5deb3','麦色'],
+['moccasin','ffe4b5','鹿皮'],['navajowhite','ffdead','纳瓦白'],['peachpuff','ffdab9','桃绒'],['papayawhip','ffefd5','木瓜绒'],
+['blanchedalmond','ffebcd','杏仁白'],['bisque','ffe4c4','橘绒'],['antiquewhite','faebd7','古董白'],['linen','faf0e6','亚麻'],
+['oldlace','fdf5e6','旧蕾丝'],['cornsilk','fff8dc','玉米丝'],['beige','f5f5dc','米色'],['ivory','fffff0','象牙'],
+['floralwhite','fffaf0','花白'],['whitesmoke','f5f5f5','白烟'],['gainsboro','dcdcdc','庚斯博罗灰'],['lightgray','d3d3d3','浅灰'],
+['silver','c0c0c0','银'],['darkgray','a9a9a9','暗灰'],['gray','808080','灰'],['dimgray','696969','昏灰'],
+['black','000000','黑'],['white','ffffff','白'],['snow','fffafa','雪白'],['mintcream','f5fffa','薄荷乳'],
+['azure','f0ffff','天蓝白'],['aliceblue','f0f8ff','爱丽丝蓝'],['ghostwhite','f8f8ff','幽灵白'],['honeydew','f0fff0','蜜瓜绿'],
+['seashell','fff5ee','海贝'],['lavenderblush','fff0f5','薰衣草红'],['mistyrose','ffe4e1','雾玫瑰'],['darkslategray','2f4f4f','深石板灰'],
+['slategray','708090','石板灰'],['lightslategray','778899','浅石板灰'],['cadetblue','5f9ea0','军校蓝'],['rosybrown','bc8f8f','玫瑰棕'],
+];
+const NAMED_RGB=NAMED.map(n=>[n[0],hexToRgb(n[1]),n[1],n[2]]);
+function nearestName(hex){
+  const lab=hexToLab(hex);
+  let best=null,bd=1e9;
+  for(const [name,rgb,hexv,cn] of NAMED_RGB){
+    const d=deltaE2000(lab,rgbToLab(rgb));
+    if(d<bd){bd=d;best={name,hex:hexv,cn,d};}
+  }
+  return best;
+}
+function searchNamed(q){
+  q=q.trim().toLowerCase();
+  const hx=normHex(q);
+  if(hx) return [{name:'（自定义）',hex:hx,cn:'输入的颜色',d:0}];
+  const exact=NAMED_RGB.filter(n=>n[0].includes(q)||n[3].includes(q));
+  if(exact.length) return exact.slice(0,24).map(n=>({name:n[0],hex:n[2],cn:n[3],d:0}));
+  return [nearestName(normHex('#'+q.replace(/[^0-9a-f]/g,'').slice(0,6))||'#888888')];
+}
+
+/* ============================================================
+   3. 全局状态
+   ============================================================ */
+const S={
+  base:'#6366f1', harmony:'analogous', count:5, spread:28, variation:18, style:'none',
+  colors:[],            // {hex,locked}
+  cvd:'none',
+  scaleMode:'lch',
+  grad:{type:'linear',angle:135,stops:[]},
+  mix:{a:'#6366f1',b:'#f43f5e',mode:'lab',steps:9,t:50},
+  ct:{fg:'#ffffff',bg:'#6366f1'},
+  img:{colors:[],img:null},
+  prev:{theme:'light',role:'auto'},
+  favs:[], history:[],
+};
+const LS={fav:'cs.favs.v1',his:'cs.history.v1',theme:'cs.theme.v1'};
+let adjSnapshot=null;   // 全局调整拖动前的快照
+
+/* ============================================================
+   4. 反馈：Toast / 复制 / 模态
+   ============================================================ */
+function toast(msg,color){
+  const el=document.createElement('div');
+  el.className='toast';
+  el.innerHTML=(color?`<span class="sq" style="background:${color}"></span>`:'')+'<span>'+esc(msg)+'</span>';
+  $('#toasts').appendChild(el);
+  setTimeout(()=>{el.classList.add('out');setTimeout(()=>el.remove(),260);},1700);
+}
+async function copyText(text,tip,color){
+  try{
+    if(navigator.clipboard&&window.isSecureContext){ await navigator.clipboard.writeText(text); }
+    else{
+      const ta=document.createElement('textarea');
+      ta.value=text;ta.style.position='fixed';ta.style.opacity='0';
+      document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();
+    }
+    toast(tip||('已复制：'+text.slice(0,28)+(text.length>28?'…':'')),color);
+  }catch(e){ toast('复制失败，请手动选择','#f87171'); }
+}
+function modal(title,bodyHtml,onMount){
+  const host=$('#modalHost');
+  host.innerHTML=`<div class="modal-bg"><div class="modal">
+    <div class="modal-h"><h3>${esc(title)}</h3><button class="btn icon sm" data-close>✕</button></div>
+    <div class="modal-b">${bodyHtml}</div></div></div>`;
+  const close=()=>{host.innerHTML='';};
+  host.querySelector('[data-close]').onclick=close;
+  host.querySelector('.modal-bg').onclick=e=>{if(e.target.classList.contains('modal-bg'))close();};
+  if(onMount) onMount(host.querySelector('.modal-b'),close);
+  return close;
+}
+
+/* ============================================================
+   5. 主题
+   ============================================================ */
+function setTheme(t){
+  document.documentElement.dataset.theme=t;
+  $('#btnTheme').textContent = t==='dark'?'🌙':'☀️';
+  try{localStorage.setItem(LS.theme,t);}catch(e){}
+  drawWheel();
+}
+function loadTheme(){ try{return localStorage.getItem(LS.theme)||'dark';}catch(e){return 'dark';} }
+
+/* ============================================================
+   6. 色轮（色相环 + SV 面板）
+   ============================================================ */
+const wheelCv=$('#wheel'), wctx=wheelCv.getContext('2d');
+const svCv=document.createElement('canvas'), svctx=svCv.getContext('2d');
+const ringCv=document.createElement('canvas'), rctx=ringCv.getContext('2d');
+const SVRES=190;
+let WG=null, svHue=-1, ringKey='';
+function wheelGeom(){
+  const W=wheelCv.width, cx=W/2, cy=W/2, R=W/2-8, ring=W*0.082;
+  const inner=R-ring, half=Math.round(inner*0.7071)-Math.round(W*0.012);
+  return {W,cx,cy,R,ring,inner,half,size:half*2};
+}
+function drawSV(hue){
+  if(svCv.width!==SVRES){svCv.width=svCv.height=SVRES;}
+  const img=svctx.createImageData(SVRES,SVRES);
+  const d=img.data;
+  for(let y=0;y<SVRES;y++){
+    const v=1-y/SVRES;
+    for(let x=0;x<SVRES;x++){
+      const s=x/SVRES;
+      const c=hsvToRgb({h:hue,s:s*100,v:v*100});
+      const i=(y*SVRES+x)*4;
+      d[i]=c.r;d[i+1]=c.g;d[i+2]=c.b;d[i+3]=255;
+    }
+  }
+  svctx.putImageData(img,0,0);
+  svHue=hue;
+}
+function drawRing(g){
+  const key=[g.W,g.R,g.ring].join('|');
+  if(ringKey===key) return;
+  if(ringCv.width!==g.W){ringCv.width=ringCv.height=g.W;}
+  rctx.clearRect(0,0,g.W,g.W);
+  const seg=1.2, rr=g.R-g.ring/2;
+  for(let a=0;a<360;a+=seg){
+    rctx.beginPath();
+    rctx.strokeStyle=`hsl(${a},100%,50%)`;
+    rctx.lineWidth=g.ring;
+    rctx.arc(g.cx,g.cy,rr,(a-0.7)*Math.PI/180,(a+seg+0.2)*Math.PI/180);
+    rctx.stroke();
+  }
+  ringKey=key;
+}
+function drawWheel(){
+  const g=wheelGeom(); WG=g;
+  const {W,cx,cy,R,ring,half,size}=g;
+  wctx.clearRect(0,0,W,W);
+  const hsv=hexToHsv(S.base);
+  /* SV 面板（圆角方形） */
+  if(Math.abs(svHue-hsv.h)>0.4) drawSV(hsv.h);
+  wctx.save();
+  wctx.beginPath();
+  const rr=size*0.06;
+  wctx.moveTo(cx-half+rr,cy-half);
+  wctx.arcTo(cx+half,cy-half,cx+half,cy+half,rr);
+  wctx.arcTo(cx+half,cy+half,cx-half,cy+half,rr);
+  wctx.arcTo(cx-half,cy+half,cx-half,cy-half,rr);
+  wctx.arcTo(cx-half,cy-half,cx+half,cy-half,rr);
+  wctx.closePath();
+  wctx.clip();
+  wctx.drawImage(svCv,cx-half,cy-half,size,size);
+  wctx.restore();
+  /* 色相环（离屏缓存绘制） */
+  const rr2=R-ring/2;
+  drawRing(g);
+  wctx.drawImage(ringCv,0,0);
+  /* 描边 */
+  wctx.beginPath();wctx.arc(cx,cy,R,0,7);wctx.strokeStyle='rgba(0,0,0,.28)';wctx.lineWidth=2;wctx.stroke();
+  wctx.beginPath();wctx.arc(cx,cy,R-ring,0,7);wctx.strokeStyle='rgba(0,0,0,.28)';wctx.lineWidth=2;wctx.stroke();
+  wctx.beginPath();
+  wctx.moveTo(cx-half+rr,cy-half);
+  wctx.arcTo(cx+half,cy-half,cx+half,cy+half,rr);
+  wctx.arcTo(cx+half,cy+half,cx-half,cy+half,rr);
+  wctx.arcTo(cx-half,cy+half,cx-half,cy-half,rr);
+  wctx.arcTo(cx-half,cy-half,cx+half,cy-half,rr);
+  wctx.closePath();
+  wctx.strokeStyle='rgba(255,255,255,.35)';wctx.lineWidth=2;wctx.stroke();
+  /* 指示器 */
+  const ha=hsv.h*Math.PI/180;
+  wctx.beginPath();
+  wctx.arc(cx+Math.cos(ha)*rr2,cy+Math.sin(ha)*rr2,ring*0.42,0,7);
+  wctx.fillStyle='#fff';wctx.fill();
+  wctx.strokeStyle='rgba(0,0,0,.55)';wctx.lineWidth=3;wctx.stroke();
+  /* SV 位置指示 */
+  const px=cx-half+(hsv.s/100)*size, py=cy+half-(hsv.v/100)*size;
+  wctx.beginPath();wctx.arc(px,py,W*0.026,0,7);
+  wctx.strokeStyle='#fff';wctx.lineWidth=W*0.008;wctx.stroke();
+  wctx.strokeStyle='rgba(0,0,0,.5)';wctx.lineWidth=W*0.014;wctx.stroke();
+}
+function wheelHit(clientX,clientY){
+  const g=WG||wheelGeom();
+  const rect=wheelCv.getBoundingClientRect();
+  const x=(clientX-rect.left)/rect.width*g.W, y=(clientY-rect.top)/rect.height*g.W;
+  const dx=x-g.cx, dy=y-g.cy, d=Math.hypot(dx,dy);
+  const hsv=hexToHsv(S.base);
+  if(d>g.inner-g.W*0.012){
+    S.base=hsvToHex({h:(Math.atan2(dy,dx)*180/Math.PI+360)%360, s:Math.max(hsv.s,4), v:Math.max(hsv.v,4)});
+  }else if(d<=g.inner){
+    S.base=hsvToHex({h:hsv.h, s:clamp((x-(g.cx-g.half))/g.size,0,1)*100, v:100-clamp((y-(g.cy-g.half))/g.size,0,1)*100});
+  }
+  onBaseChange(true);
+}
+let wheelDragging=false;
+wheelCv.addEventListener('pointerdown',e=>{wheelDragging=true;wheelCv.setPointerCapture(e.pointerId);wheelHit(e.clientX,e.clientY);});
+wheelCv.addEventListener('pointermove',e=>{if(wheelDragging)wheelHit(e.clientX,e.clientY);});
+wheelCv.addEventListener('pointerup',e=>{
+  if(!wheelDragging) return;
+  wheelDragging=false;
+  try{wheelCv.releasePointerCapture(e.pointerId);}catch(_){}
+  renderAll();                      // 拖动结束后同步色阶 / 渐变 / 导出等其余视图
+});
+wheelCv.addEventListener('pointercancel',()=>{ if(wheelDragging){wheelDragging=false;renderAll();} });
+
+/* ============================================================
+   7. 当前颜色信息面板
+   ============================================================ */
+const FMT_ORDER=['HEX','RGB','HSL','HSV','CMYK','LAB','LCH','XYZ','HWB'];
+function fmtOf(hex,k){
+  const rgb=hexToRgb(hex);
+  switch(k){
+    case 'HEX': return hex.toUpperCase();
+    case 'RGB': return `${Math.round(rgb.r)}, ${Math.round(rgb.g)}, ${Math.round(rgb.b)}`;
+    case 'HSL': {const c=hexToHsl(hex);return `${Math.round(c.h)}, ${Math.round(c.s)}%, ${Math.round(c.l)}%`;}
+    case 'HSV': {const c=hexToHsv(hex);return `${Math.round(c.h)}, ${Math.round(c.s)}%, ${Math.round(c.v)}%`;}
+    case 'CMYK':{const c=hexToCmyk(hex);return `${Math.round(c.c)}, ${Math.round(c.m)}, ${Math.round(c.y)}, ${Math.round(c.k)}`;}
+    case 'LAB': {const c=hexToLab(hex);return `${c.L.toFixed(1)}, ${c.a.toFixed(1)}, ${c.b.toFixed(1)}`;}
+    case 'LCH': {const c=hexToLch(hex);return `${c.L.toFixed(1)}, ${c.C.toFixed(1)}, ${Math.round(c.h)}`;}
+    case 'XYZ': {const c=rgbToXyz(rgb);return `${c.x.toFixed(1)}, ${c.y.toFixed(1)}, ${c.z.toFixed(1)}`;}
+    case 'HWB': {const c=rgbToHwb(rgb);return `${Math.round(c.h)}, ${Math.round(c.w)}%, ${Math.round(c.b)}%`;}
+  }
+  return '';
+}
+function tempLabel(hex){
+  const {h,s}=hexToHsl(hex);
+  if(s<12) return ['中性 Neutral','neu'];
+  if(h<20||h>=330) return ['暖色 · 红调','no'];
+  if(h<45)  return ['暖色 · 橙调','no'];
+  if(h<70)  return ['暖色 · 黄调','no'];
+  if(h<165) return ['冷色 · 绿调','ok'];
+  if(h<200) return ['冷色 · 青调','ok'];
+  if(h<260) return ['冷色 · 蓝调','ok'];
+  return ['冷色 · 紫调','mid'];
+}
+function renderCurrent(){
+  const hex=S.base, disp=cvdHex(hex,S.cvd);
+  $('#curSwatch').style.background=disp;
+  $('#curName').textContent=hex.toUpperCase();
+  const nm=nearestName(hex);
+  const [tl,tk]=tempLabel(hex);
+  $('#curTemp').textContent=tl; $('#curTemp').className='badge '+tk;
+  $('#curLum').textContent='L '+hexToLab(hex).L.toFixed(0)+'%';
+  $('#curNameCn').textContent=`最近标准色：${nm.name} · ${nm.cn||''} （ΔE ${nm.d.toFixed(1)}）`;
+  $('#fmtList').innerHTML=FMT_ORDER.map(k=>
+    `<div class="fmt" data-fmt="${k}"><span class="k">${k}</span><span class="val">${esc(fmtOf(hex,k))}</span><span class="dim">⧉</span></div>`).join('');
+  $('#sH').value=Math.round(hexToHsv(hex).h); $('#vH').textContent=Math.round(hexToHsv(hex).h)+'°';
+  const hsv=hexToHsv(hex);
+  $('#sS').value=Math.round(hsv.s); $('#vS').textContent=Math.round(hsv.s)+'%';
+  $('#sV').value=Math.round(hsv.v); $('#vV').textContent=Math.round(hsv.v)+'%';
+  $('#baseHex').value=hex.toUpperCase();
+  $('#basePicker').value=hex;
+  document.documentElement.style.setProperty('--accent',hex);
+  document.documentElement.style.setProperty('--accent-2',shiftHue(hex,40));
+}
+/* ============================================================
+   8. 和谐规则 & 风格预设
+   ============================================================ */
+const OFFSETS={
+  complementary:[0,180],
+  split:[0,150,210],
+  triadic:[0,120,240],
+  tetradic:[0,60,180,240],
+  square:[0,90,180,270],
+  rectangle:[0,120,180,300],
+  double:[0,30,180,210],
+  compound:[0,30,150,180,210],
+  six:[0,60,120,180,240,300],
+};
+function harmonyOffset(key,i,o){
+  const v=o.variation, cen=(o.n-1)/2;
+  /* 以序列中点为基准做波浪式明度/饱和度起伏，保证中间色恰好等于主色 */
+  const sine=t=>Math.sin(t*1.9+0.6)-Math.sin(cen*1.9+0.6);
+  const cose=t=>Math.cos(t*1.25)-Math.cos(cen*1.25);
+  const dl=sine(i)*v*0.5, ds=cose(i)*v*0.45;
+  if(key==='analogous')  return {dh:(i-cen)*o.spread, dl, ds};
+  if(key==='monochrome') return {dh:(i-cen)*o.spread*0.14, dl:(i-cen)/Math.max(.5,cen)*v*1.35,
+                                 ds:-Math.abs(i-cen)*v*0.4};
+  if(key==='golden')     return {dh:i*137.508, dl, ds};
+  const arr=OFFSETS[key]||OFFSETS.complementary;
+  const k=Math.floor(i/arr.length);
+  return {dh:arr[i%arr.length]+k*o.spread*0.5, dl:dl+k*v*0.35*(k%2?-1:1), ds};
+}
+const STYLES={
+  pastel:{s:[50,88], l:[70,92]},
+  vivid :{s:[72,100],l:[42,62]},
+  muted :{s:[16,42], l:[42,74]},
+  earth :{s:[20,52], l:[24,58], h:[[8,45],[62,110]]},
+  neon  :{s:[85,100],l:[46,64]},
+  retro :{s:[32,62], l:[52,78]},
+  ocean :{s:[42,82], l:[32,68], h:[[165,250]]},
+  sunset:{s:[58,92], l:[46,72], h:[[-15,55]]},
+  forest:{s:[22,58], l:[22,52], h:[[70,165]]},
+  jewel :{s:[55,92], l:[26,50]},
+  mono  :{s:[0,10],  l:[18,88]},
+  candy :{s:[62,92], l:[62,84]},
+};
+function applyStyle(c,key){
+  const st=STYLES[key]; if(!st) return {h:c.h,s:clamp(c.s,0,100),l:clamp(c.l,3,97)};
+  return {h:c.h, s:st.s[0]+(c.s/100)*(st.s[1]-st.s[0]), l:st.l[0]+(c.l/100)*(st.l[1]-st.l[0])};
+}
+function randomBase(){
+  const st=STYLES[S.style];
+  let h,s,l;
+  if(st&&st.h){const r=pickOne(st.h); h=rnd(r[0],r[1]);}
+  else h=rnd(0,360);
+  if(st){s=rnd(st.s[0]+6,st.s[1]-4); l=rnd(st.l[0]+6,st.l[1]-8);}
+  else  {s=rnd(42,95); l=rnd(38,68);}
+  return hslToHex({h,s,l});
+}
+function buildPalette(){
+  const base=hexToHsl(S.base), o={spread:S.spread,variation:S.variation,n:S.count};
+  const out=[];
+  for(let i=0;i<S.count;i++){
+    const r=harmonyOffset(S.harmony,i,o);
+    const c=applyStyle({h:base.h+r.dh, s:base.s+(r.ds||0), l:base.l+(r.dl||0)},S.style);
+    out.push(hslToHex({h:c.h,s:clamp(c.s,0,100),l:clamp(c.l,4,96)}));
+  }
+  return out;
+}
+function generate(){
+  const next=buildPalette();
+  S.colors=next.map((hex,i)=>{
+    const o=S.colors[i];
+    return (o&&o.locked)?{hex:o.hex,locked:true,open:o.open}:{hex,locked:false,open:o?o.open:false};
+  });
+  if(S.grad.stops.length===0) syncGradFromPalette();
+}
+
+/* ============================================================
+   9. 调色板渲染与交互
+   ============================================================ */
+const displayHex=h=>(S.cvd==='none'?h:cvdHex(h,S.cvd));
+const paletteHexes=()=>S.colors.map(c=>c.hex);
+const CP_MAP={rgb:h=>{const c=hexToRgb(h);return `rgb(${Math.round(c.r)}, ${Math.round(c.g)}, ${Math.round(c.b)})`;},
+              hsl:h=>{const c=hexToHsl(h);return `hsl(${Math.round(c.h)}, ${Math.round(c.s)}%, ${Math.round(c.l)}%)`;},
+              cmyk:h=>{const c=hexToCmyk(h);return `cmyk(${Math.round(c.c)}%, ${Math.round(c.m)}%, ${Math.round(c.y)}%, ${Math.round(c.k)}%)`;}};
+function swatchHtml(c,i){
+  const d=displayHex(c.hex), ink=readableInk(d), nm=nearestName(c.hex);
+  const hsl=hexToHsl(c.hex);
+  const prev=i>0?S.colors[i-1].hex:null;
+  const de=prev?hexDeltaE(prev,c.hex):null;
+  return `<div class="sw ${c.locked?'locked':''} ${c.open?'open':''}" draggable="true" data-i="${i}">
+    <div class="c" style="background:${d};color:${ink}">
+      <span class="idx">${String(i+1).padStart(2,'0')}</span>
+      <span class="hex">${c.hex.toUpperCase()}</span>
+      <button class="lock ${c.locked?'on':''}" data-a="lock" title="锁定 / 解锁">${c.locked?'🔒':'🔓'}</button>
+    </div>
+    <div class="meta">
+      <div class="alt">
+        <span data-cp="rgb" title="点击复制 RGB">${CP_MAP.rgb(c.hex)}</span>
+        <span data-cp="hsl" title="点击复制 HSL">${CP_MAP.hsl(c.hex)}</span>
+        <span data-cp="cmyk" title="点击复制 CMYK">${CP_MAP.cmyk(c.hex)}</span>
+      </div>
+      <div class="row tight xsmall" style="justify-content:space-between">
+        <span class="dim">${esc(nm.cn||nm.name)}</span>
+        <span class="dim mono" title="与白 / 黑的对比度">W${hexContrast(c.hex,'#ffffff').toFixed(1)} · K${hexContrast(c.hex,'#000000').toFixed(1)}</span>
+      </div>
+    </div>
+    <div class="acts">
+      <button class="btn xs" data-a="copy">⧉ 复制</button>
+      <button class="btn xs" data-a="edit">🎚 微调</button>
+      <button class="btn xs" data-a="base">设为主色</button>
+      <button class="btn xs" data-a="scale">色阶</button>
+      <button class="btn xs" data-a="del">✕</button>
+    </div>
+    <div class="sw-edit">
+      <div class="field"><label>H <span class="v">${Math.round(hsl.h)}°</span></label>
+        <input type="range" data-e="h" min="0" max="360" step="1" value="${Math.round(hsl.h)}"></div>
+      <div class="field"><label>S <span class="v">${Math.round(hsl.s)}%</span></label>
+        <input type="range" data-e="s" min="0" max="100" step="1" value="${Math.round(hsl.s)}"></div>
+      <div class="field"><label>L <span class="v">${Math.round(hsl.l)}%</span></label>
+        <input type="range" data-e="l" min="0" max="100" step="1" value="${Math.round(hsl.l)}"></div>
+      <div class="row tight">
+        <button class="btn xs" data-a="lighten">+亮</button>
+        <button class="btn xs" data-a="darken">−暗</button>
+        <button class="btn xs" data-a="satUp">+饱和</button>
+        <button class="btn xs" data-a="satDn">−饱和</button>
+        <button class="btn xs" data-a="complement">互补</button>
+        <button class="btn xs" data-a="invert">反相</button>
+      </div>
+      <div class="xsmall dim">与前一色色差 ΔE ${de===null?'—':de.toFixed(1)} ${de!==null?(de<8?'（偏近）':de>60?'（对比强）':'（适宜）'):''}</div>
+    </div>
+  </div>`;
+}
+function updateSwatchVisual(sw,hex){
+  const d=displayHex(hex);
+  sw.querySelector('.c').style.background=d;
+  sw.querySelector('.c').style.color=readableInk(d);
+  sw.querySelector('.c .hex').textContent=hex.toUpperCase();
+  sw.querySelector('[data-cp=rgb]').textContent=CP_MAP.rgb(hex);
+  sw.querySelector('[data-cp=hsl]').textContent=CP_MAP.hsl(hex);
+  sw.querySelector('[data-cp=cmyk]').textContent=CP_MAP.cmyk(hex);
+  const nm=nearestName(hex);
+  sw.querySelector('.meta .dim').textContent=nm.cn||nm.name;
+}
+function renderPalette(override){
+  const hexes=override||paletteHexes();
+  const colors=override?hexes.map((h,i)=>({hex:h,locked:S.colors[i]?S.colors[i].locked:false,open:S.colors[i]?S.colors[i].open:false})):S.colors;
+  $('#palInfo').textContent=`${colors.length} 色 · ${S.harmony}${S.style!=='none'?' · '+S.style:''}`;
+  $('#paletteBar').innerHTML=colors.map((c,i)=>{
+    const d=displayHex(c.hex);
+    return `<div style="background:${d};color:${readableInk(d)}" data-bar="${i}">${c.hex.toUpperCase()}</div>`;
+  }).join('');
+  $('#palette').innerHTML=colors.map((c,i)=>swatchHtml(c,i)).join('');
+  $('#favCount').textContent=S.favs.length;
+}
+/* ---- 事件：色卡操作 ---- */
+$('#palette').addEventListener('click',e=>{
+  if(e.target.closest('[data-cp]')) return;   // 交给下面的格式复制处理
+  const sw=e.target.closest('.sw'); if(!sw) return;
+  const i=+sw.dataset.i, c=S.colors[i]; if(!c) return;
+  const btn=e.target.closest('[data-a]');
+  if(!btn){ copyText(c.hex.toUpperCase(),'已复制 '+c.hex.toUpperCase(),c.hex); return; }
+  const a=btn.dataset.a;
+  if(a==='lock'){ c.locked=!c.locked; renderPalette(); return; }
+  if(a==='copy'){ copyText(c.hex.toUpperCase(),'已复制 '+c.hex.toUpperCase(),c.hex); return; }
+  if(a==='edit'){ c.open=!c.open; renderPalette(); return; }
+  if(a==='base'){ setBase(c.hex); toast('已设为主色：'+c.hex.toUpperCase(),c.hex); return; }
+  if(a==='scale'){ switchTab('scale'); renderScales(); return; }
+  if(a==='del'){
+    if(S.colors.length<=1){toast('至少保留一个颜色','#f87171');return;}
+    S.colors.splice(i,1); renderAll(); return;
+  }
+  const ops={lighten:()=>lighten(c.hex,6),darken:()=>lighten(c.hex,-6),
+             satUp:()=>saturate(c.hex,8),satDn:()=>saturate(c.hex,-8),
+             complement:()=>shiftHue(c.hex,180),invert:()=>invertHex(c.hex)};
+  if(ops[a]){ S.colors[i].hex=ops[a](); renderAll(); }
+});
+$('#palette').addEventListener('click',e=>{
+  const cp=e.target.closest('[data-cp]'); if(!cp) return;
+  const sw=e.target.closest('.sw'), i=+sw.dataset.i;
+  copyText(CP_MAP[cp.dataset.cp](S.colors[i].hex),'已复制',S.colors[i].hex);
+});
+$('#palette').addEventListener('input',e=>{
+  const ed=e.target.closest('.sw-edit'); if(!ed) return;
+  const sw=e.target.closest('.sw'), i=+sw.dataset.i;
+  const g=k=>+ed.querySelector(`[data-e="${k}"]`).value;
+  const hex=hslToHex({h:g('h'),s:g('s'),l:g('l')});
+  S.colors[i].hex=hex;
+  ed.querySelectorAll('.field .v').forEach((v,k)=>{v.textContent=['h','s','l'].map(x=>g(x))[k]+(k===0?'°':'%');});
+  updateSwatchVisual(sw,hex);
+  renderBarOnly();
+  renderCurrentHexBadges();
+});
+$('#palette').addEventListener('change',e=>{ if(e.target.closest('.sw-edit')) renderAll(); });
+/* ---- 拖拽排序 ---- */
+let dragIdx=null;
+$('#palette').addEventListener('dragstart',e=>{
+  /* 卡内的按钮 / 滑块不可作为拖拽起点：否则会弹出整卡拖拽"重影"，
+     并吞掉随后的 click，导致锁定无效、H/S/L 滑杆拖不动 */
+  if(e.target.closest('input,button,select,.sw-edit,.acts')){ e.preventDefault(); return; }
+  const sw=e.target.closest('.sw'); if(!sw) return;
+  dragIdx=+sw.dataset.i; sw.classList.add('drag');
+  e.dataTransfer.effectAllowed='move';
+  try{e.dataTransfer.setData('text/plain',String(dragIdx));}catch(_){}
+});
+$('#palette').addEventListener('dragend',()=>{$$('#palette .sw').forEach(s=>s.classList.remove('drag'));dragIdx=null;});
+$('#palette').addEventListener('dragover',e=>{e.preventDefault();});
+$('#palette').addEventListener('drop',e=>{
+  e.preventDefault();
+  const sw=e.target.closest('.sw'); if(!sw||dragIdx===null) return;
+  const to=+sw.dataset.i; if(to===dragIdx) return;
+  const arr=S.colors; const [m]=arr.splice(dragIdx,1); arr.splice(to,0,m);
+  dragIdx=null; renderAll();
+});
+/* ---- 色条点击 ---- */
+$('#paletteBar').addEventListener('click',e=>{
+  const d=e.target.closest('[data-bar]'); if(!d) return;
+  const i=+d.dataset.bar;
+  copyText(S.colors[i].hex.toUpperCase(),'已复制 '+S.colors[i].hex.toUpperCase(),S.colors[i].hex);
+});
+function renderBarOnly(){
+  $('#paletteBar').innerHTML=S.colors.map((c,i)=>{
+    const d=displayHex(c.hex);
+    return `<div style="background:${d};color:${readableInk(d)}" data-bar="${i}">${c.hex.toUpperCase()}</div>`;
+  }).join('');
+}
+function renderCurrentHexBadges(){ /* 保留钩子：色卡改动时的轻量刷新 */ }
+
+/* ============================================================
+   10. 主色变更 / 全局调整 / 排序工具
+   ============================================================ */
+function setBase(hex,silent){
+  const h=normHex(hex); if(!h) return;
+  S.base=h; renderCurrent(); drawWheel(); generate();
+  if(!silent) renderAll();
+}
+function onBaseChange(light){   // light=true 表示高频调用（色轮拖动）
+  renderCurrent(); drawWheel(); generate(); renderPalette();
+  if(!light) renderAll();
+}
+function adjValues(){
+  return {h:+$('#aH').value, sm:+$('#aS').value/100, lm:+$('#aL').value/100, c:+$('#aC').value};
+}
+function applyAdj(hex,a){
+  let c=hexToHsl(hex);
+  c.h+=a.h; c.s=clamp(c.s*a.sm,0,100); c.l=clamp(c.l*a.lm,0,100);
+  let out=hslToHex(c);
+  if(a.c) out=contrastBoost(out,a.c);
+  return out;
+}
+function renderAdj(){
+  const a=adjValues();
+  $('#vAH').textContent=(a.h>0?'+':'')+a.h+'°';
+  $('#vAS').textContent=a.sm.toFixed(2)+'×';
+  $('#vAL').textContent=a.lm.toFixed(2)+'×';
+  $('#vAC').textContent=(a.c>0?'+':'')+a.c;
+}
+let adjRaf=null;
+['aH','aS','aL','aC'].forEach(id=>{
+  const el=$('#'+id);
+  el.addEventListener('input',()=>{
+    if(!adjSnapshot) adjSnapshot=S.colors.map(c=>c.hex);
+    renderAdj();
+    if(adjRaf) return;
+    adjRaf=requestAnimationFrame(()=>{
+      adjRaf=null;
+      renderPalette(adjSnapshot.map(h=>applyAdj(h,adjValues())));
+    });
+  });
+  el.addEventListener('change',()=>{
+    if(adjSnapshot){
+      S.colors=adjSnapshot.map((h,i)=>({hex:applyAdj(h,adjValues()),locked:S.colors[i]?S.colors[i].locked:false}));
+      adjSnapshot=null;
+    }
+    renderAll();
+  });
+  el.addEventListener('dblclick',()=>{ resetAdj(); });
+});
+function resetAdj(){
+  $('#aH').value=0; $('#aS').value=100; $('#aL').value=100; $('#aC').value=0;
+  adjSnapshot=null; renderAdj(); renderAll();
+}
+$('#btnResetAdj').onclick=()=>{resetAdj();toast('已重置全局调整');};
+/* 排序与工具 */
+$('#btnSortHue').onclick=()=>{S.colors.sort((a,b)=>hexToHsl(a.hex).h-hexToHsl(b.hex).h);renderAll();};
+$('#btnSortLum').onclick=()=>{S.colors.sort((a,b)=>hexToLab(b.hex).L-hexToLab(a.hex).L);renderAll();};
+$('#btnReverse').onclick=()=>{S.colors.reverse();renderAll();};
+$('#btnUnlockAll').onclick=()=>{S.colors.forEach(c=>c.locked=false);renderAll();};
+$('#btnDedupe').onclick=()=>{
+  const before=S.colors.length, out=[];
+  S.colors.forEach(c=>{ if(!out.some(o=>hexDeltaE(o.hex,c.hex)<6)) out.push(c); });
+  if(out.length===before){ toast('没有相近的重复颜色'); return; }
+  S.colors=out; renderAll(); toast(`已移除 ${before-out.length} 个相近色，剩余 ${out.length} 色`);
+};
+$('#btnShuffle').onclick=()=>{
+  for(let i=S.colors.length-1;i>0;i--){const j=ri(0,i);[S.colors[i],S.colors[j]]=[S.colors[j],S.colors[i]];}
+  renderAll();
+};
+
+/* ============================================================
+   11. 命名色检索
+   ============================================================ */
+function renderNameResult(q){
+  const res=searchNamed(q||'#888888');
+  $('#nameResult').innerHTML=res.map(r=>{
+    const d=r.d===0&&r.name==='（自定义）'?0:r.d;
+    return `<div class="chip" data-nc="${r.hex}" style="display:flex;align-items:center;gap:7px;padding:4px 10px 4px 4px">
+      <span style="width:26px;height:26px;border-radius:6px;background:${r.hex};box-shadow:inset 0 0 0 1px rgba(255,255,255,.25)"></span>
+      <span style="display:flex;flex-direction:column;line-height:1.15">
+        <b style="font-size:12px">${esc(r.cn||'')} <span class="mono dim" style="font-weight:400">${esc(r.name)}</span></b>
+        <span class="mono xsmall dim">${r.hex.toUpperCase()}${d?' · ΔE '+d.toFixed(1):''}</span>
+      </span></div>`;
+  }).join('');
+}
+$('#nameResult').addEventListener('click',e=>{
+  const el=e.target.closest('[data-nc]'); if(!el) return;
+  copyText(el.dataset.nc.toUpperCase(),'已复制 '+el.dataset.nc.toUpperCase(),el.dataset.nc);
+});
+$('#btnNameSearch').onclick=()=>renderNameResult($('#nameSearch').value);
+$('#nameSearch').addEventListener('keydown',e=>{if(e.key==='Enter')renderNameResult($('#nameSearch').value);});
+$('#nameSearch').addEventListener('input',()=>{
+  const v=$('#nameSearch').value.trim();
+  if(v) renderNameResult(v);
+});
+
+/* ============================================================
+   12. 色阶系统
+   ============================================================ */
+const SCALE_STEPS=[50,100,200,300,400,500,600,700,800,900,950];
+const SCALE_L=[97,94,88,79,68,58,49,41,33,26,17];
+const MAXC_L=[0,10,20,30,40,50,60,70,80,90,100];
+const MAXC_V=[0,38,60,85,105,110,105,90,70,52,30];
+function maxChromaAt(L){
+  if(L<=0)return 0; if(L>=100)return 0;
+  for(let i=0;i<MAXC_L.length-1;i++){
+    if(L>=MAXC_L[i]&&L<=MAXC_L[i+1]){
+      const t=(L-MAXC_L[i])/(MAXC_L[i+1]-MAXC_L[i]);
+      return MAXC_V[i]+(MAXC_V[i+1]-MAXC_V[i])*t;
+    }
+  }
+  return 40;
+}
+function buildScale(hex,mode){
+  const base=hexToLch(hex);
+  let bi=0,bd=1e9;
+  SCALE_L.forEach((L,i)=>{const d=Math.abs(L-base.L);if(d<bd){bd=d;bi=i;}});
+  const n=SCALE_STEPS.length;
+  /* HSL / 混白混黑模式以 HSL 明度定位基准档位（避免与 Lab 明度混用导致档次错位） */
+  if(mode==='hsl'||mode==='tint'){
+    const c=hexToHsl(hex);
+    let hb=0,hd=1e9;
+    SCALE_L.forEach((L,i)=>{const d=Math.abs(L-c.l);if(d<hd){hd=d;hb=i;}});
+    return SCALE_STEPS.map((step,i)=>{
+      const l=clamp(SCALE_L[i]+(c.l-SCALE_L[hb])*(1-Math.abs(i-hb)/(n-1)*0.8),3,98);
+      if(mode==='hsl') return hslToHex({h:c.h,s:c.s,l});
+      if(l>c.l) return mixColors(hex,'#ffffff',(l-c.l)/(100-c.l)||0,'rgb');
+      return mixColors(hex,'#000000',(c.l-l)/c.l||0,'rgb');
+    });
+  }
+  return SCALE_STEPS.map((step,i)=>{
+    const w=1-Math.abs(i-bi)/(n-1)*0.85;
+    let L=clamp(SCALE_L[i]+(base.L-SCALE_L[bi])*w,3,99);
+    const f=Math.max(0.3,1-0.5*Math.pow(Math.abs(i-bi)/(n-1),1.3));
+    const C=Math.min(base.C*f, maxChromaAt(L)*1.2);
+    return lchToHex({L, C, h:base.h+(i-bi)*0.55});
+  });
+}
+function buildTintsShades(hex,levels=5){
+  const c=hexToHsl(hex), out=[];
+  for(let i=-levels;i<=levels;i++){
+    const t=i/levels;      // t<0 变暗（Shades），t>0 变亮（Tints）
+    let h=c.h,s=c.s,l=c.l;
+    if(t<0) l=c.l-(c.l-6)*(-t)*0.85;
+    else if(t>0) l=c.l+(97-c.l)*t*0.85;
+    s=clamp(s*(1-Math.abs(t)*0.18),0,100);
+    out.push({hex:hslToHex({h,s,l:clamp(l,3,98)}),t});
+  }
+  return out;
+}
+function renderScales(){
+  const mode=S.scaleMode;
+  const html=S.colors.map((c,i)=>{
+    const sc=buildScale(c.hex,mode);
+    return `<div class="mb10">
+      <div class="scale-row" data-si="${i}">
+        <div class="nm" data-sbase="${i}" title="设为主色">
+          <b>${c.hex.toUpperCase()}</b>
+          <em>${esc(nearestName(c.hex).cn||nearestName(c.hex).name)}</em>
+        </div>
+        ${sc.map((h,k)=>{
+          const d=displayHex(h);
+          return `<div class="sc-cell" data-sc="${h}" data-si="${i}" data-sk="${k}"
+            style="background:${d};color:${readableInk(d)}" title="${SCALE_STEPS[k]} · ${h.toUpperCase()}">${SCALE_STEPS[k]}</div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  }).join('');
+  $('#scales').innerHTML=`<div class="scale-head"><div>色阶</div>${SCALE_STEPS.map(s=>`<div>${s}</div>`).join('')}</div>`+html;
+
+  /* Tints & Shades */
+  $('#tintsShades').innerHTML=S.colors.map((c,i)=>{
+    const ts=buildTintsShades(c.hex,5);
+    return `<div class="mb10">
+      <div class="small mono mb6">${c.hex.toUpperCase()}</div>
+      <div class="row tight" style="gap:3px">
+        ${ts.map(t=>{const d=displayHex(t.hex);
+          return `<div data-sc="${t.hex}" style="flex:1;height:40px;border-radius:6px;background:${d};color:${readableInk(d)};
+            display:grid;place-items:center;font-family:var(--mono);font-size:9.5px;cursor:pointer;
+            ${t.t===0?'outline:2px solid var(--accent);outline-offset:1px':''}"
+            title="${t.hex.toUpperCase()}">${t.t===0?'BASE':(t.t<0?'':'+')+Math.round(t.t*100)}</div>`;}).join('')}
+      </div>
+    </div>`;
+  }).join('');
+
+  /* 可读性矩阵 */
+  $('#readMatrix').innerHTML=`<div class="scale-head"><div>颜色</div>${SCALE_STEPS.map(s=>`<div>${s}</div>`).join('')}</div>`+
+    S.colors.map((c,i)=>{
+      const sc=buildScale(c.hex,mode);
+      return `<div class="scale-row mb6">
+        <div class="nm"><b>${c.hex.toUpperCase()}</b></div>
+        ${sc.map(h=>{
+          const cw=hexContrast(h,'#ffffff'), cb=hexContrast(h,'#000000');
+          const best=cw>=cb?{r:cw,bg:'#fff',t:'#000'}:{r:cb,bg:'#000',t:'#fff'};
+          const ok=best.r>=4.5, okL=best.r>=3;
+          return `<div class="sc-cell" data-sc="${h}" style="background:${best.bg};color:${best.t}"
+            title="${h.toUpperCase()} · 对比 ${best.r.toFixed(2)}">${best.r.toFixed(1)}${ok?'✓':(okL?'△':'✕')}</div>`;
+        }).join('')}
+      </div>`;
+    }).join('');
+}
+/* 色阶点击复制 */
+['#scales','#tintsShades','#readMatrix'].forEach(sel=>{
+  $(sel).addEventListener('click',e=>{
+    const cell=e.target.closest('[data-sc]');
+    if(cell){ copyText(cell.dataset.sc.toUpperCase(),'已复制 '+cell.dataset.sc.toUpperCase(),cell.dataset.sc); return; }
+    const base=e.target.closest('[data-sbase]');
+    if(base){ setBase(S.colors[+base.dataset.sbase].hex); toast('已设为主色'); }
+  });
+});
+$('#scaleModeSeg').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b) return;
+  $$('#scaleModeSeg button').forEach(x=>x.classList.remove('on')); b.classList.add('on');
+  S.scaleMode=b.dataset.m; renderScales();
+});
+$('#btnScaleCopyCss').onclick=()=>{
+  let css=':root{\n';
+  S.colors.forEach((c,i)=>{
+    const sc=buildScale(c.hex,S.scaleMode);
+    sc.forEach((h,k)=>{ css+=`  --${$('#expPrefix').value||'color'}-${i+1}-${SCALE_STEPS[k]}: ${h};\n`; });
+  });
+  css+='}\n';
+  copyText(css,'已复制全部色阶 CSS 变量');
+};
+/* ============================================================
+   13. 渐变生成器
+   ============================================================ */
+function syncGradFromPalette(){
+  const h=paletteHexes();
+  S.grad.stops=h.map((hex,i)=>({hex,pos:Math.round(i/(h.length-1||1)*100)}));
+}
+function gradCss(){
+  const st=S.grad.stops.slice().sort((a,b)=>a.pos-b.pos);
+  const list=st.map(s=>`${s.hex} ${s.pos}%`).join(', ');
+  if(S.grad.type==='radial') return `radial-gradient(circle at 50% 50%, ${list})`;
+  if(S.grad.type==='conic')  return `conic-gradient(from ${S.grad.angle}deg at 50% 50%, ${list})`;
+  return `linear-gradient(${S.grad.angle}deg, ${list})`;
+}
+function renderGradient(){
+  if(!S.grad.stops.length) syncGradFromPalette();
+  const css=gradCss();
+  $('#gradPreview').style.background=css;
+  $('#vGradStops').textContent=S.grad.stops.length;
+  $('#vGradAngle').textContent=S.grad.angle+'°';
+  $('#sGradAngle').value=S.grad.angle;
+  $('#gradStops').innerHTML=S.grad.stops.map((s,i)=>`<div class="stop" data-gi="${i}">
+    <div class="pv" style="background:${s.hex}"><input type="color" data-gc="${i}" value="${s.hex}"></div>
+    <input class="input mono" data-gh="${i}" value="${s.hex.toUpperCase()}" maxlength="7" style="width:96px;text-transform:uppercase">
+    <input type="range" data-gp="${i}" min="0" max="100" step="1" value="${s.pos}" style="flex:1">
+    <span class="mono xsmall" style="width:38px;text-align:right">${s.pos}%</span>
+    <button class="btn icon sm" data-gd="${i}" ${S.grad.stops.length<=2?'disabled':''}>✕</button>
+  </div>`).join('');
+  $('#gradCode').textContent=`background: ${css};\n\n/* 文字渐变 */\nbackground: ${css};\n-webkit-background-clip: text;\nbackground-clip: text;\n-webkit-text-fill-color: transparent;`;
+}
+$('#gradStops').addEventListener('input',e=>{
+  const t=e.target;
+  if(t.dataset.gc!==undefined){ S.grad.stops[+t.dataset.gc].hex=t.value; }
+  else if(t.dataset.gp!==undefined){ S.grad.stops[+t.dataset.gp].pos=+t.value; }
+  else return;
+  const css=gradCss();
+  $('#gradPreview').style.background=css;
+  $('#gradCode').textContent=`background: ${css};\n\n/* 文字渐变 */\nbackground: ${css};\n-webkit-background-clip: text;\nbackground-clip: text;\n-webkit-text-fill-color: transparent;`;
+  const row=t.closest('.stop');
+  if(row&&t.dataset.gp!==undefined) row.querySelector('.mono.xsmall').textContent=t.value+'%';
+  if(row&&t.dataset.gc!==undefined){ row.querySelector('.pv').style.background=t.value; row.querySelector('[data-gh]').value=t.value.toUpperCase(); }
+});
+$('#gradStops').addEventListener('change',e=>{
+  if(e.target.dataset.gh!==undefined){
+    const h=normHex(e.target.value);
+    if(h){S.grad.stops[+e.target.dataset.gh].hex=h;renderGradient();}
+    else e.target.value=S.grad.stops[+e.target.dataset.gh].hex.toUpperCase();
+  }
+});
+$('#gradStops').addEventListener('click',e=>{
+  if(e.target.dataset.gd===undefined) return;
+  if(S.grad.stops.length<=2){toast('至少保留两个色标','#f87171');return;}
+  S.grad.stops.splice(+e.target.dataset.gd,1); renderGradient();
+});
+$('#sGradAngle').addEventListener('input',e=>{S.grad.angle=+e.target.value;$('#vGradAngle').textContent=S.grad.angle+'°';
+  const css=gradCss();$('#gradPreview').style.background=css;
+  $('#gradCode').textContent=`background: ${css};\n\n/* 文字渐变 */\nbackground: ${css};\n-webkit-background-clip: text;\nbackground-clip: text;\n-webkit-text-fill-color: transparent;`;});
+$('#gradTypeSeg').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b)return;
+  $$('#gradTypeSeg button').forEach(x=>x.classList.remove('on')); b.classList.add('on');
+  S.grad.type=b.dataset.t; renderGradient();
+});
+$('#btnGradTurn').onclick=()=>{S.grad.angle=(S.grad.angle+45)%360;renderGradient();};
+$('#btnGradRev').onclick=()=>{
+  S.grad.stops.forEach(s=>s.pos=100-s.pos);
+  S.grad.stops.reverse(); renderGradient();
+};
+$('#btnGradAdd').onclick=()=>{
+  const st=S.grad.stops.slice().sort((a,b)=>a.pos-b.pos);
+  let maxGap=0,pos=50;
+  for(let i=0;i<st.length-1;i++){const g=st[i+1].pos-st[i].pos;if(g>maxGap){maxGap=g;pos=(st[i].pos+st[i+1].pos)/2;}}
+  S.grad.stops.push({hex:mixColors(st[0].hex,st[st.length-1].hex,pos/100,'lab'),pos:Math.round(pos)});
+  renderGradient();
+};
+$('#btnGradFromPal').onclick=()=>{syncGradFromPalette();renderGradient();toast('已用调色板填充渐变');};
+$('#btnGradRandom').onclick=()=>{
+  const h=rnd(0,360), n=ri(2,4), st=[];
+  for(let i=0;i<n;i++) st.push({hex:hslToHex({h:h+i*rnd(20,140),s:rnd(55,95),l:rnd(42,68)}),pos:Math.round(i/(n-1)*100)});
+  S.grad.stops=st; S.grad.angle=ri(0,360); renderGradient();
+};
+$('#btnGradCopy').onclick=()=>copyText(gradCss(),'已复制渐变 CSS');
+$('#btnGradToPalette').onclick=()=>{
+  const st=S.grad.stops.slice().sort((a,b)=>a.pos-b.pos);
+  S.colors=st.map(s=>({hex:s.hex,locked:false})); renderAll(); switchTab('palette');
+  toast('已应用渐变色到调色板');
+};
+$('#btnGradDownload').onclick=()=>{
+  const w=1600,h=900,cv=document.createElement('canvas');
+  cv.width=w;cv.height=h;const ctx=cv.getContext('2d');
+  const st=S.grad.stops.slice().sort((a,b)=>a.pos-b.pos);
+  let g;
+  if(S.grad.type==='radial'){ g=ctx.createRadialGradient(w/2,h/2,0,w/2,h/2,Math.max(w,h)/2); }
+  else if(S.grad.type==='conic'&&ctx.createConicGradient){ g=ctx.createConicGradient((S.grad.angle-90)*Math.PI/180,w/2,h/2); }
+  else{
+    const rad=S.grad.angle*Math.PI/180;
+    const len=Math.abs(w*Math.sin(rad))+Math.abs(h*Math.cos(rad));
+    const dx=Math.sin(rad)*len/2, dy=-Math.cos(rad)*len/2;
+    g=ctx.createLinearGradient(w/2-dx,h/2-dy,w/2+dx,h/2+dy);
+  }
+  st.forEach(s=>g.addColorStop(clamp(s.pos/100,0,1),s.hex));
+  ctx.fillStyle=g;ctx.fillRect(0,0,w,h);
+  downloadCanvas(cv,'gradient.png');
+};
+const GRAD_PRESETS=[
+  ['#667eea','#764ba2'],['#f093fb','#f5576c'],['#4facfe','#00f2fe'],['#43e97b','#38f9d7'],
+  ['#fa709a','#fee140'],['#30cfd0','#330867'],['#a8edea','#fed6e3'],['#ff9a9e','#fad0c4'],
+  ['#5ee7df','#b490ca'],['#d299c2','#fef9d7'],['#ffecd2','#fcb69f'],['#2af598','#009efd'],
+];
+$('#gradPresets').innerHTML=GRAD_PRESETS.map((p,i)=>
+  `<div class="sw" style="cursor:pointer" data-gp2="${i}">
+    <div class="c" style="height:96px;background:linear-gradient(135deg,${p[0]},${p[1]})"></div>
+    <div class="meta"><div class="mono xsmall">${p[0].toUpperCase()} → ${p[1].toUpperCase()}</div></div>
+  </div>`).join('');
+$('#gradPresets').addEventListener('click',e=>{
+  const el=e.target.closest('[data-gp2]'); if(!el) return;
+  const p=GRAD_PRESETS[+el.dataset.gp2];
+  S.grad.stops=[{hex:p[0],pos:0},{hex:p[1],pos:100}];
+  S.grad.type='linear'; S.grad.angle=135;
+  $$('#gradTypeSeg button').forEach(x=>x.classList.toggle('on',x.dataset.t==='linear'));
+  renderGradient(); toast('已应用预设渐变');
+});
+
+/* ============================================================
+   14. 对比度检查
+   ============================================================ */
+const CT_CHECKS=[
+  {k:'普通文本 AA',  v:4.5, tip:'正文 ≥ 4.5:1'},
+  {k:'普通文本 AAA', v:7,   tip:'正文增强 ≥ 7:1'},
+  {k:'大号文本 AA',  v:3,   tip:'≥18.66px 粗体 / 24px'},
+  {k:'大号文本 AAA', v:4.5, tip:'大号增强 ≥ 4.5:1'},
+  {k:'UI 组件 / 图形', v:3, tip:'图标、边框、输入框'},
+];
+function renderContrastSwatches(){
+  const h=paletteHexes();
+  ['fg','bg'].forEach(side=>{
+    $(`#${side}Swatches`).innerHTML=h.map((x,i)=>
+      `<span data-ct="${side}" data-ci="${i}" title="${x.toUpperCase()}"
+        style="width:26px;height:26px;border-radius:6px;background:${x};cursor:pointer;display:inline-block;
+        box-shadow:inset 0 0 0 1px rgba(255,255,255,.25)"></span>`).join('')+
+      `<span data-ct="${side}" data-hex="ffffff" title="白" style="width:26px;height:26px;border-radius:6px;background:#fff;cursor:pointer;display:inline-block;box-shadow:inset 0 0 0 1px rgba(0,0,0,.25)"></span>`+
+      `<span data-ct="${side}" data-hex="000000" title="黑" style="width:26px;height:26px;border-radius:6px;background:#000;cursor:pointer;display:inline-block;box-shadow:inset 0 0 0 1px rgba(255,255,255,.25)"></span>`;
+  });
+}
+function findPassing(fg,bg,target){
+  const c=hexToHsl(fg);
+  let best=null,bd=1e9;
+  for(let l=0;l<=100;l++){
+    const cand=hslToHex({h:c.h,s:c.s,l});
+    if(hexContrast(cand,bg)>=target){
+      const d=Math.abs(l-c.l);
+      if(d<bd){bd=d;best=cand;}
+    }
+  }
+  return best;
+}
+function renderContrast(){
+  const fg=S.ct.fg, bg=S.ct.bg;
+  $('#fgHex').value=fg.toUpperCase(); $('#bgHex').value=bg.toUpperCase();
+  $('#fgPick').value=fg; $('#bgPick').value=bg;
+  const r=hexContrast(fg,bg);
+  $('#ctRatio').textContent=r.toFixed(2)+':1';
+  $('#ctRatio').style.color=r>=4.5?'var(--ok)':(r>=3?'var(--warn)':'var(--err)');
+  const lc=Math.abs(apca(hexToRgb(fg),hexToRgb(bg)));
+  $('#ctApca').textContent=`APCA Lc ${lc} · ${lc>=75?'正文适用':(lc>=45?'大文本适用':'不推荐用于文本')}`;
+  const sm=$('#ctSample');
+  sm.style.background=bg; sm.style.color=fg;
+  $('#ctChecks').innerHTML=CT_CHECKS.map(c=>{
+    const ok=r>=c.v;
+    return `<div class="check"><span class="small">${c.k} <span class="dim xsmall">${c.tip}</span></span>
+      <span class="badge ${ok?'ok':'no'}">${ok?'通过':'未达'} ${c.v}:1</span></div>`;
+  }).join('');
+  const sug=[];
+  [['前景',fg,bg],['背景',bg,fg]].forEach(([label,target,other])=>{
+    [['AA',4.5],['AAA',7]].forEach(([lv,tv])=>{
+      const f=findPassing(target,other,tv);
+      if(f&&f.toLowerCase()!==target.toLowerCase()) sug.push({label,lv,hex:f,r:hexContrast(f,other)});
+    });
+  });
+  $('#ctSuggest').innerHTML=sug.length?sug.map(s=>
+    `<button class="chip" data-sug="${s.hex}" data-side="${s.label}"
+      style="display:flex;align-items:center;gap:7px;padding:4px 11px 4px 5px">
+      <span style="width:22px;height:22px;border-radius:5px;background:${s.hex};box-shadow:inset 0 0 0 1px rgba(255,255,255,.25)"></span>
+      <span><b>${s.label}→${s.lv}</b> <span class="mono dim">${s.hex.toUpperCase()} · ${s.r.toFixed(1)}</span></span>
+    </button>`).join(''):'<span class="dim small">当前组合已满足全部等级，无需调整。</span>';
+
+  /* 全方案矩阵 */
+  const h=paletteHexes(), n=h.length;
+  let mt=`<table style="border-collapse:separate;border-spacing:3px;font-family:var(--mono);font-size:11px"><tr><td></td>`;
+  h.forEach(x=>mt+=`<td class="tc dim" style="width:56px">${x.toUpperCase()}</td>`);
+  mt+='</tr>';
+  h.forEach((a,i)=>{
+    mt+=`<tr><td class="dim" style="padding-right:6px">${a.toUpperCase()}</td>`;
+    h.forEach((b,j)=>{
+      const rr=hexContrast(a,b);
+      const ok=rr>=4.5?1:rr>=3?2:0;
+      mt+=`<td class="tc" style="background:${a};color:${b};padding:7px 4px;border-radius:6px;
+        ${i===j?'outline:2px solid var(--accent)':''};
+        box-shadow:inset 0 0 0 1px ${ok?'rgba(52,211,153,.55)':'rgba(248,113,113,.6)'}">
+        ${rr.toFixed(1)}${ok?'✓':'✕'}</td>`;
+    });
+    mt+='</tr>';
+  });
+  $('#ctMatrix').innerHTML=mt+'</table>';
+}
+function setCt(side,hex){
+  const h=normHex(hex); if(!h)return;
+  S.ct[side]=h; renderContrast();
+}
+['fg','bg'].forEach(side=>{
+  $('#'+side+'Hex').addEventListener('change',e=>setCt(side,e.target.value));
+  $('#'+side+'Hex').addEventListener('keydown',e=>{if(e.key==='Enter')setCt(side,e.target.value);});
+  $('#'+side+'Pick').addEventListener('input',e=>{S.ct[side]=e.target.value;renderContrast();});
+});
+['#fgSwatches','#bgSwatches'].forEach(sel=>{
+  $(sel).addEventListener('click',e=>{
+    const el=e.target.closest('[data-ct]'); if(!el)return;
+    const side=el.dataset.ct;
+    const hex=(el.dataset.hex?'#'+el.dataset.hex:paletteHexes()[+el.dataset.ci]);
+    if(hex){S.ct[side]=hex;renderContrast();}
+  });
+});
+$('#ctSuggest').addEventListener('click',e=>{
+  const el=e.target.closest('[data-sug]'); if(!el)return;
+  const side=el.dataset.side==='前景'?'fg':'bg';
+  S.ct[side]=el.dataset.sug; renderContrast();
+  toast('已应用建议色：'+el.dataset.sug.toUpperCase(),el.dataset.sug);
+});
+
+/* ============================================================
+   15. 图片取色
+   ============================================================ */
+function avgColor(px){
+  let r=0,g=0,b=0,n=px.length||1;
+  for(const p of px){r+=p.r;g+=p.g;b+=p.b;}
+  return {hex:rgbToHex({r:r/n,g:g/n,b:b/n}), count:n};
+}
+function boxRange(px){
+  let rmin=255,rmax=0,gmin=255,gmax=0,bmin=255,bmax=0;
+  for(const p of px){
+    if(p.r<rmin)rmin=p.r; if(p.r>rmax)rmax=p.r;
+    if(p.g<gmin)gmin=p.g; if(p.g>gmax)gmax=p.g;
+    if(p.b<bmin)bmin=p.b; if(p.b>bmax)bmax=p.b;
+  }
+  return {r:rmax-rmin,g:gmax-gmin,b:bmax-bmin};
+}
+/* 在最长通道上寻找「最大间隙」切分，比普通中位切分更能保住占比小但独立的色调 */
+function splitBox(px){
+  const rg=boxRange(px);
+  const ch=rg.r>=rg.g&&rg.r>=rg.b?'r':(rg.g>=rg.b?'g':'b');
+  px.sort((a,b)=>a[ch]-b[ch]);
+  let bestIdx=-1, bestScore=0;
+  for(let i=1;i<px.length;i++){
+    const gap=px[i][ch]-px[i-1][ch];
+    if(gap<=0) continue;
+    const score=gap*Math.log(1+Math.min(i,px.length-i));  // 抑制把孤立噪点切出去
+    if(score>bestScore){bestScore=score;bestIdx=i;}
+  }
+  if(bestIdx<0) return null;   // 整块同色，无法继续切分
+  return [px.slice(0,bestIdx),px.slice(bestIdx)];
+}
+function medianCut(px,n){
+  if(!px.length) return [];
+  let boxes=[px], guard=0;
+  while(boxes.length<n&&guard++<64){
+    boxes.sort((a,b)=>{
+      const va=boxRange(a), vb=boxRange(b);
+      const sa=(va.r+va.g+va.b+1)*(a.length+1), sb=(vb.r+vb.g+vb.b+1)*(b.length+1);
+      return sb-sa;
+    });
+    let done=false;
+    for(let i=0;i<boxes.length;i++){
+      if(boxes[i].length<2) continue;
+      const parts=splitBox(boxes[i]);
+      if(parts&&parts[0].length&&parts[1].length){
+        boxes.splice(i,1,parts[0],parts[1]);
+        done=true; break;
+      }
+    }
+    if(!done) break;
+  }
+  return boxes.map(avgColor);
+}
+function kmeans(px,n){
+  if(px.length<=n) return px.map(p=>avgColor([p]));
+  const d2=(p,c)=>(p.r-c.r)**2+(p.g-c.g)**2+(p.b-c.b)**2;
+  /* k-means++ 初始化：优先挑彼此距离远的种子，避免所有中心塌缩到同一主色 */
+  let cents=[{...px[Math.floor(Math.random()*px.length)]}];
+  while(cents.length<n){
+    let best=null,bd=-1;
+    for(let t=0;t<40;t++){
+      const p=px[Math.floor(Math.random()*px.length)];
+      let d=1e9; for(const c of cents) d=Math.min(d,d2(p,c));
+      if(d>bd){bd=d;best=p;}
+    }
+    cents.push({...best});
+  }
+  let assign=new Array(px.length).fill(0);
+  for(let it=0;it<12;it++){
+    let moved=false;
+    for(let i=0;i<px.length;i++){
+      let bd=1e9,bi=0;
+      for(let k=0;k<n;k++){
+        const d=d2(px[i],cents[k]);
+        if(d<bd){bd=d;bi=k;}
+      }
+      if(assign[i]!==bi){assign[i]=bi;moved=true;}
+    }
+    const sums=Array.from({length:n},()=>({r:0,g:0,b:0,c:0}));
+    for(let i=0;i<px.length;i++){const s=sums[assign[i]];s.r+=px[i].r;s.g+=px[i].g;s.b+=px[i].b;s.c++;}
+    cents=cents.map((c,k)=>sums[k].c?{r:sums[k].r/sums[k].c,g:sums[k].g/sums[k].c,b:sums[k].b/sums[k].c}
+                                    :{...px[Math.floor(Math.random()*px.length)]});  // 空簇重新播种
+    if(!moved&&it>2) break;
+  }
+  const groups=Array.from({length:n},()=>[]);
+  for(let i=0;i<px.length;i++) groups[assign[i]].push(px[i]);
+  return groups.filter(g=>g.length).map(avgColor);
+}
+function popularity(px,n){
+  const map=new Map();
+  for(const p of px){
+    const key=((p.r>>4)<<8)|((p.g>>4)<<4)|(p.b>>4);
+    const e=map.get(key)||{r:0,g:0,b:0,c:0};
+    e.r+=p.r;e.g+=p.g;e.b+=p.b;e.c++;map.set(key,e);
+  }
+  const arr=[...map.values()].sort((a,b)=>b.c-a.c);
+  const out=[];
+  for(const e of arr){
+    const hex=rgbToHex({r:e.r/e.c,g:e.g/e.c,b:e.b/e.c});
+    if(out.length>=n) break;
+    if(!out.some(o=>hexDeltaE(o.hex,hex)<9)) out.push({hex,count:e.c});
+  }
+  let i=0;
+  while(out.length<n&&i<arr.length){
+    const e=arr[i++];
+    out.push({hex:rgbToHex({r:e.r/e.c,g:e.g/e.c,b:e.b/e.c}),count:e.c});
+  }
+  return out;
+}
+function extractColors(){
+  if(!S.img.img){toast('请先选择一张图片','#f87171');return;}
+  const cv=$('#imgCanvas');
+  const ctx=cv.getContext('2d');
+  let data;
+  try{ data=ctx.getImageData(0,0,cv.width,cv.height).data; }
+  catch(err){ toast('无法读取图片像素（浏览器限制）','#f87171'); return; }
+  const px=[];
+  for(let i=0;i<data.length;i+=4){
+    if(data[i+3]<128) continue;
+    px.push({r:data[i],g:data[i+1],b:data[i+2]});
+  }
+  if(!px.length){toast('图片为空或全透明','#f87171');return;}
+  /* 大图等距采样，保证算法在秒级内完成且不影响主色判断 */
+  const MAXPX=24000;
+  let sample=px;
+  if(px.length>MAXPX){
+    sample=new Array(MAXPX);
+    const step=px.length/MAXPX;
+    for(let i=0;i<MAXPX;i++) sample[i]=px[Math.floor(i*step)];
+  }
+  const n=+$('#sImgCount').value, algo=$('#imgAlgo').value;
+  let res = algo==='kmeans'?kmeans(sample,n) : algo==='popularity'?popularity(sample,n) : medianCut(sample,n);
+  const sort=$('#imgSort').value;
+  const total=sample.length||1;
+  if(sort==='hue')        res.sort((a,b)=>hexToHsl(a.hex).h-hexToHsl(b.hex).h);
+  else if(sort==='light') res.sort((a,b)=>hexToLab(b.hex).L-hexToLab(a.hex).L);
+  else if(sort==='saturation') res.sort((a,b)=>hexToHsl(b.hex).s-hexToHsl(a.hex).s);
+  else                    res.sort((a,b)=>b.count-a.count);
+  res=res.map(r=>({hex:r.hex, pct:Math.round(r.count/total*1000)/10}));
+  S.img.colors=res;
+  renderImgPalette();
+  toast('已提取 '+res.length+' 个主色');
+}
+function renderImgPalette(){
+  const res=S.img.colors;
+  if(!res.length){$('#imgPaletteWrap').classList.add('hidden');return;}
+  $('#imgPaletteWrap').classList.remove('hidden');
+  $('#imgBar').innerHTML=res.map((c,i)=>{
+    const d=displayHex(c.hex);
+    return `<div style="background:${d};color:${readableInk(d)};flex:${Math.max(1,c.pct)}" data-ib="${i}" title="${c.hex.toUpperCase()} · ${c.pct}%">${c.pct}%</div>`;
+  }).join('');
+  $('#imgPalette').innerHTML=res.map((c,i)=>{
+    const d=displayHex(c.hex), nm=nearestName(c.hex);
+    return `<div class="sw" data-ii="${i}">
+      <div class="c" style="height:80px;background:${d};color:${readableInk(d)}">
+        <span class="idx">${c.pct}%</span><span class="hex">${c.hex.toUpperCase()}</span>
+      </div>
+      <div class="meta">
+        <div class="alt"><span data-icp="rgb">${CP_MAP.rgb(c.hex)}</span><span data-icp="hsl">${CP_MAP.hsl(c.hex)}</span></div>
+        <div class="xsmall dim">${esc(nm.cn||nm.name)}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+$('#imgPalette').addEventListener('click',e=>{
+  const sw=e.target.closest('[data-ii]'); if(!sw)return;
+  const c=S.img.colors[+sw.dataset.ii];
+  const cp=e.target.closest('[data-icp]');
+  copyText(cp?CP_MAP[cp.dataset.icp](c.hex):c.hex.toUpperCase(),'已复制',c.hex);
+});
+$('#imgBar').addEventListener('click',e=>{
+  const d=e.target.closest('[data-ib]'); if(!d)return;
+  const c=S.img.colors[+d.dataset.ib]; copyText(c.hex.toUpperCase(),'已复制 '+c.hex.toUpperCase(),c.hex);
+});
+$('#btnImgUse').onclick=()=>{
+  if(!S.img.colors.length){toast('请先提取颜色','#f87171');return;}
+  S.colors=S.img.colors.map(c=>({hex:c.hex,locked:false}));
+  renderAll(); switchTab('palette'); toast('已应用到调色板');
+};
+function loadImageFile(file){
+  if(!file||!/^image\//.test(file.type)){toast('请选择图片文件','#f87171');return;}
+  const fr=new FileReader();
+  fr.onload=ev=>{
+    const img=new Image();
+    img.onload=()=>{
+      S.img.img=img;
+      const cv=$('#imgCanvas');
+      const scale=Math.min(1,560/img.width);
+      cv.width=Math.max(1,Math.round(img.width*scale));
+      cv.height=Math.max(1,Math.round(img.height*scale));
+      cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
+      $('#imgWrap').classList.remove('hidden');
+      extractColors();
+    };
+    img.onerror=()=>toast('图片解析失败','#f87171');
+    img.src=ev.target.result;
+  };
+  fr.readAsDataURL(file);
+}
+$('#dropZone').onclick=()=>$('#fileInput').click();
+$('#fileInput').onchange=e=>{ if(e.target.files[0]) loadImageFile(e.target.files[0]); e.target.value=''; };
+['dragenter','dragover'].forEach(ev=>$('#dropZone').addEventListener(ev,e=>{e.preventDefault();$('#dropZone').classList.add('over');}));
+['dragleave','drop'].forEach(ev=>$('#dropZone').addEventListener(ev,e=>{e.preventDefault();$('#dropZone').classList.remove('over');}));
+$('#dropZone').addEventListener('drop',e=>{ if(e.dataTransfer.files[0]) loadImageFile(e.dataTransfer.files[0]); });
+window.addEventListener('paste',e=>{
+  const items=(e.clipboardData||{}).items||[];
+  for(const it of items){ if(it.type&&it.type.startsWith('image/')){ loadImageFile(it.getAsFile()); break; } }
+});
+$('#sImgCount').addEventListener('input',e=>{$('#vImgCount').textContent=e.target.value;});
+$('#sImgCount').addEventListener('change',()=>{if(S.img.img)extractColors();});
+$('#imgAlgo').onchange=()=>{if(S.img.img)extractColors();};
+$('#imgSort').onchange=()=>{
+  if(!S.img.colors.length) return;
+  const sort=$('#imgSort').value, arr=S.img.colors.slice();
+  if(sort==='hue')              arr.sort((a,b)=>hexToHsl(a.hex).h-hexToHsl(b.hex).h);
+  else if(sort==='light')       arr.sort((a,b)=>hexToLab(b.hex).L-hexToLab(a.hex).L);
+  else if(sort==='saturation')  arr.sort((a,b)=>hexToHsl(b.hex).s-hexToHsl(a.hex).s);
+  else                          arr.sort((a,b)=>b.pct-a.pct);
+  S.img.colors=arr; renderImgPalette();
+};
+$('#btnExtract').onclick=extractColors;
+$('#btnImgClear').onclick=()=>{
+  S.img={colors:[],img:null};
+  $('#imgWrap').classList.add('hidden');
+  $('#imgPaletteWrap').classList.add('hidden');
+  $('#imgCanvas').getContext('2d').clearRect(0,0,$('#imgCanvas').width,$('#imgCanvas').height);
+};
+$('#btnImgDemo').onclick=()=>{
+  const cv=document.createElement('canvas');cv.width=420;cv.height=280;
+  const c=cv.getContext('2d');
+  const g=c.createLinearGradient(0,0,420,280);
+  g.addColorStop(0,'#1e3a8a');g.addColorStop(.35,'#0ea5e9');g.addColorStop(.62,'#f59e0b');g.addColorStop(1,'#db2777');
+  c.fillStyle=g;c.fillRect(0,0,420,280);
+  c.fillStyle='rgba(255,255,255,.16)';c.beginPath();c.arc(300,80,62,0,7);c.fill();
+  c.fillStyle='#0f172a';c.beginPath();c.moveTo(0,280);c.lineTo(150,150);c.lineTo(260,280);c.fill();
+  c.fillStyle='#22c55e';c.fillRect(0,240,420,40);
+  c.fillStyle='rgba(255,255,255,.85)';c.fillRect(180,180,90,50);
+  const img=new Image();
+  img.onload=()=>{
+    S.img.img=img;
+    const cvv=$('#imgCanvas');
+    cvv.width=420;cvv.height=280;
+    cvv.getContext('2d').drawImage(img,0,0);
+    $('#imgWrap').classList.remove('hidden');
+    extractColors();
+  };
+  img.src=cv.toDataURL();
+};
+
+/* ============================================================
+   16. 混色
+   ============================================================ */
+function renderMix(){
+  const {a,b,mode,steps,t}=S.mix;
+  $('#mixA').value=a; $('#mixAHex').value=a.toUpperCase();
+  $('#mixB').value=b; $('#mixBHex').value=b.toUpperCase();
+  $('#mixMode').value=mode; $('#sMixSteps').value=steps; $('#vMixSteps').textContent=steps;
+  $('#sMixT').value=t; $('#vMixT').textContent=t+'%';
+  const res=mixColors(a,b,t/100,mode);
+  S.mix.result=res;
+  const d=displayHex(res);
+  $('#mixPreview').style.background=d;
+  $('#mixResultHex').textContent=res.toUpperCase();
+  $('#mixResultHex').style.color='';
+  $('#mixResultEmoji').textContent='🎯';
+  const de=hexDeltaE(a,b);
+  $('#mixDelta').textContent=`A↔B 色差 ΔE ${de.toFixed(1)} · ${de<10?'极接近':de<25?'相近':de<50?'中等':'对比强烈'}`;
+  const bar=[];
+  for(let i=0;i<steps;i++){
+    const p=steps>1?i/(steps-1)*100:0;
+    bar.push({hex:mixColors(a,b,p/100,mode),p});
+  }
+  $('#mixBar').innerHTML=bar.map(x=>{
+    const dd=displayHex(x.hex);
+    return `<div style="background:${dd};color:${readableInk(dd)}" data-mx="${x.hex}" title="${x.hex.toUpperCase()} · ${Math.round(x.p)}%">${Math.round(x.p)}%</div>`;
+  }).join('');
+}
+['A','B'].forEach(k=>{
+  $('#mix'+k).addEventListener('input',e=>{S.mix[k.toLowerCase()]=e.target.value;renderMix();});
+  $('#mix'+k+'Hex').addEventListener('change',e=>{const h=normHex(e.target.value);if(h){S.mix[k.toLowerCase()]=h;renderMix();}else e.target.value=S.mix[k.toLowerCase()].toUpperCase();});
+});
+$('#mixMode').onchange=e=>{S.mix.mode=e.target.value;renderMix();};
+$('#sMixSteps').addEventListener('input',e=>{S.mix.steps=+e.target.value;renderMix();});
+$('#sMixT').addEventListener('input',e=>{S.mix.t=+e.target.value;renderMix();});
+$('#btnMixSwap').onclick=()=>{const a=S.mix.a;S.mix.a=S.mix.b;S.mix.b=a;renderMix();};
+$('#btnMixCopy').onclick=()=>copyText((S.mix.result||'#000000').toUpperCase(),'已复制',S.mix.result);
+$('#btnMixToPalette').onclick=()=>{
+  const steps=S.mix.steps, out=[];
+  for(let i=0;i<steps;i++) out.push(mixColors(S.mix.a,S.mix.b,i/(steps-1)*100/100,S.mix.mode));
+  S.colors=out.map(h=>({hex:h,locked:false}));
+  renderAll(); switchTab('palette'); toast('已把'+steps+'段插值设为调色板');
+};
+$('#btnMixToGrad').onclick=()=>{
+  const steps=Math.min(6,Math.max(3,S.mix.steps));
+  S.grad.stops=Array.from({length:steps},(_,i)=>({hex:mixColors(S.mix.a,S.mix.b,i/(steps-1),S.mix.mode),pos:Math.round(i/(steps-1)*100)}));
+  renderGradient(); switchTab('gradient'); toast('已生成渐变');
+};
+$('#mixBar').addEventListener('click',e=>{
+  const d=e.target.closest('[data-mx]'); if(!d)return;
+  copyText(d.dataset.mx.toUpperCase(),'已复制 '+d.dataset.mx.toUpperCase(),d.dataset.mx);
+});
+/* ============================================================
+   17. 界面预览
+   ============================================================ */
+function fitL(hex,lo,hi){const c=hexToHsl(hex);return hslToHex({h:c.h,s:c.s,l:clamp(c.l,lo,hi)});}
+function previewRoles(){
+  const h=paletteHexes();
+  if(!h.length) h.push('#6366f1');
+  const byL=[...h].sort((a,b)=>hexToLab(a).L-hexToLab(b).L);
+  const byS=[...h].sort((a,b)=>hexToHsl(b).s-hexToHsl(a).s);
+  const dark=S.prev.theme==='dark';
+  const g=(i)=>h[((i%h.length)+h.length)%h.length];
+  let primary,accent;
+  if(S.prev.role==='cycle'){ primary=fitL(g(0),dark?52:38,dark?72:62); accent=fitL(g(1),dark?52:38,dark?72:62); }
+  else{ primary=fitL(byS[0],dark?52:38,dark?72:62); accent=fitL(byS[1]||byS[0],dark?52:38,dark?72:62); }
+  const secondary=byS[2]||byS[0];
+  const lightest=byL[byL.length-1], darkest=byL[0];
+  let bg,surface,text,muted,border;
+  if(dark){
+    const hs=hexToHsl(darkest);
+    bg=hslToHex({h:hs.h,s:Math.min(hs.s,24),l:7});
+    surface=hslToHex({h:hs.h,s:Math.min(hs.s,20),l:11.5});
+    border=hslToHex({h:hs.h,s:Math.min(hs.s,18),l:22});
+    text=lighten(scaleSat(lightest,.35),4);
+    muted=scaleSat(lighten(lightest,-16),.35);
+  }else{
+    const hs=hexToHsl(lightest);
+    bg=hslToHex({h:hs.h,s:Math.min(hs.s,16),l:97.5});
+    surface='#ffffff';
+    border=hslToHex({h:hexToHsl(darkest).h,s:14,l:88});
+    text=hexToLab(darkest).L<45?darkest:lighten(darkest,-26);
+    muted=scaleSat(lighten(text,26),.4);
+  }
+  return {primary,secondary,accent,bg,surface,text,muted,border,
+    ok:fitL(byS[3]||'#10b981',38,70), warn:'#f59e0b', err:fitL(byS[4]||'#ef4444',38,68)};
+}
+function renderPreview(){
+  const R=previewRoles();
+  const onP=readableInk(R.primary);
+  const mk=$('#mock');
+  mk.style.setProperty('--mk-border',R.border);
+  mk.innerHTML=`
+  <div class="mock-top" style="background:${R.surface};border-color:${R.border};color:${R.text}">
+    <span class="dots"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i></span>
+    <span style="font-size:12px;font-weight:600;opacity:.8;margin-left:4px">app.colordesign / workspace</span>
+    <span style="flex:1"></span>
+    <span style="padding:4px 12px;border-radius:99px;background:${R.primary};color:${onP};font-size:11.5px;font-weight:600">新建项目</span>
+    <span style="width:26px;height:26px;border-radius:50%;background:${R.accent};display:grid;place-items:center;color:${readableInk(R.accent)};font-size:11px;font-weight:700">U</span>
+  </div>
+  <div class="mock-body" style="background:${R.bg};color:${R.text}">
+    <div class="mock-side" style="border-color:${R.border}">
+      <div style="font-size:13px;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:7px">
+        <span style="width:22px;height:22px;border-radius:6px;background:${R.primary}"></span>ColorKit</div>
+      ${['仪表盘','项目','素材库','调色板','团队','设置'].map((t,i)=>
+        `<div class="mk-nav" style="background:${i===3?R.primary:'transparent'};color:${i===3?onP:R.muted};font-weight:${i===3?'600':'400'}">
+          <span style="width:7px;height:7px;border-radius:50%;background:${i===3?onP:'currentColor'};opacity:${i===3?1:.45}"></span>${t}</div>`).join('')}
+      <div style="flex:1"></div>
+      <div style="padding:10px;border-radius:10px;background:${R.surface};border:1px solid ${R.border}">
+        <div class="xsmall" style="color:${R.muted}">本月用量</div>
+        <div style="font-size:15px;font-weight:700;margin-top:2px">68%</div>
+        <div style="height:5px;border-radius:99px;background:${R.border};margin-top:7px">
+          <div style="width:68%;height:100%;border-radius:99px;background:${R.accent}"></div></div>
+      </div>
+    </div>
+    <div class="mock-main">
+      <div class="between" style="flex-wrap:wrap;gap:10px">
+        <div>
+          <div style="font-size:18px;font-weight:750">早上好，设计师 👋</div>
+          <div class="xsmall" style="color:${R.muted}">这是使用当前配色的界面效果预览</div>
+        </div>
+        <div class="row tight">
+          <span style="padding:7px 13px;border-radius:9px;border:1px solid ${R.border};color:${R.muted};font-size:12px">导出</span>
+          <span style="padding:7px 13px;border-radius:9px;background:${R.primary};color:${onP};font-size:12px;font-weight:600">创建方案</span>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:11px">
+        ${[['总方案','128',R.primary],['收藏','36',R.accent],['对比检查','92%',R.ok],['待处理','5',R.warn]].map(([t,v,c])=>
+          `<div class="mk-card" style="background:${R.surface};border-color:${R.border}">
+            <div class="xsmall" style="color:${R.muted}">${t}</div>
+            <div style="font-size:22px;font-weight:750;margin-top:4px">${v}</div>
+            <div style="height:4px;border-radius:99px;background:${c};margin-top:8px;opacity:.85"></div>
+          </div>`).join('')}
+      </div>
+      <div style="display:grid;grid-template-columns:1.6fr 1fr;gap:12px">
+        <div class="mk-card" style="background:${R.surface};border-color:${R.border}">
+          <div class="between mb10"><b style="font-size:13px">活跃度趋势</b>
+            <span class="xsmall" style="color:${R.muted}">最近 12 周</span></div>
+          <div class="mk-chart">
+            ${[38,52,44,66,58,74,62,80,70,88,76,95].map((v,i)=>
+              `<i style="height:${v}%;background:${i%3===0?R.primary:(i%3===1?R.accent:R.secondary)};opacity:${.55+i%3*.15}"></i>`).join('')}
+          </div>
+        </div>
+        <div class="mk-card" style="background:${R.surface};border-color:${R.border}">
+          <div class="between mb10"><b style="font-size:13px">色彩分布</b></div>
+          <div class="center" style="gap:14px;flex-wrap:wrap">
+            <div class="mk-ring" style="background:conic-gradient(${paletteHexes().map((c,i,a)=>
+              `${c} ${i/a.length*360}deg ${(i+1)/a.length*360}deg`).join(',')});color:${readableInk(R.primary)}">
+              <span style="width:60px;height:60px;border-radius:50%;background:${R.surface};display:grid;place-items:center;font-size:13px;color:${R.text}">${paletteHexes().length}</span>
+            </div>
+            <div class="col" style="gap:5px">
+              ${paletteHexes().slice(0,5).map(c=>
+                `<div class="row tight xsmall"><span style="width:10px;height:10px;border-radius:3px;background:${c}"></span>
+                <span class="mono" style="color:${R.muted}">${c.toUpperCase()}</span></div>`).join('')}
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="mk-card" style="background:${R.surface};border-color:${R.border}">
+          <b style="font-size:13px">表单</b>
+          <div class="col mt10" style="gap:8px">
+            <div class="xsmall" style="color:${R.muted}">项目名称</div>
+            <div style="padding:8px 11px;border-radius:8px;border:1px solid ${R.primary};background:${R.bg};color:${R.text};font-size:12px">夏季品牌视觉</div>
+            <div class="xsmall" style="color:${R.muted}">备注</div>
+            <div style="padding:8px 11px;border-radius:8px;border:1px solid ${R.border};background:${R.bg};color:${R.muted};font-size:12px">请输入…</div>
+            <div class="row tight">
+              <span style="padding:6px 12px;border-radius:8px;background:${R.primary};color:${onP};font-size:12px;font-weight:600">保存</span>
+              <span style="padding:6px 12px;border-radius:8px;border:1px solid ${R.border};color:${R.muted};font-size:12px">取消</span>
+            </div>
+          </div>
+        </div>
+        <div class="mk-card" style="background:${R.surface};border-color:${R.border}">
+          <b style="font-size:13px">提示与状态</b>
+          <div class="col mt10" style="gap:8px">
+            ${[[R.ok,'✓ 配色对比度检查已通过'],[R.warn,'△ 深色模式下饱和度偏高'],[R.err,'✕ 两个颜色过于接近']].map(([c,t])=>
+              `<div style="padding:9px 11px;border-radius:9px;font-size:12px;background:${hexA(c,.16)};
+                border:1px solid ${hexA(c,.45)};color:${R.text}">${t}</div>`).join('')}
+            <div class="row tight mt6">
+              ${['主要','次要','强调'].map((t,i)=>
+                `<span style="padding:5px 12px;border-radius:99px;font-size:11.5px;font-weight:600;background:${[R.primary,R.secondary,R.accent][i]};color:${readableInk([R.primary,R.secondary,R.accent][i])}">${t}</span>`).join('')}
+              <span style="padding:5px 12px;border-radius:99px;font-size:11.5px;border:1px solid ${R.primary};color:${R.primary}">描边</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+  /* 色卡展示 */
+  $('#swatchSheet').innerHTML=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px">`+
+    paletteHexes().map((hex,i)=>{
+      const d=displayHex(hex), nm=nearestName(hex), sc=buildScale(hex,S.scaleMode);
+      return `<div class="card" style="overflow:hidden">
+        <div style="height:92px;background:${d};display:grid;place-items:center;color:${readableInk(d)};font-family:var(--mono);font-size:15px;font-weight:700">
+          ${hex.toUpperCase()}</div>
+        <div class="card-b sm">
+          <div class="between"><b class="small">${esc(nm.cn||nm.name)}</b><span class="xsmall dim mono">${esc(nm.name)}</span></div>
+          <div class="row tight mt10" style="gap:2px">
+            ${sc.map(h2=>`<div style="flex:1;height:20px;background:${displayHex(h2)};${i===0?'':''}" title="${h2.toUpperCase()}"></div>`).join('')}
+          </div>
+          <div class="col mt10" style="gap:3px">
+            ${['HEX','RGB','HSL','CMYK','LAB'].map(k=>
+              `<div class="between"><span class="xsmall dim">${k}</span><span class="mono xsmall">${esc(fmtOf(hex,k))}</span></div>`).join('')}
+          </div>
+        </div>
+      </div>`;
+    }).join('')+`</div>`;
+}
+$('#prevThemeSeg').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b)return;
+  $$('#prevThemeSeg button').forEach(x=>x.classList.remove('on')); b.classList.add('on');
+  S.prev.theme=b.dataset.p; renderPreview();
+});
+$('#prevRoleSeg').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b)return;
+  $$('#prevRoleSeg button').forEach(x=>x.classList.remove('on')); b.classList.add('on');
+  S.prev.role=b.dataset.r; renderPreview();
+});
+
+/* ============================================================
+   18. 导出
+   ============================================================ */
+const SEM=['primary','secondary','accent','success','warning','danger','info','neutral','highlight','surface','muted','brand'];
+function exportNames(){
+  const h=paletteHexes();
+  const prefix=($('#expPrefix').value||'brand').replace(/[^a-zA-Z0-9_-]/g,'')||'brand';
+  const naming=$('#expNaming').checked;
+  return h.map((_,i)=> naming?(prefix+'-'+(SEM[i]||'color'+(i+1))) : (prefix+'-'+(i+1)));
+}
+function camel(s){return s.replace(/[-_]([a-z0-9])/g,(_,c)=>c.toUpperCase());}
+function genExport(){
+  const h=paletteHexes(), names=exportNames(), withScale=$('#expScales').checked;
+  const f=$('#expFormat').value;
+  const scales=h.map(hex=>buildScale(hex,S.scaleMode));
+  const P=$('#expFormat');
+  const items=h.map((hex,i)=>({name:names[i],hex:hex.toUpperCase(),hexL:hex,rgb:hexToRgb(hex),hsl:hexToHsl(hex),
+    cmyk:hexToCmyk(hex),lab:hexToLab(hex),scale:scales[i]}));
+  const r=v=>Math.round(v);
+  if(f==='css'){
+    let s=':root{\n';
+    items.forEach(it=>{ s+=`  --${it.name}: ${it.hex};\n`; });
+    if(withScale) items.forEach(it=>{
+      s+=`\n  /* ${it.name} 色阶 */\n`;
+      it.scale.forEach((sc,k)=>{ s+=`  --${it.name}-${SCALE_STEPS[k]}: ${sc};\n`; });
+    });
+    return s+'}\n';
+  }
+  if(f==='scss'){
+    let s='// ColorStudio 配色方案\n';
+    items.forEach(it=>{ s+=`$${it.name}: ${it.hex};\n`; });
+    if(withScale){ s+='\n$scales: (\n'; items.forEach(it=>{
+      s+=`  "${it.name}": (`+it.scale.map((sc,k)=>`${SCALE_STEPS[k]}: ${sc}`).join(', ')+`),\n`; }); s+=');\n'; }
+    s+=`\n@function c($n){ @return map-get((${items.map(it=>`"${it.name}": $${it.name}`).join(', ')}), $n); }\n`;
+    return s;
+  }
+  if(f==='less') return items.map(it=>`@${it.name}: ${it.hex};`).join('\n')+'\n';
+  if(f==='tailwind'){
+    let s='/** @type {import("tailwindcss").Config} */\nmodule.exports = {\n  theme: {\n    extend: {\n      colors: {\n';
+    items.forEach(it=>{
+      s+=`        '${it.name}': {\n          DEFAULT: '${it.hex}',\n`;
+      if(withScale) it.scale.forEach((sc,k)=>{ s+=`          ${SCALE_STEPS[k]}: '${sc}',\n`; });
+      s+='        },\n';
+    });
+    return s+'      },\n    },\n  },\n};\n';
+  }
+  if(f==='json'){
+    return JSON.stringify({name:'ColorStudio Palette', base:S.base.toUpperCase(), harmony:S.harmony,
+      style:S.style, createdAt:new Date().toISOString(),
+      colors:items.map(it=>({name:it.name, hex:it.hex,
+        rgb:{r:r(it.rgb.r),g:r(it.rgb.g),b:r(it.rgb.b)},
+        hsl:{h:r(it.hsl.h),s:r(it.hsl.s),l:r(it.hsl.l)},
+        lab:{L:+it.lab.L.toFixed(2),a:+it.lab.a.toFixed(2),b:+it.lab.b.toFixed(2)},
+        ...(withScale?{scale:Object.fromEntries(it.scale.map((sc,k)=>[SCALE_STEPS[k],sc]))}:{})
+      }))},null,2);
+  }
+  if(f==='yaml'){
+    let s='# ColorStudio palette\npalette:\n';
+    items.forEach(it=>{
+      s+=`  - name: ${it.name}\n    hex: ${it.hex}\n    rgb: [${r(it.rgb.r)}, ${r(it.rgb.g)}, ${r(it.rgb.b)}]\n`;
+      if(withScale) s+=`    scale:\n`+it.scale.map((sc,k)=>`      ${SCALE_STEPS[k]}: ${sc}\n`).join('');
+    });
+    return s;
+  }
+  if(f==='android') return `<?xml version="1.0" encoding="utf-8"?>\n<resources>\n`+
+    items.map(it=>`    <color name="${it.name.replace(/-/g,'_')}">${it.hex}</color>`).join('\n')+'\n</resources>\n';
+  if(f==='swift') return `import UIKit\n\nextension UIColor {\n`+
+    items.map(it=>`    static let ${camel(it.name)} = UIColor(red: ${(it.rgb.r/255).toFixed(3)}, green: ${(it.rgb.g/255).toFixed(3)}, blue: ${(it.rgb.b/255).toFixed(3)}, alpha: 1.0) // ${it.hex}`).join('\n')+'\n}\n';
+  if(f==='kotlin') return `object AppColors {\n`+
+    items.map(it=>`    val ${camel(it.name).replace(/^./,c=>c.toUpperCase())} = Color(0xFF${it.hex.slice(1).toUpperCase()})`).join('\n')+'\n}\n';
+  if(f==='dart') return `import 'package:flutter/material.dart';\n\nclass AppColors {\n`+
+    items.map(it=>`  static const ${camel(it.name)} = Color(0xFF${it.hex.slice(1).toUpperCase()});`).join('\n')+'\n}\n';
+  if(f==='gpl') return `GIMP Palette\nName: ColorStudio Palette\nColumns: ${Math.min(16,h.length)}\n#\n`+
+    items.map(it=>`${r(it.rgb.r)} ${r(it.rgb.g)} ${r(it.rgb.b)} ${it.name}`).join('\n')+'\n';
+  if(f==='svg'){
+    const cw=200, ch=140, cols=Math.min(5,h.length), rows=Math.ceil(h.length/cols);
+    let s=`<svg xmlns="http://www.w3.org/2000/svg" width="${cw*cols}" height="${ch*rows}" viewBox="0 0 ${cw*cols} ${ch*rows}">\n`;
+    items.forEach((it,i)=>{
+      const x=(i%cols)*cw, y=Math.floor(i/cols)*ch;
+      s+=`  <rect x="${x}" y="${y}" width="${cw}" height="${ch}" fill="${it.hex}"/>\n`;
+      s+=`  <text x="${x+cw/2}" y="${y+ch-24}" font-family="monospace" font-size="18" fill="${readableInk(it.hexL)}" text-anchor="middle">${it.hex}</text>\n`;
+      s+=`  <text x="${x+cw/2}" y="${y+ch-8}" font-family="monospace" font-size="12" fill="${readableInk(it.hexL)}" text-anchor="middle" opacity=".8">${it.name}</text>\n`;
+    });
+    return s+'</svg>\n';
+  }
+  if(f==='csv') return 'name,hex,rgb,hsl,cmyk,lab\n'+items.map(it=>
+    `${it.name},${it.hex},"${r(it.rgb.r)} ${r(it.rgb.g)} ${r(it.rgb.b)}","${r(it.hsl.h)} ${r(it.hsl.s)}% ${r(it.hsl.l)}%","${r(it.cmyk.c)} ${r(it.cmyk.m)} ${r(it.cmyk.y)} ${r(it.cmyk.k)}","${it.lab.L.toFixed(1)} ${it.lab.a.toFixed(1)} ${it.lab.b.toFixed(1)}"`).join('\n')+'\n';
+  if(f==='hexlist') return h.map(x=>x.toUpperCase()).join('\n')+'\n';
+  if(f==='ase') return '; Adobe Color Book (文本格式，可用文本导入)\n; ColorStudio Palette\n'+
+    items.map(it=>`${it.name}\t${it.hex}`).join('\n')+'\n';
+  return h.join('\n')+'\n';
+}
+const EXT_MAP={css:['palette.css','text/css'],scss:['palette.scss','text/plain'],less:['palette.less','text/plain'],
+  tailwind:['tailwind.colors.js','text/javascript'],json:['palette.json','application/json'],yaml:['palette.yaml','text/plain'],
+  android:['colors.xml','application/xml'],swift:['UIColor+Palette.swift','text/plain'],kotlin:['AppColors.kt','text/plain'],
+  dart:['app_colors.dart','text/plain'],gpl:['palette.gpl','text/plain'],svg:['palette.svg','image/svg+xml'],
+  csv:['palette.csv','text/csv'],hexlist:['palette.txt','text/plain'],ase:['palette.aco.txt','text/plain']};
+function renderExport(){
+  try{ $('#expCode').textContent=genExport(); }catch(e){ $('#expCode').textContent='生成失败：'+e.message; }
+  renderShare();
+}
+$('#expFormat').onchange=renderExport;
+['expNaming','expScales'].forEach(id=>$('#'+id).addEventListener('change',renderExport));
+$('#expPrefix').addEventListener('input',renderExport);
+$('#btnExpCopy').onclick=()=>copyText($('#expCode').textContent,'已复制代码');
+$('#btnExpDownload').onclick=()=>{
+  const f=$('#expFormat').value, [name,mime]=EXT_MAP[f]||['palette.txt','text/plain'];
+  downloadText($('#expCode').textContent,name,mime);
+};
+function downloadText(text,filename,mime='text/plain'){
+  const blob=new Blob([text],{type:mime+';charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download=filename; a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),4000);
+  toast('已下载 '+filename);
+}
+function downloadCanvas(cv,filename){
+  cv.toBlob(b=>{
+    if(!b){toast('导出失败','#f87171');return;}
+    const url=URL.createObjectURL(b);
+    const a=document.createElement('a'); a.href=url; a.download=filename; a.click();
+    setTimeout(()=>URL.revokeObjectURL(url),4000);
+    toast('已下载 '+filename);
+  },'image/png');
+}
+/* ---- PNG 图片导出 ---- */
+function drawPng(style,w){
+  const h=paletteHexes(); if(!h.length) return;
+  const cv=$('#pngCanvas'), c=cv.getContext('2d');
+  const PAD=Math.round(w*0.035), F=w*0.02;
+  let H = style==='bar'?Math.round(w*0.42) : style==='cards'?Math.round(w*0.66)
+        : style==='scales'?Math.round(w*0.92) : Math.round(w*0.66);
+  cv.width=w; cv.height=H; cv.style.display='block';
+  c.setTransform(1,0,0,1,0,0);
+  c.fillStyle='#0c0e15'; c.fillRect(0,0,w,H);
+  const font=(s,wt=600)=>`${wt} ${s}px "Segoe UI","PingFang SC","Microsoft YaHei",system-ui,sans-serif`;
+  const mono=(s,wt=500)=>`${wt} ${s}px ui-monospace,Consolas,Menlo,monospace`;
+  if(style==='bar'){
+    const top=H*0.14, bh=H*0.52, gapPct=0;
+    const cw=(w-PAD*2)/h.length;
+    h.forEach((hex,i)=>{
+      c.fillStyle=hex; c.fillRect(PAD+i*cw,top,cw-gapPct,bh);
+      const ink=readableInk(hex);
+      c.fillStyle=ink; c.textAlign='center'; c.font=mono(Math.min(w*0.02,w/h.length*0.16),600);
+      c.fillText(hex.toUpperCase(),PAD+i*cw+cw/2,top+bh/2+F*0.2);
+    });
+    c.fillStyle='#ffffff'; c.textAlign='left'; c.font=font(w*0.026,700);
+    c.fillText('Color Palette',PAD,H*0.095);
+    c.fillStyle='rgba(255,255,255,.45)'; c.font=font(w*0.0135,400);
+    c.fillText(`${h.length} colors · ${S.harmony}${S.style!=='none'?' · '+S.style:''} · base ${S.base.toUpperCase()}`,PAD,H*0.098+w*0.019);
+  }
+  else if(style==='cards'){
+    const cols=Math.min(4,h.length), rows=Math.ceil(h.length/cols);
+    const cw=(w-PAD*2-(cols-1)*F*0.5)/cols, chh=(H-PAD*2-(rows-1)*F*0.5)/rows;
+    c.fillStyle='#ffffff'; c.textAlign='left'; c.font=font(w*0.026,700);
+    c.fillText('Color Palette',PAD,PAD+w*0.012);
+    h.forEach((hex,i)=>{
+      const x=PAD+(i%cols)*(cw+F*0.5), y=PAD+w*0.03+Math.floor(i/cols)*(chh+F*0.5);
+      c.fillStyle=hex; roundRect(c,x,y,cw,chh*0.62,w*0.012); c.fill();
+      const ink=readableInk(hex);
+      c.fillStyle=ink; c.textAlign='left'; c.font=mono(w*0.0165,600);
+      c.fillText(hex.toUpperCase(),x+w*0.012,y+chh*0.62-w*0.012);
+      c.fillStyle='#ffffff'; c.font=mono(w*0.0125,500);
+      c.fillText(CP_MAP.rgb(hex),x+w*0.012,y+chh*0.62+w*0.024);
+      c.fillStyle='rgba(255,255,255,.45)'; c.font=mono(w*0.012,400);
+      const nm=nearestName(hex);
+      c.fillText(`${nm.name}${nm.cn?' · '+nm.cn:''}`,x+w*0.012,y+chh*0.62+w*0.043);
+    });
+  }
+  else if(style==='scales'){
+    const labelW=w*0.13, rowH=(H-PAD*2)/h.length;
+    c.fillStyle='#ffffff'; c.textAlign='left'; c.font=font(w*0.026,700);
+    c.fillText('Color Scales 50 – 950',PAD,PAD+w*0.012);
+    h.forEach((hex,i)=>{
+      const y=PAD+w*0.03+i*rowH;
+      const sc=buildScale(hex,S.scaleMode);
+      const cw=(w-PAD*2-labelW)/sc.length;
+      c.fillStyle='#ffffff'; c.font=mono(w*0.0135,600);
+      c.fillText(hex.toUpperCase(),PAD,y+rowH*0.55);
+      sc.forEach((s,k)=>{
+        c.fillStyle=s;
+        c.fillRect(PAD+labelW+k*cw,y,cw-1,rowH*0.78);
+        c.fillStyle=readableInk(s); c.textAlign='center'; c.font=mono(w*0.0092,500);
+        if(cw>w*0.03) c.fillText(String(SCALE_STEPS[k]),PAD+labelW+k*cw+cw/2,y+rowH*0.78-w*0.008);
+      });
+    });
+  }
+  else{ /* poster */
+    const g=previewRoles();
+    c.fillStyle=g.bg; c.fillRect(0,0,w,H);
+    c.fillStyle=g.primary; roundRect(c,PAD,PAD,w-PAD*2,H*0.42,w*0.02); c.fill();
+    c.fillStyle=readableInk(g.primary); c.textAlign='left'; c.font=font(w*0.052,750);
+    c.fillText('Color Palette',PAD*1.7,PAD+H*0.16);
+    c.font=font(w*0.017,400);
+    c.fillText(`${h.length} 色 · ${S.harmony} · 基准色 ${S.base.toUpperCase()}`,PAD*1.7,PAD+H*0.16+w*0.03);
+    const stripY=PAD+H*0.42-w*0.018, cw=(w-PAD*2)/h.length;
+    h.forEach((hex,i)=>{ c.fillStyle=hex; c.fillRect(PAD+i*cw,stripY,cw,w*0.018); });
+    c.fillStyle=g.text; c.textAlign='left'; c.font=font(w*0.03,700);
+    c.fillText('色值',PAD,PAD+H*0.42+w*0.055);
+    const cols=Math.min(4,h.length);
+    h.forEach((hex,i)=>{
+      const x=PAD+(i%cols)*((w-PAD*2)/cols), y=PAD+H*0.42+w*0.085+Math.floor(i/cols)*w*0.052;
+      c.fillStyle=hex; roundRect(c,x,y,w*0.032,w*0.032,w*0.007); c.fill();
+      c.fillStyle=g.text; c.font=mono(w*0.016,600); c.fillText(hex.toUpperCase(),x+w*0.042,y+w*0.019);
+      c.fillStyle=g.muted; c.font=mono(w*0.0115,400);
+      c.fillText(CP_MAP.rgb(hex)+'  '+CP_MAP.hsl(hex),x+w*0.042,y+w*0.036);
+    });
+  }
+}
+function roundRect(c,x,y,w,h,r){
+  r=Math.min(r,w/2,h/2);
+  c.beginPath();
+  c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r);
+  c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath();
+}
+$('#sPngW').addEventListener('input',e=>{$('#vPngW').textContent=e.target.value;});
+$('#btnPng').onclick=()=>{
+  drawPng($('#pngStyle').value,+$('#sPngW').value);
+  downloadCanvas($('#pngCanvas'),`palette-${Date.now().toString(36)}.png`);
+};
+$('#pngStyle').onchange=()=>{ drawPng($('#pngStyle').value,+$('#sPngW').value); };
+
+/* ============================================================
+   19. 分享 / 收藏 / 历史
+   ============================================================ */
+function renderShare(){
+  const h=paletteHexes().map(x=>x.slice(1)).join('-');
+  const baseUrl=location.href.split('#')[0];
+  $('#shareUrl').value=`${baseUrl}#p=${h}&h=${S.harmony}`;
+}
+$('#btnShareCopy').onclick=()=>copyText($('#shareUrl').value,'已复制分享链接');
+function parseHash(){
+  const m=location.hash.match(/p=([0-9a-fA-F\-]+)/);
+  if(m){
+    const arr=m[1].split('-').map(x=>normHex('#'+x)).filter(Boolean);
+    if(arr.length) S.colors=arr.map(hex=>({hex,locked:false}));
+  }
+  const hm=location.hash.match(/h=([a-z]+)/);
+  if(hm){
+    const key=hm[1];
+    if(OFFSETS[key]||['analogous','monochrome','golden'].indexOf(key)>=0){
+      S.harmony=key; $('#harmony').value=key;
+    }
+  }
+}
+function loadStore(){
+  try{S.favs=JSON.parse(localStorage.getItem(LS.fav)||'[]');}catch(e){S.favs=[];}
+  try{S.history=JSON.parse(localStorage.getItem(LS.his)||'[]');}catch(e){S.history=[];}
+  if(!Array.isArray(S.favs))S.favs=[]; if(!Array.isArray(S.history))S.history=[];
+}
+function saveStore(){
+  try{ localStorage.setItem(LS.fav,JSON.stringify(S.favs)); localStorage.setItem(LS.his,JSON.stringify(S.history)); }catch(e){}
+}
+function saveHistory(){
+  const h=paletteHexes();
+  if(!h.length) return;
+  if(S.history.length&&S.history[0].colors.join()===h.join()) return;
+  S.history.unshift({id:uid(),colors:h.slice(),base:S.base,harmony:S.harmony,ts:Date.now()});
+  S.history=S.history.slice(0,30);
+  saveStore();
+}
+function savedCard(item,type){
+  const strip=item.colors.map(c=>`<div style="background:${displayHex(c)}" title="${c.toUpperCase()}"></div>`).join('');
+  return `<div class="sv" data-sv="${item.id}" data-type="${type}">
+    <div class="strip">${strip}</div>
+    <div class="info">
+      <div style="min-width:0">
+        <div style="font-size:12.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(item.name||'未命名方案')}</div>
+        <div class="xsmall dim mono">${item.colors.map(c=>c.toUpperCase()).join(' ')}</div>
+      </div>
+      <div class="row tight">
+        <button class="btn xs" data-sact="load">载入</button>
+        ${type==='fav'?`<button class="btn xs" data-sact="rename">✎</button>`:''}
+        <button class="btn xs" data-sact="del">✕</button>
+      </div>
+    </div>
+  </div>`;
+}
+function renderSaved(){
+  $('#savedList').innerHTML=S.favs.length?S.favs.map(f=>savedCard(f,'fav')).join('')
+    :'<div class="dim small">还没有收藏。点击顶部 ⭐ 收藏当前方案，收藏会保存在本地浏览器中。</div>';
+  $('#historyList').innerHTML=S.history.length?S.history.map(f=>savedCard({...f,name:'自动记录 '+new Date(f.ts).toLocaleString('zh-CN')},'his')).join('')
+    :'<div class="dim small">暂无历史记录。</div>';
+  $('#favCount').textContent=S.favs.length;
+}
+['#savedList','#historyList'].forEach(sel=>{
+  $(sel).addEventListener('click',e=>{
+    const card=e.target.closest('[data-sv]'); if(!card)return;
+    const id=card.dataset.sv, type=card.dataset.type;
+    const list=type==='fav'?S.favs:S.history;
+    const item=list.find(x=>x.id===id); if(!item)return;
+    const act=e.target.closest('[data-sact]'); if(!act)return;
+    const a=act.dataset.sact;
+    if(a==='load'){
+      S.colors=item.colors.map(h=>({hex:h,locked:false}));
+      if(item.base) S.base=item.base;
+      if(item.harmony){S.harmony=item.harmony;$('#harmony').value=item.harmony;}
+      renderCurrent(); drawWheel(); renderAll(); switchTab('palette'); toast('已载入方案');
+    }
+    else if(a==='del'){
+      const i=list.indexOf(item); if(i>=0)list.splice(i,1);
+      saveStore(); renderSaved();
+    }
+    else if(a==='rename'){
+      modal('重命名方案',`<div class="field"><label>名称</label><input class="input" id="renInput" value="${esc(item.name||'')}" placeholder="例如：夏季品牌视觉"></div>
+        <div class="row mt14" style="justify-content:flex-end"><button class="btn" data-close2>取消</button><button class="btn primary" id="renOk">保存</button></div>`,
+        (b,close)=>{
+          b.querySelector('#renInput').focus();
+          b.querySelector('[data-close2]').onclick=close;
+          b.querySelector('#renOk').onclick=()=>{ item.name=b.querySelector('#renInput').value.trim()||'未命名方案'; saveStore(); renderSaved(); close(); toast('已重命名'); };
+          b.querySelector('#renInput').onkeydown=ev=>{if(ev.key==='Enter')b.querySelector('#renOk').click();};
+        });
+    }
+  });
+});
+function saveFav(){
+  const colors=paletteHexes();
+  const nm=nearestName(S.base);
+  modal('收藏当前方案',`<div class="field"><label>方案名称</label>
+      <input class="input" id="favInput" value="${esc(nm.cn||nm.name)} 配色" placeholder="给这个方案起个名字">
+    </div>
+    <div class="row tight mt10">${colors.map(c=>`<span style="flex:1;height:34px;border-radius:7px;background:${c}" title="${c.toUpperCase()}"></span>`).join('')}</div>
+    <div class="row mt14" style="justify-content:flex-end"><button class="btn" data-close2>取消</button><button class="btn primary" id="favOk">收藏</button></div>`,
+    (b,close)=>{
+      b.querySelector('#favInput').focus(); b.querySelector('#favInput').select();
+      b.querySelector('[data-close2]').onclick=close;
+      b.querySelector('#favOk').onclick=()=>{
+        S.favs.unshift({id:uid(),name:b.querySelector('#favInput').value.trim()||'未命名方案',
+          colors:colors.slice(),base:S.base,harmony:S.harmony,ts:Date.now()});
+        saveStore(); renderSaved(); close(); toast('已收藏 ⭐'); switchTab('saved');
+      };
+      b.querySelector('#favInput').onkeydown=ev=>{if(ev.key==='Enter')b.querySelector('#favOk').click();};
+    });
+}
+$('#btnSave').onclick=saveFav;
+$('#btnFavClear').onclick=()=>{ S.favs=[]; saveStore(); renderSaved(); toast('已清空收藏'); };
+$('#btnHisClear').onclick=()=>{ S.history=[]; saveStore(); renderSaved(); toast('已清空历史'); };
+$('#btnFavExport').onclick=()=>{
+  if(!S.favs.length){toast('收藏为空','#f87171');return;}
+  downloadText(JSON.stringify({favorites:S.favs,history:S.history},null,2),`colorstudio-favorites-${Date.now()}.json`,'application/json');
+};
+$('#btnExportJson').onclick=()=>downloadText(JSON.stringify({
+  palette:paletteHexes(),base:S.base,harmony:S.harmony,style:S.style,
+  scales:paletteHexes().map(h=>buildScale(h,S.scaleMode)),
+  favorites:S.favs},null,2),`colorstudio-${Date.now()}.json`,'application/json');
+$('#btnImportJson').onclick=()=>{
+  const inp=document.createElement('input'); inp.type='file'; inp.accept='.json,application/json';
+  inp.onchange=()=>{
+    const f=inp.files[0]; if(!f)return;
+    const fr=new FileReader();
+    fr.onload=ev=>{
+      try{
+        const d=JSON.parse(ev.target.result);
+        if(Array.isArray(d.palette)&&d.palette.length){
+          const arr=d.palette.map(x=>normHex(x)).filter(Boolean);
+          if(arr.length){ S.colors=arr.map(h=>({hex:h,locked:false})); if(d.base&&normHex(d.base))S.base=normHex(d.base); renderCurrent(); drawWheel(); renderAll(); toast('已导入调色板'); }
+        }else if(Array.isArray(d.colors)){
+          const arr=d.colors.map(x=>normHex(typeof x==='string'?x:x.hex)).filter(Boolean);
+          if(arr.length){ S.colors=arr.map(h=>({hex:h,locked:false})); renderAll(); toast('已导入调色板'); }
+        }
+        if(Array.isArray(d.favorites)){ S.favs=d.favs.concat(S.favs).slice(0,200); saveStore(); renderSaved(); }
+      }catch(err){ toast('JSON 解析失败','#f87171'); }
+    };
+    fr.readAsText(f);
+  };
+  inp.click();
+};
+$('#btnClearStorage').onclick=()=>{
+  modal('清空本地数据','<p class="small">将删除全部收藏与历史记录，此操作不可撤销。</p><div class="row" style="justify-content:flex-end"><button class="btn" data-close2>取消</button><button class="btn primary" id="clrOk" style="background:var(--err);border-color:var(--err)">确认清空</button></div>',
+  (b,close)=>{
+    b.querySelector('[data-close2]').onclick=close;
+    b.querySelector('#clrOk').onclick=()=>{ S.favs=[];S.history=[]; try{localStorage.removeItem(LS.fav);localStorage.removeItem(LS.his);}catch(e){} saveStore(); renderSaved(); close(); toast('已清空本地数据'); };
+  });
+};
+
+/* ============================================================
+   20. 顶部与主控件事件
+   ============================================================ */
+$('#baseHex').addEventListener('change',e=>{ const h=normHex(e.target.value); if(h){S.base=h;onBaseChange();}else{e.target.value=S.base.toUpperCase();} });
+$('#baseHex').addEventListener('keydown',e=>{if(e.key==='Enter')$('#baseHex').dispatchEvent(new Event('change'));});
+$('#basePicker').addEventListener('input',e=>{ S.base=e.target.value; onBaseChange(true); });
+$('#basePicker').addEventListener('change',()=>onBaseChange());
+$('#btnToPalette').onclick=()=>{ S.colors.push({hex:S.base,locked:false}); renderAll(); toast('已加入调色板：'+S.base.toUpperCase(),S.base); };
+$('#btnEyedrop').onclick=()=>{
+  if(!('EyeDropper' in window)){ toast('当前浏览器不支持吸管，请使用 Chrome / Edge 新版','#f87171'); return; }
+  try{
+    const ed=new EyeDropper();
+    ed.open().then(res=>{ setBase(res.sRGBHex); toast('吸取到 '+res.sRGBHex.toUpperCase(),res.sRGBHex); }).catch(()=>{});
+  }catch(e){ toast('吸管启动失败','#f87171'); }
+};
+$('#btnRandom').onclick=()=>{ S.base=randomBase(); onBaseChange(); toast('随机主色：'+S.base.toUpperCase(),S.base); };
+$('#btnCopyAll').onclick=()=>copyText(paletteHexes().map(x=>x.toUpperCase()).join(', '),'已复制 '+paletteHexes().length+' 个色值');
+$('#btnGenerate').onclick=()=>{ generate(); renderAll(); toast('已生成新方案'); };
+$('#btnTheme').onclick=()=>setTheme(document.documentElement.dataset.theme==='dark'?'light':'dark');
+$('#harmony').onchange=e=>{ S.harmony=e.target.value; generate(); renderAll(); };
+$('#style').onchange=e=>{
+  S.style=e.target.value;
+  if(S.style!=='none'){ S.base=randomBase(); }
+  generate(); renderAll();
+};
+$('#sCount').addEventListener('input',e=>{ S.count=+e.target.value; $('#vCount').textContent=S.count; generate(); renderPalette(); });
+$('#sCount').addEventListener('change',()=>renderAll());
+$('#sSpread').addEventListener('input',e=>{ S.spread=+e.target.value; $('#vSpread').textContent=S.spread+'°'; generate(); renderPalette(); });
+$('#sSpread').addEventListener('change',()=>renderAll());
+$('#sVar').addEventListener('input',e=>{ S.variation=+e.target.value; $('#vVar').textContent=S.variation; generate(); renderPalette(); });
+$('#sVar').addEventListener('change',()=>renderAll());
+['sH','sS','sV'].forEach(id=>{
+  $('#'+id).addEventListener('input',()=>{
+    const h=+$('#sH').value, s=+$('#sS').value, v=+$('#sV').value;
+    S.base=hsvToHex({h,s,v});
+    $('#vH').textContent=h+'°'; $('#vS').textContent=s+'%'; $('#vV').textContent=v+'%';
+    renderCurrent(); drawWheel(); generate(); renderPalette();
+  });
+  $('#'+id).addEventListener('change',()=>renderAll());
+});
+$('#fmtList').addEventListener('click',e=>{
+  const f=e.target.closest('[data-fmt]'); if(!f)return;
+  copyText(fmtOf(S.base,f.dataset.fmt),'已复制 '+f.dataset.fmt+' 值',S.base);
+});
+$('#cvdSeg').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b)return;
+  $$('#cvdSeg button').forEach(x=>x.classList.remove('on')); b.classList.add('on');
+  S.cvd=b.dataset.cvd;
+  const note={none:'切换可预览色觉障碍人群看到的颜色效果。',
+    protan:'红色盲（Protanopia）：约 1% 男性，红绿辨别困难。',
+    deutan:'绿色盲（Deuteranopia）：最常见的色觉障碍，约 6% 男性。',
+    tritan:'蓝色盲（Tritanopia）：罕见，蓝黄辨别困难。',
+    achroma:'全色盲（Achromatopsia）：极罕见，仅能感知明度。'};
+  $('#cvdNote').textContent=note[S.cvd]||'';
+  renderAll();
+});
+function switchTab(v){
+  $$('.tab').forEach(t=>t.classList.toggle('on',t.dataset.v===v));
+  $$('section.view').forEach(s=>s.classList.toggle('on',s.id==='v-'+v));
+  S.tab=v;
+  if(v==='scale') renderScales();
+  else if(v==='gradient') renderGradient();
+  else if(v==='contrast'){ renderContrastSwatches(); renderContrast(); }
+  else if(v==='mix') renderMix();
+  else if(v==='preview') renderPreview();
+  else if(v==='export') renderExport();
+  else if(v==='saved') renderSaved();
+  else if(v==='palette') renderPalette();
+}
+$('#tabs').addEventListener('click',e=>{
+  const t=e.target.closest('.tab'); if(!t)return;
+  switchTab(t.dataset.v);
+  window.scrollTo({top:0,behavior:'smooth'});
+});
+
+/* ============================================================
+   21. 帮助与快捷键
+   ============================================================ */
+const HELP_HTML=`
+<div class="col gap14">
+  <div>
+    <b>功能导览</b>
+    <ul class="small muted" style="margin:6px 0 0;padding-left:18px;line-height:1.9">
+      <li><b>拾色器</b>：拖动色相环与内部方块选取主色，支持 HEX 输入与屏幕吸管。</li>
+      <li><b>和谐规则</b>：12 种经典配色理论 + 12 种风格预设 + 数量 / 跨度 / 明度参数。</li>
+      <li><b>色阶</b>：为每个颜色生成 50–950 十一级色阶，三种生成算法，含可读性矩阵。</li>
+      <li><b>渐变</b>：线性 / 径向 / 锥形，多色标编辑，12 组预设，可导出 PNG。</li>
+      <li><b>对比度</b>：WCAG 2.1 + APCA 双重检测，自动给出修正建议，全方案矩阵。</li>
+      <li><b>图片取色</b>：中位切分 / K-Means / 高频色三种算法，图片不上传。</li>
+      <li><b>混色</b>：Lab / LCH / HSL / sRGB 与多种混合模式插值。</li>
+      <li><b>预览</b>：真实界面模拟，明暗双主题，自动角色分配。</li>
+      <li><b>导出</b>：17 种代码格式 + 4 种图片样式 + 分享链接。</li>
+    </ul>
+  </div>
+  <div>
+    <b>快捷键</b>
+    <div class="kv mt10">
+      ${[['<kbd>空格</kbd>','随机生成新主色'],['<kbd>G</kbd>','按当前规则重新生成'],
+         ['<kbd>C</kbd>','复制全部色值'],['<kbd>S</kbd>','收藏当前方案'],
+         ['<kbd>I</kbd>','屏幕吸管取色'],['<kbd>L</kbd>','锁定 / 解锁全部'],
+         ['<kbd>R</kbd>','随机打乱顺序'],['<kbd>1</kbd>–<kbd>9</kbd>','切换功能页'],
+         ['<kbd>T</kbd>','切换明暗主题'],['<kbd>?</kbd>','打开本说明'],
+         ['<kbd>Esc</kbd>','关闭弹窗']].map(([k,v])=>`<span>${k}</span><span class="small muted">${v}</span>`).join('')}
+    </div>
+  </div>
+  <div class="small dim">全部数据保存在本地浏览器，图片仅在本地处理，不会上传到任何服务器。</div>
+</div>`;
+$('#btnHelp').onclick=()=>modal('使用说明 · ColorStudio',HELP_HTML+'<div class="row mt18" style="justify-content:flex-end"><button class="btn primary" data-close2>知道了</button></div>',
+  (b,close)=>{ b.querySelector('[data-close2]').onclick=close; });
+const TAB_KEYS=['palette','scale','gradient','contrast','image','mix','preview','export','saved'];
+window.addEventListener('keydown',e=>{
+  const tag=(e.target.tagName||'').toLowerCase();
+  if(tag==='input'||tag==='textarea'||tag==='select'||e.metaKey||e.ctrlKey||e.altKey) return;
+  const k=e.key;
+  if(k==='?'){ $('#btnHelp').click(); return; }
+  if(k==='Escape'){ if($('#modalHost').innerHTML) $('#modalHost').innerHTML=''; return; }
+  if(k===' '){ e.preventDefault(); $('#btnRandom').click(); return; }
+  if(k==='g'||k==='G'){ $('#btnGenerate').click(); return; }
+  if(k==='c'||k==='C'){ $('#btnCopyAll').click(); return; }
+  if(k==='s'||k==='S'){ saveFav(); return; }
+  if(k==='i'||k==='I'){ $('#btnEyedrop').click(); return; }
+  if(k==='l'||k==='L'){ const any=S.colors.some(c=>c.locked); S.colors.forEach(c=>c.locked=!any); renderPalette(); return; }
+  if(k==='r'||k==='R'){ $('#btnShuffle').click(); return; }
+  if(k==='t'||k==='T'){ $('#btnTheme').click(); return; }
+  if(/^[1-9]$/.test(k)){ const v=TAB_KEYS[+k-1]; if(v) switchTab(v); return; }
+});
+
+/* ============================================================
+   22. 总渲染与初始化
+   ============================================================ */
+function renderAll(){
+  renderPalette();
+  renderScales();
+  renderGradient();
+  renderContrastSwatches();
+  renderContrast();
+  renderMix();
+  renderPreview();
+  renderExport();
+  renderSaved();
+  saveHistory();
+}
+function init(){
+  setTheme(loadTheme());
+  loadStore();
+  parseHash();
+  if(!S.colors.length){ S.base='#6366f1'; generate(); }
+  else{ $('#harmony').value=S.harmony; }
+  syncGradFromPalette();
+  S.mix.a=S.colors[0]?S.colors[0].hex:'#6366f1';
+  S.mix.b=S.colors[Math.min(1,S.colors.length-1)]?S.colors[Math.min(1,S.colors.length-1)].hex:'#f43f5e';
+  S.ct.bg=S.base;
+  renderAdj();
+  renderNameResult('#6366f1');
+  renderAll();
+  switchTab('palette');
+  drawWheel();
+  window.addEventListener('hashchange',parseHash);
+  let rt=null;
+  window.addEventListener('resize',()=>{ clearTimeout(rt); rt=setTimeout(()=>{drawWheel();},180); });
+}
+init();
+</script>
+</body>
+</html>
