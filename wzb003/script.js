@@ -699,6 +699,7 @@ const RAW_DATA = [{
         { name: "8D报告", url: "https://wzb13014.github.io/wzb/tool97", desc: "工具" },
         { name: "全屏时尚时钟", url: "https://wzb13014.github.io/wzb/tool98", desc: "工具" },
         { name: "桌面快捷方式生成器", url: "https://wzb13014.github.io/wzb/tool101", desc: "工具" },
+        { name: "共享盘快捷方式", url: "https://wzb13014.github.io/wzb/tool173", desc: "工具" },
         { name: "人民币大写转换器", url: "https://wzb13014.github.io/wzb/tool102", desc: "工具" },
         { name: "随机点名器", url: "https://wzb13014.github.io/wzb/tool103", desc: "工具" },
         { name: "全能二维码生成器", url: "https://wzb13014.github.io/wzb/tool104", desc: "工具" },
