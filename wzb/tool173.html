@@ -1253,7 +1253,7 @@
                 什么是「快捷方式生成器」？（最推荐）
               </div>
               <div class="help-text">
-                下载的是一个 <span class="help-code">.bat</span> 批处理脚本，双击运行后会调用 PowerShell <strong>自动在桌面创建真正的 .lnk 快捷方式</strong>（和手动「发送到桌面快捷方式」效果完全一样）。采用 Base64 编码技术，完美支持中文路径、带空格路径、深层多级路径。
+                下载的是一个 <span class="help-code">.bat</span> 批处理脚本，双击运行后会弹出菜单让你选择存放位置（桌面 / 此电脑 / 自定义路径），然后 <strong>自动创建真正的 .lnk 快捷方式</strong>。采用 Base64 编码技术，完美支持中文路径、带空格路径、深层多级路径。路径不存在时会自动创建。
               </div>
             </div>
             <div class="help-item">
@@ -1282,7 +1282,8 @@
                 2. 选择「快捷方式生成器」<br>
                 3. 点击「下载文件」得到 .bat<br>
                 4. 双击运行该 .bat 文件<br>
-                5. 桌面会出现真正的 .lnk 快捷方式
+                5. 在菜单中选择存放位置（桌面/此电脑/自定义）<br>
+                6. 指定位置会出现真正的 .lnk 快捷方式
               </div>
             </div>
             <div class="help-item">
@@ -1377,6 +1378,7 @@
       customIconSection.style.display = this.checked ? 'block' : 'none';
       updatePreview();
     });
+
 
     // Generate & copy
     generateBtn.addEventListener('click', generateAndDownload);
@@ -1503,26 +1505,34 @@
     return btoa(binary);
   }
 
-  // Build PowerShell script that creates a real .lnk shortcut on desktop
+  // Build PowerShell script that creates a real .lnk shortcut
   function buildShortcutPsScript(path, name, useCustomIcon, iconPath, iconIndex) {
     const iconLoc = useCustomIcon && iconPath 
       ? `$iconLocation = '${escapePsString(iconPath)}, ${iconIndex}'`
       : `$iconLocation = 'shell32.dll, 8'`;
 
-    return `# Create desktop shortcut
+    return `# Create shortcut
 # Target: ${path}
 # Name: ${name}
 
 $ErrorActionPreference = 'Stop'
 
 try {
-    $shell = New-Object -ComObject WScript.Shell
-    $desktop = [Environment]::GetFolderPath('Desktop')
-    $shortcutPath = Join-Path $desktop '${escapePsString(name)}.lnk'
+    $targetPath = $env:SHORTCUT_PATH
+    $locationName = $env:SHORTCUT_LOCATION
+    $shortcutName = '${escapePsString(name)}.lnk'
+    $target = '${escapePsString(path)}'
 
+    # Ensure target directory exists
+    if (-not (Test-Path $targetPath)) {
+        New-Item -ItemType Directory -Path $targetPath -Force | Out-Null
+    }
+
+    $shell = New-Object -ComObject WScript.Shell
+    $shortcutPath = Join-Path $targetPath $shortcutName
     $shortcut = $shell.CreateShortcut($shortcutPath)
     $shortcut.TargetPath = 'explorer.exe'
-    $shortcut.Arguments = '"${escapePsString(path)}"'
+    $shortcut.Arguments = '"' + $target + '"'
     $shortcut.WorkingDirectory = ''
     $shortcut.WindowStyle = 1
     $shortcut.Description = '${escapePsString(name)}'
@@ -1531,8 +1541,9 @@ try {
     $shortcut.Save()
 
     Add-Type -AssemblyName System.Windows.Forms
+    $msg = "Shortcut created successfully!\`n\`nName: ${name}\`nLocation: $locationName\`nPath: $targetPath\`nTarget: ${path}"
     [System.Windows.Forms.MessageBox]::Show(
-        "Shortcut created successfully!\`n\`nName: ${name}\`nTarget: ${path}",
+        $msg,
         "Success",
         [System.Windows.Forms.MessageBoxButtons]::OK,
         [System.Windows.Forms.MessageBoxIcon]::Information
@@ -1568,20 +1579,84 @@ try {
 
     switch (currentFormat) {
       case 'lnk':
-        // .bat wrapper calling PowerShell via -EncodedCommand (base64 UTF-16LE)
+        // .bat with interactive menu to choose shortcut location
+        // Calls PowerShell via -EncodedCommand (base64 UTF-16LE)
         // This avoids all encoding issues since the .bat file is pure ASCII
         const lnkPsScript = buildShortcutPsScript(path, name, useCustomIcon, iconPath, iconIndex);
         const lnkEncoded = encodeForPs(lnkPsScript);
         content = `@echo off
-chcp 65001 >nul
 title Create Shortcut - ${name}
-echo Creating desktop shortcut, please wait...
+
+:MENU
+cls
+echo ========================================
+echo   Create Shortcut - ${name}
+echo ========================================
+echo.
+echo Select shortcut location:
+echo.
+echo   [1] Desktop
+echo   [2] My Computer (Network Shortcuts)
+echo   [3] Custom Path
+echo   [4] Exit
+echo.
+set /p choice=Enter choice (1-4): 
+
+if "%choice%"=="1" goto DESKTOP
+if "%choice%"=="2" goto MYCOMPUTER
+if "%choice%"=="3" goto CUSTOMPATH
+if "%choice%"=="4" goto END
+goto MENU
+
+:DESKTOP
+set "SHORTCUT_PATH=%USERPROFILE%\\Desktop"
+set "SHORTCUT_LOCATION=Desktop"
+goto CREATE
+
+:MYCOMPUTER
+set "SHORTCUT_PATH=%APPDATA%\\Microsoft\\Windows\\Network Shortcuts"
+set "SHORTCUT_LOCATION=My Computer"
+goto CREATE
+
+:CUSTOMPATH
+cls
+echo ========================================
+echo   Custom Shortcut Location
+echo ========================================
+echo.
+echo Enter full folder path (e.g. D:\\Shortcuts)
+echo or press Enter to go back
+echo.
+set "customPath="
+set /p customPath=Path: 
+
+if "%customPath%"=="" goto MENU
+
+set "SHORTCUT_PATH=%customPath%"
+set "SHORTCUT_LOCATION=Custom"
+goto CREATE
+
+:CREATE
+echo.
+echo Creating shortcut, please wait...
+echo Target: %SHORTCUT_PATH%
+
 powershell -NoProfile -ExecutionPolicy Bypass -EncodedCommand ${lnkEncoded}
+
 if %errorlevel% neq 0 (
     echo.
-    echo Failed to create shortcut. Please check if PowerShell is available.
+    echo Failed to create shortcut.
+    echo.
     pause
+    goto MENU
 )
+
+goto END
+
+:END
+echo.
+echo Press any key to exit...
+pause >nul
 `;
         fileExt = 'bat';
         fileTypeLabel = '快捷方式生成器（推荐）';
@@ -1639,14 +1714,21 @@ powershell -NoProfile -ExecutionPolicy Bypass -EncodedCommand ${openEncoded}
         const isLnkGenerator = result.fileTypeLabel.indexOf('生成器') > -1;
         if (isLnkGenerator) {
           html = `<span class="comment">@echo off</span>
-<span class="keyword">chcp</span> 65001 <span class="comment">>nul</span>
-<span class="keyword">echo</span> 正在创建桌面快捷方式，请稍候...
+<span class="keyword">:MENU</span>
+<span class="keyword">echo</span>   [1] Desktop
+<span class="keyword">echo</span>   [2] My Computer
+<span class="keyword">echo</span>   [3] Custom Path
+<span class="keyword">set</span> /p choice=Enter choice:
+...
 <span class="keyword">powershell</span> -NoProfile -ExecutionPolicy Bypass -EncodedCommand <span class="string">[Base64编码的PowerShell脚本]</span>
 
 <span class="comment">:: 功能说明：</span>
-<span class="comment">::   运行后自动在桌面创建 .lnk 快捷方式</span>
+<span class="comment">::   运行后弹出菜单选择存放位置</span>
+<span class="comment">::   支持：桌面 / 此电脑 / 自定义路径</span>
+<span class="comment">::   自动创建真正的 .lnk 快捷方式</span>
 <span class="comment">::   支持中文路径和带空格的路径</span>
-<span class="comment">::   使用 Base64 编码确保兼容性</span>`;
+<span class="comment">::   使用 Base64 编码确保兼容性</span>
+<span class="comment">::   路径不存在时自动创建</span>`;
         } else {
           html = `<span class="comment">@echo off</span>
 <span class="keyword">chcp</span> 65001 <span class="comment">>nul</span>
