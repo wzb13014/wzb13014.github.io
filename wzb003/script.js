@@ -236,6 +236,7 @@ const RAW_DATA = [{
         { name: "BRC标准", url: "https://www.brcgs.com/china/%E6%A6%82%E8%BF%B0/", desc: "标准" },
         { name: "IFS HPC标准", url: "https://www.ifs-certification.com/en/ifs-portfolio/standards/hpc-standard", desc: "标准" },
         { name: "FSC认证", url: "https://connect.fsc.org/document-centre", desc: "森林认证标准" },
+        { name: "CHAS", url: "https://www.chas.co.uk/ebooks/", desc: "承包商健康和安全评估体系" },    
         { name: "ESCP", url: "https://www.ethicalsupplychain.org/zh/resource/factory/audit-checklist", desc: "供应链责任规范标准" },
         { name: "EPEAT 2.0标准", url: "https://www.epeat.net/about/epeat-criteria", desc: "电子产品环境影响评估" },
         { name: "ICS", url: "https://ics-asso.org/resources/#1617967310959-18ea5aee-152a", desc: "合规与可持续发展倡议" },
@@ -444,6 +445,7 @@ const RAW_DATA = [{
         { name: "APAC", url: "https://www.apac-accreditation.org/", desc: "亚太认可合作组织" },
         { name: "国家企业信用信息公示系统", url: "http://www.gsxt.gov.cn/", desc: "企业工商/行政处罚/经营异常/违法查询" },
         { name: "个人信用信息服务平台", url: "https://ipcrs.pbccrc.org.cn/", desc: "个人信用报告查询" },
+        { name: "邓白氏编码查询", url: "https://www.dunsregistered.com/#", desc: "DUNS编码" },       
         { name: "信用中国", url: "https://www.creditchina.gov.cn/", desc: "查询企业、个人及社会组织的信用信息" }, 
         { name: "全国移动电话卡一证通查", url: "https://getsimnum.caict.ac.cn/#/", desc: "查询个人电话卡登记情况" },   
         { name: "中国执行信息公开网", url: "https://zxgk.court.gov.cn/", desc: "查老赖查限制消费" }, 
@@ -853,6 +855,7 @@ const RAW_DATA = [{
 }, {
     id: 17, title: "效率工具", icon: "fa-bolt", websites: [
         { name: "HTML工具", url: "https://www.jyshare.com/front-end/61/", desc: "HTML工具" },
+        { name: "HTML文字编辑", url: "https://heyhtml.com/", desc: "视觉网页编辑器" },  
         { name: "兔兔图床", url: "https://tutu.to/#google_vignette", desc: "免费图片托管平台" },
         { name: "路过图床", url: "https://imgse.com/", desc: "免费图片托管平台（每日限8）" },
         { name: "黑猫图床", url: "https://img.hmvod.cc/", desc: "图床" },
