@@ -1170,7 +1170,6 @@ const RAW_DATA = [{
     ]
 }, {
     id: 24, title: "学教程", icon: "fa-graduation-cap", websites: [
-        { name: "技能看点", url: "https://wrf00123.github.io/tool6.html", desc: "教程查询" },
         { name: "懒人Excel", url: "https://www.lanrenexcel.com/", desc: "Excel教程" },
         { name: "Excel之家", url: "https://www.excelhome.net/", desc: "Excel教程" },
         { name: "Word联盟", url: "https://www.wordlm.cn/", desc: "Word教程" },
