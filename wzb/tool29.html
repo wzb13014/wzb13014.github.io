@@ -1,1514 +1,2991 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-theme="light">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDF 转图片 - 在线转换工具</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PDF &amp; 图片全能工具箱 · 本地处理</title>
 
-    <!-- PDF.js CDN -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js">
-    </script>
-    <!-- JSZip CDN -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js">
-    </script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 
-    <style>
-        :root {
-            --bg: #f0f4f8;
-            --card-bg: #ffffff;
-            --primary: #4f6ef7;
-            --primary-hover: #3b54d4;
-            --primary-light: #eef1fe;
-            --text: #1a1d2e;
-            --text-secondary: #5a5f72;
-            --border: #e2e7ef;
-            --border-focus: #b8c4f8;
-            --danger: #e74c5e;
-            --success: #2ecc71;
-            --warning: #f59e0b;
-            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
-            --shadow: 0 4px 16px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04);
-            --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.06);
-            --radius-sm: 8px;
-            --radius: 12px;
-            --radius-lg: 16px;
-            --radius-xl: 20px;
-            --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            --font-mono: 'SF Mono', 'Cascadia Code', 'Consolas', 'Monaco', monospace;
-        }
+<style>
+:root{
+  --bg:#f0f4f8; --card-bg:#ffffff; --soft:#f8fafc; --input-bg:#fafbfd;
+  --primary:#4f6ef7; --primary-hover:#3b54d4; --primary-light:#eef1fe; --primary-soft:rgba(79,110,247,.06);
+  --text:#1a1d2e; --text-secondary:#5a5f72;
+  --border:#e2e7ef; --track:#e5e7eb;
+  --danger:#e74c5e; --success:#2ecc71; --warning:#f59e0b;
+  --ok-bg:#ecfdf5; --danger-bg:#fee2e2;
+  --shadow-sm:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
+  --shadow:0 4px 16px rgba(0,0,0,.08),0 2px 6px rgba(0,0,0,.04);
+  --shadow-lg:0 12px 32px rgba(0,0,0,.12),0 4px 12px rgba(0,0,0,.06);
+  --radius-sm:8px; --radius:12px; --radius-lg:16px; --radius-xl:20px;
+  --transition:.2s cubic-bezier(.4,0,.2,1);
+  --font-mono:'SF Mono','Cascadia Code',Consolas,Monaco,monospace;
+}
+html[data-theme="dark"]{
+  --bg:#0f1218; --card-bg:#181c26; --soft:#1f2431; --input-bg:#1f2431;
+  --primary:#6b86ff; --primary-hover:#8a9dff; --primary-light:#232a45; --primary-soft:rgba(107,134,255,.12);
+  --text:#e9ecf5; --text-secondary:#98a0b8;
+  --border:#2a3143; --track:#333b4f;
+  --ok-bg:#12301f; --danger-bg:#3a1a20;
+  --shadow-sm:0 1px 3px rgba(0,0,0,.5);
+  --shadow:0 4px 16px rgba(0,0,0,.5);
+  --shadow-lg:0 12px 32px rgba(0,0,0,.6);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;
+  background:var(--bg); color:var(--text); min-height:100vh; line-height:1.6;
+  -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+}
+body::before{content:'';position:fixed;top:-30%;right:-20%;width:70%;height:70%;
+  background:radial-gradient(ellipse,rgba(79,110,247,.05) 0%,transparent 70%);pointer-events:none;z-index:0}
+body::after{content:'';position:fixed;bottom:-25%;left:-15%;width:60%;height:60%;
+  background:radial-gradient(ellipse,rgba(79,110,247,.04) 0%,transparent 70%);pointer-events:none;z-index:0}
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+.app-container{max-width:1140px;margin:0 auto;padding:22px 20px 48px;position:relative;z-index:1}
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            min-height: 100vh;
-            line-height: 1.6;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-        }
+/* ============ Header ============ */
+.app-header{text-align:center;margin-bottom:20px;position:relative}
+.app-header .logo-icon{display:inline-flex;align-items:center;justify-content:center;width:56px;height:56px;
+  background:linear-gradient(135deg,#4f6ef7,#7b8dff);border-radius:var(--radius-lg);margin-bottom:10px;
+  box-shadow:0 8px 24px rgba(79,110,247,.28);font-size:27px;color:#fff}
+.app-header h1{font-size:1.72rem;font-weight:700;letter-spacing:-.02em}
+.app-header .subtitle{font-size:.88rem;color:var(--text-secondary);margin-top:2px}
+.theme-toggle{position:absolute;top:4px;right:0;width:38px;height:38px;border-radius:50%;
+  border:1px solid var(--border);background:var(--card-bg);cursor:pointer;font-size:16px;
+  display:flex;align-items:center;justify-content:center;transition:all var(--transition);color:var(--text)}
+.theme-toggle:hover{border-color:var(--primary);background:var(--primary-light)}
+.sys-note{margin-top:8px;font-size:.76rem;color:var(--text-secondary)}
+.sys-note b{color:var(--primary)}
 
-        /* 背景装饰 */
-        body::before {
-            content: '';
-            position: fixed;
-            top: -30%;
-            right: -20%;
-            width: 70%;
-            height: 70%;
-            background: radial-gradient(ellipse, rgba(79, 110, 247, 0.04) 0%, transparent 70%);
-            pointer-events: none;
-            z-index: 0;
-        }
-        body::after {
-            content: '';
-            position: fixed;
-            bottom: -25%;
-            left: -15%;
-            width: 60%;
-            height: 60%;
-            background: radial-gradient(ellipse, rgba(79, 110, 247, 0.03) 0%, transparent 70%);
-            pointer-events: none;
-            z-index: 0;
-        }
+/* ============ Tabs ============ */
+.tool-tabs{display:flex;gap:6px;background:var(--card-bg);padding:6px;border-radius:50px;
+  border:1px solid var(--border);box-shadow:var(--shadow-sm);margin-bottom:20px;overflow-x:auto;
+  scrollbar-width:none}
+.tool-tabs::-webkit-scrollbar{display:none}
+.tab-btn{flex:1 1 auto;min-width:112px;padding:10px 14px;border:none;background:transparent;border-radius:40px;
+  cursor:pointer;font-size:.85rem;font-weight:600;color:var(--text-secondary);font-family:inherit;
+  transition:all var(--transition);white-space:nowrap;display:flex;align-items:center;justify-content:center;gap:6px}
+.tab-btn:hover{background:var(--soft);color:var(--text)}
+.tab-btn.active{background:var(--primary);color:#fff;box-shadow:0 4px 12px rgba(79,110,247,.3)}
 
-        .app-container {
-            max-width: 1100px;
-            margin: 0 auto;
-            padding: 24px 20px 40px;
-            position: relative;
-            z-index: 1;
-        }
+/* ============ Card ============ */
+.card{background:var(--card-bg);border-radius:var(--radius-xl);padding:22px 26px;margin-bottom:16px;
+  box-shadow:var(--shadow-sm);border:1px solid var(--border);transition:box-shadow var(--transition),border-color var(--transition)}
+.card:hover{box-shadow:var(--shadow)}
+.card-header{display:flex;align-items:center;gap:9px;margin-bottom:14px;font-weight:600;font-size:.94rem;letter-spacing:-.01em}
+.card-header .icon-dot{width:8px;height:8px;border-radius:50%;background:var(--primary);flex-shrink:0}
+.card-header .sub{margin-left:auto;font-weight:500;font-size:.78rem;color:var(--text-secondary)}
+.tool-panel{display:none}
+.tool-panel.active{display:block;animation:fadeUp .28s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 
-        /* Header */
-        .app-header {
-            text-align: center;
-            margin-bottom: 28px;
-        }
-        .app-header .logo-icon {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 56px;
-            height: 56px;
-            background: var(--primary);
-            border-radius: var(--radius-lg);
-            margin-bottom: 12px;
-            box-shadow: 0 8px 24px rgba(79, 110, 247, 0.25);
-            font-size: 28px;
-            color: #fff;
-        }
-        .app-header h1 {
-            font-size: 1.75rem;
-            font-weight: 700;
-            letter-spacing: -0.02em;
-            color: var(--text);
-        }
-        .app-header .subtitle {
-            font-size: 0.9rem;
-            color: var(--text-secondary);
-            margin-top: 2px;
-        }
+/* ============ Drop zone ============ */
+.drop-zone{position:relative;border:2px dashed var(--border);border-radius:var(--radius-lg);padding:38px 28px;
+  text-align:center;cursor:pointer;transition:all var(--transition);background:var(--input-bg);user-select:none}
+.drop-zone:hover,.drop-zone.drag-over{border-color:var(--primary);background:var(--primary-light);box-shadow:0 0 0 6px var(--primary-soft)}
+.drop-zone.drag-over{border-style:solid;transform:scale(1.01)}
+.drop-zone .drop-icon{font-size:42px;margin-bottom:8px;display:block;transition:transform var(--transition)}
+.drop-zone:hover .drop-icon{transform:translateY(-4px)}
+.drop-zone .drop-text{font-weight:600;font-size:1rem;margin-bottom:2px}
+.drop-zone .drop-hint{font-size:.8rem;color:var(--text-secondary)}
+.drop-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer}
 
-        /* 卡片容器 */
-        .card {
-            background: var(--card-bg);
-            border-radius: var(--radius-xl);
-            padding: 24px 28px;
-            margin-bottom: 20px;
-            box-shadow: var(--shadow-sm);
-            border: 1px solid var(--border);
-            transition: box-shadow var(--transition), border-color var(--transition);
-        }
-        .card:hover {
-            box-shadow: var(--shadow);
-        }
-        .card-header {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 16px;
-            font-weight: 600;
-            font-size: 0.95rem;
-            color: var(--text);
-            letter-spacing: -0.01em;
-        }
-        .card-header .icon-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: var(--primary);
-            flex-shrink: 0;
-        }
+/* ============ File bar ============ */
+.file-bar{display:none;align-items:center;gap:13px;padding:13px 16px;background:var(--soft);
+  border-radius:var(--radius);border:1px solid var(--border);margin-top:13px;flex-wrap:wrap}
+.file-bar.active{display:flex}
+.file-bar .file-icon{width:40px;height:40px;border-radius:var(--radius-sm);display:flex;align-items:center;
+  justify-content:center;font-weight:700;font-size:.8rem;flex-shrink:0;background:var(--danger-bg);color:#e74c3c}
+.file-bar .file-icon.img{background:#e8f4ff;color:#2b7fd4}
+.file-bar .file-details{flex:1;min-width:0}
+.file-bar .file-name{font-weight:600;font-size:.88rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.file-bar .file-meta{font-size:.76rem;color:var(--text-secondary)}
+.btn-remove{background:none;border:1px solid var(--border);border-radius:50%;width:32px;height:32px;cursor:pointer;
+  font-size:15px;display:flex;align-items:center;justify-content:center;color:var(--text-secondary);
+  transition:all var(--transition);flex-shrink:0}
+.btn-remove:hover{background:var(--danger-bg);border-color:#fca5a5;color:var(--danger)}
 
-        /* 上传区域 */
-        .upload-zone {
-            position: relative;
-            border: 2px dashed var(--border);
-            border-radius: var(--radius-lg);
-            padding: 48px 32px;
-            text-align: center;
-            cursor: pointer;
-            transition: all var(--transition);
-            background: #fafbfd;
-            user-select: none;
-            -webkit-tap-highlight-color: transparent;
-        }
-        .upload-zone:hover,
-        .upload-zone.drag-over {
-            border-color: var(--primary);
-            background: var(--primary-light);
-            box-shadow: 0 0 0 6px rgba(79, 110, 247, 0.06);
-        }
-        .upload-zone.drag-over {
-            border-style: solid;
-            box-shadow: 0 0 0 10px rgba(79, 110, 247, 0.1);
-            transform: scale(1.01);
-        }
-        .upload-zone .upload-icon {
-            font-size: 48px;
-            margin-bottom: 12px;
-            display: block;
-            transition: transform var(--transition);
-        }
-        .upload-zone:hover .upload-icon {
-            transform: translateY(-4px);
-        }
-        .upload-zone .upload-text {
-            font-weight: 600;
-            font-size: 1.05rem;
-            color: var(--text);
-            margin-bottom: 4px;
-        }
-        .upload-zone .upload-hint {
-            font-size: 0.85rem;
-            color: var(--text-secondary);
-        }
-        .upload-zone input[type="file"] {
-            position: absolute;
-            inset: 0;
-            opacity: 0;
-            cursor: pointer;
-        }
+/* ============ Toolbar ============ */
+.toolbar{display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.btn-sm,.btn-xs{font-size:.79rem;padding:6px 13px;border-radius:20px;border:1px solid var(--border);
+  background:var(--card-bg);cursor:pointer;font-weight:500;transition:all var(--transition);white-space:nowrap;
+  color:var(--text);font-family:inherit}
+.btn-sm:hover,.btn-xs:hover{background:var(--primary-light);border-color:var(--primary);color:var(--primary)}
+.btn-xs{padding:4px 10px;font-size:.73rem;border-radius:14px}
+.btn-sm.on{background:var(--primary);color:#fff;border-color:var(--primary)}
+.count-chip{margin-left:auto;font-size:.79rem;color:var(--primary);font-weight:600;white-space:nowrap;
+  background:var(--primary-light);padding:4px 12px;border-radius:20px}
 
-        /* 文件信息条 */
-        .file-info-bar {
-            display: none;
-            align-items: center;
-            gap: 14px;
-            padding: 14px 18px;
-            background: #f8fafc;
-            border-radius: var(--radius);
-            border: 1px solid var(--border);
-            flex-wrap: wrap;
-        }
-        .file-info-bar.active {
-            display: flex;
-        }
-        .file-info-bar .file-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: var(--radius-sm);
-            background: #fef3f2;
-            color: #e74c3c;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            font-size: 0.85rem;
-            flex-shrink: 0;
-        }
-        .file-info-bar .file-details {
-            flex: 1;
-            min-width: 0;
-        }
-        .file-info-bar .file-name {
-            font-weight: 600;
-            font-size: 0.9rem;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .file-info-bar .file-meta {
-            font-size: 0.78rem;
-            color: var(--text-secondary);
-        }
-        .file-info-bar .btn-remove {
-            background: none;
-            border: 1px solid var(--border);
-            border-radius: 50%;
-            width: 32px;
-            height: 32px;
-            cursor: pointer;
-            font-size: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--text-secondary);
-            transition: all var(--transition);
-            flex-shrink: 0;
-        }
-        .file-info-bar .btn-remove:hover {
-            background: #fee2e2;
-            border-color: #fca5a5;
-            color: var(--danger);
-        }
+/* ============ Thumb grid ============ */
+.thumb-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(124px,1fr));gap:9px;
+  max-height:420px;overflow-y:auto;padding:4px;scroll-behavior:smooth}
+.thumb-grid::-webkit-scrollbar{width:6px}
+.thumb-grid::-webkit-scrollbar-thumb{background:#c9cfdb;border-radius:10px}
+.thumb-item{position:relative;border:3px solid transparent;border-radius:var(--radius-sm);cursor:pointer;
+  transition:all var(--transition);background:var(--soft);overflow:hidden;aspect-ratio:.707;
+  display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-sm)}
+.thumb-item:hover{border-color:#c5cef8;box-shadow:var(--shadow);transform:translateY(-2px)}
+.thumb-item.selected{border-color:var(--primary);box-shadow:0 0 0 4px rgba(79,110,247,.15)}
+.thumb-item img{width:100%;height:100%;object-fit:contain;display:block}
+.thumb-item .page-num{position:absolute;bottom:4px;right:6px;background:rgba(0,0,0,.7);color:#fff;
+  font-size:.68rem;padding:1px 7px;border-radius:10px;pointer-events:none}
+.thumb-item .check-badge{position:absolute;top:5px;right:5px;width:21px;height:21px;border-radius:50%;
+  background:var(--primary);color:#fff;display:none;align-items:center;justify-content:center;font-size:11px;
+  pointer-events:none;box-shadow:0 2px 6px rgba(0,0,0,.2)}
+.thumb-item.selected .check-badge{display:flex}
+.spinner{width:26px;height:26px;border:3px solid var(--track);border-top-color:var(--primary);
+  border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
 
-        /* 缩略图预览 */
-        .preview-section {
-            display: none;
-        }
-        .preview-section.active {
-            display: block;
-        }
-        .preview-toolbar {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 14px;
-            flex-wrap: wrap;
-        }
-        .preview-toolbar .btn-sm {
-            font-size: 0.8rem;
-            padding: 6px 14px;
-            border-radius: 20px;
-            border: 1px solid var(--border);
-            background: #fff;
-            cursor: pointer;
-            font-weight: 500;
-            transition: all var(--transition);
-            white-space: nowrap;
-            color: var(--text);
-        }
-        .preview-toolbar .btn-sm:hover {
-            background: var(--primary-light);
-            border-color: var(--primary);
-            color: var(--primary);
-        }
-        .preview-toolbar .btn-sm.active-select {
-            background: var(--primary);
-            color: #fff;
-            border-color: var(--primary);
-        }
-        .preview-toolbar .selected-count {
-            font-size: 0.82rem;
-            color: var(--primary);
-            font-weight: 600;
-            margin-left: auto;
-            white-space: nowrap;
-        }
-        .thumbnail-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-            gap: 10px;
-            max-height: 420px;
-            overflow-y: auto;
-            padding: 4px;
-            scroll-behavior: smooth;
-        }
-        .thumbnail-grid::-webkit-scrollbar {
-            width: 5px;
-        }
-        .thumbnail-grid::-webkit-scrollbar-track {
-            background: transparent;
-            border-radius: 10px;
-        }
-        .thumbnail-grid::-webkit-scrollbar-thumb {
-            background: #d1d5db;
-            border-radius: 10px;
-        }
-        .thumbnail-item {
-            position: relative;
-            border: 3px solid transparent;
-            border-radius: var(--radius-sm);
-            cursor: pointer;
-            transition: all var(--transition);
-            background: #f9fafb;
-            overflow: hidden;
-            aspect-ratio: 0.707;
-            /* A4比例近似 */
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: var(--shadow-sm);
-        }
-        .thumbnail-item:hover {
-            border-color: #c5cef8;
-            box-shadow: var(--shadow);
-            transform: translateY(-2px);
-        }
-        .thumbnail-item.selected {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 4px rgba(79, 110, 247, 0.15);
-            transform: translateY(-2px);
-        }
-        .thumbnail-item img {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-            display: block;
-        }
-        .thumbnail-item .page-num {
-            position: absolute;
-            bottom: 4px;
-            right: 6px;
-            background: rgba(0, 0, 0, 0.7);
-            color: #fff;
-            font-size: 0.7rem;
-            padding: 2px 7px;
-            border-radius: 10px;
-            font-weight: 500;
-            pointer-events: none;
-        }
-        .thumbnail-item .check-badge {
-            position: absolute;
-            top: 6px;
-            right: 6px;
-            width: 22px;
-            height: 22px;
-            border-radius: 50%;
-            background: var(--primary);
-            color: #fff;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            font-size: 12px;
-            pointer-events: none;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-        }
-        .thumbnail-item.selected .check-badge {
-            display: flex;
-        }
-        .thumbnail-item .loading-spinner {
-            width: 28px;
-            height: 28px;
-            border: 3px solid #e5e7eb;
-            border-top-color: var(--primary);
-            border-radius: 50%;
-            animation: spin 0.7s linear infinite;
-        }
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
-        }
+/* ============ Settings ============ */
+.settings-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px}
+.setting-group label{display:block;font-weight:600;font-size:.8rem;margin-bottom:5px;letter-spacing:-.01em}
+.setting-group select,.setting-group input[type=number],.setting-group input[type=text]{
+  width:100%;padding:8px 11px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.87rem;
+  font-family:inherit;background:var(--input-bg);transition:all var(--transition);color:var(--text);outline:none}
+.setting-group select:focus,.setting-group input:focus{border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-soft);background:var(--card-bg)}
+.setting-group input[type=range]{width:100%;height:6px;-webkit-appearance:none;appearance:none;background:var(--track);
+  border-radius:3px;cursor:pointer;border:none;padding:0}
+.setting-group input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;
+  background:var(--primary);cursor:pointer;border:3px solid var(--card-bg);box-shadow:0 2px 8px rgba(0,0,0,.18)}
+.setting-group input[type=color]{width:100%;height:36px;padding:2px;border:1.5px solid var(--border);
+  border-radius:var(--radius-sm);background:var(--input-bg);cursor:pointer}
+.range-labels{display:flex;justify-content:space-between;font-size:.7rem;color:var(--text-secondary);margin-top:2px}
+.val{font-weight:700;color:var(--primary);font-family:var(--font-mono);font-size:.82rem}
+.hint{font-size:.74rem;color:var(--text-secondary);margin-top:6px}
+.span-all{grid-column:1/-1}
+.check-row{display:flex;align-items:center;gap:8px;font-size:.83rem;font-weight:600;cursor:pointer;user-select:none}
+.check-row input{width:16px;height:16px;accent-color:var(--primary);cursor:pointer}
+.it-convert{display:contents}
 
-        /* 设置面板 */
-        .settings-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 16px;
-        }
-        .setting-group label {
-            display: block;
-            font-weight: 600;
-            font-size: 0.82rem;
-            margin-bottom: 5px;
-            color: var(--text);
-            letter-spacing: -0.01em;
-        }
-        .setting-group select,
-        .setting-group input[type="number"],
-        .setting-group input[type="range"] {
-            width: 100%;
-            padding: 9px 12px;
-            border: 1.5px solid var(--border);
-            border-radius: var(--radius-sm);
-            font-size: 0.9rem;
-            font-family: inherit;
-            background: #fafbfd;
-            transition: all var(--transition);
-            color: var(--text);
-            outline: none;
-        }
-        .setting-group select:focus,
-        .setting-group input[type="number"]:focus {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(79, 110, 247, 0.08);
-            background: #fff;
-        }
-        .setting-group input[type="range"] {
-            padding: 0;
-            height: 6px;
-            -webkit-appearance: none;
-            appearance: none;
-            background: #e2e7ef;
-            border-radius: 3px;
-            cursor: pointer;
-            border: none;
-        }
-        .setting-group input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 22px;
-            height: 22px;
-            border-radius: 50%;
-            background: var(--primary);
-            cursor: pointer;
-            border: 3px solid #fff;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-            transition: transform var(--transition);
-        }
-        .setting-group input[type="range"]::-webkit-slider-thumb:hover {
-            transform: scale(1.15);
-        }
-        .range-labels {
-            display: flex;
-            justify-content: space-between;
-            font-size: 0.72rem;
-            color: var(--text-secondary);
-            margin-top: 3px;
-        }
-        .quality-value {
-            display: inline-block;
-            font-weight: 600;
-            color: var(--primary);
-            min-width: 32px;
-            text-align: center;
-        }
+/* ============ FX block ============ */
+.fx-wrap{margin-top:16px;padding:15px 16px;border-radius:var(--radius);background:var(--soft);
+  border:1px dashed var(--border)}
+.fx-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:13px}
+.fx-title{font-weight:700;font-size:.87rem}
+.fx-presets{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
+.fx-presets .btn-xs.active{background:var(--primary);color:#fff;border-color:var(--primary)}
 
-        /* 页面范围输入 */
-        .page-range-input {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-        .page-range-input input {
-            flex: 1;
-            min-width: 180px;
-            padding: 9px 12px;
-            border: 1.5px solid var(--border);
-            border-radius: var(--radius-sm);
-            font-size: 0.9rem;
-            font-family: var(--font-mono);
-            background: #fafbfd;
-            transition: all var(--transition);
-            color: var(--text);
-            outline: none;
-        }
-        .page-range-input input:focus {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(79, 110, 247, 0.08);
-            background: #fff;
-        }
-        .page-range-input .btn-apply {
-            padding: 9px 16px;
-            background: var(--primary);
-            color: #fff;
-            border: none;
-            border-radius: var(--radius-sm);
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 0.85rem;
-            transition: all var(--transition);
-            white-space: nowrap;
-        }
-        .page-range-input .btn-apply:hover {
-            background: var(--primary-hover);
-            box-shadow: 0 4px 12px rgba(79, 110, 247, 0.3);
-        }
-        .page-range-hint {
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-            margin-top: 4px;
-        }
+/* ============ Image list ============ */
+.img-list{display:flex;flex-direction:column;gap:8px;max-height:460px;overflow-y:auto;padding:3px}
+.img-list::-webkit-scrollbar{width:6px}
+.img-list::-webkit-scrollbar-thumb{background:#c9cfdb;border-radius:10px}
+.img-item{display:flex;align-items:center;gap:12px;padding:9px 12px;border:1.5px solid var(--border);
+  border-radius:var(--radius);background:var(--card-bg);transition:all var(--transition)}
+.img-item:hover{border-color:#c5cef8;box-shadow:var(--shadow-sm)}
+.img-item.dragging{opacity:.4}
+.img-item.drag-target{border-color:var(--primary);border-style:dashed}
+.img-item .drag-handle{cursor:grab;color:var(--text-secondary);font-size:15px;padding:0 2px;flex-shrink:0}
+.img-item .thumb{width:46px;height:46px;border-radius:var(--radius-sm);overflow:hidden;background:var(--soft);
+  flex-shrink:0;display:flex;align-items:center;justify-content:center;border:1px solid var(--border)}
+.img-item .thumb img{width:100%;height:100%;object-fit:cover}
+.img-item .info{flex:1;min-width:0}
+.img-item .name{font-weight:600;font-size:.84rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.img-item .meta{font-size:.73rem;color:var(--text-secondary);font-family:var(--font-mono)}
+.img-item .ops{display:flex;gap:5px;flex-shrink:0}
+.img-item .ops button{width:29px;height:29px;border-radius:7px;border:1px solid var(--border);background:var(--card-bg);
+  cursor:pointer;font-size:12px;color:var(--text-secondary);transition:all var(--transition);line-height:1}
+.img-item .ops button:hover{border-color:var(--primary);color:var(--primary);background:var(--primary-light)}
+.img-item .ops button.del:hover{border-color:#fca5a5;color:var(--danger);background:var(--danger-bg)}
+.badge{padding:2px 8px;border-radius:20px;font-size:.7rem;font-weight:700;background:var(--primary-light);color:var(--primary)}
 
-        /* 操作按钮 */
-        .action-bar {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-            justify-content: center;
-            margin-top: 8px;
-        }
-        .btn {
-            padding: 12px 28px;
-            border-radius: 50px;
-            font-weight: 600;
-            font-size: 0.95rem;
-            cursor: pointer;
-            border: none;
-            transition: all var(--transition);
-            letter-spacing: -0.01em;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            white-space: nowrap;
-        }
-        .btn-primary {
-            background: var(--primary);
-            color: #fff;
-            box-shadow: 0 4px 14px rgba(79, 110, 247, 0.3);
-        }
-        .btn-primary:hover {
-            background: var(--primary-hover);
-            box-shadow: 0 6px 20px rgba(79, 110, 247, 0.4);
-            transform: translateY(-1px);
-        }
-        .btn-primary:active {
-            transform: scale(0.97);
-        }
-        .btn-outline {
-            background: #fff;
-            color: var(--primary);
-            border: 2px solid var(--primary);
-        }
-        .btn-outline:hover {
-            background: var(--primary-light);
-            box-shadow: 0 4px 12px rgba(79, 110, 247, 0.15);
-        }
-        .btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            pointer-events: none;
-            filter: grayscale(20%);
-        }
+/* ============ Preview compare ============ */
+.cmp-wrap{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.cmp-box{border:1px solid var(--border);border-radius:var(--radius);background:var(--soft);padding:10px;text-align:center}
+.cmp-box .cap{font-size:.76rem;font-weight:700;color:var(--text-secondary);margin-bottom:7px}
+.cmp-box canvas{max-width:100%;max-height:340px;border-radius:var(--radius-sm);box-shadow:var(--shadow-sm);background:#fff}
+.stats-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+.stat{flex:1 1 120px;background:var(--soft);border:1px solid var(--border);border-radius:var(--radius);
+  padding:9px 12px;text-align:center}
+.stat .k{font-size:.72rem;color:var(--text-secondary)}
+.stat .v{font-size:.95rem;font-weight:700;font-family:var(--font-mono)}
 
-        /* 进度覆盖层 */
-        .progress-overlay {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 1000;
-            align-items: center;
-            justify-content: center;
-            backdrop-filter: blur(4px);
-            -webkit-backdrop-filter: blur(4px);
-        }
-        .progress-overlay.active {
-            display: flex;
-        }
-        .progress-card {
-            background: #fff;
-            border-radius: var(--radius-xl);
-            padding: 32px 36px;
-            text-align: center;
-            box-shadow: var(--shadow-lg);
-            min-width: 320px;
-            max-width: 90vw;
-        }
-        .progress-card .progress-title {
-            font-weight: 700;
-            font-size: 1.1rem;
-            margin-bottom: 6px;
-        }
-        .progress-card .progress-subtitle {
-            font-size: 0.85rem;
-            color: var(--text-secondary);
-            margin-bottom: 18px;
-        }
-        .progress-bar-track {
-            width: 100%;
-            height: 10px;
-            background: #e5e7eb;
-            border-radius: 10px;
-            overflow: hidden;
-        }
-        .progress-bar-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #4f6ef7, #6c8cff);
-            border-radius: 10px;
-            width: 0%;
-            transition: width 0.3s ease;
-        }
-        .progress-percent {
-            font-weight: 700;
-            font-size: 1.5rem;
-            color: var(--primary);
-            margin-top: 10px;
-        }
-        .btn-cancel {
-            margin-top: 16px;
-            padding: 8px 20px;
-            border-radius: 20px;
-            border: 1px solid var(--border);
-            background: #fff;
-            cursor: pointer;
-            font-size: 0.85rem;
-            transition: all var(--transition);
-        }
-        .btn-cancel:hover {
-            background: #fee2e2;
-            border-color: #fca5a5;
-        }
+/* ============ Buttons ============ */
+.action-bar{display:flex;gap:11px;flex-wrap:wrap;justify-content:center;margin-top:6px}
+.btn{padding:11px 26px;border-radius:50px;font-weight:600;font-size:.92rem;cursor:pointer;border:none;
+  transition:all var(--transition);letter-spacing:-.01em;display:inline-flex;align-items:center;gap:7px;
+  white-space:nowrap;font-family:inherit}
+.btn-primary{background:var(--primary);color:#fff;box-shadow:0 4px 14px rgba(79,110,247,.3)}
+.btn-primary:hover{background:var(--primary-hover);box-shadow:0 6px 20px rgba(79,110,247,.4);transform:translateY(-1px)}
+.btn-outline{background:var(--card-bg);color:var(--primary);border:2px solid var(--primary)}
+.btn-outline:hover{background:var(--primary-light)}
+.btn-ghost{background:var(--card-bg);color:var(--text-secondary);border:1.5px solid var(--border)}
+.btn-ghost:hover{border-color:var(--primary);color:var(--primary)}
+.btn:disabled{opacity:.45;cursor:not-allowed;pointer-events:none;filter:grayscale(30%)}
 
-        /* Toast */
-        .toast {
-            position: fixed;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%) translateY(100px);
-            background: #1a1d2e;
-            color: #fff;
-            padding: 12px 24px;
-            border-radius: 50px;
-            font-weight: 500;
-            font-size: 0.9rem;
-            z-index: 2000;
-            box-shadow: var(--shadow-lg);
-            transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-            pointer-events: none;
-            white-space: nowrap;
-        }
-        .toast.show {
-            transform: translateX(-50%) translateY(0);
-        }
-        .toast.success {
-            background: #059669;
-        }
-        .toast.error {
-            background: #dc2626;
-        }
+/* ============ Progress ============ */
+.overlay{display:none;position:fixed;inset:0;background:rgba(10,12,20,.5);z-index:1000;align-items:center;
+  justify-content:center;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);padding:20px}
+.overlay.active{display:flex}
+.progress-card{background:var(--card-bg);border-radius:var(--radius-xl);padding:30px 34px;text-align:center;
+  box-shadow:var(--shadow-lg);min-width:320px;max-width:92vw}
+.progress-title{font-weight:700;font-size:1.06rem;margin-bottom:5px}
+.progress-subtitle{font-size:.83rem;color:var(--text-secondary);margin-bottom:16px}
+.bar-track{width:100%;height:10px;background:var(--track);border-radius:10px;overflow:hidden}
+.bar-fill{height:100%;background:linear-gradient(90deg,#4f6ef7,#7b8dff);border-radius:10px;width:0%;transition:width .25s ease}
+.percent{font-weight:700;font-size:1.45rem;color:var(--primary);margin-top:9px;font-family:var(--font-mono)}
+.btn-cancel{margin-top:14px;padding:8px 20px;border-radius:20px;border:1px solid var(--border);background:var(--card-bg);
+  cursor:pointer;font-size:.83rem;transition:all var(--transition);font-family:inherit;color:var(--text)}
+.btn-cancel:hover{background:var(--danger-bg);border-color:#fca5a5}
 
-        /* 响应式 */
-        @media (max-width: 768px) {
-            .app-container {
-                padding: 16px 12px 30px;
-            }
-            .card {
-                padding: 18px 16px;
-                border-radius: var(--radius-lg);
-            }
-            .upload-zone {
-                padding: 32px 16px;
-            }
-            .upload-zone .upload-icon {
-                font-size: 36px;
-            }
-            .thumbnail-grid {
-                grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
-                gap: 6px;
-                max-height: 320px;
-            }
-            .settings-grid {
-                grid-template-columns: 1fr 1fr;
-                gap: 10px;
-            }
-            .btn {
-                padding: 10px 20px;
-                font-size: 0.85rem;
-            }
-            .action-bar {
-                gap: 8px;
-            }
-            .app-header h1 {
-                font-size: 1.4rem;
-            }
-        }
-        @media (max-width: 480px) {
-            .thumbnail-grid {
-                grid-template-columns: repeat(3, 1fr);
-                gap: 5px;
-                max-height: 260px;
-            }
-            .settings-grid {
-                grid-template-columns: 1fr;
-            }
-            .action-bar {
-                flex-direction: column;
-            }
-            .btn {
-                width: 100%;
-                justify-content: center;
-            }
-        }
-    </style>
+/* ============ Toast ============ */
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(120px);background:#1a1d2e;color:#fff;
+  padding:11px 22px;border-radius:50px;font-weight:500;font-size:.87rem;z-index:2000;box-shadow:var(--shadow-lg);
+  transition:transform .35s cubic-bezier(.4,0,.2,1);pointer-events:none;white-space:nowrap;max-width:92vw;overflow:hidden;text-overflow:ellipsis}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.toast.success{background:#059669}.toast.error{background:#dc2626}.toast.warn{background:#d97706}
+
+/* ============ Viewer ============ */
+.viewer{display:none;position:fixed;inset:0;background:rgba(10,12,20,.86);z-index:1500;align-items:center;
+  justify-content:center;padding:26px;flex-direction:column;gap:14px}
+.viewer.active{display:flex}
+.viewer img{max-width:94vw;max-height:80vh;border-radius:var(--radius);box-shadow:var(--shadow-lg);background:#fff}
+.viewer .viewer-bar{display:flex;align-items:center;gap:14px;color:#fff;font-size:.85rem}
+.viewer .viewer-bar button{padding:6px 16px;border-radius:20px;border:1px solid rgba(255,255,255,.35);
+  background:rgba(255,255,255,.1);color:#fff;cursor:pointer;font-family:inherit;font-size:.82rem}
+.viewer .viewer-bar button:hover{background:rgba(255,255,255,.22)}
+
+/* ============ Responsive ============ */
+@media(max-width:768px){
+  .app-container{padding:14px 12px 34px}
+  .card{padding:17px 15px;border-radius:var(--radius-lg)}
+  .drop-zone{padding:28px 14px}
+  .settings-grid{grid-template-columns:1fr 1fr;gap:10px}
+  .thumb-grid{grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:6px;max-height:330px}
+  .cmp-wrap{grid-template-columns:1fr}
+  .tab-btn{min-width:96px;font-size:.8rem;padding:9px 10px}
+  .app-header h1{font-size:1.35rem}
+  .img-item .thumb{width:38px;height:38px}
+}
+@media(max-width:480px){
+  .settings-grid{grid-template-columns:1fr}
+  .action-bar{flex-direction:column}
+  .btn{width:100%;justify-content:center}
+  .thumb-grid{grid-template-columns:repeat(3,1fr)}
+  .theme-toggle{position:static;margin:0 auto 6px}
+}
+</style>
 </head>
 <body>
 
-    <div class="app-container">
-        <!-- Header -->
-        <div class="app-header">
-            <div class="logo-icon">📄</div>
-            <h1>PDF 转图片</h1>
-            <p class="subtitle">高质量 · 多格式 · 批量转换 · 纯本地处理</p>
-        </div>
+<div class="app-container">
+  <div class="app-header">
+    <button class="theme-toggle" id="themeToggle" title="切换深色 / 浅色">🌙</button>
+    <div class="logo-icon">🧰</div>
+    <h1>PDF &amp; 图片全能工具箱</h1>
+    <p class="subtitle">图片转PDF（带锐化）· PDF转图片 · 合并拆分 · 批量转换压缩</p>
+    <p class="sys-note">🔒 全部处理均在本机浏览器完成 · <b>文件不会上传到任何服务器</b></p>
+  </div>
 
-        <!-- 上传区域 -->
-        <div class="card" id="uploadCard">
-            <div class="upload-zone" id="uploadZone">
-                <span class="upload-icon">📤</span>
-                <p class="upload-text">点击上传或拖拽 PDF 文件到此处</p>
-                <p class="upload-hint">支持任意大小的 PDF 文件 · 所有处理均在本地完成</p>
-                <input type="file" id="fileInput" accept=".pdf,application/pdf">
-            </div>
-            <!-- 文件信息条 -->
-            <div class="file-info-bar" id="fileInfoBar">
-                <div class="file-icon">PDF</div>
-                <div class="file-details">
-                    <div class="file-name" id="fileNameDisplay">-</div>
-                    <div class="file-meta" id="fileMetaDisplay">-</div>
-                </div>
-                <button class="btn-remove" id="btnRemoveFile" title="移除文件">✕</button>
-            </div>
-        </div>
+  <!-- ======== Tabs ======== -->
+  <nav class="tool-tabs">
+    <button class="tab-btn active" data-tab="i2p">🖼️ 图片 → PDF</button>
+    <button class="tab-btn" data-tab="p2i">📄 PDF → 图片</button>
+    <button class="tab-btn" data-tab="merge">🔗 PDF 合并</button>
+    <button class="tab-btn" data-tab="split">✂️ PDF 拆分</button>
+    <button class="tab-btn" data-tab="imgtool">🎛️ 图片工具</button>
+  </nav>
 
-        <!-- 缩略图预览 -->
-        <div class="card preview-section" id="previewSection">
-            <div class="card-header">
-                <span class="icon-dot"></span> 页面预览 · 点击缩略图选择页面
-            </div>
-            <div class="preview-toolbar">
-                <button class="btn-sm" id="btnSelectAll">✅ 全选</button>
-                <button class="btn-sm" id="btnDeselectAll">⬜ 取消全选</button>
-                <button class="btn-sm" id="btnInvertSelect">🔄 反选</button>
-                <span class="selected-count" id="selectedCount">已选: 0 页</span>
-            </div>
-            <div class="thumbnail-grid" id="thumbnailGrid">
-                <!-- 动态填充 -->
-            </div>
-            <p style="font-size:0.75rem;color:var(--text-secondary);margin-top:8px;text-align:center;">
-                💡 点击缩略图可切换选中状态 · 下方也可使用范围输入精确选择
-            </p>
+  <!-- ============================================================
+       Panel: 图片 -> PDF
+  ============================================================= -->
+  <section class="tool-panel active" id="panel-i2p">
+    <div class="card">
+      <div class="drop-zone" id="i2pZone">
+        <span class="drop-icon">🖼️</span>
+        <p class="drop-text">点击或拖拽图片到此处（可多选）</p>
+        <p class="drop-hint">JPG · PNG · WebP · BMP · GIF · AVIF · 支持排序 / 旋转 / 锐化</p>
+        <input type="file" id="i2pInput" accept="image/*" multiple>
+      </div>
+      <div class="file-bar" id="i2pBar">
+        <div class="file-icon img">IMG</div>
+        <div class="file-details">
+          <div class="file-name" id="i2pBarName">-</div>
+          <div class="file-meta" id="i2pBarMeta">-</div>
         </div>
-
-        <!-- 设置面板 -->
-        <div class="card" id="settingsCard">
-            <div class="card-header">
-                <span class="icon-dot"></span> 输出设置
-            </div>
-            <div class="settings-grid">
-                <!-- 页面范围 -->
-                <div class="setting-group" style="grid-column: 1 / -1;">
-                    <label>📑 页面范围（如：1-3,5,7-10）</label>
-                    <div class="page-range-input">
-                        <input type="text" id="pageRangeInput" placeholder="留空 = 转换全部已选页面" value="">
-                        <button class="btn-apply" id="btnApplyRange">应用范围</button>
-                    </div>
-                    <p class="page-range-hint">示例：1-5,8,10-12 · 应用后将自动更新上方缩略图选择</p>
-                </div>
-                <!-- 图片格式 -->
-                <div class="setting-group">
-                    <label>🖼️ 输出格式</label>
-                    <select id="formatSelect">
-                        <option value="png">PNG（无损 · 文件较大）</option>
-                        <option value="jpeg" selected>JPEG（有损 · 文件较小）</option>
-                        <option value="webp">WebP（平衡 · 推荐）</option>
-                    </select>
-                </div>
-                <!-- 缩放比例 -->
-                <div class="setting-group">
-                    <label>🔍 缩放比例</label>
-                    <select id="scaleSelect">
-                        <option value="1">1x（标清 · 72 DPI 等效）</option>
-                        <option value="1.5">1.5x（中等清晰度）</option>
-                        <option value="2" selected>2x（高清 · 推荐）</option>
-                        <option value="3">3x（超清 · 文件较大）</option>
-                        <option value="4">4x（极致清晰）</option>
-                        <option value="custom">自定义...</option>
-                    </select>
-                </div>
-                <!-- 自定义缩放 -->
-                <div class="setting-group" id="customScaleGroup" style="display:none;">
-                    <label>✏️ 自定义缩放 (0.5 - 5.0)</label>
-                    <input type="number" id="customScaleInput" value="2" min="0.5" max="5" step="0.1">
-                </div>
-                <!-- JPEG/WebP 质量 -->
-                <div class="setting-group" id="qualityGroup">
-                    <label>🎚️ 图片质量：<span class="quality-value" id="qualityValue">92%</span></label>
-                    <input type="range" id="qualityRange" min="10" max="100" value="92" step="1">
-                    <div class="range-labels"><span>10% (体积小)</span><span>100% (最佳)</span></div>
-                </div>
-            </div>
-        </div>
-
-        <!-- 操作按钮 -->
-        <div class="action-bar">
-            <button class="btn btn-primary" id="btnConvertDownload" disabled>
-                ⬇️ 转换并下载
-            </button>
-            <button class="btn btn-outline" id="btnDownloadSelected" disabled>
-                📥 下载选中页（ZIP打包）
-            </button>
-        </div>
+        <button class="btn-remove" id="i2pClearAll" title="清空全部">✕</button>
+      </div>
     </div>
 
-    <!-- 进度覆盖层 -->
-    <div class="progress-overlay" id="progressOverlay">
-        <div class="progress-card">
-            <p class="progress-title">⏳ 正在转换...</p>
-            <p class="progress-subtitle" id="progressSubtitle">准备中...</p>
-            <div class="progress-bar-track">
-                <div class="progress-bar-fill" id="progressBarFill"></div>
-            </div>
-            <p class="progress-percent" id="progressPercent">0%</p>
-            <button class="btn-cancel" id="btnCancelConvert">取消</button>
-        </div>
+    <div class="card" id="i2pListCard" style="display:none">
+      <div class="card-header">
+        <span class="icon-dot"></span> 图片队列
+        <span class="sub" id="i2pQueueInfo">拖动手柄可排序</span>
+      </div>
+      <div class="toolbar">
+        <button class="btn-sm" id="i2pSortName">🔤 按文件名</button>
+        <button class="btn-sm" id="i2pSortTime">🕒 按修改时间</button>
+        <button class="btn-sm" id="i2pReverse">🔄 反转顺序</button>
+        <button class="btn-sm" id="i2pRotAll">⟳ 全部旋转90°</button>
+        <button class="btn-sm" id="i2pResetRot">↺ 重置旋转</button>
+        <span class="count-chip" id="i2pCount">0 张</span>
+      </div>
+      <div class="img-list" id="i2pList"></div>
     </div>
 
-    <!-- Toast -->
-    <div class="toast" id="toast"></div>
+    <div class="card" id="i2pCmpCard" style="display:none">
+      <div class="card-header">
+        <span class="icon-dot"></span> 锐化效果预览（第 1 页）
+        <span class="sub" id="i2pCmpSub"></span>
+      </div>
+      <div class="cmp-wrap">
+        <div class="cmp-box"><div class="cap">原图</div><canvas id="i2pCanvasRaw"></canvas></div>
+        <div class="cmp-box"><div class="cap">处理后 · 将要写入 PDF</div><canvas id="i2pCanvasOut"></canvas></div>
+      </div>
+      <div class="stats-row" id="i2pStats"></div>
+    </div>
 
-    <script>
-        (function() {
-            // ============ 设置 PDF.js Worker ============
-            if (typeof pdfjsLib !== 'undefined') {
-                pdfjsLib.GlobalWorkerOptions.workerSrc =
-                    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-            }
+    <div class="card">
+      <div class="card-header"><span class="icon-dot"></span> 页面与画质设置</div>
+      <div class="settings-grid">
+        <div class="setting-group">
+          <label>📐 页面尺寸</label>
+          <select id="i2pPageSize">
+            <option value="auto">按图片原始尺寸（不缩放）</option>
+            <option value="a4" selected>A4（210 × 297 mm）</option>
+            <option value="a3">A3（297 × 420 mm）</option>
+            <option value="letter">Letter（215.9 × 279.4 mm）</option>
+            <option value="custom">自定义尺寸…</option>
+          </select>
+        </div>
+        <div class="setting-group" id="i2pCustomSizeGroup" style="display:none">
+          <label>✏️ 自定义尺寸（mm）</label>
+          <div style="display:flex;gap:8px">
+            <input type="number" id="i2pPageW" value="210" min="20" max="2000" step="1" placeholder="宽">
+            <input type="number" id="i2pPageH" value="297" min="20" max="2000" step="1" placeholder="高">
+          </div>
+        </div>
+        <div class="setting-group">
+          <label>🧭 页面方向</label>
+          <select id="i2pOrient">
+            <option value="auto" selected>自动（跟随图片）</option>
+            <option value="portrait">纵向</option>
+            <option value="landscape">横向</option>
+          </select>
+        </div>
+        <div class="setting-group">
+          <label>🎯 图片放置</label>
+          <select id="i2pFit">
+            <option value="contain" selected>适应（完整显示，留白）</option>
+            <option value="cover">铺满（裁切边缘）</option>
+            <option value="stretch">拉伸铺满整页</option>
+            <option value="none">原始像素大小（不缩放）</option>
+          </select>
+        </div>
+        <div class="setting-group">
+          <label>📏 页边距：<span class="val" id="i2pMarginVal">0 mm</span></label>
+          <input type="range" id="i2pMargin" min="0" max="40" value="0" step="1">
+        </div>
+        <div class="setting-group">
+          <label>💎 输出精度（固定页面尺寸时生效）</label>
+          <select id="i2pDpi">
+            <option value="96">96 DPI（小体积）</option>
+            <option value="150">150 DPI（标准）</option>
+            <option value="200" selected>200 DPI（高清）</option>
+            <option value="300">300 DPI（印刷级）</option>
+          </select>
+        </div>
+        <div class="setting-group">
+          <label class="check-row" style="margin-top:22px">
+            <input type="checkbox" id="i2pAutoDpi" checked> 按原图清晰度自动提升精度（不糊）
+          </label>
+          <p class="hint">开启后会自动提高页面渲染精度，保证图片不被缩小，锐化细节得以保留。</p>
+        </div>
+        <div class="setting-group" id="i2pQualityGroup">
+          <label>🎚️ 图片质量：<span class="val" id="i2pQualityVal">92%</span></label>
+          <input type="range" id="i2pQuality" min="40" max="100" value="92" step="1">
+          <div class="range-labels"><span>体积小</span><span>最佳画质</span></div>
+        </div>
+        <div class="setting-group">
+          <label>🏷️ 输出文件名</label>
+          <input type="text" id="i2pFileName" placeholder="留空自动命名">
+        </div>
+      </div>
 
-            // ============ DOM 引用 ============
-            const uploadZone = document.getElementById('uploadZone');
-            const fileInput = document.getElementById('fileInput');
-            const fileInfoBar = document.getElementById('fileInfoBar');
-            const fileNameDisplay = document.getElementById('fileNameDisplay');
-            const fileMetaDisplay = document.getElementById('fileMetaDisplay');
-            const btnRemoveFile = document.getElementById('btnRemoveFile');
-            const previewSection = document.getElementById('previewSection');
-            const thumbnailGrid = document.getElementById('thumbnailGrid');
-            const selectedCount = document.getElementById('selectedCount');
-            const pageRangeInput = document.getElementById('pageRangeInput');
-            const btnApplyRange = document.getElementById('btnApplyRange');
-            const formatSelect = document.getElementById('formatSelect');
-            const scaleSelect = document.getElementById('scaleSelect');
-            const customScaleGroup = document.getElementById('customScaleGroup');
-            const customScaleInput = document.getElementById('customScaleInput');
-            const qualityGroup = document.getElementById('qualityGroup');
-            const qualityRange = document.getElementById('qualityRange');
-            const qualityValue = document.getElementById('qualityValue');
-            const btnConvertDownload = document.getElementById('btnConvertDownload');
-            const btnDownloadSelected = document.getElementById('btnDownloadSelected');
-            const progressOverlay = document.getElementById('progressOverlay');
-            const progressBarFill = document.getElementById('progressBarFill');
-            const progressPercent = document.getElementById('progressPercent');
-            const progressSubtitle = document.getElementById('progressSubtitle');
-            const btnCancelConvert = document.getElementById('btnCancelConvert');
-            const toast = document.getElementById('toast');
-            const btnSelectAll = document.getElementById('btnSelectAll');
-            const btnDeselectAll = document.getElementById('btnDeselectAll');
-            const btnInvertSelect = document.getElementById('btnInvertSelect');
+      <div class="fx-wrap" id="i2pFxHost"></div>
 
-            // ============ 状态 ============
-            let pdfDoc = null;
-            let totalPages = 0;
-            let selectedPagesSet = new Set(); // 选中的页码（1-based）
-            let thumbnailDataUrls = {}; // 缩略图缓存 {pageNum: dataUrl}
-            let cancelRequested = false;
-            let renderToken = 0; // 用于中止旧的渲染
-            let currentFileName = 'document';
+      <div class="settings-grid" style="margin-top:16px">
+        <div class="setting-group span-all">
+          <label class="check-row"><input type="checkbox" id="i2pPdfMeta"> 写入 PDF 元数据（标题 / 作者）</label>
+        </div>
+        <div class="setting-group" id="i2pMetaTitleGroup" style="display:none">
+          <label>📕 标题</label><input type="text" id="i2pMetaTitle" placeholder="文档标题">
+        </div>
+        <div class="setting-group" id="i2pMetaAuthorGroup" style="display:none">
+          <label>✍️ 作者</label><input type="text" id="i2pMetaAuthor" placeholder="作者 / 单位">
+        </div>
+      </div>
+    </div>
 
-            // ============ Toast ============
-            let toastTimer;
+    <div class="card">
+      <div class="card-header"><span class="icon-dot"></span> 页码与水印（可选）</div>
+      <div class="settings-grid">
+        <div class="setting-group">
+          <label>🔢 页码位置</label>
+          <select id="i2pPnPos">
+            <option value="off" selected>不添加页码</option>
+            <option value="bottom-center">底部居中</option>
+            <option value="bottom-right">右下角</option>
+            <option value="bottom-left">左下角</option>
+            <option value="top-center">顶部居中</option>
+          </select>
+        </div>
+        <div class="setting-group">
+          <label>🔤 页码样式</label>
+          <select id="i2pPnFmt">
+            <option value="n" selected>1</option>
+            <option value="page-n">第 1 页</option>
+            <option value="n-of-total">1 / N</option>
+            <option value="page-n-total">第 1 页 / 共 N 页</option>
+          </select>
+        </div>
+        <div class="setting-group">
+          <label>#️⃣ 起始页码</label>
+          <input type="number" id="i2pPnStart" value="1" min="0" max="9999" step="1">
+        </div>
+        <div class="setting-group">
+          <label>🎨 页码颜色</label>
+          <input type="color" id="i2pPnColor" value="#444444">
+        </div>
+        <div class="setting-group">
+          <label>💧 水印文字</label>
+          <input type="text" id="i2pWmText" placeholder="留空 = 不加水印">
+        </div>
+        <div class="setting-group">
+          <label>🧩 水印方式</label>
+          <select id="i2pWmMode">
+            <option value="center" selected>居中斜向</option>
+            <option value="tile">平铺满页</option>
+          </select>
+        </div>
+        <div class="setting-group">
+          <label>🌫️ 水印不透明度：<span class="val" id="i2pWmAlphaVal">12%</span></label>
+          <input type="range" id="i2pWmAlpha" min="2" max="60" value="12" step="1">
+        </div>
+        <div class="setting-group">
+          <label>📐 水印大小：<span class="val" id="i2pWmSizeVal">10%</span></label>
+          <input type="range" id="i2pWmSize" min="3" max="30" value="10" step="1">
+        </div>
+        <div class="setting-group">
+          <label>🔄 水印角度：<span class="val" id="i2pWmAngleVal">45°</span></label>
+          <input type="range" id="i2pWmAngle" min="0" max="90" value="45" step="1">
+        </div>
+        <div class="setting-group">
+          <label>🎨 水印颜色</label>
+          <input type="color" id="i2pWmColor" value="#888888">
+        </div>
+      </div>
+    </div>
 
-            function showToast(msg, type = '') {
-                clearTimeout(toastTimer);
-                toast.textContent = msg;
-                toast.className = 'toast ' + type + ' show';
-                toastTimer = setTimeout(() => {
-                    toast.classList.remove('show');
-                }, 2500);
-            }
+    <div class="action-bar">
+      <button class="btn btn-primary" id="i2pBuild" disabled>📄 生成并下载 PDF</button>
+      <button class="btn btn-outline" id="i2pPreviewBtn" disabled>👁️ 刷新预览</button>
+      <button class="btn btn-ghost" id="i2pAutoEnhance">✨ 一键清晰化</button>
+    </div>
+  </section>
 
-            // ============ 文件大小格式化 ============
-            function formatFileSize(bytes) {
-                if (bytes === 0) return '0 B';
-                const k = 1024;
-                const sizes = ['B', 'KB', 'MB', 'GB'];
-                const i = Math.floor(Math.log(bytes) / Math.log(k));
-                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-            }
+  <!-- ============================================================
+       Panel: PDF -> 图片
+  ============================================================= -->
+  <section class="tool-panel" id="panel-p2i">
+    <div class="card">
+      <div class="drop-zone" id="p2iZone">
+        <span class="drop-icon">📄</span>
+        <p class="drop-text">点击或拖拽 PDF 到此处</p>
+        <p class="drop-hint">支持任意大小的 PDF · 可导出图片、长图，也可直接复制</p>
+        <input type="file" id="p2iInput" accept=".pdf,application/pdf">
+      </div>
+      <div class="file-bar" id="p2iBar">
+        <div class="file-icon">PDF</div>
+        <div class="file-details">
+          <div class="file-name" id="p2iBarName">-</div>
+          <div class="file-meta" id="p2iBarMeta">-</div>
+        </div>
+        <button class="btn-remove" id="p2iRemove" title="移除文件">✕</button>
+      </div>
+    </div>
 
-            // ============ 页面范围解析 ============
-            function parsePageRange(rangeStr, maxPage) {
-                // 支持格式: "1-5,8,10-12" 或 "1,3,5"
-                if (!rangeStr || !rangeStr.trim()) return null; // 空 = 全部
-                const pages = new Set();
-                const parts = rangeStr.split(',');
-                for (let part of parts) {
-                    part = part.trim();
-                    if (!part) continue;
-                    if (part.includes('-')) {
-                        const [startStr, endStr] = part.split('-');
-                        const start = parseInt(startStr.trim(), 10);
-                        const end = parseInt(endStr.trim(), 10);
-                        if (isNaN(start) || isNaN(end)) continue;
-                        const s = Math.max(1, Math.min(start, end));
-                        const e = Math.min(maxPage, Math.max(start, end));
-                        for (let i = s; i <= e; i++) pages.add(i);
-                    } else {
-                        const num = parseInt(part, 10);
-                        if (!isNaN(num) && num >= 1 && num <= maxPage) {
-                            pages.add(num);
-                        }
-                    }
-                }
-                return pages.size > 0 ? Array.from(pages).sort((a, b) => a - b) : null;
-            }
+    <div class="card" id="p2iPreviewCard" style="display:none">
+      <div class="card-header"><span class="icon-dot"></span> 页面选择</div>
+      <div class="toolbar">
+        <button class="btn-sm" id="p2iSelAll">✅ 全选</button>
+        <button class="btn-sm" id="p2iSelNone">⬜ 全不选</button>
+        <button class="btn-sm" id="p2iInvert">🔄 反选</button>
+        <button class="btn-sm" id="p2iOdd">奇数页</button>
+        <button class="btn-sm" id="p2iEven">偶数页</button>
+        <span class="count-chip" id="p2iCount">已选 0 页</span>
+      </div>
+      <div class="thumb-grid" id="p2iGrid"></div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:12px">
+        <input type="text" id="p2iRange" placeholder="页面范围，如 1-3,5,7-10（留空 = 全部）"
+               style="flex:1;min-width:200px;padding:8px 11px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-family:var(--font-mono);font-size:.87rem;background:var(--input-bg);color:var(--text);outline:none">
+        <button class="btn-sm" id="p2iApplyRange" style="padding:9px 16px;border-radius:var(--radius-sm);background:var(--primary);color:#fff;border:none">应用范围</button>
+      </div>
+      <p class="hint">💡 单击缩略图切换选中 · 双击放大查看</p>
+    </div>
 
-            function pagesToRangeString(pagesArray) {
-                if (!pagesArray || pagesArray.length === 0) return '';
-                const sorted = [...pagesArray].sort((a, b) => a - b);
-                const ranges = [];
-                let start = sorted[0];
-                let end = sorted[0];
-                for (let i = 1; i < sorted.length; i++) {
-                    if (sorted[i] === end + 1) {
-                        end = sorted[i];
-                    } else {
-                        ranges.push(start === end ? `${start}` : `${start}-${end}`);
-                        start = sorted[i];
-                        end = sorted[i];
-                    }
-                }
-                ranges.push(start === end ? `${start}` : `${start}-${end}`);
-                return ranges.join(',');
-            }
+    <div class="card">
+      <div class="card-header"><span class="icon-dot"></span> 输出设置</div>
+      <div class="settings-grid">
+        <div class="setting-group">
+          <label>🖼️ 输出格式</label>
+          <select id="p2iFormat">
+            <option value="png">PNG（无损 · 体积大）</option>
+            <option value="jpeg" selected>JPEG（有损 · 体积小）</option>
+            <option value="webp">WebP（平衡 · 推荐）</option>
+          </select>
+        </div>
+        <div class="setting-group">
+          <label>🔍 缩放比例</label>
+          <select id="p2iScale">
+            <option value="1">1x（72 DPI 等效）</option>
+            <option value="1.5">1.5x</option>
+            <option value="2" selected>2x（高清推荐）</option>
+            <option value="3">3x（超清）</option>
+            <option value="4">4x（极致）</option>
+            <option value="custom">自定义…</option>
+          </select>
+        </div>
+        <div class="setting-group" id="p2iCustomScaleGroup" style="display:none">
+          <label>✏️ 自定义缩放（0.5 - 5）</label>
+          <input type="number" id="p2iCustomScale" value="2" min="0.5" max="5" step="0.1">
+        </div>
+        <div class="setting-group" id="p2iQualityGroup">
+          <label>🎚️ 图片质量：<span class="val" id="p2iQualityVal">92%</span></label>
+          <input type="range" id="p2iQuality" min="10" max="100" value="92" step="1">
+        </div>
+        <div class="setting-group">
+          <label>🏷️ 文件名前缀</label>
+          <input type="text" id="p2iPrefix" placeholder="留空使用 PDF 文件名">
+        </div>
+        <div class="setting-group">
+          <label>🧵 长图拼接方向</label>
+          <select id="p2iLongDir">
+            <option value="v" selected>竖向（一列到底）</option>
+            <option value="h">横向（一排到底）</option>
+          </select>
+        </div>
+      </div>
+      <div class="fx-wrap" id="p2iFxHost"></div>
+    </div>
 
-            // ============ 更新选中计数 ============
-            function updateSelectedCount() {
-                const count = selectedPagesSet.size;
-                selectedCount.textContent = `已选: ${count} 页`;
-                // 同步范围输入框
-                const sorted = Array.from(selectedPagesSet).sort((a, b) => a - b);
-                pageRangeInput.value = pagesToRangeString(sorted);
-                // 更新按钮状态
-                const hasSelection = count > 0;
-                btnConvertDownload.disabled = !hasSelection;
-                btnDownloadSelected.disabled = !hasSelection;
-                if (hasSelection) {
-                    btnConvertDownload.textContent = `⬇️ 转换并下载 (${count} 页)`;
-                    btnDownloadSelected.textContent = `📥 下载选中页 · ZIP打包 (${count} 页)`;
-                } else {
-                    btnConvertDownload.textContent = '⬇️ 转换并下载';
-                    btnDownloadSelected.textContent = '📥 下载选中页（ZIP打包）';
-                }
-            }
+    <div class="action-bar">
+      <button class="btn btn-primary" id="p2iConvert" disabled>⬇️ 转换并下载</button>
+      <button class="btn btn-outline" id="p2iLong" disabled>🧵 拼成长图</button>
+      <button class="btn btn-ghost" id="p2iCopy" disabled>📋 复制首页到剪贴板</button>
+    </div>
+  </section>
 
-            // ============ 渲染缩略图 ============
-            async function renderThumbnails(token) {
-                if (!pdfDoc) return;
-                thumbnailGrid.innerHTML = '';
-                thumbnailDataUrls = {};
-                const scale = 0.25; // 缩略图缩放
-                const batchSize = 4; // 每批渲染页数
+  <!-- ============================================================
+       Panel: PDF 合并
+  ============================================================= -->
+  <section class="tool-panel" id="panel-merge">
+    <div class="card">
+      <div class="drop-zone" id="mgZone">
+        <span class="drop-icon">🔗</span>
+        <p class="drop-text">点击或拖拽多个 PDF 到此处</p>
+        <p class="drop-hint">按列表顺序合并 · 可拖动排序 · 支持混合不同来源的 PDF</p>
+        <input type="file" id="mgInput" accept=".pdf,application/pdf" multiple>
+      </div>
+    </div>
 
-                for (let i = 1; i <= totalPages; i++) {
-                    // 创建缩略图占位
-                    const item = document.createElement('div');
-                    item.className = 'thumbnail-item';
-                    if (selectedPagesSet.has(i)) item.classList.add('selected');
-                    item.dataset.page = i;
-                    item.innerHTML = `
-                        <div class="loading-spinner"></div>
-                        <span class="page-num">${i}</span>
-                        <span class="check-badge">✓</span>
-                    `;
-                    item.addEventListener('click', () => togglePageSelection(i, item));
-                    thumbnailGrid.appendChild(item);
-                }
+    <div class="card" id="mgListCard" style="display:none">
+      <div class="card-header">
+        <span class="icon-dot"></span> 待合并文件
+        <span class="sub" id="mgTotal">共 0 页</span>
+      </div>
+      <div class="toolbar">
+        <button class="btn-sm" id="mgSortName">🔤 按文件名</button>
+        <button class="btn-sm" id="mgReverse">🔄 反转顺序</button>
+        <button class="btn-sm" id="mgClear">🗑️ 清空</button>
+        <span class="count-chip" id="mgCount">0 个文件</span>
+      </div>
+      <div class="img-list" id="mgList"></div>
+      <p class="hint">💡 列表自上而下即为合并顺序；加密的 PDF 会被自动跳过并提示。</p>
+    </div>
 
-                // 分批渲染
-                for (let batchStart = 1; batchStart <= totalPages; batchStart += batchSize) {
-                    if (token !== renderToken) return; // 被取消
-                    const batchEnd = Math.min(batchStart + batchSize - 1, totalPages);
-                    const batchPromises = [];
-                    for (let i = batchStart; i <= batchEnd; i++) {
-                        batchPromises.push(renderSingleThumbnail(i, scale, token));
-                    }
-                    await Promise.all(batchPromises);
-                }
-            }
+    <div class="card" id="mgOptCard" style="display:none">
+      <div class="card-header"><span class="icon-dot"></span> 输出设置</div>
+      <div class="settings-grid">
+        <div class="setting-group">
+          <label>🏷️ 输出文件名</label>
+          <input type="text" id="mgName" placeholder="merged">
+        </div>
+        <div class="setting-group">
+          <label class="check-row" style="margin-top:22px"><input type="checkbox" id="mgAddPageNum"> 在每页右下角添加页码</label>
+        </div>
+      </div>
+    </div>
 
-            async function renderSingleThumbnail(pageNum, scale, token) {
-                try {
-                    if (token !== renderToken) return;
-                    const page = await pdfDoc.getPage(pageNum);
-                    const viewport = page.getViewport({ scale });
-                    const canvas = document.createElement('canvas');
-                    canvas.width = viewport.width;
-                    canvas.height = viewport.height;
-                    const ctx = canvas.getContext('2d');
-                    await page.render({ canvasContext: ctx, viewport }).promise;
-                    const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
-                    thumbnailDataUrls[pageNum] = dataUrl;
+    <div class="action-bar">
+      <button class="btn btn-primary" id="mgRun" disabled>🔗 合并并下载 PDF</button>
+      <button class="btn btn-outline" id="mgPreviewCount" disabled>🔍 校验页数</button>
+    </div>
+  </section>
 
-                    // 更新DOM
-                    if (token !== renderToken) return;
-                    const item = thumbnailGrid.querySelector(`[data-page="${pageNum}"]`);
-                    if (item) {
-                        const spinner = item.querySelector('.loading-spinner');
-                        if (spinner) spinner.remove();
-                        let img = item.querySelector('img');
-                        if (!img) {
-                            img = document.createElement('img');
-                            img.alt = `第 ${pageNum} 页`;
-                            item.insertBefore(img, item.firstChild);
-                        }
-                        img.src = dataUrl;
-                    }
-                } catch (err) {
-                    console.warn(`渲染缩略图第${pageNum}页失败:`, err);
-                }
-            }
+  <!-- ============================================================
+       Panel: PDF 拆分
+  ============================================================= -->
+  <section class="tool-panel" id="panel-split">
+    <div class="card">
+      <div class="drop-zone" id="spZone">
+        <span class="drop-icon">✂️</span>
+        <p class="drop-text">点击或拖拽一个 PDF 到此处</p>
+        <p class="drop-hint">提取 / 删除 / 按份数拆分 / 单独导出每页，全部本地完成</p>
+        <input type="file" id="spInput" accept=".pdf,application/pdf">
+      </div>
+      <div class="file-bar" id="spBar">
+        <div class="file-icon">PDF</div>
+        <div class="file-details">
+          <div class="file-name" id="spBarName">-</div>
+          <div class="file-meta" id="spBarMeta">-</div>
+        </div>
+        <button class="btn-remove" id="spRemove" title="移除文件">✕</button>
+      </div>
+    </div>
 
-            function togglePageSelection(pageNum, itemElement) {
-                if (selectedPagesSet.has(pageNum)) {
-                    selectedPagesSet.delete(pageNum);
-                    if (itemElement) itemElement.classList.remove('selected');
-                } else {
-                    selectedPagesSet.add(pageNum);
-                    if (itemElement) itemElement.classList.add('selected');
-                }
-                // 同步更新所有同页码的元素（以防万一）
-                const allItems = thumbnailGrid.querySelectorAll(`[data-page="${pageNum}"]`);
-                allItems.forEach(el => {
-                    if (selectedPagesSet.has(pageNum)) {
-                        el.classList.add('selected');
-                    } else {
-                        el.classList.remove('selected');
-                    }
-                });
-                updateSelectedCount();
-            }
+    <div class="card" id="spGridCard" style="display:none">
+      <div class="card-header"><span class="icon-dot"></span> 页面选择</div>
+      <div class="toolbar">
+        <button class="btn-sm" id="spSelAll">✅ 全选</button>
+        <button class="btn-sm" id="spSelNone">⬜ 全不选</button>
+        <button class="btn-sm" id="spInvert">🔄 反选</button>
+        <button class="btn-sm" id="spOdd">奇数页</button>
+        <button class="btn-sm" id="spEven">偶数页</button>
+        <span class="count-chip" id="spCount">已选 0 页</span>
+      </div>
+      <div class="thumb-grid" id="spGrid"></div>
+    </div>
 
-            // ============ 加载PDF ============
-            async function loadPDF(file) {
-                // 清理旧状态
-                pdfDoc = null;
-                totalPages = 0;
-                selectedPagesSet.clear();
-                thumbnailDataUrls = {};
-                thumbnailGrid.innerHTML = '';
-                previewSection.classList.remove('active');
-                fileInfoBar.classList.remove('active');
-                btnConvertDownload.disabled = true;
-                btnDownloadSelected.disabled = true;
-                pageRangeInput.value = '';
-                renderToken++; // 中止旧渲染
-                const token = renderToken;
+    <div class="card" id="spOptCard" style="display:none">
+      <div class="card-header"><span class="icon-dot"></span> 拆分方式</div>
+      <div class="settings-grid">
+        <div class="setting-group span-all">
+          <label>⚙️ 操作模式</label>
+          <select id="spMode">
+            <option value="extract" selected>把选中的页面提取为一个新 PDF</option>
+            <option value="delete">删除选中的页面，保留其余页面</option>
+            <option value="chunk">按每 N 页拆分成多个 PDF（打包 ZIP）</option>
+            <option value="groups">按自定义范围分组拆分成多个 PDF（打包 ZIP）</option>
+            <option value="each">每页单独导出一个 PDF（打包 ZIP）</option>
+          </select>
+        </div>
+        <div class="setting-group" id="spChunkGroup" style="display:none">
+          <label>📦 每份页数 N</label>
+          <input type="number" id="spChunkSize" value="1" min="1" max="500" step="1">
+        </div>
+        <div class="setting-group span-all" id="spGroupsGroup" style="display:none">
+          <label>📚 分组范围（用分号或换行分隔各组）</label>
+          <input type="text" id="spGroups" placeholder="1-3; 4-6; 7-10  → 生成 3 个 PDF">
+          <p class="hint">示例：<code>1-5; 6-10</code> 会生成两个文件；也可写 <code>1,3,5; 2,4,6</code></p>
+        </div>
+        <div class="setting-group">
+          <label>🏷️ 输出文件名</label>
+          <input type="text" id="spName" placeholder="留空使用原文件名">
+        </div>
+      </div>
+    </div>
 
-                try {
-                    const arrayBuffer = await file.arrayBuffer();
-                    if (token !== renderToken) return;
-                    const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
-                    pdfDoc = await loadingTask.promise;
-                    if (token !== renderToken) return;
-                    totalPages = pdfDoc.numPages;
-                    currentFileName = file.name.replace(/\.pdf$/i, '') || 'document';
+    <div class="action-bar">
+      <button class="btn btn-primary" id="spRun" disabled>✂️ 执行并下载</button>
+      <button class="btn btn-outline" id="spRangeInput" disabled>📑 全选并输入范围…</button>
+    </div>
+  </section>
 
-                    // 默认全选
-                    for (let i = 1; i <= totalPages; i++) {
-                        selectedPagesSet.add(i);
-                    }
+  <!-- ============================================================
+       Panel: 图片工具
+  ============================================================= -->
+  <section class="tool-panel" id="panel-imgtool">
+    <div class="card">
+      <div class="drop-zone" id="itZone">
+        <span class="drop-icon">🎛️</span>
+        <p class="drop-text">点击或拖拽图片到此处（可多选）</p>
+        <p class="drop-hint">批量格式转换 / 压缩 / 缩放 / 锐化 / 拼接长图 / 网格拼图</p>
+        <input type="file" id="itInput" accept="image/*" multiple>
+      </div>
+      <div class="file-bar" id="itBar">
+        <div class="file-icon img">IMG</div>
+        <div class="file-details">
+          <div class="file-name" id="itBarName">-</div>
+          <div class="file-meta" id="itBarMeta">-</div>
+        </div>
+        <button class="btn-remove" id="itClearAll" title="清空全部">✕</button>
+      </div>
+    </div>
 
-                    // 显示文件信息
-                    fileNameDisplay.textContent = file.name;
-                    fileMetaDisplay.textContent = `${totalPages} 页 · ${formatFileSize(file.size)}`;
-                    fileInfoBar.classList.add('active');
+    <div class="card" id="itListCard" style="display:none">
+      <div class="card-header">
+        <span class="icon-dot"></span> 图片队列
+        <span class="sub">拖动手柄可排序</span>
+      </div>
+      <div class="toolbar">
+        <button class="btn-sm" id="itSortName">🔤 按文件名</button>
+        <button class="btn-sm" id="itReverse">🔄 反转顺序</button>
+        <button class="btn-sm" id="itAutoEnhance">✨ 一键清晰化</button>
+        <span class="count-chip" id="itCount">0 张</span>
+      </div>
+      <div class="img-list" id="itList"></div>
+    </div>
 
-                    // 显示预览区
-                    previewSection.classList.add('active');
+    <div class="card" id="itOptCard" style="display:none">
+      <div class="card-header"><span class="icon-dot"></span> 处理方式</div>
+      <div class="settings-grid">
+        <div class="setting-group span-all">
+          <label>⚙️ 模式</label>
+          <select id="itMode">
+            <option value="convert" selected>格式转换 / 压缩（逐张处理）</option>
+            <option value="stack">拼接长图（多张拼成一张）</option>
+            <option value="grid">网格拼图（多张拼成网格）</option>
+          </select>
+        </div>
 
-                    // 渲染缩略图
-                    await renderThumbnails(token);
-                    if (token !== renderToken) return;
+        <div class="it-convert">
+          <div class="setting-group">
+            <label>🖼️ 输出格式</label>
+            <select id="itFormat">
+              <option value="jpeg">JPEG</option>
+              <option value="png">PNG</option>
+              <option value="webp">WebP</option>
+            </select>
+          </div>
+          <div class="setting-group">
+            <label>🎚️ 质量：<span class="val" id="itQualityVal">85%</span></label>
+            <input type="range" id="itQuality" min="10" max="100" value="85" step="1">
+          </div>
+          <div class="setting-group">
+            <label>📐 最大边长（px，0 = 不限制）</label>
+            <input type="number" id="itMaxEdge" value="0" min="0" max="20000" step="50">
+          </div>
+          <div class="setting-group">
+            <label>🔍 缩放百分比：<span class="val" id="itScaleVal">100%</span></label>
+            <input type="range" id="itScalePct" min="10" max="200" value="100" step="5">
+          </div>
+          <div class="setting-group">
+            <label>🧭 EXIF 方向</label>
+            <select id="itOrient">
+              <option value="auto" selected>自动修正</option>
+              <option value="off">忽略</option>
+            </select>
+          </div>
+        </div>
 
-                    updateSelectedCount();
-                    showToast(`✅ 已加载：${file.name}（${totalPages} 页）`, 'success');
-                } catch (err) {
-                    console.error('加载PDF失败:', err);
-                    showToast('❌ 无法加载PDF文件，请确认文件格式正确', 'error');
-                    pdfDoc = null;
-                    totalPages = 0;
-                    selectedPagesSet.clear();
-                    previewSection.classList.remove('active');
-                    fileInfoBar.classList.remove('active');
-                    updateSelectedCount();
-                }
-            }
+        <div class="setting-group it-stack" style="display:none">
+          <label>↕️ 图片间距（px）</label>
+          <input type="number" id="itStackGap" value="0" min="0" max="200" step="2">
+        </div>
+        <div class="setting-group it-stack" style="display:none">
+          <label>🎨 背景颜色</label>
+          <input type="color" id="itStackBg" value="#ffffff">
+        </div>
+        <div class="setting-group it-stack" style="display:none">
+          <label>📏 统一宽度</label>
+          <select id="itStackWidth">
+            <option value="auto" selected>对齐到最宽的一张</option>
+            <option value="max">使用最大值（原样）</option>
+            <option value="fixed">指定宽度…</option>
+          </select>
+        </div>
+        <div class="setting-group it-stack" style="display:none">
+          <label>✏️ 指定宽度（px）</label>
+          <input type="number" id="itStackW" value="1200" min="50" max="20000" step="50">
+        </div>
 
-            // ============ 获取缩放比例 ============
-            function getScale() {
-                const val = scaleSelect.value;
-                if (val === 'custom') {
-                    const customVal = parseFloat(customScaleInput.value);
-                    if (isNaN(customVal) || customVal < 0.5) return 0.5;
-                    if (customVal > 5) return 5;
-                    return customVal;
-                }
-                return parseFloat(val);
-            }
+        <div class="setting-group it-grid" style="display:none">
+          <label>🔢 每行张数</label>
+          <input type="number" id="itGridCols" value="3" min="1" max="12" step="1">
+        </div>
+        <div class="setting-group it-grid" style="display:none">
+          <label>📏 单元格尺寸（px）</label>
+          <input type="number" id="itGridCell" value="400" min="40" max="4000" step="20">
+        </div>
+        <div class="setting-group it-grid" style="display:none">
+          <label>⬜ 单元格间距（px）</label>
+          <input type="number" id="itGridGap" value="8" min="0" max="200" step="2">
+        </div>
+        <div class="setting-group it-grid" style="display:none">
+          <label>🎨 背景颜色</label>
+          <input type="color" id="itGridBg" value="#ffffff">
+        </div>
+        <div class="setting-group it-grid" style="display:none">
+          <label>🎯 单元格填充</label>
+          <select id="itGridFit">
+            <option value="contain" selected>完整显示（留白）</option>
+            <option value="cover">裁剪铺满</option>
+          </select>
+        </div>
+      </div>
 
-            // ============ 获取输出格式和MIME类型 ============
-            function getFormatInfo() {
-                const format = formatSelect.value;
-                const mimeMap = {
-                    'png': 'image/png',
-                    'jpeg': 'image/jpeg',
-                    'webp': 'image/webp',
-                };
-                const extMap = {
-                    'png': 'png',
-                    'jpeg': 'jpg',
-                    'webp': 'webp',
-                };
-                return {
-                    format,
-                    mimeType: mimeMap[format] || 'image/png',
-                    extension: extMap[format] || 'png',
-                };
-            }
+      <div class="fx-wrap" id="itFxHost"></div>
+      <div class="stats-row" id="itResults"></div>
+      <p class="hint">📉 处理后会显示每张图片压缩前后的体积对比；超过 1600 万像素的图片会自动跳过高成本画质增强。</p>
+    </div>
 
-            // ============ 获取质量参数 ============
-            function getQuality() {
-                return parseInt(qualityRange.value) / 100;
-            }
+    <div class="action-bar">
+      <button class="btn btn-primary" id="itRun" disabled>🚀 开始处理</button>
+      <button class="btn btn-outline" id="itClean">🧹 清空队列</button>
+    </div>
+  </section>
+</div>
 
-            // ============ 渲染单页为Blob ============
-            async function renderPageToBlob(pageNum, scale, formatInfo, quality) {
-                const page = await pdfDoc.getPage(pageNum);
-                const viewport = page.getViewport({ scale });
-                const canvas = document.createElement('canvas');
-                canvas.width = viewport.width;
-                canvas.height = viewport.height;
-                const ctx = canvas.getContext('2d');
-                await page.render({ canvasContext: ctx, viewport }).promise;
+<!-- 进度层 -->
+<div class="overlay" id="overlay">
+  <div class="progress-card">
+    <p class="progress-title" id="ovTitle">⏳ 正在处理…</p>
+    <p class="progress-subtitle" id="ovSub">准备中…</p>
+    <div class="bar-track"><div class="bar-fill" id="ovBar"></div></div>
+    <p class="percent" id="ovPct">0%</p>
+    <button class="btn-cancel" id="ovCancel">取消</button>
+  </div>
+</div>
 
-                return new Promise((resolve, reject) => {
-                    const options = {};
-                    if (formatInfo.format === 'jpeg' || formatInfo.format === 'webp') {
-                        options.quality = quality;
-                    }
-                    canvas.toBlob((blob) => {
-                        if (blob) {
-                            resolve(blob);
-                        } else {
-                            reject(new Error('Canvas toBlob 失败'));
-                        }
-                    }, formatInfo.mimeType, quality);
-                });
-            }
+<!-- 大图查看 -->
+<div class="viewer" id="viewer">
+  <img id="viewerImg" alt="预览">
+  <div class="viewer-bar">
+    <span id="viewerTitle"></span>
+    <button id="viewerClose">关闭 ✕</button>
+  </div>
+</div>
 
-            // ============ 下载单个Blob ============
-            function downloadBlob(blob, filename) {
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = filename;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                setTimeout(() => URL.revokeObjectURL(url), 1000);
-            }
+<div class="toast" id="toast"></div>
 
-            // ============ 转换并下载 ============
-            async function convertAndDownload(pagesToConvert) {
-                if (!pdfDoc || pagesToConvert.length === 0) {
-                    showToast('⚠️ 请先选择要转换的页面', 'error');
-                    return;
-                }
+<script>
+/* ============================================================
+   PDF & 图片全能工具箱 —— 纯前端实现
+   ============================================================ */
+(function () {
+'use strict';
 
-                cancelRequested = false;
-                progressOverlay.classList.add('active');
-                progressBarFill.style.width = '0%';
-                progressPercent.textContent = '0%';
-                progressSubtitle.textContent = '准备中...';
-                btnCancelConvert.style.display = 'inline-block';
+/* ------------------------------------------------------------
+   0. 基础工具
+------------------------------------------------------------ */
+const $ = (sel, root) => (root || document).querySelector(sel);
+const $$ = (sel, root) => Array.from((root || document).querySelectorAll(sel));
 
-                const scale = getScale();
-                const formatInfo = getFormatInfo();
-                const quality = getQuality();
-                const total = pagesToConvert.length;
+if (typeof pdfjsLib !== 'undefined') {
+  pdfjsLib.GlobalWorkerOptions.workerSrc =
+    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+}
 
-                try {
-                    if (total === 1) {
-                        // 单页直接下载
-                        progressSubtitle.textContent = `正在渲染第 ${pagesToConvert[0]} 页...`;
-                        progressBarFill.style.width = '30%';
-                        progressPercent.textContent = '30%';
-                        const blob = await renderPageToBlob(pagesToConvert[0], scale, formatInfo, quality);
-                        if (cancelRequested) return;
-                        progressBarFill.style.width = '100%';
-                        progressPercent.textContent = '100%';
-                        const filename =
-                            `${currentFileName}_第${pagesToConvert[0]}页.${formatInfo.extension}`;
-                        downloadBlob(blob, filename);
-                        showToast(`✅ 已下载：${filename}`, 'success');
-                    } else {
-                        // 多页打包ZIP
-                        if (typeof JSZip === 'undefined') {
-                            throw new Error('JSZip 库未加载，请刷新页面后重试');
-                        }
-                        const zip = new JSZip();
-                        for (let i = 0; i < total; i++) {
-                            if (cancelRequested) return;
-                            const pageNum = pagesToConvert[i];
-                            const percent = Math.round((i / total) * 90);
-                            progressBarFill.style.width = percent + '%';
-                            progressPercent.textContent = percent + '%';
-                            progressSubtitle.textContent = `正在渲染第 ${pageNum} 页... (${i + 1}/${total})`;
-                            const blob = await renderPageToBlob(pageNum, scale, formatInfo, quality);
-                            const filename =
-                                `${currentFileName}_第${String(pageNum).padStart(3, '0')}页.${formatInfo.extension}`;
-                            zip.file(filename, blob);
-                        }
-                        if (cancelRequested) return;
-                        progressSubtitle.textContent = '正在打包 ZIP 文件...';
-                        progressBarFill.style.width = '92%';
-                        progressPercent.textContent = '92%';
-                        const zipBlob = await zip.generateAsync({
-                            type: 'blob',
-                            compression: 'DEFLATE',
-                            compressionOptions: { level: 6 },
-                        }, (meta) => {
-                            if (cancelRequested) return;
-                            const pct = Math.min(99, 92 + Math.round(meta.percent * 0.07));
-                            progressBarFill.style.width = pct + '%';
-                            progressPercent.textContent = pct + '%';
-                        });
-                        if (cancelRequested) return;
-                        progressBarFill.style.width = '100%';
-                        progressPercent.textContent = '100%';
-                        const zipFilename = `${currentFileName}_图片合集.zip`;
-                        downloadBlob(zipBlob, zipFilename);
-                        showToast(`✅ 已下载：${zipFilename}（${total} 页）`, 'success');
-                    }
-                } catch (err) {
-                    console.error('转换失败:', err);
-                    showToast('❌ 转换过程中出现错误：' + (err.message || '未知错误'), 'error');
-                } finally {
-                    progressOverlay.classList.remove('active');
-                    btnCancelConvert.style.display = 'inline-block';
-                    cancelRequested = false;
-                }
-            }
+let toastTimer = null;
+function showToast(msg, type) {
+  const el = $('#toast');
+  clearTimeout(toastTimer);
+  el.textContent = msg;
+  el.className = 'toast ' + (type || '') + ' show';
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2600);
+}
 
-            // ============ 事件监听 ============
+function fmtSize(bytes) {
+  if (!bytes && bytes !== 0) return '-';
+  if (bytes < 1024) return bytes + ' B';
+  const k = 1024, sizes = ['KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k)) - 1;
+  return (bytes / Math.pow(k, i + 1)).toFixed(i === 0 ? 1 : 2) + ' ' + sizes[i];
+}
 
-            // 上传区域点击
-            uploadZone.addEventListener('click', (e) => {
-                if (e.target !== fileInput) {
-                    fileInput.click();
-                }
-            });
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
 
-            // 文件选择
-            fileInput.addEventListener('change', (e) => {
-                const file = e.target.files[0];
-                if (file && (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf'))) {
-                    loadPDF(file);
-                } else if (file) {
-                    showToast('⚠️ 请选择PDF文件', 'error');
-                }
-                fileInput.value = '';
-            });
+function sanitizeName(name) {
+  return String(name || 'file').replace(/[\\/:*?"<>|]+/g, '_').replace(/\s+/g, ' ').trim().slice(0, 120) || 'file';
+}
 
-            // 拖拽事件
-            uploadZone.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                uploadZone.classList.add('drag-over');
-            });
-            uploadZone.addEventListener('dragleave', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                uploadZone.classList.remove('drag-over');
-            });
-            uploadZone.addEventListener('drop', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                uploadZone.classList.remove('drag-over');
-                const file = e.dataTransfer.files[0];
-                if (file && (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf'))) {
-                    loadPDF(file);
-                } else if (file) {
-                    showToast('⚠️ 请拖入PDF文件', 'error');
-                }
-            });
+const yieldUI = () => new Promise(r => setTimeout(r, 0));
 
-            // 全局拖拽（防止浏览器打开PDF）
-            document.addEventListener('dragover', (e) => {
-                if (e.dataTransfer.types.includes('Files')) {
-                    e.preventDefault();
-                }
-            });
-            document.addEventListener('drop', (e) => {
-                if (e.dataTransfer.types.includes('Files') && !uploadZone.contains(e.target)) {
-                    e.preventDefault();
-                }
-            });
+function confirmDanger(msg) {
+  return window.confirm(msg);
+}
 
-            // 移除文件
-            btnRemoveFile.addEventListener('click', () => {
-                pdfDoc = null;
-                totalPages = 0;
-                selectedPagesSet.clear();
-                thumbnailDataUrls = {};
-                thumbnailGrid.innerHTML = '';
-                previewSection.classList.remove('active');
-                fileInfoBar.classList.remove('active');
-                pageRangeInput.value = '';
-                btnConvertDownload.disabled = true;
-                btnDownloadSelected.disabled = true;
-                updateSelectedCount();
-                renderToken++;
-                showToast('已清除当前文件');
-            });
+/* ------------------------------------------------------------
+   1. 主题切换
+------------------------------------------------------------ */
+(function initTheme() {
+  const saved = localStorage.getItem('toolbox-theme');
+  const setTheme = (t) => {
+    document.documentElement.setAttribute('data-theme', t);
+    $('#themeToggle').textContent = t === 'dark' ? '☀️' : '🌙';
+  };
+  setTheme(saved === 'dark' ? 'dark' : 'light');
+  $('#themeToggle').addEventListener('click', () => {
+    const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    localStorage.setItem('toolbox-theme', next);
+    setTheme(next);
+  });
+})();
 
-            // 全选
-            btnSelectAll.addEventListener('click', () => {
-                if (!pdfDoc) return;
-                selectedPagesSet.clear();
-                for (let i = 1; i <= totalPages; i++) selectedPagesSet.add(i);
-                syncThumbnailSelection();
-                updateSelectedCount();
-            });
+/* ------------------------------------------------------------
+   2. 全局进度层
+------------------------------------------------------------ */
+const Progress = (function () {
+  const overlay = $('#overlay'), bar = $('#ovBar'), pct = $('#ovPct'),
+    sub = $('#ovSub'), title = $('#ovTitle'), cancelBtn = $('#ovCancel');
+  let cancelled = false;
 
-            // 取消全选
-            btnDeselectAll.addEventListener('click', () => {
-                selectedPagesSet.clear();
-                syncThumbnailSelection();
-                updateSelectedCount();
-            });
+  function open(t) {
+    cancelled = false;
+    title.textContent = t || '⏳ 正在处理…';
+    sub.textContent = '准备中…';
+    bar.style.width = '0%'; pct.textContent = '0%';
+    cancelBtn.style.display = 'inline-block';
+    overlay.classList.add('active');
+  }
+  function set(p, s) {
+    const v = Math.max(0, Math.min(100, Math.round(p)));
+    bar.style.width = v + '%'; pct.textContent = v + '%';
+    if (s) sub.textContent = s;
+  }
+  function close() { overlay.classList.remove('active'); }
+  cancelBtn.addEventListener('click', () => {
+    cancelled = true;
+    sub.textContent = '正在取消…';
+    cancelBtn.style.display = 'none';
+  });
+  return {
+    open, set, close,
+    get cancelled() { return cancelled; },
+    async step(p, s) { set(p, s); await yieldUI(); }
+  };
+})();
 
-            // 反选
-            btnInvertSelect.addEventListener('click', () => {
-                if (!pdfDoc) return;
-                const newSet = new Set();
-                for (let i = 1; i <= totalPages; i++) {
-                    if (!selectedPagesSet.has(i)) newSet.add(i);
-                }
-                selectedPagesSet = newSet;
-                syncThumbnailSelection();
-                updateSelectedCount();
-            });
+/* ------------------------------------------------------------
+   3. 拖放 / 文件选择绑定
+------------------------------------------------------------ */
+function bindDropZone(zoneEl, inputEl, onFiles) {
+  zoneEl.addEventListener('click', (e) => { if (e.target !== inputEl) inputEl.click(); });
+  inputEl.addEventListener('change', (e) => {
+    const files = Array.from(e.target.files || []);
+    inputEl.value = '';
+    if (files.length) onFiles(files);
+  });
+  ['dragover', 'dragenter'].forEach(ev => zoneEl.addEventListener(ev, (e) => {
+    e.preventDefault(); e.stopPropagation(); zoneEl.classList.add('drag-over');
+  }));
+  ['dragleave', 'dragend'].forEach(ev => zoneEl.addEventListener(ev, (e) => {
+    e.preventDefault(); e.stopPropagation(); zoneEl.classList.remove('drag-over');
+  }));
+  zoneEl.addEventListener('drop', (e) => {
+    e.preventDefault(); e.stopPropagation();
+    zoneEl.classList.remove('drag-over');
+    const files = Array.from((e.dataTransfer && e.dataTransfer.files) || []);
+    if (files.length) onFiles(files);
+  });
+}
+['dragover', 'drop'].forEach(ev => document.addEventListener(ev, (e) => {
+  if (e.target && e.target.closest && e.target.closest('.drop-zone')) return;
+  if (e.dataTransfer && Array.from(e.dataTransfer.types || []).indexOf('Files') >= 0) e.preventDefault();
+}));
 
-            function syncThumbnailSelection() {
-                const items = thumbnailGrid.querySelectorAll('.thumbnail-item');
-                items.forEach(item => {
-                    const page = parseInt(item.dataset.page, 10);
-                    if (selectedPagesSet.has(page)) {
-                        item.classList.add('selected');
-                    } else {
-                        item.classList.remove('selected');
-                    }
-                });
-            }
+/* ------------------------------------------------------------
+   4. 图片处理引擎（锐化 / 增强 / 文档模式）
+   ------------------------------------------------------------
+   - unsharp mask：亮度的"原图 - 高斯模糊"，再加权回 RGB
+   - 文档模式：百分位拉伸让灰底变白；纯黑白模式用局部均值自适应二值化
+------------------------------------------------------------ */
+const FX_MAX_PIXELS = 16e6;   // 超过该像素数跳过高成本增强，避免内存吃紧
+const FX_BLUR_PASSES = 3;
 
-            // 应用范围
-            btnApplyRange.addEventListener('click', () => {
-                if (!pdfDoc) return;
-                const rangeStr = pageRangeInput.value.trim();
-                if (!rangeStr) {
-                    // 空输入 = 全选
-                    selectedPagesSet.clear();
-                    for (let i = 1; i <= totalPages; i++) selectedPagesSet.add(i);
-                } else {
-                    const parsed = parsePageRange(rangeStr, totalPages);
-                    if (parsed === null) {
-                        showToast('⚠️ 无法解析范围，请检查格式', 'error');
-                        return;
-                    }
-                    selectedPagesSet = new Set(parsed);
-                }
-                syncThumbnailSelection();
-                updateSelectedCount();
-                showToast('✅ 范围已应用', 'success');
-            });
+function clampByte(v) { return v < 0 ? 0 : (v > 255 ? 255 : v); }
+function clampIdx(v, n) { return v < 0 ? 0 : (v >= n ? n - 1 : v); }
 
-            // 范围输入框回车
-            pageRangeInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    btnApplyRange.click();
-                }
-            });
+/* 横向一维盒式模糊（带边界钳制） */
+function blurH(src, dst, w, h, r) {
+  const d = 2 * r + 1;
+  for (let y = 0; y < h; y++) {
+    const row = y * w;
+    let sum = 0;
+    for (let i = -r; i <= r; i++) sum += src[row + clampIdx(i, w)];
+    for (let x = 0; x < w; x++) {
+      dst[row + x] = sum / d;
+      sum += src[row + clampIdx(x + r + 1, w)] - src[row + clampIdx(x - r, w)];
+    }
+  }
+}
+/* 纵向一维盒式模糊 */
+function blurV(src, dst, w, h, r) {
+  const d = 2 * r + 1;
+  for (let x = 0; x < w; x++) {
+    let sum = 0;
+    for (let i = -r; i <= r; i++) sum += src[clampIdx(i, h) * w + x];
+    for (let y = 0; y < h; y++) {
+      dst[y * w + x] = sum / d;
+      sum += src[clampIdx(y + r + 1, h) * w + x] - src[clampIdx(y - r, h) * w + x];
+    }
+  }
+}
 
-            // 格式变化 - 显示/隐藏质量设置
-            formatSelect.addEventListener('change', () => {
-                const fmt = formatSelect.value;
-                if (fmt === 'png') {
-                    qualityGroup.style.opacity = '0.5';
-                    qualityGroup.style.pointerEvents = 'none';
-                    qualityRange.value = 100;
-                    qualityValue.textContent = '100% (PNG无损)';
-                } else {
-                    qualityGroup.style.opacity = '1';
-                    qualityGroup.style.pointerEvents = 'auto';
-                    qualityRange.value = 92;
-                    qualityValue.textContent = '92%';
-                }
-            });
+/* 亮度域 unsharp mask（原地修改 ImageData 的 RGB） */
+function unsharpMask(id, amount, radius) {
+  const w = id.width, h = id.height, data = id.data, n = w * h;
+  if (w < 3 || h < 3 || amount <= 0) return;
+  // 原始亮度用 Uint8 保存（省内存），模糊用两块 Float32 乒乓缓冲
+  const lum = new Uint8Array(n);
+  for (let i = 0, p = 0; i < n; i++, p += 4) {
+    lum[i] = (0.299 * data[p] + 0.587 * data[p + 1] + 0.114 * data[p + 2]) | 0;
+  }
+  const A = new Float32Array(n), B = new Float32Array(n);
+  for (let i = 0; i < n; i++) A[i] = lum[i];
+  const r = Math.max(1, Math.min(6, Math.round(radius)));
+  for (let pass = 0; pass < FX_BLUR_PASSES; pass++) {
+    blurH(A, B, w, h, r);
+    blurV(B, A, w, h, r);   // 结果始终回到 A
+  }
+  for (let i = 0, p = 0; i < n; i++, p += 4) {
+    const v = (lum[i] - A[i]) * amount;
+    if (v === 0) continue;
+    data[p] = clampByte(data[p] + v);
+    data[p + 1] = clampByte(data[p + 1] + v);
+    data[p + 2] = clampByte(data[p + 2] + v);
+  }
+}
 
-            // 缩放比例变化
-            scaleSelect.addEventListener('change', () => {
-                if (scaleSelect.value === 'custom') {
-                    customScaleGroup.style.display = 'block';
-                } else {
-                    customScaleGroup.style.display = 'none';
-                }
-            });
+/* 亮度直方图 + 百分位 */
+function lumPercentiles(lum, n, loP, hiP) {
+  const hist = new Uint32Array(256);
+  for (let i = 0; i < n; i++) hist[lum[i]]++;
+  const loTarget = n * loP, hiTarget = n * hiP;
+  let acc = 0, lo = 0, hi = 255;
+  for (let v = 0; v < 256; v++) { acc += hist[v]; if (acc >= loTarget) { lo = v; break; } }
+  acc = 0;
+  for (let v = 0; v < 256; v++) { acc += hist[v]; if (acc >= hiTarget) { hi = v; break; } }
+  if (hi - lo < 8) { lo = Math.max(0, lo - 8); hi = Math.min(255, hi + 8); }
+  return [lo, hi];
+}
 
-            // 质量滑块
-            qualityRange.addEventListener('input', () => {
-                const val = qualityRange.value;
-                if (formatSelect.value === 'png') {
-                    qualityValue.textContent = '100% (PNG无损)';
-                } else {
-                    qualityValue.textContent = val + '%';
-                }
-            });
+/* 局部均值图（降采样后模糊，内存友好，适合手机拍摄的文档） */
+function localMeanMap(lum, w, h) {
+  const s = Math.max(1, Math.round(Math.min(w, h) / 320));
+  const mw = Math.max(1, Math.ceil(w / s)), mh = Math.max(1, Math.ceil(h / s));
+  const small = new Float32Array(mw * mh);
+  for (let y = 0; y < mh; y++) {
+    const y0 = y * s, y1 = Math.min(h, y0 + s);
+    for (let x = 0; x < mw; x++) {
+      const x0 = x * s, x1 = Math.min(w, x0 + s);
+      let sum = 0, cnt = 0;
+      for (let yy = y0; yy < y1; yy++) {
+        const row = yy * w;
+        for (let xx = x0; xx < x1; xx++) { sum += lum[row + xx]; cnt++; }
+      }
+      small[y * mw + x] = cnt ? sum / cnt : 255;
+    }
+  }
+  const tmp = new Float32Array(mw * mh);
+  const r = Math.max(1, Math.round(mw / 20));
+  for (let p = 0; p < 2; p++) {
+    blurH(small, tmp, mw, mh, r);
+    blurV(tmp, small, mw, mh, r);
+  }
+  return { map: small, mw, mh, s };
+}
 
-            // 转换下载按钮
-            btnConvertDownload.addEventListener('click', () => {
-                if (!pdfDoc || selectedPagesSet.size === 0) return;
-                const pages = Array.from(selectedPagesSet).sort((a, b) => a - b);
-                convertAndDownload(pages);
-            });
+/* 文档模式 A：百分位拉伸——把灰底拉成纯白、文字压黑（返回 256 项查找表） */
+function docContrastLUT(lum, n, strength) {
+  const [lo, hi] = lumPercentiles(lum, n, 0.005, 0.92);
+  const span = Math.max(1, hi - lo);
+  const s = Math.max(0, Math.min(1, strength));
+  const gamma = 0.9;
+  const lut = new Uint8ClampedArray(256);
+  for (let v = 0; v < 256; v++) {
+    let t = (v - lo) / span;
+    t = t < 0 ? 0 : (t > 1 ? 1 : t);
+    const stretched = Math.pow(t, gamma) * 255;
+    lut[v] = Math.round(v * (1 - s) + stretched * s);
+  }
+  return lut;
+}
 
-            // 下载选中页按钮
-            btnDownloadSelected.addEventListener('click', () => {
-                if (!pdfDoc || selectedPagesSet.size === 0) return;
-                const pages = Array.from(selectedPagesSet).sort((a, b) => a - b);
-                convertAndDownload(pages);
-            });
+/* 文档模式 B：局部均值自适应二值化（能处理拍照的明暗不均），返回 0/255 */
+function docBinarize(lum, w, h, strength) {
+  const n = w * h;
+  const out = new Uint8Array(n);
+  const mm = localMeanMap(lum, w, h);
+  const t = 0.045 + Math.max(0, Math.min(1, strength)) * 0.21;
+  const { map, mw, mh, s } = mm;
+  for (let y = 0; y < h; y++) {
+    const sy = Math.min(mh - 1, (y / s) | 0);
+    const row = y * w;
+    for (let x = 0; x < w; x++) {
+      const sx = Math.min(mw - 1, (x / s) | 0);
+      out[row + x] = lum[row + x] > map[sy * mw + sx] * (1 - t) ? 255 : 0;
+    }
+  }
+  return out;
+}
 
-            // 取消转换
-            btnCancelConvert.addEventListener('click', () => {
-                cancelRequested = true;
-                progressSubtitle.textContent = '正在取消...';
-                btnCancelConvert.style.display = 'none';
-                setTimeout(() => {
-                    progressOverlay.classList.remove('active');
-                    btnCancelConvert.style.display = 'inline-block';
-                    showToast('已取消转换');
-                }, 300);
-            });
+/* 对 canvas 应用画质增强（就地） */
+async function applyImageFX(canvas, fx) {
+  if (!fx) return;
+  const w = canvas.width, h = canvas.height;
+  if (!w || !h) return;
+  const needTone = fx.brightness !== 0 || fx.contrast !== 0 || fx.saturation !== 0;
+  const mode = fx.mode || 'none';
+  const wantSharpen = fx.sharpen > 0;
+  if (!needTone && mode === 'none' && !wantSharpen) return;
 
-            // 点击进度覆盖层空白处不关闭
-            progressOverlay.addEventListener('click', (e) => {
-                if (e.target === progressOverlay) {
-                    // 不关闭，用户需点击取消按钮
-                }
-            });
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  let id;
+  try { id = ctx.getImageData(0, 0, w, h); }
+  catch (e) { console.warn('读取像素失败（可能跨域）', e); return; }
+  const n = w * h, d = id.data;
 
-            // 键盘快捷键
-            document.addEventListener('keydown', (e) => {
-                if ((e.ctrlKey || e.metaKey) && e.key === 'a' && document.activeElement === document.body &&
-                    pdfDoc) {
-                    e.preventDefault();
-                    btnSelectAll.click();
-                }
-            });
+  /* 4.1 亮度 / 对比度 / 饱和度 / 灰度 */
+  if (needTone || mode !== 'none') {
+    const br = fx.brightness * 2.55;
+    const cc = fx.contrast / 100;
+    const cf = cc === 0 ? 1 : (259 * (cc * 255 + 255)) / (255 * (259 - cc * 255));
+    const gray = mode !== 'none';
+    const sat = gray ? 0 : 1 + fx.saturation / 100;
+    for (let i = 0, p = 0; i < n; i++, p += 4) {
+      let r = d[p], g = d[p + 1], b = d[p + 2];
+      if (br) { r += br; g += br; b += br; }
+      if (cf !== 1) { r = cf * (r - 128) + 128; g = cf * (g - 128) + 128; b = cf * (b - 128) + 128; }
+      if (sat !== 1) {
+        const l = 0.299 * r + 0.587 * g + 0.114 * b;
+        r = l + (r - l) * sat; g = l + (g - l) * sat; b = l + (b - l) * sat;
+      }
+      if (gray) { const l = 0.299 * r + 0.587 * g + 0.114 * b; r = g = b = l; }
+      d[p] = r; d[p + 1] = g; d[p + 2] = b;
+    }
+    await yieldUI();
+  }
 
-            // ============ 初始状态 ============
-            updateSelectedCount();
-            btnConvertDownload.disabled = true;
-            btnDownloadSelected.disabled = true;
-            formatSelect.dispatchEvent(new Event('change'));
+  /* 4.2 文档模式：灰度拉伸 / 纯黑白 */
+  if (mode === 'contrast' || mode === 'bw') {
+    const lum = new Uint8Array(n);
+    for (let i = 0, p = 0; i < n; i++, p += 4) lum[i] = d[p];
+    const strength = Math.max(0, Math.min(100, fx.strength)) / 100;
 
-            console.log('📄 PDF转图片工具已就绪');
-            console.log('   - 支持拖拽上传PDF文件');
-            console.log('   - 点击缩略图选择页面');
-            console.log('   - 支持PNG/JPEG/WebP格式');
-            console.log('   - 多页自动打包ZIP下载');
-            console.log('   - 所有处理均在本地浏览器完成，文件不会上传到服务器');
-        })();
-    </script>
+    if (mode === 'contrast') {
+      const lut = docContrastLUT(lum, n, strength);
+      for (let i = 0, p = 0; i < n; i++, p += 4) {
+        const v = lut[lum[i]];
+        d[p] = v; d[p + 1] = v; d[p + 2] = v;
+      }
+    } else { // bw：局部均值自适应二值化，能处理拍照时的不均匀光照
+      const bin = docBinarize(lum, w, h, strength);
+      for (let i = 0, p = 0; i < n; i++, p += 4) {
+        const v = bin[i];
+        d[p] = v; d[p + 1] = v; d[p + 2] = v;
+      }
+    }
+    await yieldUI();
+  }
+
+  /* 4.3 锐化（unsharp mask） */
+  if (wantSharpen) {
+    if (n > FX_MAX_PIXELS) {
+      showToast('⚠️ 图片超过 1600 万像素，已跳过硬化以保证稳定', 'warn');
+    } else {
+      unsharpMask(id, (fx.sharpen / 100) * 2.1, fx.radius);
+      await yieldUI();
+    }
+  }
+
+  ctx.putImageData(id, 0, 0);
+}
+
+/* ------------------------------------------------------------
+   5. 可复用的「画质增强」控件
+------------------------------------------------------------ */
+const FX_PRESETS = {
+  off:   { sharpen: 0,  radius: 2, brightness: 0, contrast: 0, saturation: 0, mode: 'none',     strength: 50 },
+  doc:   { sharpen: 60, radius: 1, brightness: 4, contrast: 6, saturation: 0, mode: 'contrast', strength: 55 },
+  scan:  { sharpen: 35, radius: 1, brightness: 0, contrast: 8, saturation: 0, mode: 'bw',       strength: 55 },
+  photo: { sharpen: 45, radius: 2, brightness: 2, contrast: 8, saturation: 12, mode: 'none',    strength: 50 }
+};
+
+function fxHTML(prefix, def) {
+  def = def || {};
+  const v = Object.assign({}, FX_PRESETS.off, def);
+  const sel = (val, t) => (val === t ? ' selected' : '');
+  return '' +
+  '<div class="fx-head">' +
+    '<span class="fx-title">✨ 画质增强 · 锐化</span>' +
+    '<div class="fx-presets">' +
+      '<button class="btn-xs" data-fx-preset="off">原样</button>' +
+      '<button class="btn-xs" data-fx-preset="doc">文档清晰</button>' +
+      '<button class="btn-xs" data-fx-preset="scan">扫描黑白</button>' +
+      '<button class="btn-xs" data-fx-preset="photo">照片增强</button>' +
+    '</div>' +
+  '</div>' +
+  '<div class="settings-grid">' +
+    '<div class="setting-group">' +
+      '<label>🔪 锐化强度：<span class="val" id="' + prefix + 'SharpenVal">' + v.sharpen + '%</span></label>' +
+      '<input type="range" id="' + prefix + 'Sharpen" min="0" max="150" value="' + v.sharpen + '" step="5">' +
+      '<div class="range-labels"><span>柔（0）</span><span>锐（150）</span></div>' +
+    '</div>' +
+    '<div class="setting-group">' +
+      '<label>🎯 锐化半径</label>' +
+      '<select id="' + prefix + 'Radius">' +
+        '<option value="1"' + sel(1, v.radius) + '>1 · 细锐（文字 / 线条）</option>' +
+        '<option value="2"' + sel(2, v.radius) + '>2 · 中锐（通用推荐）</option>' +
+        '<option value="3"' + sel(3, v.radius) + '>3 · 粗锐（整体通透）</option>' +
+      '</select>' +
+    '</div>' +
+    '<div class="setting-group">' +
+      '<label>☀️ 亮度：<span class="val" id="' + prefix + 'BrightVal">' + (v.brightness > 0 ? '+' : '') + v.brightness + '</span></label>' +
+      '<input type="range" id="' + prefix + 'Bright" min="-50" max="50" value="' + v.brightness + '" step="1">' +
+    '</div>' +
+    '<div class="setting-group">' +
+      '<label>🌗 对比度：<span class="val" id="' + prefix + 'ContrastVal">' + (v.contrast > 0 ? '+' : '') + v.contrast + '</span></label>' +
+      '<input type="range" id="' + prefix + 'Contrast" min="-50" max="50" value="' + v.contrast + '" step="1">' +
+    '</div>' +
+    '<div class="setting-group">' +
+      '<label>🌈 饱和度：<span class="val" id="' + prefix + 'SatVal">' + (v.saturation > 0 ? '+' : '') + v.saturation + '</span></label>' +
+      '<input type="range" id="' + prefix + 'Sat" min="-100" max="100" value="' + v.saturation + '" step="5">' +
+    '</div>' +
+    '<div class="setting-group">' +
+      '<label>🧪 增强模式</label>' +
+      '<select id="' + prefix + 'Mode">' +
+        '<option value="none"' + sel('none', v.mode) + '>不处理</option>' +
+        '<option value="gray"' + sel('gray', v.mode) + '>灰度</option>' +
+        '<option value="contrast"' + sel('contrast', v.mode) + '>增强对比（去灰底）</option>' +
+        '<option value="bw"' + sel('bw', v.mode) + '>纯黑白（二值化）</option>' +
+      '</select>' +
+    '</div>' +
+    '<div class="setting-group" id="' + prefix + 'StrengthGroup"' + (v.mode === 'contrast' || v.mode === 'bw' ? '' : ' style="display:none"') + '>' +
+      '<label>🌫️ 增强强度：<span class="val" id="' + prefix + 'StrengthVal">' + v.strength + '%</span></label>' +
+      '<input type="range" id="' + prefix + 'Strength" min="0" max="100" value="' + v.strength + '" step="5">' +
+    '</div>' +
+  '</div>';
+}
+
+function initFxUI(hostEl, prefix, def, onChange) {
+  hostEl.innerHTML = fxHTML(prefix, def);
+  const fire = () => { if (onChange) onChange(); };
+
+  const bind = (id, labelId, fmt) => {
+    const el = $('#' + prefix + id), lab = $('#' + prefix + labelId);
+    if (!el || !lab) return;
+    el.addEventListener('input', () => { lab.textContent = fmt(el.value); fire(); });
+  };
+  bind('Sharpen', 'SharpenVal', v => v + '%');
+  bind('Bright', 'BrightVal', v => (Number(v) > 0 ? '+' : '') + v);
+  bind('Contrast', 'ContrastVal', v => (Number(v) > 0 ? '+' : '') + v);
+  bind('Sat', 'SatVal', v => (Number(v) > 0 ? '+' : '') + v);
+  bind('Strength', 'StrengthVal', v => v + '%');
+
+  const modeSel = $('#' + prefix + 'Mode');
+  modeSel.addEventListener('change', () => {
+    $('#' + prefix + 'StrengthGroup').style.display =
+      (modeSel.value === 'contrast' || modeSel.value === 'bw') ? '' : 'none';
+    fire();
+  });
+  const radSel = $('#' + prefix + 'Radius');
+  if (radSel) radSel.addEventListener('change', fire);
+
+  $$('.fx-presets .btn-xs', hostEl).forEach(btn => {
+    btn.addEventListener('click', () => {
+      const p = FX_PRESETS[btn.dataset.fxPreset] || FX_PRESETS.off;
+      $('#' + prefix + 'Sharpen').value = p.sharpen;
+      $('#' + prefix + 'SharpenVal').textContent = p.sharpen + '%';
+      $('#' + prefix + 'Radius').value = String(p.radius);
+      $('#' + prefix + 'Bright').value = p.brightness;
+      $('#' + prefix + 'BrightVal').textContent = (p.brightness > 0 ? '+' : '') + p.brightness;
+      $('#' + prefix + 'Contrast').value = p.contrast;
+      $('#' + prefix + 'ContrastVal').textContent = (p.contrast > 0 ? '+' : '') + p.contrast;
+      $('#' + prefix + 'Sat').value = p.saturation;
+      $('#' + prefix + 'SatVal').textContent = (p.saturation > 0 ? '+' : '') + p.saturation;
+      $('#' + prefix + 'Mode').value = p.mode;
+      $('#' + prefix + 'Strength').value = p.strength;
+      $('#' + prefix + 'StrengthVal').textContent = p.strength + '%';
+      $('#' + prefix + 'StrengthGroup').style.display =
+        (p.mode === 'contrast' || p.mode === 'bw') ? '' : 'none';
+      $$('.fx-presets .btn-xs', hostEl).forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      showToast('✨ 已应用预设：' + btn.textContent, 'success');
+      fire();
+    });
+  });
+}
+
+function readFX(prefix) {
+  const num = (id, d) => {
+    const el = $('#' + prefix + id);
+    const v = el ? parseFloat(el.value) : NaN;
+    return isNaN(v) ? d : v;
+  };
+  const modeEl = $('#' + prefix + 'Mode');
+  return {
+    sharpen: num('Sharpen', 0),
+    radius: num('Radius', 2),
+    brightness: num('Bright', 0),
+    contrast: num('Contrast', 0),
+    saturation: num('Sat', 0),
+    mode: modeEl ? modeEl.value : 'none',
+    strength: num('Strength', 50)
+  };
+}
+
+function fxIsActive(fx) {
+  return !!(fx && (fx.sharpen > 0 || fx.mode !== 'none' ||
+    fx.brightness !== 0 || fx.contrast !== 0 || fx.saturation !== 0));
+}
+
+/* ------------------------------------------------------------
+   6. 图片绘制辅助
+------------------------------------------------------------ */
+/* 高质量缩小：比例差异大时逐级减半，避免直接缩放造成的糊边 */
+function drawSmart(ctx, src, dx, dy, dw, dh) {
+  const sw = src.naturalWidth || src.width, sh = src.naturalHeight || src.height;
+  let curW = sw, curH = sh, cur = src;
+  while (curW / 2 >= dw && curH / 2 >= dh && curW > 2 && curH > 2) {
+    const nw = Math.max(1, Math.floor(curW / 2)), nh = Math.max(1, Math.floor(curH / 2));
+    const c = document.createElement('canvas');
+    c.width = nw; c.height = nh;
+    const cx = c.getContext('2d');
+    cx.imageSmoothingEnabled = true; cx.imageSmoothingQuality = 'high';
+    cx.drawImage(cur, 0, 0, curW, curH, 0, 0, nw, nh);
+    cur = c; curW = nw; curH = nh;
+  }
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(cur, 0, 0, curW, curH, dx, dy, dw, dh);
+}
+
+/* 把 <img> 按旋转角画到新 canvas（返回未做画质增强的 canvas） */
+function imageToCanvas(img, rotateDeg) {
+  const rot = ((rotateDeg || 0) % 360 + 360) % 360;
+  const iw = img.naturalWidth || img.width, ih = img.naturalHeight || img.height;
+  const swap = (rot === 90 || rot === 270);
+  const cw = swap ? ih : iw, ch = swap ? iw : ih;
+  const c = document.createElement('canvas');
+  c.width = cw; c.height = ch;
+  const ctx = c.getContext('2d');
+  ctx.save();
+  ctx.translate(cw / 2, ch / 2);
+  ctx.rotate(rot * Math.PI / 180);
+  ctx.drawImage(img, -iw / 2, -ih / 2, iw, ih);
+  ctx.restore();
+  return c;
+}
+
+function loadImageFromFile(file) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => { resolve({ img, url }); };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('图片解码失败：' + file.name)); };
+    img.src = url;
+  });
+}
+
+function canvasToBlob(canvas, mime, q) {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((b) => b ? resolve(b) : reject(new Error('导出图片失败')), mime, q);
+  });
+}
+
+const MM_PER_INCH = 25.4;
+const TOOL_SIGN = 'PDF & 图片全能工具箱（本地生成）';
+
+/* 浏览器不支持 WebP/AVIF 导出时 canvas.toBlob 会静默降级为 PNG，
+   这里按真实 MIME 校正扩展名，避免出现「.webp 其实是 PNG」的文件 */
+let webpWarned = false;
+function realExt(blob, fallback) {
+  const t = (blob && blob.type) || '';
+  if (t === 'image/jpeg') return 'jpg';
+  if (t === 'image/png') return 'png';
+  if (t === 'image/webp') return 'webp';
+  return fallback;
+}
+function checkMimeDowngrade(blob, wanted) {
+  if (wanted === 'image/webp' && blob.type && blob.type !== 'image/webp' && !webpWarned) {
+    webpWarned = true;
+    showToast('⚠️ 当前浏览器不支持导出 WebP，已自动改用 PNG', 'warn');
+  }
+  return blob;
+}
+const PAGE_PRESETS = {
+  a4: [210, 297],
+  a3: [297, 420],
+  letter: [215.9, 279.4]
+};
+
+/* ------------------------------------------------------------
+   7. 通用：图片队列（图片→PDF / 图片工具 共用）
+------------------------------------------------------------ */
+function createImageQueue(opts) {
+  const root = {
+    items: [],
+    seq: 0,
+    listEl: opts.listEl,
+    onchange: opts.onchange || function () {}
+  };
+
+  root.add = function (files) {
+    const wanted = files.filter(f => /^image\//.test(f.type) || /\.(png|jpe?g|webp|bmp|gif|avif|tiff?)$/i.test(f.name));
+    if (!wanted.length) { showToast('⚠️ 没有识别到图片文件', 'error'); return; }
+    const imgTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/bmp', 'image/avif'];
+    const skipped = wanted.filter(f => f.type && imgTypes.indexOf(f.type) < 0);
+    wanted.forEach(f => {
+      root.items.push({
+        id: 'img_' + (++root.seq),
+        file: f,
+        name: f.name,
+        size: f.size,
+        lastModified: f.lastModified || 0,
+        img: null,
+        url: '',
+        rotate: 0,
+        error: null,
+        loaded: false
+      });
+    });
+    render();
+    // 异步解码
+    (async () => {
+      for (const it of root.items) {
+        if (it.loaded || it.error) continue;
+        try {
+          const r = await loadImageFromFile(it.file);
+          it.img = r.img; it.url = r.url; it.loaded = true;
+          it.w = r.img.naturalWidth; it.h = r.img.naturalHeight;
+        } catch (e) {
+          it.error = e.message;
+        }
+        render();
+        await yieldUI();
+      }
+      root.onchange();
+    })();
+    root.onchange();
+    if (skipped.length) showToast('ℹ️ ' + skipped.length + ' 个文件可能不被浏览器支持，已尝试解码', '');
+  };
+
+  root.remove = function (id) {
+    const i = root.items.findIndex(x => x.id === id);
+    if (i >= 0) {
+      const it = root.items[i];
+      if (it.url) URL.revokeObjectURL(it.url);
+      root.items.splice(i, 1);
+      render(); root.onchange();
+    }
+  };
+
+  root.clear = function () {
+    root.items.forEach(it => { if (it.url) URL.revokeObjectURL(it.url); });
+    root.items = [];
+    render(); root.onchange();
+  };
+
+  root.move = function (id, dir) {
+    const i = root.items.findIndex(x => x.id === id);
+    const j = dir === 'up' ? i - 1 : i + 1;
+    if (i < 0 || j < 0 || j >= root.items.length) return;
+    const t = root.items[i]; root.items[i] = root.items[j]; root.items[j] = t;
+    render(); root.onchange();
+  };
+
+  root.rotate = function (id, delta) {
+    const it = root.items.find(x => x.id === id);
+    if (!it) return;
+    it.rotate = ((it.rotate + delta) % 360 + 360) % 360;
+    render(); root.onchange();
+  };
+
+  root.rotateAll = function (delta) { root.items.forEach(it => it.rotate = ((it.rotate + delta) % 360 + 360) % 360); render(); root.onchange(); };
+  root.resetRotate = function () { root.items.forEach(it => it.rotate = 0); render(); root.onchange(); };
+  root.reverse = function () { root.items.reverse(); render(); root.onchange(); };
+  root.sortByName = function () {
+    root.items.sort((a, b) => a.name.localeCompare(b.name, 'zh-Hans-CN', { numeric: true }));
+    render(); root.onchange();
+  };
+  root.sortByTime = function () { root.items.sort((a, b) => a.lastModified - b.lastModified); render(); root.onchange(); };
+  root.totalSize = function () { return root.items.reduce((s, it) => s + (it.size || 0), 0); };
+  root.ready = function () { return root.items.filter(it => it.loaded); };
+
+  function render() {
+    const el = root.listEl;
+    if (!el) return;
+    el.innerHTML = '';
+    root.items.forEach((it, idx) => {
+      const row = document.createElement('div');
+      row.className = 'img-item';
+      row.draggable = true;
+      row.dataset.id = it.id;
+      const thumb = it.loaded ? '<img src="' + it.url + '" alt="">' :
+        (it.error ? '⚠️' : '<div class="spinner"></div>');
+      const meta = it.loaded
+        ? (it.w + '×' + it.h + ' · ' + fmtSize(it.size) + (it.rotate ? ' · 旋转 ' + it.rotate + '°' : ''))
+        : (it.error ? '⚠️ ' + it.error : '解码中… ' + fmtSize(it.size));
+      row.innerHTML =
+        '<span class="drag-handle" title="拖动排序">⠿</span>' +
+        '<div class="thumb">' + thumb + '</div>' +
+        '<div class="info"><div class="name">' + (idx + 1) + '. ' + escapeHtml(it.name) + '</div>' +
+        '<div class="meta">' + meta + '</div></div>' +
+        '<div class="ops">' +
+          '<button data-act="up" title="上移">↑</button>' +
+          '<button data-act="down" title="下移">↓</button>' +
+          '<button data-act="rot" title="旋转90°">⟳</button>' +
+          '<button data-act="del" class="del" title="移除">✕</button>' +
+        '</div>';
+      row.addEventListener('click', (e) => {
+        const b = e.target.closest('button');
+        if (!b) return;
+        const act = b.dataset.act;
+        if (act === 'up') root.move(it.id, 'up');
+        else if (act === 'down') root.move(it.id, 'down');
+        else if (act === 'rot') root.rotate(it.id, 90);
+        else if (act === 'del') root.remove(it.id);
+      });
+      // 拖拽排序（在按钮/控件上按下时不触发整行拖拽，否则会吞掉点击）
+      row.addEventListener('dragstart', (e) => {
+        const t = e.target;
+        if (t && t.closest && t.closest('button, input, select, textarea')) { e.preventDefault(); return; }
+        row.classList.add('dragging');
+        e.dataTransfer.setData('text/plain', it.id);
+        e.dataTransfer.effectAllowed = 'move';
+      });
+      row.addEventListener('dragend', () => {
+        row.classList.remove('dragging');
+        $$('.img-item', el).forEach(x => x.classList.remove('drag-target'));
+      });
+      row.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        if (!row.classList.contains('dragging')) row.classList.add('drag-target');
+      });
+      row.addEventListener('dragleave', () => row.classList.remove('drag-target'));
+      row.addEventListener('drop', (e) => {
+        e.preventDefault();
+        row.classList.remove('drag-target');
+        const dragId = e.dataTransfer.getData('text/plain');
+        if (!dragId || dragId === it.id) return;
+        const from = root.items.findIndex(x => x.id === dragId);
+        const to = root.items.findIndex(x => x.id === it.id);
+        if (from < 0 || to < 0) return;
+        const [moved] = root.items.splice(from, 1);
+        root.items.splice(to, 0, moved);
+        render(); root.onchange();
+      });
+      el.appendChild(row);
+    });
+  }
+
+  return root;
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+/* ------------------------------------------------------------
+   8. 大图查看器
+------------------------------------------------------------ */
+function openViewer(src, title) {
+  $('#viewerImg').src = src;
+  $('#viewerTitle').textContent = title || '';
+  $('#viewer').classList.add('active');
+}
+$('#viewerClose').addEventListener('click', () => $('#viewer').classList.remove('active'));
+$('#viewer').addEventListener('click', (e) => { if (e.target.id === 'viewer') $('#viewer').classList.remove('active'); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') $('#viewer').classList.remove('active'); });
+
+function debounce(fn, ms) {
+  let t = null;
+  return function () { const a = arguments; clearTimeout(t); t = setTimeout(() => fn.apply(null, a), ms); };
+}
+
+function stamp() {
+  const d = new Date(), p = (n) => String(n).padStart(2, '0');
+  return d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + '_' + p(d.getHours()) + p(d.getMinutes());
+}
+
+/* ------------------------------------------------------------
+   9. 通用：PDF 页面选择器（PDF→图片 / PDF拆分 共用）
+------------------------------------------------------------ */
+function createPagePicker(opts) {
+  const st = {
+    pdf: null, total: 0, token: 0, selected: new Set(),
+    gridEl: opts.gridEl, countEl: opts.countEl,
+    onchange: opts.onchange || function () {}
+  };
+  const grid = st.gridEl;
+
+  st.load = async function (pdfjsDoc) {
+    st.pdf = pdfjsDoc;
+    st.total = pdfjsDoc.numPages;
+    st.token++;
+    const token = st.token;
+    st.selected = new Set();
+    for (let i = 1; i <= st.total; i++) st.selected.add(i);
+    grid.innerHTML = '';
+    for (let i = 1; i <= st.total; i++) {
+      const item = document.createElement('div');
+      item.className = 'thumb-item selected';
+      item.dataset.page = St(i);
+      item.innerHTML = '<div class="spinner"></div><span class="page-num">' + i + '</span><span class="check-badge">✓</span>';
+      item.addEventListener('click', () => st.toggle(i));
+      item.addEventListener('dblclick', () => st.zoom(i));
+      grid.appendChild(item);
+    }
+    st.sync(); st.emit();
+    const BATCH = 4;
+    for (let s = 1; s <= st.total; s += BATCH) {
+      if (token !== st.token) return;
+      const jobs = [];
+      for (let i = s; i < s + BATCH && i <= st.total; i++) jobs.push(renderOne(i, token));
+      await Promise.all(jobs);
+    }
+  };
+
+  function St(n) { return String(n); }
+
+  async function renderOne(pageNum, token) {
+    try {
+      const page = await st.pdf.getPage(pageNum);
+      const vp = page.getViewport({ scale: 0.22 });
+      const c = document.createElement('canvas');
+      c.width = Math.max(1, Math.floor(vp.width));
+      c.height = Math.max(1, Math.floor(vp.height));
+      await page.render({ canvasContext: c.getContext('2d'), viewport: vp }).promise;
+      if (token !== st.token) { c.width = c.height = 1; return; }
+      const item = grid.querySelector('[data-page="' + pageNum + '"]');
+      if (!item) { c.width = c.height = 1; return; }
+      const sp = item.querySelector('.spinner');
+      if (sp) sp.remove();
+      let img = item.querySelector('img');
+      if (!img) { img = document.createElement('img'); item.insertBefore(img, item.firstChild); }
+      img.src = c.toDataURL('image/jpeg', 0.72);
+      c.width = c.height = 1;
+    } catch (e) { console.warn('缩略图渲染失败（第 ' + pageNum + ' 页）', e); }
+  }
+
+  st.zoom = async function (pageNum) {
+    if (!st.pdf) return;
+    try {
+      showToast('🔍 正在渲染第 ' + pageNum + ' 页…');
+      const page = await st.pdf.getPage(pageNum);
+      const vp = page.getViewport({ scale: 1.6 });
+      const c = document.createElement('canvas');
+      c.width = Math.floor(vp.width); c.height = Math.floor(vp.height);
+      await page.render({ canvasContext: c.getContext('2d'), viewport: vp }).promise;
+      openViewer(c.toDataURL('image/png'), '第 ' + pageNum + ' 页');
+    } catch (e) { showToast('❌ 预览失败', 'error'); }
+  };
+
+  st.toggle = function (pageNum) {
+    if (st.selected.has(pageNum)) st.selected.delete(pageNum); else st.selected.add(pageNum);
+    const item = grid.querySelector('[data-page="' + pageNum + '"]');
+    if (item) item.classList.toggle('selected', st.selected.has(pageNum));
+    st.emit();
+  };
+
+  st.sync = function () {
+    $$('.thumb-item', grid).forEach(item => {
+      const p = parseInt(item.dataset.page, 10);
+      item.classList.toggle('selected', st.selected.has(p));
+    });
+  };
+  st.setPages = function (arr) { st.selected = new Set(arr); st.sync(); st.emit(); };
+  st.selectAll = function () { for (let i = 1; i <= st.total; i++) st.selected.add(i); st.sync(); st.emit(); };
+  st.selectNone = function () { st.selected.clear(); st.sync(); st.emit(); };
+  st.invert = function () {
+    const s = new Set();
+    for (let i = 1; i <= st.total; i++) if (!st.selected.has(i)) s.add(i);
+    st.selected = s; st.sync(); st.emit();
+  };
+  st.parity = function (odd) {
+    const s = new Set();
+    for (let i = odd ? 1 : 2; i <= st.total; i += 2) s.add(i);
+    st.selected = s; st.sync(); st.emit();
+  };
+  st.list = function () { return Array.from(st.selected).sort((a, b) => a - b); };
+  st.emit = function () {
+    if (st.countEl) st.countEl.textContent = '已选 ' + st.selected.size + ' 页';
+    st.onchange(st.list());
+  };
+  st.reset = function () {
+    st.token++; st.pdf = null; st.total = 0; st.selected.clear();
+    grid.innerHTML = ''; st.emit();
+  };
+  return st;
+}
+
+/* 解析 "1-3,5,7-10" -> [1,2,3,5,7,8,9,10]，返回 null 表示无法解析 */
+function parsePageRange(str, maxPage) {
+  if (!str || !str.trim()) return null;
+  const pages = new Set();
+  str.split(/[,，;；]/).forEach(part => {
+    part = part.trim();
+    if (!part) return;
+    if (part.indexOf('-') >= 0) {
+      const seg = part.split('-');
+      const a = parseInt(seg[0], 10), b = parseInt(seg[1], 10);
+      if (isNaN(a) || isNaN(b)) return;
+      const s = Math.max(1, Math.min(a, b)), e = Math.min(maxPage, Math.max(a, b));
+      for (let i = s; i <= e; i++) pages.add(i);
+    } else {
+      const n = parseInt(part, 10);
+      if (!isNaN(n) && n >= 1 && n <= maxPage) pages.add(n);
+    }
+  });
+  return pages.size ? Array.from(pages).sort((a, b) => a - b) : null;
+}
+
+function pagesToRangeString(arr) {
+  if (!arr || !arr.length) return '';
+  const s = [...arr].sort((a, b) => a - b);
+  const out = [];
+  let start = s[0], end = s[0];
+  for (let i = 1; i < s.length; i++) {
+    if (s[i] === end + 1) end = s[i];
+    else { out.push(start === end ? '' + start : start + '-' + end); start = end = s[i]; }
+  }
+  out.push(start === end ? '' + start : start + '-' + end);
+  return out.join(',');
+}
+
+/* ------------------------------------------------------------
+   10. 图片 → PDF（含锐化）
+------------------------------------------------------------ */
+(function initImageToPdf() {
+  const queue = createImageQueue({ listEl: $('#i2pList'), onchange: onQueueChange });
+  initFxUI($('#i2pFxHost'), 'i2p', { sharpen: 45, radius: 1, mode: 'none' }, () => schedulePreview());
+
+  bindDropZone($('#i2pZone'), $('#i2pInput'), (files) => {
+    queue.add(files);
+    showToast('➕ 已加入 ' + files.length + ' 个文件');
+  });
+
+  function onQueueChange() {
+    const n = queue.items.length, ready = queue.ready().length;
+    $('#i2pListCard').style.display = n ? '' : 'none';
+    $('#i2pBar').classList.toggle('active', n > 0);
+    $('#i2pCount').textContent = n + ' 张' + (ready < n ? '（已就绪 ' + ready + '）' : '');
+    $('#i2pQueueInfo').textContent = n ? '共 ' + fmtSize(queue.totalSize()) + ' · 拖动手柄可排序' : '拖动手柄可排序';
+    if (n) {
+      $('#i2pBarName').textContent = queue.items.length > 1
+        ? queue.items[0].name + ' 等 ' + n + ' 个文件'
+        : queue.items[0].name;
+      $('#i2pBarMeta').textContent = fmtSize(queue.totalSize()) + ' · 将生成 ' + n + ' 页 PDF';
+      if (!$('#i2pFileName').value) $('#i2pFileName').placeholder = '默认：图片转PDF_' + stamp();
+    }
+    const has = ready > 0;
+    $('#i2pBuild').disabled = !has;
+    $('#i2pPreviewBtn').disabled = !has;
+    $('#i2pCmpCard').style.display = has ? '' : 'none';
+    if (has) schedulePreview(); else $('#i2pStats').innerHTML = '';
+  }
+
+  /* ---- 选项读取 ---- */
+  function readCfg() {
+    return {
+      pageSize: $('#i2pPageSize').value,
+      customW: parseFloat($('#i2pPageW').value) || 210,
+      customH: parseFloat($('#i2pPageH').value) || 297,
+      orient: $('#i2pOrient').value,
+      fit: $('#i2pFit').value,
+      margin: parseFloat($('#i2pMargin').value) || 0,
+      dpi: parseFloat($('#i2pDpi').value) || 150,
+      autoDpi: $('#i2pAutoDpi') ? $('#i2pAutoDpi').checked : true,
+      quality: parseFloat($('#i2pQuality').value) || 92,
+      fx: readFX('i2p'),
+      pnPos: $('#i2pPnPos').value,
+      pnFmt: $('#i2pPnFmt').value,
+      pnStart: parseInt($('#i2pPnStart').value, 10) || 0,
+      pnColor: $('#i2pPnColor').value,
+      wmText: $('#i2pWmText').value.trim(),
+      wmMode: $('#i2pWmMode').value,
+      wmAlpha: parseFloat($('#i2pWmAlpha').value),
+      wmSize: parseFloat($('#i2pWmSize').value),
+      wmAngle: parseFloat($('#i2pWmAngle').value),
+      wmColor: $('#i2pWmColor').value,
+      fileName: $('#i2pFileName').value.trim(),
+      metaOn: $('#i2pPdfMeta').checked,
+      metaTitle: $('#i2pMetaTitle').value.trim(),
+      metaAuthor: $('#i2pMetaAuthor').value.trim()
+    };
+  }
+
+  /* ---- 页面规划（纯函数，便于回归测试） ---- */
+  function computePagePlan(iw, ih, cfg) {
+    if (cfg.pageSize === 'auto') {
+      const mpx = Math.round(cfg.margin * cfg.dpi / MM_PER_INCH);
+      return { pw: iw + mpx * 2, ph: ih + mpx * 2, dpi: cfg.dpi, marginPx: mpx, landscape: iw > ih };
+    }
+    let wmm, hmm;
+    if (cfg.pageSize === 'custom') { wmm = cfg.customW; hmm = cfg.customH; }
+    else { const p = PAGE_PRESETS[cfg.pageSize]; wmm = p[0]; hmm = p[1]; }
+    let inW = wmm / MM_PER_INCH, inH = hmm / MM_PER_INCH;
+    const landscape = cfg.orient === 'auto' ? (iw > ih) : (cfg.orient === 'landscape');
+    if (landscape) { const t = inW; inW = inH; inH = t; }
+    let dpi = cfg.dpi;
+    if (cfg.autoDpi) {
+      const need = Math.max(iw / inW, ih / inH);
+      const areaCap = Math.sqrt(30e6 / (inW * inH));
+      dpi = Math.min(400, areaCap, Math.max(cfg.dpi, Math.ceil(need)));
+    }
+    dpi = Math.max(24, dpi);
+    return {
+      pw: Math.max(8, Math.round(inW * dpi)),
+      ph: Math.max(8, Math.round(inH * dpi)),
+      dpi: Math.round(dpi),
+      marginPx: Math.round(cfg.margin * dpi / MM_PER_INCH),
+      landscape: landscape
+    };
+  }
+  window.__toolboxComputePagePlan = computePagePlan;
+
+  /* ---- 单页画布构建（核心：锐化 + 排版 + 页码 + 水印） ---- */
+  async function buildPageCanvas(item, cfg, index, total) {    // 1) 旋转 → 2) 画质增强（锐化 / 文档增强）
+    const base = imageToCanvas(item.img, item.rotate);
+    if (fxIsActive(cfg.fx)) await applyImageFX(base, cfg.fx);
+    const iw = base.width, ih = base.height;
+
+    // 3) 计算页面像素尺寸与有效 DPI
+    const plan = computePagePlan(iw, ih, cfg);
+    const pw = plan.pw, ph = plan.ph, effDpi = plan.dpi, mpx = plan.marginPx;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = pw; canvas.height = ph;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, pw, ph);
+
+    // 4) 放置图片
+    const cw = pw - mpx * 2, chh = ph - mpx * 2;
+    if (cw > 0 && chh > 0) {
+      ctx.save();
+      ctx.beginPath(); ctx.rect(mpx, mpx, cw, chh); ctx.clip();
+      let dw, dh;
+      if (cfg.fit === 'stretch') { dw = cw; dh = chh; }
+      else if (cfg.fit === 'none') { dw = iw; dh = ih; }
+      else {
+        const s = cfg.fit === 'cover' ? Math.max(cw / iw, chh / ih) : Math.min(cw / iw, chh / ih);
+        dw = iw * s; dh = ih * s;
+      }
+      drawSmart(ctx, base, mpx + (cw - dw) / 2, mpx + (chh - dh) / 2, dw, dh);
+      ctx.restore();
+    }
+
+    // 5) 页码
+    if (cfg.pnPos !== 'off') {
+      const fs = Math.max(9, Math.round(ph * 0.019));
+      const pad = Math.max(Math.round(ph * 0.028), mpx + 4);
+      ctx.save();
+      ctx.font = '500 ' + fs + 'px -apple-system,"Microsoft YaHei",sans-serif';
+      ctx.fillStyle = cfg.pnColor;
+      ctx.textBaseline = 'alphabetic';
+      const text = pnText(cfg, index, total);
+      if (cfg.pnPos === 'bottom-center') { ctx.textAlign = 'center'; ctx.fillText(text, pw / 2, ph - pad); }
+      else if (cfg.pnPos === 'bottom-right') { ctx.textAlign = 'right'; ctx.fillText(text, pw - pad, ph - pad); }
+      else if (cfg.pnPos === 'bottom-left') { ctx.textAlign = 'left'; ctx.fillText(text, pad, ph - pad); }
+      else { ctx.textAlign = 'center'; ctx.fillText(text, pw / 2, pad + fs * 0.2); }
+      ctx.restore();
+    }
+
+    // 6) 水印
+    if (cfg.wmText) {
+      const size = Math.max(10, Math.round(Math.min(pw, ph) * cfg.wmSize / 100));
+      ctx.save();
+      ctx.globalAlpha = Math.max(0.02, Math.min(0.6, cfg.wmAlpha / 100));
+      ctx.fillStyle = cfg.wmColor;
+      ctx.font = '700 ' + size + 'px -apple-system,"Microsoft YaHei",sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      const ang = -cfg.wmAngle * Math.PI / 180;
+      ctx.translate(pw / 2, ph / 2);
+      ctx.rotate(ang);
+      if (cfg.wmMode === 'tile') {
+        const tw = ctx.measureText(cfg.wmText).width;
+        const stepX = tw + size * 1.1, stepY = size * 3;
+        const diag = Math.sqrt(pw * pw + ph * ph) / 2;
+        const nx = Math.ceil(diag / stepX) + 1, ny = Math.ceil(diag / stepY) + 1;
+        for (let iy = -ny; iy <= ny; iy++) {
+          for (let ix = -nx; ix <= nx; ix++) ctx.fillText(cfg.wmText, ix * stepX, iy * stepY);
+        }
+      } else {
+        ctx.fillText(cfg.wmText, 0, 0);
+      }
+      ctx.restore();
+    }
+
+    return { canvas: canvas, dpi: effDpi, pagePx: [pw, ph] };
+  }
+
+  function pnText(cfg, index, total) {
+    const n = cfg.pnStart + index;
+    const last = cfg.pnStart + total - 1;
+    switch (cfg.pnFmt) {
+      case 'page-n': return '第 ' + n + ' 页';
+      case 'n-of-total': return n + ' / ' + last;
+      case 'page-n-total': return '第 ' + n + ' 页 / 共 ' + last + ' 页';
+      default: return String(n);
+    }
+  }
+
+  /* ---- 预览 ---- */
+  function paintPreview(canvasEl, srcCanvas, maxH) {
+    const scale = Math.min(1, maxH / srcCanvas.height, 420 / srcCanvas.width);
+    canvasEl.width = Math.max(1, Math.round(srcCanvas.width * scale));
+    canvasEl.height = Math.max(1, Math.round(srcCanvas.height * scale));
+    const c = canvasEl.getContext('2d');
+    c.fillStyle = '#ffffff';
+    c.fillRect(0, 0, canvasEl.width, canvasEl.height);
+    c.imageSmoothingQuality = 'high';
+    c.drawImage(srcCanvas, 0, 0, canvasEl.width, canvasEl.height);
+  }
+
+  let previewing = false, pending = false;
+  async function refreshPreview() {
+    if (previewing) { pending = true; return; }
+    previewing = true;
+    try {
+      const ready = queue.ready();
+      if (!ready.length) return;
+      const item = ready[0], cfg = readCfg();
+      const raw = imageToCanvas(item.img, item.rotate);
+      paintPreview($('#i2pCanvasRaw'), raw, 320);
+      const built = await buildPageCanvas(item, cfg, 0, ready.length);
+      paintPreview($('#i2pCanvasOut'), built.canvas, 320);
+
+      let outSize = '-';
+      try {
+        const blob = await canvasToBlob(built.canvas, 'image/jpeg', cfg.quality / 100);
+        outSize = fmtSize(blob.size);
+      } catch (e) { }
+      const wIn = (built.pagePx[0] / built.dpi).toFixed(2);
+      const hIn = (built.pagePx[1] / built.dpi).toFixed(2);
+      const mmW = (built.pagePx[0] / built.dpi * MM_PER_INCH).toFixed(0);
+      const mmH = (built.pagePx[1] / built.dpi * MM_PER_INCH).toFixed(0);
+      $('#i2pCmpSub').textContent = ready.length > 1 ? '（共 ' + ready.length + ' 张，预览为第 1 张）' : '';
+      $('#i2pStats').innerHTML =
+        stat('原图尺寸', item.w + ' × ' + item.h) +
+        stat('输出像素', built.pagePx[0] + ' × ' + built.pagePx[1]) +
+        stat('页面尺寸', mmW + ' × ' + mmH + ' mm') +
+        stat('有效精度', built.dpi + ' DPI') +
+        stat('锐化', cfg.fx.sharpen > 0 ? cfg.fx.sharpen + '%' : '关闭') +
+        stat('单页体积', outSize);
+      raw.width = raw.height = 1;
+      built.canvas.width = built.canvas.height = 1;
+    } catch (e) {
+      console.warn('预览失败', e);
+    } finally {
+      previewing = false;
+      if (pending) { pending = false; schedulePreview(); }
+    }
+  }
+  function stat(k, v) { return '<div class="stat"><div class="k">' + k + '</div><div class="v">' + v + '</div></div>'; }
+  const schedulePreview = debounce(refreshPreview, 350);
+
+  /* ---- 生成 PDF ---- */
+  async function buildPDF() {
+    const ready = queue.ready();
+    if (!ready.length) { showToast('⚠️ 请先添加图片', 'error'); return; }
+    const cfg = readCfg();
+    Progress.open('📄 正在生成 PDF…');
+    try {
+      const PDFDocument = PDFLib.PDFDocument;
+      const pdf = await PDFDocument.create();
+      // 注意：pdf-lib 在 save() 时会强制覆盖 /Producer，因此署名写在 Creator / Subject 上
+      pdf.setCreator(TOOL_SIGN);
+      pdf.setSubject(TOOL_SIGN);
+      pdf.setCreationDate(new Date());
+      if (cfg.metaOn) {
+        if (cfg.metaTitle) pdf.setTitle(cfg.metaTitle);
+        if (cfg.metaAuthor) pdf.setAuthor(cfg.metaAuthor);
+      }
+      const total = ready.length;
+      for (let i = 0; i < total; i++) {
+        if (Progress.cancelled) { Progress.close(); showToast('已取消生成'); return; }
+        Progress.set((i / total) * 92, '正在处理第 ' + (i + 1) + '/' + total + ' 张：' + ready[i].name);
+        await yieldUI();
+        const built = await buildPageCanvas(ready[i], cfg, i, total);
+        const blob = await canvasToBlob(built.canvas, 'image/jpeg', cfg.quality / 100);
+        const bytes = new Uint8Array(await blob.arrayBuffer());
+        const embedded = await pdf.embedJpg(bytes);
+        const wPt = built.canvas.width * 72 / built.dpi;
+        const hPt = built.canvas.height * 72 / built.dpi;
+        const page = pdf.addPage([wPt, hPt]);
+        page.drawImage(embedded, { x: 0, y: 0, width: wPt, height: hPt });
+        built.canvas.width = built.canvas.height = 1;
+        await yieldUI();
+      }
+      Progress.set(96, '正在写出 PDF 文件…');
+      const out = await pdf.save();
+      const name = sanitizeName(cfg.fileName || ('图片转PDF_' + stamp())) + '.pdf';
+      downloadBlob(new Blob([out], { type: 'application/pdf' }), name);
+      Progress.set(100, '完成');
+      showToast('✅ 已生成 ' + name + '（' + total + ' 页 · ' + fmtSize(out.length) + '）', 'success');
+    } catch (e) {
+      console.error(e);
+      showToast('❌ 生成失败：' + (e && e.message ? e.message : e), 'error');
+    } finally {
+      Progress.close();
+    }
+  }
+
+  /* ---- 一键清晰化 ---- */
+  $('#i2pAutoEnhance').addEventListener('click', () => {
+    $('#i2pSharpen').value = 80;
+    $('#i2pSharpenVal').textContent = '80%';
+    $('#i2pRadius').value = '1';
+    $('#i2pBright').value = 2; $('#i2pBrightVal').textContent = '+2';
+    $('#i2pContrast').value = 10; $('#i2pContrastVal').textContent = '+10';
+    $('#i2pQuality').value = 95; $('#i2pQualityVal').textContent = '95%';
+    schedulePreview();
+    showToast('✨ 已开启强锐化（适合扫描件 / 拍照文档）；灰底严重可选「增强对比（去灰底）」', 'success');
+  });
+
+  /* ---- 事件绑定 ---- */
+  $('#i2pPageSize').addEventListener('change', () => {
+    $('#i2pCustomSizeGroup').style.display = $('#i2pPageSize').value === 'custom' ? '' : 'none';
+  });
+  $('#i2pMargin').addEventListener('input', () => {
+    $('#i2pMarginVal').textContent = $('#i2pMargin').value + ' mm';
+  });
+  $('#i2pQuality').addEventListener('input', () => {
+    $('#i2pQualityVal').textContent = $('#i2pQuality').value + '%';
+  });
+  [['i2pWmAlpha', '%'], ['i2pWmSize', '%'], ['i2pWmAngle', '°']].forEach(pair => {
+    const el = $('#' + pair[0]), lab = $('#' + pair[0] + 'Val');
+    if (!el || !lab) return;
+    el.addEventListener('input', () => { lab.textContent = el.value + pair[1]; });
+  });
+  $('#i2pPdfMeta').addEventListener('change', () => {
+    const on = $('#i2pPdfMeta').checked;
+    $('#i2pMetaTitleGroup').style.display = on ? '' : 'none';
+    $('#i2pMetaAuthorGroup').style.display = on ? '' : 'none';
+  });
+  $('#i2pSortName').addEventListener('click', queue.sortByName);
+  $('#i2pSortTime').addEventListener('click', queue.sortByTime);
+  $('#i2pReverse').addEventListener('click', queue.reverse);
+  $('#i2pRotAll').addEventListener('click', () => queue.rotateAll(90));
+  $('#i2pResetRot').addEventListener('click', queue.resetRotate);
+  $('#i2pClearAll').addEventListener('click', () => {
+    if (!queue.items.length) return;
+    if (confirmDanger('确定清空图片队列吗？')) queue.clear();
+  });
+  $('#i2pPreviewBtn').addEventListener('click', refreshPreview);
+  $('#i2pBuild').addEventListener('click', buildPDF);
+
+  // 任何设置改动都会刷新预览
+  const panel = $('#panel-i2p');
+  panel.addEventListener('input', (e) => {
+    if (e.target.closest('.img-item') || e.target.closest('.drop-zone')) return;
+    schedulePreview();
+  });
+  panel.addEventListener('change', (e) => {
+    if (e.target.closest('.img-item') || e.target.closest('.drop-zone')) return;
+    schedulePreview();
+  });
+
+  onQueueChange();
+})();
+
+/* ------------------------------------------------------------
+   11. PDF → 图片
+------------------------------------------------------------ */
+(function initPdfToImage() {
+  let pdfDoc = null, currentName = 'document';
+  initFxUI($('#p2iFxHost'), 'p2i', { sharpen: 0, radius: 2, mode: 'none' }, function () {});
+
+  const picker = createPagePicker({
+    gridEl: $('#p2iGrid'), countEl: $('#p2iCount'),
+    onchange: function () { updateButtons(); }
+  });
+
+  function updateButtons() {
+    const n = picker.selected.size;
+    const has = !!pdfDoc && n > 0;
+    $('#p2iConvert').disabled = !has;
+    $('#p2iLong').disabled = !has;
+    $('#p2iCopy').disabled = !has;
+    if (n) {
+      $('#p2iConvert').textContent = '⬇️ 转换并下载（' + n + ' 页）';
+      $('#p2iLong').textContent = '🧵 拼成长图（' + n + ' 页）';
+      $('#p2iRange').value = pagesToRangeString(picker.list());
+    } else {
+      $('#p2iConvert').textContent = '⬇️ 转换并下载';
+      $('#p2iLong').textContent = '🧵 拼成长图';
+      $('#p2iRange').value = '';
+    }
+  }
+
+  bindDropZone($('#p2iZone'), $('#p2iInput'), function (files) {
+    const f = files[0];
+    if (!f) return;
+    if (!/pdf$/i.test(f.name) && f.type !== 'application/pdf') { showToast('⚠️ 请选择 PDF 文件', 'error'); return; }
+    loadPDF(f);
+  });
+
+  async function loadPDF(file) {
+    picker.reset();
+    pdfDoc = null;
+    $('#p2iPreviewCard').style.display = 'none';
+    $('#p2iBar').classList.remove('active');
+    showToast('📖 正在解析 PDF…');
+    try {
+      const buf = await file.arrayBuffer();
+      const task = pdfjsLib.getDocument({ data: buf });
+      const doc = await task.promise;
+      pdfDoc = doc;
+      currentName = file.name.replace(/\.pdf$/i, '') || 'document';
+      $('#p2iBarName').textContent = file.name;
+      $('#p2iBarMeta').textContent = doc.numPages + ' 页 · ' + fmtSize(file.size);
+      $('#p2iBar').classList.add('active');
+      $('#p2iPreviewCard').style.display = '';
+      $('#p2iPrefix').placeholder = currentName;
+      await picker.load(doc);
+      updateButtons();
+      showToast('✅ 已加载：' + file.name + '（' + doc.numPages + ' 页）', 'success');
+    } catch (e) {
+      console.error(e);
+      showToast('❌ 无法打开该 PDF（可能已加密或损坏）', 'error');
+    }
+  }
+
+  function getScale() {
+    const v = $('#p2iScale').value;
+    if (v === 'custom') {
+      const c = parseFloat($('#p2iCustomScale').value);
+      if (isNaN(c)) return 2;
+      return Math.max(0.5, Math.min(5, c));
+    }
+    return parseFloat(v);
+  }
+  function getFormat() {
+    const f = $('#p2iFormat').value;
+    return {
+      format: f,
+      mime: { png: 'image/png', jpeg: 'image/jpeg', webp: 'image/webp' }[f] || 'image/png',
+      ext: { png: 'png', jpeg: 'jpg', webp: 'webp' }[f] || 'png'
+    };
+  }
+  function getQuality() { return parseInt($('#p2iQuality').value, 10) / 100; }
+  function prefix() { return sanitizeName($('#p2iPrefix').value.trim() || currentName); }
+
+  async function renderPage(pageNum, scale, mime) {
+    const page = await pdfDoc.getPage(pageNum);
+    const vp = page.getViewport({ scale: scale });
+    const c = document.createElement('canvas');
+    c.width = Math.max(1, Math.floor(vp.width));
+    c.height = Math.max(1, Math.floor(vp.height));
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, c.width, c.height);
+    await page.render({ canvasContext: ctx, viewport: vp }).promise;
+    const fx = readFX('p2i');
+    if (fxIsActive(fx)) await applyImageFX(c, fx);
+    return c;
+  }
+  async function pageToBlob(pageNum, scale, mime, quality) {
+    const c = await renderPage(pageNum, scale, mime);
+    const blob = await canvasToBlob(c, mime, quality);
+    c.width = c.height = 1;
+    return blob;
+  }
+
+  /* 转换并下载 */
+  async function convert(pages) {
+    if (!pdfDoc || !pages.length) return;
+    Progress.open('⬇️ 正在转换…');
+    try {
+      const scale = getScale(), f = getFormat(), q = getQuality(), pre = prefix();
+      const total = pages.length;
+      if (total === 1) {
+        Progress.set(30, '正在渲染第 ' + pages[0] + ' 页…');
+        const blob = checkMimeDowngrade(await pageToBlob(pages[0], scale, f.mime, q), f.mime);
+        const name = pre + '_第' + pages[0] + '页.' + realExt(blob, f.ext);
+        downloadBlob(blob, name);
+        Progress.set(100, '完成');
+        showToast('✅ 已下载：' + name + '（' + fmtSize(blob.size) + '）', 'success');
+      } else {
+        if (typeof JSZip === 'undefined') throw new Error('JSZip 未加载，请刷新页面');
+        const zip = new JSZip();
+        let bytes = 0;
+        for (let i = 0; i < total; i++) {
+          if (Progress.cancelled) { Progress.close(); showToast('已取消'); return; }
+          Progress.set((i / total) * 88, '正在渲染第 ' + pages[i] + ' 页（' + (i + 1) + '/' + total + '）');
+          await yieldUI();
+          const blob = await pageToBlob(pages[i], scale, f.mime, q);
+          checkMimeDowngrade(blob, f.mime);
+          bytes += blob.size;
+          zip.file(pre + '_第' + String(pages[i]).padStart(3, '0') + '页.' + realExt(blob, f.ext), blob);
+        }
+        Progress.set(92, '正在打包 ZIP…');
+        const zipBlob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } },
+          function (meta) { Progress.set(92 + meta.percent * 0.07, '正在打包 ZIP…'); });
+        const name = pre + '_图片合集.zip';
+        downloadBlob(zipBlob, name);
+        Progress.set(100, '完成');
+        showToast('✅ 已下载 ' + name + '（' + total + ' 页 · ' + fmtSize(zipBlob.size) + '）', 'success');
+      }
+    } catch (e) {
+      console.error(e);
+      showToast('❌ 转换失败：' + (e && e.message ? e.message : e), 'error');
+    } finally { Progress.close(); }
+  }
+
+  /* 拼接长图 */
+  async function makeLongImage(pages) {
+    if (!pdfDoc || !pages.length) return;
+    Progress.open('🧵 正在拼接长图…');
+    try {
+      const scale = getScale(), f = getFormat(), q = getQuality(), pre = prefix();
+      const dir = $('#p2iLongDir').value;
+      const fx = readFX('p2i');
+      const canvases = [];
+      let totalLen = 0, maxCross = 0;
+      for (let i = 0; i < pages.length; i++) {
+        if (Progress.cancelled) { Progress.close(); showToast('已取消'); return; }
+        Progress.set((i / pages.length) * 68, '渲染第 ' + pages[i] + ' 页（' + (i + 1) + '/' + pages.length + '）');
+        await yieldUI();
+        const c = await renderPage(pages[i], scale, f.mime, q);
+        canvases.push(c);
+        if (dir === 'v') { totalLen += c.height; maxCross = Math.max(maxCross, c.width); }
+        else { totalLen += c.width; maxCross = Math.max(maxCross, c.height); }
+      }
+      let s = 1;
+      const MAX_SIDE = 32000, MAX_AREA = 70e6;
+      if (totalLen > MAX_SIDE) s = MAX_SIDE / totalLen;
+      if (maxCross * totalLen * s * s > MAX_AREA) s = Math.min(s, Math.sqrt(MAX_AREA / (maxCross * totalLen)));
+      const W = Math.max(1, Math.round((dir === 'v' ? maxCross : totalLen) * s));
+      const H = Math.max(1, Math.round((dir === 'v' ? totalLen : maxCross) * s));
+      Progress.set(72, '合成画布 ' + W + ' × ' + H + '…');
+      await yieldUI();
+      const out = document.createElement('canvas');
+      out.width = W; out.height = H;
+      const octx = out.getContext('2d');
+      octx.fillStyle = '#ffffff';
+      octx.fillRect(0, 0, W, H);
+      let pos = 0;
+      canvases.forEach(c => {
+        const w = Math.round(c.width * s), h = Math.round(c.height * s);
+        if (dir === 'v') { octx.drawImage(c, 0, pos, w, h); pos += h; }
+        else { octx.drawImage(c, pos, 0, w, h); pos += w; }
+        c.width = c.height = 1;
+      });
+      const outMime = (f.mime === 'image/jpeg') ? 'image/jpeg' : (f.mime === 'image/webp' ? 'image/webp' : 'image/png');
+      const blob = checkMimeDowngrade(await canvasToBlob(out, outMime, q), outMime);
+      const name = pre + '_长图.' + realExt(blob, f.ext);
+      Progress.set(98, '正在写出图片…');
+      downloadBlob(blob, name);
+      out.width = out.height = 1;
+      Progress.set(100, '完成');
+      showToast('✅ 已生成长图 ' + W + ' × ' + H + ' px（' + fmtSize(blob.size) + '）', 'success');
+    } catch (e) {
+      console.error(e);
+      showToast('❌ 拼接失败：' + (e && e.message ? e.message : e), 'error');
+    } finally { Progress.close(); }
+  }
+
+  /* 复制首页到剪贴板 */
+  async function copyFirst(pages) {
+    try {
+      if (!navigator.clipboard || !window.ClipboardItem) throw new Error('当前浏览器不支持剪贴板图片写入');
+      Progress.open('📋 正在复制…');
+      Progress.set(40, '渲染第 ' + pages[0] + ' 页…');
+      const blob = await pageToBlob(pages[0], getScale(), 'image/png', 1);
+      await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+      Progress.set(100, '完成');
+      showToast('✅ 第 ' + pages[0] + ' 页已复制到剪贴板', 'success');
+    } catch (e) {
+      showToast('❌ 复制失败：' + (e && e.message ? e.message : e), 'error');
+    } finally { Progress.close(); }
+  }
+
+  /* 事件 */
+  $('#p2iRemove').addEventListener('click', function () {
+    pdfDoc = null;
+    picker.reset();
+    $('#p2iPreviewCard').style.display = 'none';
+    $('#p2iBar').classList.remove('active');
+    $('#p2iRange').value = '';
+    updateButtons();
+    showToast('已移除当前文件');
+  });
+  $('#p2iSelAll').addEventListener('click', function () { picker.selectAll(); });
+  $('#p2iSelNone').addEventListener('click', function () { picker.selectNone(); });
+  $('#p2iInvert').addEventListener('click', function () { picker.invert(); });
+  $('#p2iOdd').addEventListener('click', function () { picker.parity(true); });
+  $('#p2iEven').addEventListener('click', function () { picker.parity(false); });
+  $('#p2iApplyRange').addEventListener('click', function () {
+    if (!pdfDoc) return;
+    const str = $('#p2iRange').value.trim();
+    if (!str) { picker.selectAll(); showToast('✅ 已选择全部页面', 'success'); return; }
+    const arr = parsePageRange(str, picker.total);
+    if (!arr) { showToast('⚠️ 范围格式无法解析', 'error'); return; }
+    picker.setPages(arr);
+    showToast('✅ 已选中 ' + arr.length + ' 页', 'success');
+  });
+  $('#p2iRange').addEventListener('keydown', function (e) { if (e.key === 'Enter') $('#p2iApplyRange').click(); });
+  $('#p2iFormat').addEventListener('change', function () {
+    const isPng = $('#p2iFormat').value === 'png';
+    $('#p2iQualityGroup').style.opacity = isPng ? '.5' : '1';
+    $('#p2iQualityGroup').style.pointerEvents = isPng ? 'none' : 'auto';
+  });
+  $('#p2iScale').addEventListener('change', function () {
+    $('#p2iCustomScaleGroup').style.display = $('#p2iScale').value === 'custom' ? '' : 'none';
+  });
+  $('#p2iQuality').addEventListener('input', function () {
+    $('#p2iQualityVal').textContent = $('#p2iQuality').value + '%';
+  });
+  $('#p2iConvert').addEventListener('click', function () { convert(picker.list()); });
+  $('#p2iLong').addEventListener('click', function () { makeLongImage(picker.list()); });
+  $('#p2iCopy').addEventListener('click', function () { copyFirst(picker.list()); });
+
+  $('#p2iFormat').dispatchEvent(new Event('change'));
+  updateButtons();
+})();
+
+/* ------------------------------------------------------------
+   12. PDF 合并
+------------------------------------------------------------ */
+(function initMerge() {
+  const files = [];
+  let seq = 0;
+
+  function totalPages() { return files.reduce((s, f) => s + (f.pageCount || 0), 0); }
+
+  function render() {
+    const list = $('#mgList');
+    list.innerHTML = '';
+    files.forEach((f, i) => {
+      const row = document.createElement('div');
+      row.className = 'img-item';
+      row.draggable = true;
+      row.dataset.id = f.id;
+      const badge = f.error
+        ? '<span class="badge" style="background:var(--danger-bg);color:var(--danger)">读取失败</span>'
+        : '<span class="badge">' + f.pageCount + ' 页</span>';
+      const meta = f.error ? escapeHtml(f.error) : (fmtSize(f.size) + ' · ' + f.pageCount + ' 页');
+      row.innerHTML =
+        '<span class="drag-handle" title="拖动排序">⠿</span>' +
+        '<div class="thumb" style="font-size:.72rem;font-weight:700;color:var(--primary)">' + (i + 1) + '</div>' +
+        '<div class="info"><div class="name">' + escapeHtml(f.name) + '</div><div class="meta">' + meta + '</div></div>' +
+        '<div class="ops">' + badge +
+        '<button data-act="up" title="上移">↑</button><button data-act="down" title="下移">↓</button>' +
+        '<button data-act="del" class="del" title="移除">✕</button></div>';
+      row.addEventListener('click', function (e) {
+        const b = e.target.closest('button[data-act]');
+        if (!b) return;
+        const act = b.dataset.act;
+        if (act === 'up' && i > 0) { const t = files[i - 1]; files[i - 1] = files[i]; files[i] = t; render(); sync(); }
+        else if (act === 'down' && i < files.length - 1) { const t = files[i + 1]; files[i + 1] = files[i]; files[i] = t; render(); sync(); }
+        else if (act === 'del') { files.splice(i, 1); render(); sync(); }
+      });
+      row.addEventListener('dragstart', function (e) {
+        const t = e.target;
+        if (t && t.closest && t.closest('button, input, select, textarea')) { e.preventDefault(); return; }
+        row.classList.add('dragging'); e.dataTransfer.setData('text/plain', f.id);
+      });
+      row.addEventListener('dragend', function () { row.classList.remove('dragging'); $$('.img-item', list).forEach(x => x.classList.remove('drag-target')); });
+      row.addEventListener('dragover', function (e) { e.preventDefault(); if (!row.classList.contains('dragging')) row.classList.add('drag-target'); });
+      row.addEventListener('dragleave', function () { row.classList.remove('drag-target'); });
+      row.addEventListener('drop', function (e) {
+        e.preventDefault();
+        row.classList.remove('drag-target');
+        const id = e.dataTransfer.getData('text/plain');
+        const from = files.findIndex(x => x.id === id), to = files.findIndex(x => x.id === f.id);
+        if (from < 0 || to < 0 || from === to) return;
+        const moved = files.splice(from, 1)[0];
+        files.splice(to, 0, moved);
+        render(); sync();
+      });
+      list.appendChild(row);
+    });
+  }
+
+  function sync() {
+    const valid = files.filter(f => !f.error);
+    $('#mgCount').textContent = files.length + ' 个文件';
+    $('#mgTotal').textContent = '共 ' + totalPages() + ' 页' + (files.length - valid.length ? '（已跳过 ' + (files.length - valid.length) + ' 个）' : '');
+    $('#mgListCard').style.display = files.length ? '' : 'none';
+    $('#mgOptCard').style.display = files.length ? '' : 'none';
+    const ok = valid.length >= 1;
+    $('#mgRun').disabled = !ok;
+    $('#mgPreviewCount').disabled = !ok;
+    if (ok && !$('#mgName').value) $('#mgName').placeholder = 'merged_' + stamp();
+  }
+
+  async function addFiles(list) {
+    const pdfs = list.filter(f => /pdf$/i.test(f.name) || f.type === 'application/pdf');
+    if (!pdfs.length) { showToast('⚠️ 请选择 PDF 文件', 'error'); return; }
+    Progress.open('📖 正在读取 PDF 信息…');
+    try {
+      for (let i = 0; i < pdfs.length; i++) {
+        const f = pdfs[i];
+        Progress.set((i / pdfs.length) * 100, '读取 ' + (i + 1) + '/' + pdfs.length + '：' + f.name);
+        await yieldUI();
+        const rec = { id: 'mg_' + (++seq), name: f.name, size: f.size, lastModified: f.lastModified, bytes: null, pageCount: 0, error: null };
+        try {
+          const buf = new Uint8Array(await f.arrayBuffer());
+          const doc = await PDFLib.PDFDocument.load(buf, { ignoreEncryption: true });
+          rec.bytes = buf;
+          rec.pageCount = doc.getPageCount();
+        } catch (e) {
+          rec.error = '无法解析（可能已加密或损坏）';
+        }
+        files.push(rec);
+        render(); sync();
+        await yieldUI();
+      }
+    } finally { Progress.close(); }
+    showToast('➕ 已加入 ' + pdfs.length + ' 个 PDF', files.some(f => f.error) ? 'warn' : 'success');
+  }
+
+  async function merge() {
+    const valid = files.filter(f => !f.error);
+    if (!valid.length) { showToast('⚠️ 没有可合并的 PDF', 'error'); return; }
+    Progress.open('🔗 正在合并…');
+    try {
+      const PDFDocument = PDFLib.PDFDocument;
+      const out = await PDFDocument.create();
+      out.setCreator(TOOL_SIGN);
+      out.setSubject(TOOL_SIGN);
+      out.setCreationDate(new Date());
+      let font = null;
+      if ($('#mgAddPageNum').checked) {
+        font = await out.embedFont(PDFLib.StandardFonts.Helvetica);
+      }
+      let pageNo = 1;
+      for (let i = 0; i < valid.length; i++) {
+        if (Progress.cancelled) { Progress.close(); showToast('已取消'); return; }
+        Progress.set((i / valid.length) * 90, '合并第 ' + (i + 1) + '/' + valid.length + ' 个文件…');
+        await yieldUI();
+        const src = await PDFDocument.load(valid[i].bytes, { ignoreEncryption: true });
+        const copied = await out.copyPages(src, src.getPageIndices());
+        copied.forEach(p => {
+          out.addPage(p);
+          if (font) {
+            const h = p.getHeight(), w = p.getWidth();
+            p.drawText(String(pageNo), { x: w - 34, y: 18, size: 9, font: font, color: PDFLib.rgb(0.35, 0.35, 0.35) });
+          }
+          pageNo++;
+        });
+      }
+      Progress.set(95, '正在写出文件…');
+      const bytesOut = await out.save();
+      const name = sanitizeName($('#mgName').value.trim() || ('merged_' + stamp())) + '.pdf';
+      downloadBlob(new Blob([bytesOut], { type: 'application/pdf' }), name);
+      Progress.set(100, '完成');
+      showToast('✅ 已合并 ' + valid.length + ' 个文件 / ' + (pageNo - 1) + ' 页 · ' + fmtSize(bytesOut.length), 'success');
+    } catch (e) {
+      console.error(e);
+      showToast('❌ 合并失败：' + (e && e.message ? e.message : e), 'error');
+    } finally { Progress.close(); }
+  }
+
+  bindDropZone($('#mgZone'), $('#mgInput'), addFiles);
+  $('#mgSortName').addEventListener('click', function () {
+    files.sort((a, b) => a.name.localeCompare(b.name, 'zh-Hans-CN', { numeric: true })); render();
+  });
+  $('#mgReverse').addEventListener('click', function () { files.reverse(); render(); });
+  $('#mgClear').addEventListener('click', function () {
+    if (!files.length) return;
+    if (confirmDanger('确定清空合并列表吗？')) { files.length = 0; render(); sync(); }
+  });
+  $('#mgRun').addEventListener('click', merge);
+  $('#mgPreviewCount').addEventListener('click', function () {
+    showToast('📄 共 ' + files.filter(f => !f.error).length + ' 个有效文件 · ' + totalPages() + ' 页', 'success');
+  });
+  sync();
+})();
+
+/* ------------------------------------------------------------
+   13. PDF 拆分
+------------------------------------------------------------ */
+(function initSplit() {
+  let bytes = null, srcName = '', srcSize = 0;
+  const picker = createPagePicker({
+    gridEl: $('#spGrid'), countEl: $('#spCount'),
+    onchange: function () { $('#spRun').disabled = !bytes; }
+  });
+
+  bindDropZone($('#spZone'), $('#spInput'), async function (list) {
+    const f = list[0];
+    if (!f) return;
+    if (!/pdf$/i.test(f.name) && f.type !== 'application/pdf') { showToast('⚠️ 请选择 PDF 文件', 'error'); return; }
+    Progress.open('📖 正在打开 PDF…');
+    try {
+      Progress.set(30, '解析中…');
+      const buf = await f.arrayBuffer();
+      const doc = await pdfjsLib.getDocument({ data: buf.slice(0) }).promise;
+      bytes = new Uint8Array(buf);
+      srcName = f.name.replace(/\.pdf$/i, '') || 'document';
+      srcSize = f.size;
+      $('#spBarName').textContent = f.name;
+      $('#spBarMeta').textContent = doc.numPages + ' 页 · ' + fmtSize(f.size);
+      $('#spBar').classList.add('active');
+      $('#spGridCard').style.display = '';
+      $('#spOptCard').style.display = '';
+      $('#spName').placeholder = srcName + '_拆分';
+      Progress.set(60, '生成缩略图…');
+      await picker.load(doc);
+      $('#spRun').disabled = false;
+      showToast('✅ 已加载：' + f.name + '（' + doc.numPages + ' 页）', 'success');
+    } catch (e) {
+      console.error(e);
+      showToast('❌ 无法打开该 PDF（可能已加密或损坏）', 'error');
+    } finally { Progress.close(); }
+  });
+
+  function outPrefix() { return sanitizeName($('#spName').value.trim() || (srcName + '_拆分')); }
+
+  async function makeSubDoc(srcDoc, indices1based) {
+    const out = await PDFLib.PDFDocument.create();
+    out.setCreator(TOOL_SIGN);
+    out.setSubject(TOOL_SIGN);
+    const copied = await out.copyPages(srcDoc, indices1based.map(n => n - 1));
+    copied.forEach(p => out.addPage(p));
+    const b = await out.save();
+    return new Blob([b], { type: 'application/pdf' });
+  }
+
+  async function run() {
+    if (!bytes) { showToast('⚠️ 请先加载 PDF', 'error'); return; }
+    const mode = $('#spMode').value;
+    const sel = picker.list();
+    const total = picker.total;
+    Progress.open('✂️ 正在处理…');
+    try {
+      const srcDoc = await PDFLib.PDFDocument.load(bytes, { ignoreEncryption: true });
+      const pre = outPrefix();
+
+      if (mode === 'extract' || mode === 'delete') {
+        let pages = sel;
+        if (mode === 'delete') {
+          const set = new Set(sel);
+          pages = [];
+          for (let i = 1; i <= total; i++) if (!set.has(i)) pages.push(i);
+        }
+        if (!pages.length) { Progress.close(); showToast('⚠️ 结果为空，请调整页面选择', 'error'); return; }
+        Progress.set(60, '正在生成新 PDF…');
+        const blob = await makeSubDoc(srcDoc, pages);
+        const name = pre + (mode === 'extract' ? '_提取' : '_删除后') + '.pdf';
+        downloadBlob(blob, name);
+        Progress.set(100, '完成');
+        showToast('✅ 已生成 ' + name + '（' + pages.length + ' 页 · ' + fmtSize(blob.size) + '）', 'success');
+        return;
+      }
+
+      /* 需要打包 ZIP 的三种模式 */
+      let groups = [];
+      if (mode === 'chunk') {
+        const n = Math.max(1, parseInt($('#spChunkSize').value, 10) || 1);
+        for (let s = 1; s <= total; s += n) {
+          const g = [];
+          for (let i = s; i < s + n && i <= total; i++) g.push(i);
+          groups.push({ title: 'p' + String(s).padStart(3, '0') + '-' + String(Math.min(total, s + n - 1)).padStart(3, '0'), pages: g });
+        }
+      } else if (mode === 'groups') {
+        const raw = $('#spGroups').value.trim();
+        if (!raw) { Progress.close(); showToast('⚠️ 请填写分组范围，如 1-3; 4-6', 'error'); return; }
+        raw.split(/[;\n；]+/).forEach((seg, i) => {
+          seg = seg.trim();
+          if (!seg) return;
+          const arr = parsePageRange(seg, total);
+          if (arr) groups.push({ title: 'group' + (i + 1), pages: arr });
+        });
+        if (!groups.length) { Progress.close(); showToast('⚠️ 分组范围无法解析', 'error'); return; }
+      } else {
+        for (let i = 1; i <= total; i++) groups.push({ title: '第' + String(i).padStart(3, '0') + '页', pages: [i] });
+      }
+
+      if (typeof JSZip === 'undefined') throw new Error('JSZip 未加载，请刷新页面');
+      const zip = new JSZip();
+      for (let i = 0; i < groups.length; i++) {
+        if (Progress.cancelled) { Progress.close(); showToast('已取消'); return; }
+        Progress.set((i / groups.length) * 88, '生成第 ' + (i + 1) + '/' + groups.length + ' 份 PDF…');
+        await yieldUI();
+        const blob = await makeSubDoc(srcDoc, groups[i].pages);
+        zip.file(pre + '_' + groups[i].title + '.pdf', blob);
+      }
+      Progress.set(92, '正在打包 ZIP…');
+      const zipBlob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } },
+        function (m) { Progress.set(92 + m.percent * 0.07, '正在打包 ZIP…'); });
+      const zipName = pre + '_拆分结果.zip';
+      downloadBlob(zipBlob, zipName);
+      Progress.set(100, '完成');
+      showToast('✅ 已生成 ' + groups.length + ' 个 PDF 并打包为 ' + zipName, 'success');
+    } catch (e) {
+      console.error(e);
+      showToast('❌ 处理失败：' + (e && e.message ? e.message : e), 'error');
+    } finally { Progress.close(); }
+  }
+
+  $('#spMode').addEventListener('change', function () {
+    const m = $('#spMode').value;
+    $('#spChunkGroup').style.display = m === 'chunk' ? '' : 'none';
+    $('#spGroupsGroup').style.display = m === 'groups' ? '' : 'none';
+  });
+  $('#spSelAll').addEventListener('click', function () { picker.selectAll(); });
+  $('#spSelNone').addEventListener('click', function () { picker.selectNone(); });
+  $('#spInvert').addEventListener('click', function () { picker.invert(); });
+  $('#spOdd').addEventListener('click', function () { picker.parity(true); });
+  $('#spEven').addEventListener('click', function () { picker.parity(false); });
+  $('#spRangeInput').addEventListener('click', function () {
+    if (!bytes) { showToast('⚠️ 请先加载 PDF', 'error'); return; }
+    const s = window.prompt('输入要选中的页面范围（如 1-3,5,7-10）：', pagesToRangeString(picker.list()));
+    if (s === null) return;
+    if (!s.trim()) { picker.selectAll(); return; }
+    const arr = parsePageRange(s, picker.total);
+    if (!arr) { showToast('⚠️ 范围格式无法解析', 'error'); return; }
+    picker.setPages(arr);
+    showToast('✅ 已选中 ' + arr.length + ' 页', 'success');
+  });
+  $('#spRemove').addEventListener('click', function () {
+    bytes = null; picker.reset();
+    $('#spBar').classList.remove('active');
+    $('#spGridCard').style.display = 'none';
+    $('#spOptCard').style.display = 'none';
+    $('#spRun').disabled = true;
+    showToast('已移除当前文件');
+  });
+  $('#spRun').addEventListener('click', run);
+  $('#spMode').dispatchEvent(new Event('change'));
+})();
+
+/* ------------------------------------------------------------
+   14. 图片工具（转换 / 压缩 / 拼接 / 网格）
+------------------------------------------------------------ */
+(function initImgTool() {
+  let bitmapCache = {};
+  const queue = createImageQueue({
+    listEl: $('#itList'),
+    onchange: function () {
+      // 回收已移除图片的位图缓存
+      Object.keys(bitmapCache).forEach(k => {
+        if (!queue.items.some(it => it.id === k)) {
+          try { if (bitmapCache[k] && bitmapCache[k].close) bitmapCache[k].close(); } catch (e) { }
+          delete bitmapCache[k];
+        }
+      });
+      const n = queue.items.length, ready = queue.ready().length;
+      $('#itListCard').style.display = n ? '' : 'none';
+      $('#itBar').classList.toggle('active', n > 0);
+      $('#itCount').textContent = n + ' 张' + (ready < n ? '（已就绪 ' + ready + '）' : '');
+      $('#itBarName').textContent = n ? (n > 1 ? queue.items[0].name + ' 等 ' + n + ' 个文件' : queue.items[0].name) : '-';
+      $('#itBarMeta').textContent = n ? (fmtSize(queue.totalSize()) + ' · 已就绪 ' + ready) : '-';
+      $('#itOptCard').style.display = n ? '' : 'none';
+      $('#itRun').disabled = ready === 0;
+    }
+  });
+  initFxUI($('#itFxHost'), 'it', { sharpen: 0, radius: 2, mode: 'none' }, function () {});
+
+  bindDropZone($('#itZone'), $('#itInput'), function (files) {
+    queue.add(files);
+    showToast('➕ 已加入 ' + files.length + ' 个文件');
+  });
+
+  $('#itSortName').addEventListener('click', queue.sortByName);
+  $('#itReverse').addEventListener('click', queue.reverse);
+  $('#itClearAll').addEventListener('click', function () {
+    if (!queue.items.length) return;
+    if (confirmDanger('确定清空图片队列吗？')) queue.clear();
+  });
+  $('#itClean').addEventListener('click', function () {
+    if (!queue.items.length) return;
+    if (confirmDanger('确定清空图片队列吗？')) queue.clear();
+  });
+  $('#itQuality').addEventListener('input', function () { $('#itQualityVal').textContent = $('#itQuality').value + '%'; });
+  $('#itScalePct').addEventListener('input', function () { $('#itScaleVal').textContent = $('#itScalePct').value + '%'; });
+  $('#itMode').addEventListener('change', function () {
+    const m = $('#itMode').value;
+    $$('.it-convert', document).forEach(el => el.style.display = m === 'convert' ? '' : 'none');
+    $$('.it-stack', document).forEach(el => el.style.display = m === 'stack' ? '' : 'none');
+    $$('.it-grid', document).forEach(el => el.style.display = m === 'grid' ? '' : 'none');
+  });
+  $('#itAutoEnhance').addEventListener('click', function () {
+    $('#itSharpen').value = 70; $('#itSharpenVal').textContent = '70%';
+    $('#itRadius').value = '1';
+    $('#itContrast').value = 10; $('#itContrastVal').textContent = '+10';
+    showToast('✨ 已开启锐化 + 对比度增强', 'success');
+  });
+
+  function fxSnapshot() { return readFX('it'); }
+
+  async function decodeSrc(item) {
+    const respect = $('#itOrient').value === 'auto';
+    if (!respect) {
+      if (bitmapCache[item.id]) return bitmapCache[item.id];
+      try {
+        const bmp = await createImageBitmap(item.file, { imageOrientation: 'none' });
+        bitmapCache[item.id] = bmp;
+        return bmp;
+      } catch (e) { /* 回退到普通解码 */ }
+    }
+    return item.img;
+  }
+
+  function targetSize(w, h) {
+    const pct = parseFloat($('#itScalePct').value) / 100;
+    const maxEdge = parseFloat($('#itMaxEdge').value) || 0;
+    let tw = w * pct, th = h * pct;
+    if (maxEdge > 0 && Math.max(tw, th) > maxEdge) {
+      const k = maxEdge / Math.max(tw, th);
+      tw *= k; th *= k;
+    }
+    return [Math.max(1, Math.round(tw)), Math.max(1, Math.round(th))];
+  }
+
+  function showResults(rows) {
+    const host = $('#itResults');
+    if (!host) return;
+    if (!rows.length) { host.innerHTML = ''; return; }
+    host.innerHTML = rows.map(r =>
+      '<div class="stat"><div class="k">' + escapeHtml(r.k) + '</div><div class="v">' + escapeHtml(r.v) + '</div></div>').join('');
+  }
+
+  /* --- 模式一：批量转换压缩 --- */
+  async function runConvert() {
+    const ready = queue.ready();
+    if (!ready.length) return;
+    const fmt = $('#itFormat').value;
+    const mime = { jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp' }[fmt];
+    const ext = { jpeg: 'jpg', png: 'png', webp: 'webp' }[fmt];
+    const q = parseFloat($('#itQuality').value) / 100;
+    const fx = fxSnapshot();
+    const results = [];
+    const zip = ready.length > 1 ? new JSZip() : null;
+    let totalIn = 0, totalOut = 0;
+
+    for (let i = 0; i < ready.length; i++) {
+      if (Progress.cancelled) { Progress.close(); showToast('已取消'); return; }
+      const item = ready[i];
+      Progress.set((i / ready.length) * 92, '处理第 ' + (i + 1) + '/' + ready.length + ' 张：' + item.name);
+      await yieldUI();
+      const src = await decodeSrc(item);
+      const sw = src.naturalWidth || src.width, sh = src.naturalHeight || src.height;
+      const [tw, th] = targetSize(sw, sh);
+      const work = document.createElement('canvas');
+      work.width = tw; work.height = th;
+      const ctx = work.getContext('2d');
+      if (mime !== 'image/png') { ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, tw, th); }
+      drawSmart(ctx, src, 0, 0, tw, th);
+      if (fxIsActive(fx)) await applyImageFX(work, fx);
+      const blob = checkMimeDowngrade(await canvasToBlob(work, mime, q), mime);
+      work.width = work.height = 1;
+      totalIn += item.size; totalOut += blob.size;
+      const base = item.name.replace(/\.[^.]+$/, '');
+      const outName = base + '.' + realExt(blob, ext);
+      if (zip) zip.file(outName, blob); else downloadBlob(blob, outName);
+      results.push({ k: item.name.length > 14 ? item.name.slice(0, 13) + '…' : item.name, v: fmtSize(item.size) + ' → ' + fmtSize(blob.size) });
+      await yieldUI();
+    }
+
+    if (zip) {
+      Progress.set(94, '正在打包 ZIP…');
+      const zipBlob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } },
+        function (m) { Progress.set(94 + m.percent * 0.05, '正在打包 ZIP…'); });
+      downloadBlob(zipBlob, '图片转换_' + stamp() + '.zip');
+      Progress.set(100, '完成');
+      showToast('✅ ' + ready.length + ' 张已处理：' + fmtSize(totalIn) + ' → ' + fmtSize(zipBlob.size), 'success');
+    } else {
+      Progress.set(100, '完成');
+      const r = totalIn ? Math.round((1 - totalOut / totalIn) * 100) : 0;
+      showToast('✅ 已处理：' + fmtSize(totalIn) + ' → ' + fmtSize(totalOut) + (r > 0 ? '（省 ' + r + '%）' : ''), 'success');
+    }
+    results.unshift({ k: '总计', v: fmtSize(totalIn) + ' → ' + fmtSize(totalOut) });
+    showResults(results);
+  }
+
+  /* --- 模式二：拼接长图 --- */
+  async function runStack() {
+    const ready = queue.ready();
+    if (ready.length < 1) return;
+    const gap = Math.max(0, parseInt($('#itStackGap').value, 10) || 0);
+    const bg = $('#itStackBg').value;
+    const mode = $('#itStackWidth').value;
+    const fx = fxSnapshot();
+    const q = parseFloat($('#itQuality').value) / 100;
+
+    const canvases = [];
+    let maxW = 0, totalH = 0;
+    for (let i = 0; i < ready.length; i++) {
+      if (Progress.cancelled) { Progress.close(); showToast('已取消'); return; }
+      Progress.set((i / ready.length) * 70, '处理第 ' + (i + 1) + '/' + ready.length + ' 张…');
+      await yieldUI();
+      const src = await decodeSrc(ready[i]);
+      const c = imageToCanvas(src, 0);
+      if (fxIsActive(fx)) await applyImageFX(c, fx);
+      canvases.push(c);
+      maxW = Math.max(maxW, c.width);
+      totalH += c.height;
+    }
+    let targetW = 0;
+    if (mode === 'fixed') targetW = Math.max(50, parseInt($('#itStackW').value, 10) || 1200);
+
+    let outW = targetW || maxW;
+    let outH = gap * (canvases.length - 1);
+    const scaled = canvases.map(c => {
+      const w = targetW ? targetW : c.width;
+      const h = Math.round(c.height * (w / c.width));
+      outH += h;
+      return { c: c, w: w, h: h };
+    });
+    let s = 1;
+    const MAX_SIDE = 32000, MAX_AREA = 70e6;
+    if (outH > MAX_SIDE) s = MAX_SIDE / outH;
+    if (outW * outH * s * s > MAX_AREA) s = Math.min(s, Math.sqrt(MAX_AREA / (outW * outH)));
+
+    const W = Math.max(1, Math.round(outW * s)), H = Math.max(1, Math.round(outH * s));
+    Progress.set(78, '合成 ' + W + ' × ' + H + ' px…');
+    await yieldUI();
+    const out = document.createElement('canvas');
+    out.width = W; out.height = H;
+    const ctx = out.getContext('2d');
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, W, H);
+    let y = 0;
+    scaled.forEach(it => {
+      const w = Math.round(it.w * s), h = Math.round(it.h * s);
+      const g = Math.round(gap * s);
+      if (it.w === it.c.width && w === it.c.width) ctx.drawImage(it.c, 0, y);
+      else drawSmart(ctx, it.c, 0, y, w, h);
+      y += h + g;
+      it.c.width = it.c.height = 1;
+    });
+    const blob = await canvasToBlob(out, 'image/jpeg', q);
+    downloadBlob(blob, '拼接长图_' + stamp() + '.jpg');
+    Progress.set(100, '完成');
+    showToast('✅ 已生成长图 ' + W + ' × ' + H + ' px · ' + fmtSize(blob.size), 'success');
+    out.width = out.height = 1;
+  }
+
+  /* --- 模式三：网格拼图 --- */
+  async function runGrid() {
+    const ready = queue.ready();
+    if (ready.length < 1) return;
+    const cols = Math.max(1, Math.min(12, parseInt($('#itGridCols').value, 10) || 3));
+    const cell = Math.max(40, parseInt($('#itGridCell').value, 10) || 400);
+    const gap = Math.max(0, parseInt($('#itGridGap').value, 10) || 0);
+    const bg = $('#itGridBg').value;
+    const fit = $('#itGridFit').value;
+    const fx = fxSnapshot();
+    const q = parseFloat($('#itQuality').value) / 100;
+
+    const rowsN = Math.ceil(ready.length / cols);
+    const W = cols * cell + (cols + 1) * gap;
+    const H = rowsN * cell + (rowsN + 1) * gap;
+    if (W * H > 60e6) { showToast('⚠️ 输出过大，请减小单元格尺寸或列数', 'error'); return; }
+
+    try {
+      const out = document.createElement('canvas');
+      out.width = W; out.height = H;
+      const ctx = out.getContext('2d');
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, W, H);
+
+      for (let i = 0; i < ready.length; i++) {
+        if (Progress.cancelled) { Progress.close(); showToast('已取消'); return; }
+        Progress.set((i / ready.length) * 92, '处理第 ' + (i + 1) + '/' + ready.length + ' 张…');
+        await yieldUI();
+        const src = await decodeSrc(ready[i]);
+        const c = imageToCanvas(src, 0);
+        if (fxIsActive(fx)) await applyImageFX(c, fx);
+        const col = i % cols, row = Math.floor(i / cols);
+        const x = gap + col * (cell + gap), y = gap + row * (cell + gap);
+        ctx.save();
+        ctx.beginPath(); ctx.rect(x, y, cell, cell); ctx.clip();
+        if (fit === 'cover') {
+          const k = Math.max(cell / c.width, cell / c.height);
+          const w = c.width * k, h = c.height * k;
+          ctx.drawImage(c, x + (cell - w) / 2, y + (cell - h) / 2, w, h);
+        } else {
+          const k = Math.min(cell / c.width, cell / c.height);
+          const w = c.width * k, h = c.height * k;
+          if (k > 1) ctx.drawImage(c, x + (cell - w) / 2, y + (cell - h) / 2, w, h);
+          else drawSmart(ctx, c, x + (cell - w) / 2, y + (cell - h) / 2, w, h);
+        }
+        ctx.restore();
+        c.width = c.height = 1;
+      }
+      Progress.set(95, '正在写出图片…');
+      const blob = await canvasToBlob(out, 'image/jpeg', q);
+      downloadBlob(blob, '网格拼图_' + rowsN + 'x' + cols + '_' + stamp() + '.jpg');
+      Progress.set(100, '完成');
+      showToast('✅ 已生成网格拼图 ' + W + ' × ' + H + ' px · ' + fmtSize(blob.size), 'success');
+      out.width = out.height = 1;
+    } catch (e) {
+      console.error(e);
+      showToast('❌ 拼图失败：' + (e && e.message ? e.message : e), 'error');
+    } finally { Progress.close(); }
+  }
+
+  async function run() {
+    const mode = $('#itMode').value;
+    Progress.open(mode === 'convert' ? '🚀 正在批量处理…' : '🚀 正在合成…');
+    try {
+      if (mode === 'convert') await runConvert();
+      else if (mode === 'stack') await runStack();
+      else await runGrid();
+    } catch (e) {
+      console.error(e);
+      showToast('❌ 处理失败：' + (e && e.message ? e.message : e), 'error');
+    } finally { Progress.close(); }
+  }
+
+  $('#itRun').addEventListener('click', run);
+  $('#itMode').dispatchEvent(new Event('change'));
+})();
+
+/* ------------------------------------------------------------
+   15. 标签切换 + 快捷键
+------------------------------------------------------------ */
+(function initTabs() {
+  const tabs = $$('.tab-btn');
+  const panels = { i2p: $('#panel-i2p'), p2i: $('#panel-p2i'), merge: $('#panel-merge'), split: $('#panel-split'), imgtool: $('#panel-imgtool') };
+  const order = ['i2p', 'p2i', 'merge', 'split', 'imgtool'];
+  function activate(key) {
+    tabs.forEach(t => t.classList.toggle('active', t.dataset.tab === key));
+    order.forEach(k => panels[k].classList.toggle('active', k === key));
+    try { localStorage.setItem('toolbox-tab', key); } catch (e) { }
+    try { if (location.hash !== '#' + key) location.hash = key; } catch (e) { }
+  }
+  tabs.forEach(t => t.addEventListener('click', () => activate(t.dataset.tab)));
+  window.addEventListener('hashchange', () => {
+    const k = (location.hash || '').replace('#', '');
+    if (order.indexOf(k) >= 0) activate(k);
+  });
+  document.addEventListener('keydown', (e) => {
+    if (!(e.altKey && !e.ctrlKey && !e.metaKey)) return;
+    const i = parseInt(e.key, 10);
+    if (i >= 1 && i <= order.length) { e.preventDefault(); activate(order[i - 1]); }
+  });
+  let saved = null;
+  try { saved = localStorage.getItem('toolbox-tab'); } catch (e) { }
+  const hashKey = (location.hash || '').replace('#', '');
+  activate(order.indexOf(hashKey) >= 0 ? hashKey : (order.indexOf(saved) >= 0 ? saved : 'i2p'));
+})();
+
+console.log('%c🧰 PDF & 图片全能工具箱 已就绪', 'color:#4f6ef7;font-weight:bold');
+console.log('   Alt+1..5 切换工具 · 全部处理均在本地浏览器完成，文件不会上传');
+
+/* 调试出口：供自动化回归测试调用（不影响正常使用） */
+try {
+  window.__toolbox = {
+    applyImageFX: applyImageFX,
+    unsharpMask: unsharpMask,
+    blurH: blurH,
+    blurV: blurV,
+    lumPercentiles: lumPercentiles,
+    localMeanMap: localMeanMap,
+    docContrastLUT: docContrastLUT,
+    docBinarize: docBinarize,
+    fxIsActive: fxIsActive,
+    readFX: readFX,
+    FX_PRESETS: FX_PRESETS,
+    computePagePlan: window.__toolboxComputePagePlan || null,
+    parsePageRange: parsePageRange,
+    pagesToRangeString: pagesToRangeString,
+    sanitizeName: sanitizeName,
+    fmtSize: fmtSize,
+    MM_PER_INCH: MM_PER_INCH,
+    PAGE_PRESETS: PAGE_PRESETS,
+    FX_MAX_PIXELS: FX_MAX_PIXELS
+  };
+} catch (e) { console.warn('调试出口初始化失败', e); }})();
+</script>
 </body>
 </html>
