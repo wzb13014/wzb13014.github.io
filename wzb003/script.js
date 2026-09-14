@@ -646,7 +646,7 @@ const RAW_DATA = [{
         { name: "图片滤镜调节器", url: "https://wzb13014.github.io/wzb/tool36", desc: "工具" },
         { name: "GIF动图制作器", url: "https://wzb13014.github.io/wzb/tool92", desc: "工具" },       
         { name: "Pixel Mask Pro", url: "https://wzb13014.github.io/wzb/tool68", desc: "图片马赛克" },  
-        { name: "图片轮播", url: "https://wzb13014.github.io/wzb/tool68", desc: "工具" },      
+        { name: "图片轮播", url: "https://wzb13014.github.io/wzb/tool174", desc: "工具" },      
         { name: "ZIP压缩打包解压", url: "https://wzb13014.github.io/wzb/tool96", desc: "压缩解压" },          
         { name: "电子签名", url: "https://wzb13014.github.io/wzb/tool20", desc: "工具" },
         { name: "电子公章", url: "https://wzb13014.github.io/wzb/tool21", desc: "工具" },
