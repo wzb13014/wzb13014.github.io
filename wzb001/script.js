@@ -1061,6 +1061,7 @@ const RAW_DATA = [{
         { name: "TRAE WORK", url: "https://work.trae.cn/?utm_source=content&utm_medium=doc_solo&utm_campaign=quickstart&mode=mtc", desc: "在线AI" },
         { name: "WorkBuddy", url: "https://www.codebuddy.cn/work/?fromSource=gwzcw.12117220.12117220.12117220&utm_medium=cpc&utm_id=gwzcw.12117220.12117220.12117220&msclkid=c334d204d0941fbf4f34b8417e9f9a37", desc: "自动化AI-软件" },
         { name: "Agnes", url: "https://agnes-ai.com/", desc: "AI API" },  
+        { name: "Cline Desktop", url: "https://cline.bot/desktop", desc: "AI软件" },      
         { name: "智谱", url: "https://bigmodel.cn/usercenter/settings/auth", desc: "AI API" },  
         { name: "日日新", url: "https://www.sensenova.cn/token-plan", desc: "AI API" },    
         { name: "Agnes Code", url: "https://agnes-ai.com/agnescode", desc: "软件" },     
