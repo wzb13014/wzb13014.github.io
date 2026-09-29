@@ -1,7 +1,7 @@
 ﻿// ========================================================================
 //  网址库 · 增强版 script.js
 //  新增：localStorage 持久化、增删改(CRUD)、收藏、访问统计、
-//       卡片/列表视图、紧凑密度、favicon、复制链接、最近访问、
+//       卡片/列表/杂志/彩带视图、紧凑密度、favicon、复制链接、最近访问、
 //       导入导出、拖拽排序、搜索增强、快捷键、右键菜单、Toast
 // ========================================================================
 
@@ -205,6 +205,9 @@ const RAW_DATA = [{
         { name: "CPSIA", url: "https://www.cpsc.gov/Regulations-Laws--Standards/Statutes/The-Consumer-Product-Safety-Improvement-Act", desc: "美国消费品安全委员会" },
         { name: "CTPAT", url: "https://www.cbp.gov/border-security/ports-entry/cargo-security/ctpat-customs-trade-partnership-against-terrorism/apply/security-criteria", desc: "美国海关-商贸反恐伙伴计划" },
         { name: "NHTSA", url: "https://www.nhtsa.gov/laws-regulations", desc: "美国国家公路交通安全管理局" },
+        { name: "CPSC", url: "https://www.cpsc.gov/zh-CN/home", desc: "美国消费品安全委员会" },
+        { name: "FTC", url: "https://www.ftc.gov/", desc: "美国消费者由联邦贸易委员会" },
+        { name: "APHIS", url: "https://www.aphis.usda.gov/", desc: "美国农业部的动植物卫生检验署" },
         { name: "日本标准", url: "https://www.sacinfo.cn/s/std?p.p1=JIS", desc: "标准查询" },
         { name: "JAS", url: "https://www.maff.go.jp/j/jas/jas_kikaku/yuuki.html#kikaku", desc: "日本有机标准" },
         { name: "UKAS", url: "https://www.ukas.com/", desc: "英国皇家认可委员会" },
@@ -383,9 +386,10 @@ const RAW_DATA = [{
         { name: "加拿大医疗器械最新消息", url: "https://www.canada.ca/en/health-canada/services/drugs-health-products/medical-devices/what-new.html", desc: "关注加拿大医疗器械相关的最新动态" },
         { name: "日本PMDA（注册）", url: "https://www.pmda.go.jp/review-services/drug-reviews/foreign-mfr/0003.html", desc: "医疗器械注册查询" },
         { name: "日本法规翻译", url: "https://www.japaneselawtranslation.go.jp/en/laws", desc: "关注日本医疗器械法规的变化" },
-        { name: "厚生劳动省官网", url: "https://www.mhlw.go.jp/english/index.html", desc: "药品和医疗器械" },
-        { name: "英国医疗器械监管", url: "https://www.gov.uk/topic/medicines-medical-devices-blood/medical-devices-regulation-safety", desc: "关注英国医疗器械相关的最新动态" },
-        { name: "英国医疗器械指南", url: "https://www.gov.uk/government/collections/new-guidance-and-information-for-industry-from-the-mhra", desc: "关注英国医疗器械相关的最新动态" },
+        { name: "厚生劳动省官网", url: "https://www.mhlw.go.jp/english/index.html", desc: "日本药品和医疗器械" },
+        { name: "药品与医疗产品监管局", url: "https://www.gov.uk/government/organisations/medicines-and-healthcare-products-regulatory-agency", desc: "英国" },
+        { name: "医疗器械监管", url: "https://www.gov.uk/topic/medicines-medical-devices-blood/medical-devices-regulation-safety", desc: "关注英国医疗器械相关的最新动态" },
+        { name: "医疗器械指南", url: "https://www.gov.uk/government/collections/new-guidance-and-information-for-industry-from-the-mhra", desc: "关注英国医疗器械相关的最新动态" },
         { name: "TGA法规", url: "https://www.legislation.gov.au/Search/Therapeutic%20Goods", desc: "澳大利亚TGA法规" },
         { name: "TGA", url: "https://www.tga.gov.au/resources", desc: "所有指南文件的检索" },
         { name: "TAG公告", url: "https://www.tga.gov.au/resources/publication/publications", desc: "公告" },
@@ -510,7 +514,6 @@ const RAW_DATA = [{
     ]
 }, {
     id: 11, title: "国内法规", icon: "fa-gavel", websites: [
-        { name: "全球法规网", url: "https://policy.mofcom.gov.cn/law/index.shtml", desc: "全球法规网" },
         { name: "最高人民法院公报", url: "http://gongbao.court.gov.cn/?ref=https://szsyw.cn", desc: "最高人民法院公报" },
         { name: "国家法律法规数据库", url: "https://flk.npc.gov.cn/index", desc: "国家法律法规数据库" },
         { name: "国家规章库", url: "https://www.gov.cn/zhengce/xxgk/gjgzk/index.htm?searchWord=", desc: "国家规章库" },
@@ -525,6 +528,23 @@ const RAW_DATA = [{
         { name: "证券期货法规数据库系统", url: "https://neris.csrc.gov.cn/falvfagui/?ref=https://szsyw.cn", desc: "证券期货法规数据库系统" },
     ]
 }, {
+    id: 32, title: "国外法规", icon: "fa-gavel", websites: [
+        { name: "全球法规网", url: "https://policy.mofcom.gov.cn/law/index.shtml", desc: "全球法规网" },
+        { name: "正确包装与标识法案", url: "https://www.ftc.gov/legal-library/browse/statutes/fair-packaging-labeling-act", desc: "FPLA|美国" },       
+        { name: "安全化妆品法案 2011", url: "https://www.congress.gov/bill/112th-congress/house-bill/2359/text", desc: "H.R.2359|美国" },
+        { name: "度量衡(包装商品)规定2006", url: "https://www.legislation.gov.uk/uksi/2006/659/regulation/2", desc: "英国" },
+        { name: "度量衡法案", url: "https://laws-lois.justice.gc.ca/eng/acts/w-6/page-1.html", desc: "RS1985|加拿大" },
+        { name: "生物杀灭剂法规", url: "https://eur-lex.europa.eu/eli/reg/2012/528/oj/eng", desc: "(EU) No 528/2012|欧盟" },
+        { name: "化妆品指令", url: "https://eur-lex.europa.eu/eli/dir/1976/768/oj/eng", desc: "76/768/EEC|欧盟" },
+        { name: "化妆品产品新规定", url: "https://eur-lex.europa.eu/eli/reg/2009/1223/oj/eng", desc: "(EC)1223/2009|欧盟" },
+        { name: "一般产品安全指令", url: "https://eur-lex.europa.eu/eli/dir/2001/95/oj/eng", desc: "2001/95/EC|欧盟" },
+        { name: "合格评定程序与 CE 标志规定", url: "https://eur-lex.europa.eu/eli/dec/1993/465/oj/eng", desc: "93/465/EEC|欧盟" },
+        { name: "加拿大环境保护法", url: "https://laws-lois.justice.gc.ca/eng/acts/c-15.31/index.html", desc: "加拿大" },
+        { name: "加拿大环境评估法", url: "https://laws-lois.justice.gc.ca/eng/acts/c-15.21/index.html", desc: "加拿大" },
+        { name: "新物质申报条例（化学品和聚合物）指南文件", url: "https://www.canada.ca/en/environment-climate-change/services/managing-pollution/evaluating-new-substances/chemicals-polymers/guidance.html", desc: "加拿大" },
+
+    ]
+},{
     id: 31, title: "其他国家平台", icon: "fa-gavel", websites: [
         { name: "中国人大网", url: "http://www.npc.gov.cn/npc/index.html", desc: "" },
         { name: "中国政协网", url: "http://www.cppcc.gov.cn/", desc: "" },
@@ -1060,7 +1080,8 @@ const RAW_DATA = [{
         { name: "豆包工作", url: "https://www.doubao.com/work?channel=dbweb_bing_xhs_sem_pinp_dbgz_dbgz_dbgz_1&source=dbweb_bing_xhs_sem_pinp_dbgz_dbgz_dbgz_1&msclkid=ef9917bec3f4146e58da7d33f79c7de2", desc: "AI软件" },
         { name: "TRAE WORK", url: "https://work.trae.cn/?utm_source=content&utm_medium=doc_solo&utm_campaign=quickstart&mode=mtc", desc: "在线AI" },
         { name: "WorkBuddy", url: "https://www.codebuddy.cn/work/?fromSource=gwzcw.12117220.12117220.12117220&utm_medium=cpc&utm_id=gwzcw.12117220.12117220.12117220&msclkid=c334d204d0941fbf4f34b8417e9f9a37", desc: "自动化AI-软件" },
-        { name: "Agnes", url: "https://agnes-ai.com/", desc: "AI API" },  
+        { name: "Agnes", url: "https://agnes-ai.com/", desc: "AI API" }, 
+        { name: "Cline Desktop", url: "https://cline.bot/desktop", desc: "AI软件" },     
         { name: "智谱", url: "https://bigmodel.cn/usercenter/settings/auth", desc: "AI API" },  
         { name: "日日新", url: "https://www.sensenova.cn/token-plan", desc: "AI API" },    
         { name: "Agnes Code", url: "https://agnes-ai.com/agnescode", desc: "软件" },     
@@ -1323,7 +1344,7 @@ const RAW_DATA = [{
 }];
 const GROUP_MAP = {
     '标准': [1, 2, 3, 4, 5, 6, 7, 8, 9, 30],
-    '商务': [10, 11, 31, 12, 13, 14],
+    '商务': [10, 11, 31,32, 12, 13, 14],
     '工具': [15, 16, 17, 18],
     '资源': [19, 20, 21, 22, 23],
     '学习': [24, 25, 26, 27],
@@ -1348,7 +1369,7 @@ const RECENT_MAX = 40;
 
 // ========================================================================
 //  皮肤（配色方案）
-//  - 只负责"配色"，与亮/暗模式正交：6 套皮肤 × 亮/暗 = 12 种观感
+//  - 只负责"配色"，与亮/暗模式正交：10 套皮肤 × 亮/暗 = 20 种观感
 //  - 具体的 CSS 变量在各皮肤对应的 `html[data-skin="xx"]` 规则里；
 //    这里只保存 id、显示名与预览渐变（用于设置菜单里的色板小圆点）
 //  - `aurora` 是默认皮肤，不需要额外的 CSS 覆盖块（就是 :root 的基色）
@@ -1358,13 +1379,34 @@ const SKINS = [
     { id: 'ocean',    name: '深海',   preview: 'linear-gradient(140deg,#1e5cdc,#2e82eb 46%,#1c9ebe)' },
     { id: 'mint',     name: '薄荷',   preview: 'linear-gradient(140deg,#26b296,#54c8c4 46%,#2896c8)' },
     { id: 'violet',   name: '紫罗兰', preview: 'linear-gradient(140deg,#7c5cf0,#9676ff 46%,#6082f5)' },
-    { id: 'graphite', name: '石墨',   preview: 'linear-gradient(140deg,#788caa,#96a8c3 46%,#6e82a0)' },
-    { id: 'sunset',   name: '暖阳',   preview: 'linear-gradient(140deg,#f89e3e,#fabe64 46%,#ee704e)' }
+    { id: 'sakura',   name: '樱花',   preview: 'linear-gradient(140deg,#f472b6,#fb9ec9 46%,#e2639e)' },
+    { id: 'forest',   name: '森林',   preview: 'linear-gradient(140deg,#2f9e56,#5cbf7e 46%,#1f8a70)' },
+    { id: 'sunset',   name: '暖阳',   preview: 'linear-gradient(140deg,#f89e3e,#fabe64 46%,#ee704e)' },
+    { id: 'midnight', name: '午夜',   preview: 'linear-gradient(140deg,#4f6ef7,#7e8df8 46%,#3a4ec9)' },
+    { id: 'cyber',    name: '赛博',   preview: 'linear-gradient(140deg,#c026d3,#e879f9 46%,#22d3ee)' },
+    { id: 'graphite', name: '石墨',   preview: 'linear-gradient(140deg,#788caa,#96a8c3 46%,#6e82a0)' }
 ];
 const SKIN_IDS = SKINS.map(s => s.id);
 function skinName(id) {
     const s = SKINS.find(x => x.id === id);
     return s ? s.name : SKINS[0].name;
+}
+
+// ========================================================================
+//  视图模式：卡片 / 列表 / 杂志（大封面） / 彩带（渐变字母牌 + 域名扫读行）
+//  - 顶部视图按钮循环切换，设置菜单里可直接点选
+//  - id 保持 rows 不变，老存档里的 viewMode 无需迁移
+// ========================================================================
+const VIEW_MODES = [
+    { id: 'card', name: '卡片' },
+    { id: 'list', name: '列表' },
+    { id: 'mag',  name: '杂志' },
+    { id: 'rows', name: '彩带' },
+];
+const VIEW_MODE_IDS = VIEW_MODES.map(v => v.id);
+function viewModeName(id) {
+    const v = VIEW_MODES.find(x => x.id === id);
+    return v ? v.name : VIEW_MODES[0].name;
 }
 
 let state = null;
@@ -1429,6 +1471,28 @@ function seedState() {
     };
 }
 
+// ========================================================================
+//  RAW_DATA 顺序指纹
+//  卡片在页面上的先后顺序 = script.js 里 RAW_DATA 中网址出现的先后顺序。
+//  但存档（localStorage）里记的是上一次的顺序：在源码里插入 / 挪动网址后，
+//  存档不会自动跟着变（新补回的网址只会被追加到该分类末尾）。
+//  这里用一段指纹判断"源码顺序是否被改过"：
+//    · 指纹变了（含首次升级到本版本）→ 按 RAW_DATA 重排 seed 网址
+//    · 指纹没变 → 保留存档顺序，卡片拖拽排序的结果不会被覆盖
+//  指纹只存 32 位散列 + 长度，避免把上千条 URL 写进存档。
+// ========================================================================
+function rawOrderSignature() {
+    let str = '';
+    RAW_DATA.forEach(cat => {
+        str += cat.id + ':';
+        (cat.websites || []).forEach(w => { str += (w && w.url ? w.url.toLowerCase() : '') + ','; });
+        str += '|';
+    });
+    let h = 5381;
+    for (let i = 0; i < str.length; i++) h = ((h << 5) + h + str.charCodeAt(i)) | 0;
+    return (h >>> 0).toString(36) + '_' + str.length.toString(36);
+}
+
 function loadState() {
     try {
         // localStorage 可能被浏览器禁用或空间已满（写入失败），此时回退读取会话级副本
@@ -1444,6 +1508,8 @@ function loadState() {
         // 容错：皮肤 id 可能来自旧版本或手改过的存档，非法值一律回到默认皮肤，
         // 否则 data-skin 会指向一个不存在 CSS 规则的值，表现为"配色停留在默认款"
         if (!SKIN_IDS.includes(s.settings.skin)) s.settings.skin = def.skin;
+        // 容错：视图模式 id 非法时回到默认卡片视图（同上，防止指向不存在的 CSS 规则）
+        if (!VIEW_MODE_IDS.includes(s.settings.viewMode)) s.settings.viewMode = def.viewMode;
         s.settings.perfMode = !!s.settings.perfMode;
         // 版本化迁移：每次新版本希望"网站图标再次默认关"时，提升版本号即可
         //   对"从没见过此版本迁移标记"的用户，强制执行一次关；之后用户手动切换的偏好被保留
@@ -1569,6 +1635,32 @@ function loadState() {
         // ========== 4) 清理 deletedSeedUrls 中"当前 RAW_DATA 已经不存在的 URL" ==========
         //    避免用户在 RAW_DATA 中先删 → 过段时间又加回来 时，因为旧的删除记录存在而无法重新显示
         s.deletedSeedUrls = s.deletedSeedUrls.filter(u => seedUrls.has((u || '').toLowerCase()));
+
+        // ========== 5) 卡片顺序与 script.js 源码（RAW_DATA）保持一致 ==========
+        //    见 rawOrderSignature() 的说明：只有"源码顺序被改过"时才重排，
+        //    平时完全保留存档顺序，用户拖拽排序的结果不会被冲掉。
+        const orderSig = rawOrderSignature();
+        if (s.settings.seedOrderSig !== orderSig) {
+            s.settings.seedOrderSig = orderSig;
+            s.categories.forEach(cat => {
+                const defCat = RAW_DATA.find(c => c.id === cat.id);
+                if (!defCat) return;
+                const pos = new Map();   // url(lower) -> 在 RAW_DATA 中的位置
+                (defCat.websites || []).forEach((w, i) => {
+                    if (w && w.url) pos.set(w.url.toLowerCase(), i);
+                });
+                const seeded = [];   // 来自 RAW_DATA 的网址：严格按源码顺序
+                const own = [];      // 用户自建网址：保持原相对顺序，统一排在后面
+                cat.websites.forEach(w => {
+                    const key = (w.url || '').toLowerCase();
+                    if (w.seed && pos.has(key)) seeded.push(w); else own.push(w);
+                });
+                if (!seeded.length) return;
+                seeded.sort((a, b) => pos.get(a.url.toLowerCase()) - pos.get(b.url.toLowerCase()));
+                cat.websites = seeded.concat(own);
+                cat.websites.forEach((w, i) => { w.order = i; });
+            });
+        }
 
         return s;
     } catch (e) {
@@ -1865,7 +1957,11 @@ function recordVisit(uid) {
     if (recentUids.length > RECENT_MAX) recentUids.length = RECENT_MAX;
     saveRecent();
     saveSession();
-    renderRecentPanel();
+    // 仅当「最近访问」弹窗处于打开状态时才刷新，避免每次点击都做无用 DOM 操作
+    if (document.getElementById('recentModal')?.classList.contains('is-open')) {
+        renderRecentPanel();
+        renderRanking('recentRank');
+    }
 }
 
 function toggleFavorite(uid) {
@@ -2254,6 +2350,26 @@ function renderCards() {
             }
         }, 100));
     }
+    playViewSwitchAnim();
+}
+
+// 视图切换入场动画：给每张卡片写入序号 --i，再加 body.view-switch 触发交错淡入。
+// 只在 viewMode 真正变化的那一帧播放（_animToken 去重，普通搜索/翻页不重复放）。
+let _lastAnimView = null;
+function playViewSwitchAnim() {
+    const vm = state.settings.viewMode;
+    if (vm === _lastAnimView) return;         // 同一视图的重复渲染不播
+    _lastAnimView = vm;
+    if (state.settings.perfMode) return;      // 性能模式直接跳过
+    const cards = container.querySelectorAll('.bookmark-card');
+    const N = Math.min(cards.length, 40);     // 最多交错前 40 张，避免超长延迟
+    for (let i = 0; i < N; i++) cards[i].style.setProperty('--i', i);
+    document.body.classList.remove('view-switch');
+    // 强制 reflow，让下一次 add 重新触发动画
+    void document.body.offsetWidth;
+    document.body.classList.add('view-switch');
+    clearTimeout(playViewSwitchAnim._t);
+    playViewSwitchAnim._t = setTimeout(() => document.body.classList.remove('view-switch'), 900 + N * 26);
 }
 
 // 安全的高亮（防 XSS）
@@ -2289,6 +2405,22 @@ function createCard(site, category) {
         const prev = cached.checks;
         const el = cached.el;
 
+        // 0) 老节点可能没有封面元素（升级前创建的池节点），补一个
+        if (!el.querySelector('.card-cover')) {
+            const cover = document.createElement('div');
+            cover.className = 'card-cover';
+            cover.setAttribute('aria-hidden', 'true');
+            const cl = document.createElement('span');
+            cl.className = 'card-cover-letter';
+            cl.textContent = (site.name || '?').trim().charAt(0).toUpperCase();
+            cover.appendChild(cl);
+            el.insertBefore(cover, el.firstChild);
+        }
+        // 0b) 装饰性文字（封面栏目名）靠 CSS attr() 读取，
+        //     只写 dataset 不产生额外 DOM，手机端零开销
+        const coverEl = el.querySelector('.card-cover');
+        if (coverEl) coverEl.dataset.cat = category.title;
+
         // 1) URL / category 不变时 dataset 可不重写，但直接赋值成本极低，直接写
         el.dataset.url = site.url;
         el.dataset.catTitle = category.title;
@@ -2306,6 +2438,11 @@ function createCard(site, category) {
         if (prev.name !== newChecks.name || prev.highlight !== newChecks.highlight) {
             const titleEl = el.querySelector('.bookmark-title');
             if (titleEl) setHighlighted(titleEl, newChecks.name, newChecks.highlight);
+        }
+        // 杂志封面字母：名称变化时同步首字（封面元素在 createCardFromScratch 中创建）
+        if (prev.name !== newChecks.name) {
+            const letterEl = el.querySelector('.card-cover-letter');
+            if (letterEl) letterEl.textContent = (site.name || '?').trim().charAt(0).toUpperCase();
         }
         if (prev.desc !== newChecks.desc || prev.highlight !== newChecks.highlight) {
             const descEl = el.querySelector('.bookmark-desc');
@@ -2388,6 +2525,18 @@ function createCardFromScratch(site, category) {
     a.dataset.siteName = site.name;
     a.setAttribute('aria-label', (site.name || '') + (site.desc ? '，' + site.desc : '') + '，在新标签页打开');
     if (draggableOn()) a.draggable = true;
+
+    // 杂志视图封面横幅 / 彩带视图左侧字母牌（均由 CSS 决定显示与否）
+    const cover = document.createElement('div');
+    cover.className = 'card-cover';
+    cover.setAttribute('aria-hidden', 'true');
+    // 封面左上角的栏目名：CSS 用 attr() 读，不额外建节点
+    cover.dataset.cat = category.title;
+    const coverLetter = document.createElement('span');
+    coverLetter.className = 'card-cover-letter';
+    coverLetter.textContent = (site.name || '?').trim().charAt(0).toUpperCase();
+    cover.appendChild(coverLetter);
+    a.appendChild(cover);
 
     // 头像 / favicon
     const avatar = document.createElement('div');
@@ -2582,7 +2731,6 @@ function renderAll() {
     applySettings();
     renderLevel1();
     renderLevel2();
-    renderRecentPanel();
     renderCards();
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -2592,13 +2740,33 @@ function renderCardsOnly() {
 }
 
 // ========================================================================
-//  最近访问条
+//  最近访问 弹窗（含"访问排行榜"）
 // ========================================================================
 /**
- * 渲染最近访问 chip
- * @param {string} [targetId] 目标容器 id，默认 'dataRecentItems'（数据菜单内的最近访问面板）
+ * 打开「最近访问」弹窗
+ *  - 上半部分：本次会话访问过的网址（chip）
+ *  - 下半部分：访问排行榜（原在"数据统计"里，现挪到这里，统计面板只留数据分布）
  */
-function renderRecentPanel(targetId = 'dataRecentItems') {
+function openRecent() {
+    const body = document.getElementById('recentBody');
+    if (!body) return;
+    body.innerHTML = `
+        <h4 class="stat-h">最近访问（本次会话）</h4>
+        <div class="recent-panel-items" id="recentChips"></div>
+        <h4 class="stat-h">访问排行榜</h4>
+        <div id="recentRank"></div>
+    `;
+    renderRecentPanel('recentChips');
+    renderRanking('recentRank');
+    openModal('recentModal');
+}
+
+/**
+ * 渲染最近访问 chip
+ * @param {string} [targetId] 目标容器 id，默认 'recentChips'（最近访问弹窗内的容器；
+ *                            弹窗未打开时该容器不存在，函数直接返回，不会报错）
+ */
+function renderRecentPanel(targetId = 'recentChips') {
     const byUid = new Map(getAllSites().map(x => [x.site.uid, x]));
     const items = recentUids.map(u => byUid.get(u)).filter(Boolean).slice(0, 20);
     const panel = document.getElementById(targetId);
@@ -2632,6 +2800,38 @@ function renderRecentPanel(targetId = 'dataRecentItems') {
     });
 }
 
+/** 渲染访问排行榜（按访问次数降序，取前 10） */
+function renderRanking(targetId) {
+    const panel = document.getElementById(targetId);
+    if (!panel) return;
+    const top = getAllSites()
+        .map(({ site, category }) => ({ site, category, st: getStat(site.uid) }))
+        .filter(x => x.st && x.st.visits)
+        .sort((a, b) => b.st.visits - a.st.visits)
+        .slice(0, 10);
+    if (!top.length) {
+        panel.innerHTML = '<p class="stat-empty">还没有访问记录，去逛逛吧～</p>';
+        return;
+    }
+    const ul = document.createElement('ul');
+    ul.className = 'stat-rank';
+    top.forEach((x, i) => {
+        const li = document.createElement('li');
+        const no = document.createElement('span');
+        no.className = 'rank-no'; no.textContent = i + 1;
+        const name = document.createElement('span');
+        name.className = 'rank-name'; name.textContent = x.site.name;
+        const cat = document.createElement('span');
+        cat.className = 'rank-cat'; cat.textContent = x.category.title;
+        const vis = document.createElement('span');
+        vis.className = 'rank-visits'; vis.textContent = x.st.visits + ' 次';
+        li.append(no, name, cat, vis);
+        ul.appendChild(li);
+    });
+    panel.innerHTML = '';
+    panel.appendChild(ul);
+}
+
 // ========================================================================
 //  设置应用
 // ========================================================================
@@ -2659,7 +2859,9 @@ function applySettings() {
     };
 
     const s = state.settings;
-    document.body.classList.toggle('view-list', s.viewMode === 'list');
+    // 视图模式：移除全部旧类再加当前类（card 为默认，不加类）
+    VIEW_MODE_IDS.forEach(id => { if (id !== 'card') document.body.classList.remove('view-' + id); });
+    if (s.viewMode !== 'card') document.body.classList.add('view-' + s.viewMode);
     document.body.classList.toggle('density-compact', s.density === 'compact');
     document.body.classList.toggle('no-favicons', !s.showFavicons);
     // 主题类只挂 <html>（不要同时给 body 也加上）。
@@ -2682,12 +2884,21 @@ function applySettings() {
             ? '<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><line x1="12" y1="2" x2="12" y2="5"></line><line x1="12" y1="19" x2="12" y2="22"></line><line x1="2" y1="12" x2="5" y2="12"></line><line x1="19" y1="12" x2="22" y2="12"></line><line x1="4.5" y1="4.5" x2="6.5" y2="6.5"></line><line x1="17.5" y1="17.5" x2="19.5" y2="19.5"></line><line x1="4.5" y1="19.5" x2="6.5" y2="17.5"></line><line x1="17.5" y1="6.5" x2="19.5" y2="4.5"></line></svg>'
             : '<svg class="icon-svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>';
     }
-    // 只有视图模式真的变了才重新赋值视图图标 innerHTML
+    // 只有视图模式真的变了才重新赋值视图图标 innerHTML（图标显示"当前模式"）
     if (_appliedViewMode !== s.viewMode) {
         _appliedViewMode = s.viewMode;
-        document.getElementById('viewIcon').innerHTML = s.viewMode === 'list'
-            ? '<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect></svg>'
-            : '<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="8" y1="6" x2="20" y2="6"></line><line x1="8" y1="12" x2="20" y2="12"></line><line x1="8" y1="18" x2="20" y2="18"></line><line x1="3.5" y1="6" x2="3.5" y2="6"></line><line x1="3.5" y1="12" x2="3.5" y2="12"></line><line x1="3.5" y1="18" x2="3.5" y2="18"></line></svg>';
+        const viewIcons = {
+            card: '<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.6"></rect><rect x="14" y="3" width="7" height="7" rx="1.6"></rect><rect x="3" y="14" width="7" height="7" rx="1.6"></rect><rect x="14" y="14" width="7" height="7" rx="1.6"></rect></svg>',
+            list: '<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="8" y1="6" x2="20" y2="6"></line><line x1="8" y1="12" x2="20" y2="12"></line><line x1="8" y1="18" x2="20" y2="18"></line><line x1="3.5" y1="6" x2="3.5" y2="6"></line><line x1="3.5" y1="12" x2="3.5" y2="12"></line><line x1="3.5" y1="18" x2="3.5" y2="18"></line></svg>',
+            mag:  '<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="10" rx="2"></rect><line x1="3.5" y1="17.5" x2="12" y2="17.5"></line><line x1="3.5" y1="21" x2="9" y2="21"></line><rect x="15" y="15.5" width="6" height="5.5" rx="1.4"></rect></svg>',
+            rows: '<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="3.5" y1="5" x2="20.5" y2="5"></line><line x1="3.5" y1="9.5" x2="20.5" y2="9.5"></line><line x1="3.5" y1="14" x2="20.5" y2="14"></line><line x1="3.5" y1="18.5" x2="20.5" y2="18.5"></line></svg>'
+        };
+        document.getElementById('viewIcon').innerHTML = viewIcons[s.viewMode] || viewIcons.card;
+        const vb = document.getElementById('viewBtn');
+        if (vb) {
+            const next = VIEW_MODES[(VIEW_MODE_IDS.indexOf(s.viewMode) + 1) % VIEW_MODES.length];
+            vb.title = '当前：' + viewModeName(s.viewMode) + '视图，点击切换到' + next.name + ' (V)';
+        }
     }
 
     updateSettingsMenu();
@@ -2701,6 +2912,12 @@ function updateSettingsMenu() {
     const f = settingsMenuEl.querySelector('[data-action="favicon"]');
     const ff = settingsMenuEl.querySelector('[data-action="favfilter"]');
     const pf = settingsMenuEl.querySelector('[data-action="perf"]');
+    const vm = settingsMenuEl.querySelector('[data-action="viewmode"]');
+    if (vm) {
+        const cur = VIEW_MODES.find(v => v.id === s.viewMode) || VIEW_MODES[0];
+        const next = VIEW_MODES[(VIEW_MODE_IDS.indexOf(s.viewMode) + 1) % VIEW_MODES.length];
+        vm.querySelector('span').textContent = '视图：' + cur.name + '（点击切' + next.name + '）';
+    }
     if (d) {
         d.classList.toggle('active', s.density === 'compact');
         d.querySelector('span').textContent = s.density === 'compact' ? '密度：紧凑' : '密度：舒适';
@@ -2719,6 +2936,7 @@ function updateSettingsMenu() {
     }
     updatePerfToggle();
     renderSkinPicker();
+    renderViewPicker();
 }
 
 // ------------------------------------------------------------------------
@@ -2757,6 +2975,7 @@ function renderSkinPicker() {
             b.type = 'button';
             b.className = 'skin-dot';
             b.dataset.skin = sk.id;
+            b.dataset.name = sk.name;   // CSS ::after 用它显示名称标签
             b.title = sk.name;
             b.setAttribute('aria-label', '皮肤：' + sk.name);
             b.style.background = sk.preview;
@@ -2782,14 +3001,61 @@ function setSkin(id) {
     toast('皮肤已切换为「' + skinName(id) + '」', 'success');
 }
 
+// ------------------------------------------------------------------------
+//  视图选择网格（设置菜单内）：卡片 / 列表 / 杂志 / 彩带，带缩略预览
+// ------------------------------------------------------------------------
+function renderViewPicker() {
+    const box = document.getElementById('viewGrid');
+    if (!box) return;
+    const cur = state.settings.viewMode || 'card';
+    if (box.childElementCount !== VIEW_MODES.length) {
+        box.innerHTML = '';
+        VIEW_MODES.forEach(vm => {
+            const b = document.createElement('button');
+            b.type = 'button';
+            b.className = 'view-opt';
+            b.dataset.view = vm.id;
+            b.setAttribute('aria-label', '视图：' + vm.name);
+            // 缩略预览（纯 HTML 小块拼出各视图的大致轮廓，比 SVG 直观）
+            const prev = document.createElement('span');
+            prev.className = 'view-prev view-prev-' + vm.id;
+            prev.setAttribute('aria-hidden', 'true');
+            const label = document.createElement('span');
+            label.className = 'view-opt-name';
+            label.textContent = vm.name;
+            const tick = document.createElement('span');
+            tick.className = 'view-tick';
+            tick.innerHTML = ICONS.tick;
+            b.appendChild(prev); b.appendChild(label); b.appendChild(tick);
+            box.appendChild(b);
+        });
+    }
+    box.querySelectorAll('.view-opt').forEach(b => {
+        const on = b.dataset.view === cur;
+        b.classList.toggle('active', on);
+        b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+}
+
 
 function toggleTheme() {
     state.settings.theme = state.settings.theme === 'dark' ? 'light' : 'dark';
     saveState(); applySettings();
 }
+// 顶部视图按钮：按 VIEW_MODES 顺序循环切换（卡片 → 列表 → 杂志 → 彩带 → 卡片）
 function toggleView() {
-    state.settings.viewMode = state.settings.viewMode === 'card' ? 'list' : 'card';
+    const cur = VIEW_MODE_IDS.indexOf(state.settings.viewMode);
+    const next = VIEW_MODES[(cur < 0 ? 0 : cur + 1) % VIEW_MODES.length];
+    state.settings.viewMode = next.id;
     saveState(); applySettings(); renderCards();
+    toast('已切换到「' + next.name + '」视图', 'success');
+}
+// 设置菜单里直接点选某种视图
+function setViewMode(id) {
+    if (!VIEW_MODE_IDS.includes(id) || state.settings.viewMode === id) return;
+    state.settings.viewMode = id;
+    saveState(); applySettings(); renderCards();
+    toast('已切换到「' + viewModeName(id) + '」视图', 'success');
 }
 function toggleDensity() {
     state.settings.density = state.settings.density === 'comfort' ? 'compact' : 'comfort';
@@ -2966,16 +3232,22 @@ function openStats() {
     const favCount = Object.keys(state.favorites).length;
     const visitedCount = all.filter(({ site }) => getStat(site.uid)?.visits).length;
 
-    const top = all.map(({ site, category }) => ({ site, category, st: getStat(site.uid) }))
-        .filter(x => x.st && x.st.visits)
-        .sort((a, b) => b.st.visits - a.st.visits)
-        .slice(0, 8);
-
     const byGroup = GROUP_NAMES.filter(g => g !== '全部').map(g => ({
         g, n: getCategoriesByGroup(g).reduce((s, c) => s + c.websites.length, 0)
     })).filter(x => x.n > 0);
 
     const maxGroup = Math.max(1, ...byGroup.map(x => x.n));
+
+    // 二级菜单（分类）网址数量：按一级菜单归拢，组内按数量降序
+    const catGroups = GROUP_NAMES.filter(g => g !== '全部').map(g => {
+        const items = getCategoriesByGroup(g)
+            .map(c => ({ title: c.title, n: c.websites.length }))
+            .filter(x => x.n > 0)
+            .sort((a, b) => b.n - a.n || a.title.localeCompare(b.title, 'zh'));
+        return { g, items, total: items.reduce((s, x) => s + x.n, 0) };
+    }).filter(x => x.items.length);
+
+    const maxCat = Math.max(1, ...catGroups.flatMap(x => x.items.map(i => i.n)));
 
     let html = `
         <div class="stat-cards">
@@ -2984,7 +3256,7 @@ function openStats() {
             <div class="stat-card"><div class="stat-num">${favCount}</div><div class="stat-lbl">收藏数</div></div>
             <div class="stat-card"><div class="stat-num">${visitedCount}</div><div class="stat-lbl">已访问网址</div></div>
         </div>
-        <h4 class="stat-h">各分组网址分布</h4>
+        <h4 class="stat-h">一级菜单</h4>
         <div class="stat-bars">
             ${byGroup.map(x => `
                 <div class="stat-bar-row">
@@ -2993,14 +3265,24 @@ function openStats() {
                     <span class="stat-bar-val">${x.n}</span>
                 </div>`).join('')}
         </div>
-        <h4 class="stat-h">访问排行榜</h4>
-        ${top.length ? `<ul class="stat-rank">
-            ${top.map((x, i) => `
-                <li><span class="rank-no">${i + 1}</span>
-                <span class="rank-name">${escapeHtml(x.site.name)}</span>
-                <span class="rank-cat">${escapeHtml(x.category.title)}</span>
-                <span class="rank-visits">${x.st.visits} 次</span></li>`).join('')}
-        </ul>` : '<p class="stat-empty">还没有访问记录，去逛逛吧～</p>'}
+        <h4 class="stat-h">二级菜单</h4>
+        ${catGroups.length ? `<div class="stat-cats">
+            ${catGroups.map(x => `
+                <div class="stat-cat-group">
+                    <div class="stat-cat-head">
+                        <span class="stat-cat-name">${escapeHtml(x.g)}</span>
+                        <span class="stat-cat-total">${x.items.length} 个分类 · ${x.total} 个网址</span>
+                    </div>
+                    <div class="stat-bars stat-bars-cats">
+                        ${x.items.map(i => `
+                            <div class="stat-bar-row">
+                                <span class="stat-bar-lbl" title="${escapeHtml(i.title)}">${escapeHtml(i.title)}</span>
+                                <div class="stat-bar-track"><div class="stat-bar-fill" style="width:${(i.n / maxCat * 100).toFixed(1)}%"></div></div>
+                                <span class="stat-bar-val">${i.n}</span>
+                            </div>`).join('')}
+                    </div>
+                </div>`).join('')}
+        </div>` : '<p class="stat-empty">暂无分类数据</p>'}
     `;
     document.getElementById('statsBody').innerHTML = html;
     openModal('statsModal');
@@ -3037,7 +3319,8 @@ function showContextMenu(e, uid) {
     // 【修复】原来用固定值 180 / 200 估算菜单尺寸，菜单变高变宽后会被裁掉。
     // 现在先显示再实测尺寸，并保证不越出视口（含 8px 边距）。
     const w = contextMenu.offsetWidth || 176;
-    const h = contextMenu.offsetHeight || 220;
+    // 菜单项由 5 项调整为 4 项（去掉编辑 / 删除，新增定位到该分类），实测高度约 200px
+    const h = contextMenu.offsetHeight || 200;
     const x = Math.max(8, Math.min(e.clientX, window.innerWidth - w - 8));
     const y = Math.max(8, Math.min(e.clientY, window.innerHeight - h - 8));
     contextMenu.style.left = x + 'px';
@@ -3057,9 +3340,11 @@ contextMenu.addEventListener('click', (e) => {
     if (!found) { hideContextMenu(); return; }
     if (action === 'open') { recordVisit(uid); window.open(found.site.url, '_blank', 'noopener'); }
     else if (action === 'copy') copyUrl(found.site.url);
+    // 定位到该分类：切到卡片所属分类（清掉搜索/收藏筛选），并高亮这张卡片
+    else if (action === 'locate') locateCard(found.category.title, found.site.name);
     else if (action === 'fav') toggleFavorite(uid);
-    else if (action === 'edit') openEditSiteModal(uid);
-    else if (action === 'delete') deleteSite(uid);
+    // 注：右键菜单已按要求移除「编辑」「删除」两项，
+    // 对应的 openEditSiteModal() / deleteSite() 保留在代码中备用（当前无 UI 入口）。
     hideContextMenu();
 });
 
@@ -3180,7 +3465,6 @@ function bindEvents() {
     // ==== 高频按钮全部改用 tap()：移动端 touchend 直触，比 click 快 100~300ms ====
     tap(themeToggle, toggleTheme);
     tap(perfToggle, togglePerfMode);
-    tap(document.getElementById('statsBtn'), openStats);
     tap(document.getElementById('viewBtn'), toggleView);
 
     // 设置下拉：仅看收藏 / 密度 / 网站图标 / 视图切换 / 皮肤 / 快捷键 / 网址征集 / 恢复默认
@@ -3196,6 +3480,17 @@ function bindEvents() {
         skinDotsEl.addEventListener('click', (e) => {
             const dot = e.target.closest('.skin-dot');
             if (dot && dot.dataset.skin) setSkin(dot.dataset.skin);
+        });
+    }
+    // 视图选择网格：单独委托（同皮肤色板，点选后收起菜单）
+    const viewGridEl = document.getElementById('viewGrid');
+    if (viewGridEl) {
+        viewGridEl.addEventListener('click', (e) => {
+            const opt = e.target.closest('.view-opt');
+            if (opt && opt.dataset.view) {
+                settingsMenuEl.classList.remove('open');
+                setViewMode(opt.dataset.view);
+            }
         });
     }
     // settingsMenu 委托：点击其中按钮/链接时处理（用 click 兜底即可，上层按钮已经 tap）
@@ -3231,16 +3526,9 @@ function bindEvents() {
                 dataMenuEl.classList.remove('open');
                 openStats();
             } else if (a === 'recent') {
-                // 切换最近访问子面板显示
-                const sub = document.getElementById('dataRecentPanel');
-                if (sub) {
-                    const shown = sub.style.display !== 'none';
-                    sub.style.display = shown ? 'none' : 'block';
-                    if (!shown) {
-                        // 展开时才渲染一次
-                        renderRecentPanel('dataRecentItems');
-                    }
-                }
+                // 改为独立弹窗展示（含访问排行榜），不再在菜单里展开子面板
+                dataMenuEl.classList.remove('open');
+                openRecent();
             }
         });
     }
