@@ -59,6 +59,13 @@ const RAW_DATA = [{
         { name: "UL认证", url: "https://www.shopulstandards.com/", desc: "UL标准" },
         { name: "WTO", url: "https://www.wto.org/english/res_e/res_e.htm", desc: "世界贸易组织" }, 
         { name: "UNSD", url: "https://unstats.un.org/UNSDWebsite/", desc: "联合国统计局" },
+        { name: "IAAC", url: "https://iaac.org.mx/", desc: "泛美认可合作组织" },
+        { name: "IANZ", url: "https://www.ianz.govt.nz/", desc: "新西兰国际认可" },
+        { name: "EA", url: "https://european-accreditation.org/", desc: "欧洲认可合作组织" },
+        { name: "ILAC", url: "https://ilac.org/", desc: "国际实验室认可合作组织" },
+        { name: "BIPM", url: "https://www.bipm.org/en/", desc: "国际计量局" },
+        { name: "OIML", url: "https://www.oiml.org/en", desc: "国际法定计量组织" },
+        { name: "EDANA", url: "https://www.edana.org/knowledge-hub/resources/document-repository", desc: "欧洲非织造布协会" },
     ]
 }, {
     id: 2, title: "国家标准", icon: "fa-book", websites: [
@@ -118,6 +125,7 @@ const RAW_DATA = [{
         { name: "中国地震局", url: "https://www.cea.gov.cn/cea/index/index.html?url=biiii.com", desc: "" }, 
         { name: "国家粮食和物资储备局", url: "https://www.lswz.gov.cn/html/ywpd/bzzl/lybz.shtml", desc: "LST标准下载" },
         { name: "国家档案局", url: "https://www.saac.gov.cn/daj/hybz/dabz_list.shtml", desc: "DA标准下载" },
+        { name: "国家统计局", url: "https://www.stats.gov.cn/", desc: "标准" },
         { name: "国家林业和草原局", url: "https://www.forestry.gov.cn/govpublic-index.htm", desc: "" },
         { name: "国家医疗保障局", url: "https://gkml.ggj.gov.cn/", desc: "" },
         { name: "国家中医药管理局", url: "http://www.natcm.gov.cn/", desc: "" },    
@@ -136,6 +144,7 @@ const RAW_DATA = [{
         { name: "国家宗教事务局", url: "https://www.sara.gov.cn/", desc: "" },
         { name: "国家消防救援局", url: "https://www.119.gov.cn/", desc: "" },
         { name: "国家密码管理局", url: "http://www.nca.gov.cn/", desc: "" },
+        { name: "国家外汇管理局", url: "https://www.safe.gov.cn/", desc: "" },
         { name: "国家公务员局", url: "http://bm.scs.gov.cn/pp/gkweb/core/web/ui/business/home/gkhome.html?url=biiii.com", desc: "" },
         { name: "国家核安全局", url: "https://nnsa.mee.gov.cn/", desc: "" },
         { name: "国家核保密局", url: "https://www.gjbmj.gov.cn/index.html", desc: "" },    
@@ -242,7 +251,8 @@ const RAW_DATA = [{
     id: 7, title: "其他标准", icon: "fa-file-alt", websites: [
        { name: "企业标准信息公共服务平台", url: "https://www.qybz.org.cn/", desc: "标准下载" },
         { name: "特种设备安全检查局", url: "https://www.samr.gov.cn/tzsbj/zcfg/aqjsgf/index.html", desc: "安全技术规范" },
-        { name: "国家统计局", url: "https://www.stats.gov.cn/", desc: "标准" },
+        { name: "强制性产品认证实施规则汇总", url: "https://www.cnca.gov.cn/hlwfw/ywzl/qzxcprz/ssgz/art/2026/art_5261f654e02d45edaf0805fb268c9fc9.html", desc: "" },
+        { name: "中国标准化研究院", url: "https://www.cnis.ac.cn/pcindex/", desc: "" },
         { name: "中国民用航空适航审定中心", url: "https://acc.caac.gov.cn/ZCFG/index.html", desc: "航空政策法规" },
         { name: "RBA", url: "https://www.responsiblebusiness.org/code-of-conduct/", desc: "责任商业联盟行为准则-标准" },
         { name: "EMAS", url: "https://green-forum.ec.europa.eu/green-business/emas_en", desc: "生态管理与审计计划" },
@@ -374,7 +384,7 @@ const RAW_DATA = [{
         { name: "CAMD", url: "https://www.camd-europe.eu/news/", desc: "各主管当局的小组发布文章（如IVDR过渡期解答）" },
         { name: "NBOG", url: "https://www.nbog.eu/nbog-documents/", desc: "MDD下公告机构指导文件（NBOG）" },
         { name: "MEDDEV指南", url: "https://ec.europa.eu/health/md_sector/current_directives_en", desc: "MEDDEV更新的医疗器械指南文件" },
-        { name: "FDA（注册）", url: "https://www.accessdata.fda.gov/scripts/cdrh/cfdocs/cfRL/rl.cfm/", desc: "美国医疗器械注册查询" },
+        { name: "FDA（注册）", url: "https://www.accessdata.fda.gov/scripts/cdrh/cfdocs/cfRL/rl.cfm", desc: "美国医疗器械注册查询" },
         { name: "最新的医疗器械指南文件", url: "https://www.fda.gov/medical-devices/guidance-documents-medical-devices-and-radiation-emitting-products/recent-final-medical-device-guidance-documents", desc: "美国FDA" },
         { name: "历史发布的医疗器械相关指南文件", url: "https://www.fda.gov/medical-devices/device-advice-comprehensive-regulatory-assistance/guidance-documents-medical-devices-and-radiation-emitting-products", desc: "美国FDA" },
         { name: "医疗器械数据库", url: "https://www.fda.gov/medical-devices/device-advice-comprehensive-regulatory-assistance/medical-device-databases", desc: "美国FDA" },
@@ -527,6 +537,8 @@ const RAW_DATA = [{
         { name: "TUVRheinland", url: "https://www.tuv.com/greater-china/cn/", desc: "莱茵认证机构" },
         { name: "intertek", url: "https://www.intertek.com.cn/", desc: "天祥认证机构" },
         { name: "CQC", url: "https://www.cqc.com.cn/www/index.html", desc: "中国质量认证中心" },
+        { name: "CCAA", url: "http://www.ccaa.org.cn/#/home", desc: "中国认证认可协会" },
+        { name: "CCIC", url: "https://www.ccic.com/", desc: "中国检验认证集团" },
         { name: "ESTS", url: "https://www.estsglobal.com/zh-CN/services/all", desc: "全球性的审核认证机构" },
     ]
 }, {
@@ -607,7 +619,15 @@ const RAW_DATA = [{
         { name: "中国航天科技集团公司", url: "https://file.spacechina.com/n25/n142/index.html", desc: "" },
         { name: "中国航天科工集团有限公司", url: "http://www.casic.com.cn/", desc: "" },
         { name: "中国海洋石油集团有限公司", url: "https://www.cnooc.com.cn/index.html?qgklwqqepeixlwjc", desc: "" },
-        
+        { name: "中国环境科学出版社", url: "https://www.cesp.com.cn/", desc: "" },
+        { name: "中国标准出版社", url: "https://www.spc.net.cn/about/introduce/", desc: "" },
+        { name: "中国发展改革出版社", url: "http://www.jhpress.com/Index.aspx", desc: "中国计划出版社" },
+        { name: "中国建筑工业出版社", url: "https://www.cabp.com.cn/index", desc: "" },
+        { name: "新华社", url: "https://www.news.cn/xinhuashe/", desc: "" },
+        { name: "中共中央党校", url: "https://www.ccps.gov.cn/", desc: "国家行政学院" },
+        { name: "国家语言文字工作委员会", url: "http://www.moe.gov.cn/jyb_sy/China_Language/", desc: "" },
+        { name: "国家市场监督管理总局认证认可技术研究中心", url: "https://www.ccai.org.cn/", desc: "" },
+        { name: "中国网络安全审查认证和市场监管大数据中心", url: "https://www.isccc.gov.cn/", desc: "" },
     ]
 }, {
     id: 12, title: "合同范本", icon: "fa-file-contract", websites: [
