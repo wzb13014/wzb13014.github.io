@@ -918,6 +918,8 @@ const RAW_DATA = [{
         { name: "网页转换助手", url: "http://mmhtml.com/zh/", desc: "网页转换助手" },
         { name: "pad ws交互白板", url: "https://pad.ws/", desc: "演示白板" },
         { name: "在线白板", url: "https://toolwa.com/whiteboard/", desc: "演示白板" },
+        { name: "tldraw", url: "https://www.tldraw.com/", desc: "无限画布" },
+        { name: "drawnix", url: "https://drawnix.com/", desc: "白板、画布" },
         { name: "FileCodeBox", url: "https://share.lanol.cn/#/", desc: "文件快递柜" },
         { name: "文叔叔", url: "https://www.wenshushu.cn/", desc: "文件快递柜" },
         { name: "MuseTransfer", url: "https://musetransfer.com/", desc: "文件快递柜" },
@@ -1023,6 +1025,12 @@ const RAW_DATA = [{
         { name: "在线育儿补贴计算器", url: "https://uutool.cn/children-allowance/", desc: "计算器" },
         { name: "劳法计算器", url: "https://web.laofa.com/calculator/?src=www.jspoo.com", desc: "计算器" },
         { name: "Bypass", url: "https://www.bypass.cn/", desc: "分流抢票" },
+        { name: "朋友圈转发截图", url: "https://akarin.dev/WechatMomentScreenshot/?ref=www.tboxn.com", desc: "点赞" },
+        { name: "微信转账截图", url: "https://jietuer.com/weixin-zhuanzhang.html", desc: "仅学习用途" },
+        { name: "在线生成余额宝余额", url: "https://www.imgml.com/balance-treasure", desc: "仅学习用途" },
+        { name: "微信扫码付款截图", url: "https://virtualchatgenerator.com/wxscan", desc: "仅学习用途" },
+        { name: "写个字吧", url: "https://xgzb.top/#template", desc: "字帖生成" },
+        { name: "身份证图片生成", url: "https://idmaker.mageg.cn/", desc: "仅学习用途" },
     ]
 }, {
     id: 18, title: "专业软件", icon: "fa-cogs", websites: [
@@ -1065,6 +1073,7 @@ const RAW_DATA = [{
         { name: "Reeden", url: "https://reeden.app/cn", desc: "电子书阅读器" },
         { name: "Office Tool Plus", url: "https://otp.landian.vip/zh-cn/#google_vignette", desc: "一键部署Office" },
         { name: "机查查", url: "https://devink.techartlife.com/zh/", desc: "机查查" },
+        { name: "分区助手", url: "https://www.disktool.cn/feature.html?ref=www.tboxn.com", desc: "软件" },      
         { name: "电脑系统office激活", url: "https://github.com/massgravel/Microsoft-Activation-Scripts", desc: "电脑系统" },
         { name: "极简系统", url: "https://www.sysmini.com/", desc: "电脑系统" },
         { name: "MSDN系统", url: "https://www.xitongku.com/?src=www.jspoo.com", desc: "电脑系统" },
@@ -1236,6 +1245,7 @@ const RAW_DATA = [{
         { name: "toolfk", url: "https://www.toolfk.com/", desc: "资源合集" },
         { name: "一糖导航", url: "https://iitang.com/#term-6115", desc: "资源合集" },
         { name: "slaw", url: "https://www.oslaw.cn/site-nav", desc: "资源合集" },
+        { name: "工具兔", url: "https://meetool.cn/generator/license-plate/", desc: "资源合集" },
     ]
 }, {
     id: 23, title: "图库", icon: "fa-images", websites: [
