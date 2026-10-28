@@ -1034,6 +1034,12 @@ const RAW_DATA = [{
         { name: "微信转账截图", url: "https://jietuer.com/weixin-zhuanzhang.html", desc: "仅学习用途" },
         { name: "在线生成余额宝余额", url: "https://www.imgml.com/balance-treasure", desc: "仅学习用途" },
         { name: "微信扫码付款截图", url: "https://virtualchatgenerator.com/wxscan", desc: "仅学习用途" },
+        { name: "微信转账模拟器", url: "https://onboxdeer.com/wechat-pay/", desc: "仅学习用途" },  
+        { name: "模拟微信对话生成器", url: "https://www.tuya.dev/wechat/index.html", desc: "仅学习用途" },   
+        { name: "微信聊天模拟器1", url: "https://www.lanren-tools.com/wechat/", desc: "仅学习用途" },   
+        { name: "微信聊天模拟器2", url: "https://onboxdeer.com/wechat-simulator/", desc: "仅学习用途" },  
+        { name: "在线微信对话生成器", url: "https://www.wsjtxia.com/", desc: "仅学习用途" }, 
+        { name: "在线接收短信", url: "https://receive-sms.io/zh/#select-countries", desc: "手机号码" },   
         { name: "写个字吧", url: "https://xgzb.top/#template", desc: "字帖生成" },
         { name: "身份证图片生成", url: "https://idmaker.mageg.cn/", desc: "仅学习用途" },
     ]
