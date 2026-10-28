@@ -187,7 +187,7 @@ const RAW_DATA = [{
     ]
 }, {
     id: 4, title: "地方标准", icon: "fa-map-marker-alt", websites: [
-       { name: "地方标准信息服务平台", url: "https://dbba.sacinfo.org.cn/", desc: "标准下载" },
+        { name: "地方标准信息服务平台", url: "https://dbba.sacinfo.org.cn/", desc: "标准下载" },
         { name: "北京市市场监督管理局", url: "https://scjgj.beijing.gov.cn/cxfw/", desc: "标准下载" },
         { name: "山西省市场监督管理局（知识产权局）", url: "https://scjgj.shanxi.gov.cn/gzzt/bzgl/dfbzcx/index.shtml", desc: "DB标准下载" },
         { name: "安徽省标准化信息服务", url: "https://bzxx.ahbz.org.cn/standInfo.html?tab=2", desc: "标准下载" },
@@ -207,7 +207,7 @@ const RAW_DATA = [{
     ]
 }, {
     id: 5, title: "团体标准", icon: "fa-users", websites: [
-       { name: "全国团体标准信息平台", url: "https://www.ttbz.org.cn/Home/Standard", desc: "标准下载" },
+        { name: "全国团体标准信息平台", url: "https://www.ttbz.org.cn/Home/Standard", desc: "标准下载" },
         { name: "中关村材料试验技术联盟", url: "http://www.cstm.com.cn/channel/details/3-1-cstmbiaozhun?page=1", desc: "CSTM标准下载" },
         { name: "中国航空器拥有者及驾驶员协会", url: "https://www.aopa.org.cn/portal/modules/group/2", desc: "TAOPA标准下载" },
         { name: "中国教育装备行业协会", url: "https://www.ceeia.cn/news/55/", desc: "TJYBZ标准下载" },
@@ -249,7 +249,7 @@ const RAW_DATA = [{
     ]
 }, {
     id: 7, title: "其他标准", icon: "fa-file-alt", websites: [
-       { name: "企业标准信息公共服务平台", url: "https://www.qybz.org.cn/", desc: "标准下载" },
+        { name: "企业标准信息公共服务平台", url: "https://www.qybz.org.cn/", desc: "标准下载" },
         { name: "特种设备安全检查局", url: "https://www.samr.gov.cn/tzsbj/zcfg/aqjsgf/index.html", desc: "安全技术规范" },
         { name: "强制性产品认证实施规则汇总", url: "https://www.cnca.gov.cn/hlwfw/ywzl/qzxcprz/ssgz/art/2026/art_5261f654e02d45edaf0805fb268c9fc9.html", desc: "" },
         { name: "中国标准化研究院", url: "https://www.cnis.ac.cn/pcindex/", desc: "" },
@@ -631,7 +631,7 @@ const RAW_DATA = [{
     ]
 }, {
     id: 12, title: "合同范本", icon: "fa-file-contract", websites: [
-       { name: "合同示范文本库", url: "https://htsfwb.samr.gov.cn/", desc: "国家市场监督总局合同范本" },
+        { name: "合同示范文本库", url: "https://htsfwb.samr.gov.cn/", desc: "国家市场监督总局合同范本" },
         { name: "广西合同格式", url: "http://221.7.197.159:8088/www/template_list.aspx?ref=https://szsyw.cn", desc: "合同范本" },
         { name: "武汉合同格式", url: "https://scjgj.wuhan.gov.cn/bsfw/htgl_65/htfb/?ref=https://szsyw.cn", desc: "合同范本" },
         { name: "河南合同格式", url: "https://scjg.henan.gov.cn/ztzl/htsfwb/", desc: "合同范本" },
@@ -672,7 +672,7 @@ const RAW_DATA = [{
     ]
 }, {
     id: 14, title: "招聘平台", icon: "fa-user-plus", websites: [
-       { name: "Boss直聘", url: "https://www.zhipin.com/shenzhen/?seoRefer=index", desc: "招聘平台" },
+        { name: "Boss直聘", url: "https://www.zhipin.com/shenzhen/?seoRefer=index", desc: "招聘平台" },
         { name: "智联招聘", url: "https://landing.zhaopin.com/register?identity=b&channel_name=baidu_sem_track&callback_id=glUmbr78&_data_version=0.6.1&channel_utm_content=jp&project=zlclient&channel_utm_medium=ocpc&tid=xTB&channel_link_type=web&channel_utm_source=baidusem_b&hash_key=MLJV6l8drfs4MKSgEAHR&sat_cf=2&channel_utm_term=19909&_channel_track_key=RLzoh25z&link_version=1&channel_keyword_id=700612665649&channel_ad_id=84616067013&channel_account_id=37244504&channel_keyword=%E6%99%BA%E8%81%94%E4%BA%BA%E6%89%8D%E7%BD%91%E6%8B%9B%E8%81%98%E7%BD%91%E5%AE%98%E7%BD%91&channel_adgroup_id=9149067349&channel_campaign_id=396370102&bd_vid=8629845013051779149", desc: "招聘平台" },
         { name: "前程无忧", url: "https://mkt.51job.com/tg/sem/lp2025/LP_2025_CB4.html?from=bingpz&partner=SEM_pcbingpz_02", desc: "招聘平台" },
         { name: "中国公共招聘网", url: "http://job.mohrss.gov.cn/", desc: "招聘平台" },
@@ -1034,7 +1034,7 @@ const RAW_DATA = [{
     ]
 }, {
     id: 18, title: "专业软件", icon: "fa-cogs", websites: [
-       { name: "Visual Studio Code", url: "https://code.visualstudio.com/", desc: "代码编辑器" },
+        { name: "Visual Studio Code", url: "https://code.visualstudio.com/", desc: "代码编辑器" },
         { name: "Python", url: "https://www.python.org/", desc: "Python语言" },
         { name: "FMEA COACH", url: "https://www.fmeacoach.com/#/", desc: "免费版FMEA 软件（终身免费）" },
         { name: "FreeSPC", url: "https://www.comcw.cn/pcsoft/6534.html", desc: "开源免费的 SPC 软件" },
@@ -1198,7 +1198,7 @@ const RAW_DATA = [{
     ]
 }, {
     id: 21, title: "常用网站", icon: "fa-link", websites: [
-       { name: "GitHub", url: "https://github.com/", desc: "GitHud" },
+        { name: "GitHub", url: "https://github.com/", desc: "GitHud" },
         { name: "AxureShow", url: "https://www.axureshow.com/", desc: "HTML代码托管平台|艾可秀" },
         { name: "微软翻译", url: "https://cn.bing.com/translator", desc: "在线翻译" },
         { name: "DeepL翻译", url: "https://www.deepl.com/zh/translator", desc: "在线翻译" },
@@ -1226,7 +1226,7 @@ const RAW_DATA = [{
     ]
 }, {
     id: 22, title: "资源网站", icon: "fa-folder-open", websites: [
-       { name: "科淘科研导航", url: "https://www.bioscitao.com/", desc: "资源合集" },
+        { name: "科淘科研导航", url: "https://www.bioscitao.com/", desc: "资源合集" },
         { name: "理白嫖资源站", url: "https://byepiao.com/", desc: "资源合集" },
         { name: "聚神铺导航", url: "https://www.jspoo.com/", desc: "资源合集" },
         { name: "吾爱破解", url: "https://www.52pojie.cn/", desc: "资源合集" },
