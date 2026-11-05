@@ -566,8 +566,9 @@ const RAW_DATA = [{
         { name: "生物杀灭剂法规", url: "https://eur-lex.europa.eu/eli/reg/2012/528/oj/eng", desc: "(EU) No 528/2012|欧盟" },
         { name: "化妆品指令", url: "https://eur-lex.europa.eu/eli/dir/1976/768/oj/eng", desc: "76/768/EEC|欧盟" },
         { name: "化妆品产品新规定", url: "https://eur-lex.europa.eu/eli/reg/2009/1223/oj/eng", desc: "(EC)1223/2009|欧盟" },
+        { name: "通用产品安全法规", url: "https://eur-lex.europa.eu/eli/dec/1993/465/oj/eng", desc: " (EU) 2023/988|欧盟" }, 
         { name: "一般产品安全指令", url: "https://eur-lex.europa.eu/eli/dir/2001/95/oj/eng", desc: "2001/95/EC|欧盟" },
-        { name: "合格评定程序与 CE 标志规定", url: "https://eur-lex.europa.eu/eli/dec/1993/465/oj/eng", desc: "93/465/EEC|欧盟" },
+        { name: "合格评定程序与 CE 标志规定", url: "https://eur-lex.europa.eu/eli/dec/1993/465/oj/eng", desc: "93/465/EEC|欧盟" },  
         { name: "加拿大环境保护法", url: "https://laws-lois.justice.gc.ca/eng/acts/c-15.31/index.html", desc: "加拿大" },
         { name: "加拿大环境评估法", url: "https://laws-lois.justice.gc.ca/eng/acts/c-15.21/index.html", desc: "加拿大" },
         { name: "新物质申报条例（化学品和聚合物）指南文件", url: "https://www.canada.ca/en/environment-climate-change/services/managing-pollution/evaluating-new-substances/chemicals-polymers/guidance.html", desc: "加拿大" },
@@ -1233,6 +1234,7 @@ const RAW_DATA = [{
         { name: "123云盘", url: "https://www.123pan.com/", desc: "网盘" },
         { name: "夸克网盘", url: "https://pan.quark.cn/", desc: "网盘" },
         { name: "阿里云盘", url: "https://www.alipan.com/", desc: "网盘" },
+        { name: "腾讯网盘", url: "https://drive.tencent.com/login?redirect=%2Fdisk%2Fstorage", desc: "AI网盘" },   
         { name: "12306", url: "https://www.12306.cn/index/", desc: "中国铁路" },
     ]
 }, {
@@ -1386,6 +1388,7 @@ const RAW_DATA = [{
         { name: "自由钢琴", url: "https://www.autopiano.cn/#google_vignette", desc: "游戏" },
         { name: "Poki", url: "https://poki.com/zh", desc: "游戏" },
         { name: "千米游戏", url: "https://www.yikm.net/", desc: "游戏" },
+        { name: "FUUN.FUN", url: "http://weavesilk.com/", desc: "奇趣网站收藏家" },     
         { name: "Weave Silk", url: "http://weavesilk.com/", desc: "对称光影绘画工具" },
         { name: "Bongo Cat", url: "https://bongo.cat/", desc: "互动网站" },
         { name: "全球气候", url: "https://zoom.earth/", desc: "环境" },
