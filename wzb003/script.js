@@ -1,7 +1,7 @@
-// ========================================================================
+﻿// ========================================================================
 //  网址库 · 增强版 script.js
 //  新增：localStorage 持久化、增删改(CRUD)、收藏、访问统计、
-//       卡片/列表视图、紧凑密度、favicon、复制链接、最近访问、
+//       卡片/列表/杂志/彩带视图、紧凑密度、favicon、复制链接、最近访问、
 //       导入导出、拖拽排序、搜索增强、快捷键、右键菜单、Toast
 // ========================================================================
 
@@ -25,6 +25,7 @@ const ICONS = {
     inbox:   '<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"></polyline><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"></path></svg>',
     history: '<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v5h5"></path><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"></path><polyline points="12 7 12 12 15 15"></polyline></svg>',
     check:   '<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>',
+    tick:    '<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="4 13 9.5 18.5 20 6"></polyline></svg>',
     info:    '<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>',
     warn:    '<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>',
     folder:  '<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>'
@@ -58,11 +59,20 @@ const RAW_DATA = [{
         { name: "UL认证", url: "https://www.shopulstandards.com/", desc: "UL标准" },
         { name: "WTO", url: "https://www.wto.org/english/res_e/res_e.htm", desc: "世界贸易组织" }, 
         { name: "UNSD", url: "https://unstats.un.org/UNSDWebsite/", desc: "联合国统计局" },
+        { name: "IAAC", url: "https://iaac.org.mx/", desc: "泛美认可合作组织" },
+        { name: "IANZ", url: "https://www.ianz.govt.nz/", desc: "新西兰国际认可" },
+        { name: "EA", url: "https://european-accreditation.org/", desc: "欧洲认可合作组织" },
+        { name: "ILAC", url: "https://ilac.org/", desc: "国际实验室认可合作组织" },
+        { name: "BIPM", url: "https://www.bipm.org/en/", desc: "国际计量局" },
+        { name: "OIML", url: "https://www.oiml.org/en", desc: "国际法定计量组织" },
+        { name: "EDANA", url: "https://www.edana.org/knowledge-hub/resources/document-repository", desc: "欧洲非织造布协会" },
     ]
 }, {
     id: 2, title: "国家标准", icon: "fa-book", websites: [
         { name: "全国标准信息公共服务平台", url: "https://std.samr.gov.cn/", desc: "国家/行业/地方/团体/企业/国际/国外标准" },
         { name: "国家标准全文公开系统", url: "https://openstd.samr.gov.cn/bzgk/gb/index", desc: "GB/GBT/GBZ" },
+        { name: "国家标准计划查询", url: "https://std.samr.gov.cn/gb/gbProcessInfo", desc: "国家标准计划查询" },     
+        { name: "国家标准目录查询", url: "https://std.samr.gov.cn/gb/gbQuery", desc: "国家标准目录查询" },
         { name: "国际国家标准互查", url: "https://std.samr.gov.cn/gb/search/gbAdvancedSearch?type=std", desc: "ISO标准号查找国家标准号" },
         { name: "国家计量技术规范公开系统", url: "http://jjg.spc.org.cn/", desc: "JJG/JJF标准下载" },  
         { name: "中国国家标准化管理委员会", url: "https://www.sac.gov.cn/", desc: "中国国家标准化管理委员会" },
@@ -96,6 +106,7 @@ const RAW_DATA = [{
         { name: "密码行业标准化技术委员会", url: "http://www.gmbz.org.cn/main/bzlb.html", desc: "标准" },
         { name: "全国网络安全标准化技术委员会", url: "https://www.tc260.org.cn/tc260/sjzn/list.shtml", desc: "TC260标准下载" },
         { name: "国家发展和改革委员会", url: "https://www.ndrc.gov.cn/", desc: "国家发展和改革委员会" },
+        { name: "中华人民共和国国家卫生和计划生育委员会", url: "https://www.nhc.gov.cn/zwgkzt/pgzdt/list.shtml", desc: "国家发展和改革委员会" },   
         { name: "海关总署技贸措施网", url: "http://www.tbtsps.cn", desc: "GB/GBT/GBZ/GA/GAT/DB/LDT/WST/DAT/YYT/T../RBT/DL../HJ/JBT/QCT标准下载" },
         { name: "中国海关企业进出口信用信息", url: "http://credit.customs.gov.cn/ccppwebserver/pages/ccpp/html/ccppindex.html", desc: "中国海关企业进出口信用信息公示平台" },
         { name: "资本市场标准网", url: "http://www.csisc.cn/zbscbzw/c100208/yfb_gb_list.shtml#bzyfb", desc: "JR标准下载" },
@@ -114,8 +125,10 @@ const RAW_DATA = [{
         { name: "中国地震局", url: "https://www.cea.gov.cn/cea/index/index.html?url=biiii.com", desc: "" }, 
         { name: "国家粮食和物资储备局", url: "https://www.lswz.gov.cn/html/ywpd/bzzl/lybz.shtml", desc: "LST标准下载" },
         { name: "国家档案局", url: "https://www.saac.gov.cn/daj/hybz/dabz_list.shtml", desc: "DA标准下载" },
+        { name: "国家统计局", url: "https://www.stats.gov.cn/", desc: "标准" },
         { name: "国家林业和草原局", url: "https://www.forestry.gov.cn/govpublic-index.htm", desc: "" },
         { name: "国家医疗保障局", url: "https://gkml.ggj.gov.cn/", desc: "" },
+        { name: "国家中医药管理局", url: "http://www.natcm.gov.cn/", desc: "" },    
         { name: "国家机关事务管理局", url: "https://www.ggj.gov.cn/", desc: "" },
         { name: "国家市场监督管理总局", url: "https://www.samr.gov.cn/", desc: "国家市场监督管理总局" },
         { name: "国家税务总局", url: "https://www.chinatax.gov.cn/", desc: "国家税务总局" },
@@ -131,8 +144,10 @@ const RAW_DATA = [{
         { name: "国家宗教事务局", url: "https://www.sara.gov.cn/", desc: "" },
         { name: "国家消防救援局", url: "https://www.119.gov.cn/", desc: "" },
         { name: "国家密码管理局", url: "http://www.nca.gov.cn/", desc: "" },
+        { name: "国家外汇管理局", url: "https://www.safe.gov.cn/", desc: "" },
         { name: "国家公务员局", url: "http://bm.scs.gov.cn/pp/gkweb/core/web/ui/business/home/gkhome.html?url=biiii.com", desc: "" },
         { name: "国家核安全局", url: "https://nnsa.mee.gov.cn/", desc: "" },
+        { name: "国家核保密局", url: "https://www.gjbmj.gov.cn/index.html", desc: "" },    
         { name: "司法部", url: "http://www.moj.gov.cn/", desc: "司法部" },
         { name: "财政部", url: "http://www.mof.gov.cn/", desc: "财政部" },
         { name: "外交部", url: "https://www.fmprc.gov.cn/", desc: "外交部" },
@@ -161,10 +176,18 @@ const RAW_DATA = [{
         { name: "国家民族事务委员会", url: "https://www.neac.gov.cn/", desc: "" },
         { name: "国务院侨务办公室", url: "https://www.gqb.gov.cn/", desc: "" },
         { name: "国家国际发展合作署", url: "http://www.cidca.gov.cn/", desc: "" },
+        { name: "国家新闻出版署", url: "https://www.nppa.gov.cn/", desc: "" },   
+        { name: "中华人民共和国审计署", url: "https://www.audit.gov.cn/index.html", desc: "" },     
+        { name: "全军武器装备采购信息网", url: "https://www.weain.mil.cn/", desc: "" },
+        { name: "中华人民共和国国务院新闻办公室", url: "http://www.scio.gov.cn/", desc: "" },
+        { name: "中国人民银行", url: "https://www.pbc.gov.cn/", desc: "" },
+        { name: "中华全国供销合作总社", url: "https://www.chinacoop.gov.cn/", desc: "" },   
+        { name: "国家基础地理信息中心", url: "https://www.ngcc.cn/", desc: "" },
+        
     ]
 }, {
     id: 4, title: "地方标准", icon: "fa-map-marker-alt", websites: [
-       { name: "地方标准信息服务平台", url: "https://dbba.sacinfo.org.cn/", desc: "标准下载" },
+        { name: "地方标准信息服务平台", url: "https://dbba.sacinfo.org.cn/", desc: "标准下载" },
         { name: "北京市市场监督管理局", url: "https://scjgj.beijing.gov.cn/cxfw/", desc: "标准下载" },
         { name: "山西省市场监督管理局（知识产权局）", url: "https://scjgj.shanxi.gov.cn/gzzt/bzgl/dfbzcx/index.shtml", desc: "DB标准下载" },
         { name: "安徽省标准化信息服务", url: "https://bzxx.ahbz.org.cn/standInfo.html?tab=2", desc: "标准下载" },
@@ -184,7 +207,7 @@ const RAW_DATA = [{
     ]
 }, {
     id: 5, title: "团体标准", icon: "fa-users", websites: [
-       { name: "全国团体标准信息平台", url: "https://www.ttbz.org.cn/Home/Standard", desc: "标准下载" },
+        { name: "全国团体标准信息平台", url: "https://www.ttbz.org.cn/Home/Standard", desc: "标准下载" },
         { name: "中关村材料试验技术联盟", url: "http://www.cstm.com.cn/channel/details/3-1-cstmbiaozhun?page=1", desc: "CSTM标准下载" },
         { name: "中国航空器拥有者及驾驶员协会", url: "https://www.aopa.org.cn/portal/modules/group/2", desc: "TAOPA标准下载" },
         { name: "中国教育装备行业协会", url: "https://www.ceeia.cn/news/55/", desc: "TJYBZ标准下载" },
@@ -204,6 +227,9 @@ const RAW_DATA = [{
         { name: "CPSIA", url: "https://www.cpsc.gov/Regulations-Laws--Standards/Statutes/The-Consumer-Product-Safety-Improvement-Act", desc: "美国消费品安全委员会" },
         { name: "CTPAT", url: "https://www.cbp.gov/border-security/ports-entry/cargo-security/ctpat-customs-trade-partnership-against-terrorism/apply/security-criteria", desc: "美国海关-商贸反恐伙伴计划" },
         { name: "NHTSA", url: "https://www.nhtsa.gov/laws-regulations", desc: "美国国家公路交通安全管理局" },
+        { name: "CPSC", url: "https://www.cpsc.gov/zh-CN/home", desc: "美国消费品安全委员会" },
+        { name: "FTC", url: "https://www.ftc.gov/", desc: "美国消费者由联邦贸易委员会" },
+        { name: "APHIS", url: "https://www.aphis.usda.gov/", desc: "美国农业部的动植物卫生检验署" },
         { name: "日本标准", url: "https://www.sacinfo.cn/s/std?p.p1=JIS", desc: "标准查询" },
         { name: "JAS", url: "https://www.maff.go.jp/j/jas/jas_kikaku/yuuki.html#kikaku", desc: "日本有机标准" },
         { name: "UKAS", url: "https://www.ukas.com/", desc: "英国皇家认可委员会" },
@@ -223,9 +249,10 @@ const RAW_DATA = [{
     ]
 }, {
     id: 7, title: "其他标准", icon: "fa-file-alt", websites: [
-       { name: "企业标准信息公共服务平台", url: "https://www.qybz.org.cn/", desc: "标准下载" },
+        { name: "企业标准信息公共服务平台", url: "https://www.qybz.org.cn/", desc: "标准下载" },
         { name: "特种设备安全检查局", url: "https://www.samr.gov.cn/tzsbj/zcfg/aqjsgf/index.html", desc: "安全技术规范" },
-        { name: "国家统计局", url: "https://www.stats.gov.cn/", desc: "标准" },
+        { name: "强制性产品认证实施规则汇总", url: "https://www.cnca.gov.cn/hlwfw/ywzl/qzxcprz/ssgz/art/2026/art_5261f654e02d45edaf0805fb268c9fc9.html", desc: "" },
+        { name: "中国标准化研究院", url: "https://www.cnis.ac.cn/pcindex/", desc: "" },
         { name: "中国民用航空适航审定中心", url: "https://acc.caac.gov.cn/ZCFG/index.html", desc: "航空政策法规" },
         { name: "RBA", url: "https://www.responsiblebusiness.org/code-of-conduct/", desc: "责任商业联盟行为准则-标准" },
         { name: "EMAS", url: "https://green-forum.ec.europa.eu/green-business/emas_en", desc: "生态管理与审计计划" },
@@ -236,6 +263,8 @@ const RAW_DATA = [{
         { name: "BRC标准", url: "https://www.brcgs.com/china/%E6%A6%82%E8%BF%B0/", desc: "标准" },
         { name: "IFS HPC标准", url: "https://www.ifs-certification.com/en/ifs-portfolio/standards/hpc-standard", desc: "标准" },
         { name: "FSC认证", url: "https://connect.fsc.org/document-centre", desc: "森林认证标准" },
+        { name: "FSSC 22000", url: "https://www.fssc.com/fssc-22000/scheme-documents/", desc: "食品安全管理体系" },
+        { name: "FSSC 24000", url: "https://www.fssc.com/fssc-24000/scheme-documents/", desc: "社会可持续管理体系" }, 
         { name: "CHAS", url: "https://www.chas.co.uk/ebooks/", desc: "承包商健康和安全评估体系" },    
         { name: "ESCP", url: "https://www.ethicalsupplychain.org/zh/resource/factory/audit-checklist", desc: "供应链责任规范标准" },
         { name: "EPEAT 2.0标准", url: "https://www.epeat.net/about/epeat-criteria", desc: "电子产品环境影响评估" },
@@ -312,6 +341,7 @@ const RAW_DATA = [{
         { name: "CQAF", url: "：http://www.cqaf.org/?lang=cn", desc: "中国质量保证论坛" },
         { name: "食典通", url: "https://www.sdtdata.com/fx/fcv1/tsLibIndex", desc: "GB/NY/LS/SC/QB标准下载" },
         { name: "中国就业培训技术指导中心", url: "https://chinajob.mohrss.gov.cn/ywpd/pxjd/rmzt/zyjnbz/zcwj/", desc: "标准下载" },
+        { name: "GFSI", url: "https://mygfsi.com/", desc: "全球食品安全倡议组织" },       
         { name: "小绿典", url: "https://dljs123.com/#/search/criteria", desc: "标准下载" },
         { name: "标准网", url: "https://bbs.biaozhuns.com//home.php?mod=space&uid=2047951&do=profile&mycenter=1&mobile=2", desc: "标准下载（论坛）每72h限1次" },
         { name: "电子工程世界", url: "https://download.eeworld.com.cn/", desc: "电子工程论坛" },
@@ -354,7 +384,7 @@ const RAW_DATA = [{
         { name: "CAMD", url: "https://www.camd-europe.eu/news/", desc: "各主管当局的小组发布文章（如IVDR过渡期解答）" },
         { name: "NBOG", url: "https://www.nbog.eu/nbog-documents/", desc: "MDD下公告机构指导文件（NBOG）" },
         { name: "MEDDEV指南", url: "https://ec.europa.eu/health/md_sector/current_directives_en", desc: "MEDDEV更新的医疗器械指南文件" },
-        { name: "FDA（注册）", url: "https://www.accessdata.fda.gov/scripts/cdrh/cfdocs/cfRL/rl.cfm/", desc: "美国医疗器械注册查询" },
+        { name: "FDA（注册）", url: "https://www.accessdata.fda.gov/scripts/cdrh/cfdocs/cfRL/rl.cfm", desc: "美国医疗器械注册查询" },
         { name: "最新的医疗器械指南文件", url: "https://www.fda.gov/medical-devices/guidance-documents-medical-devices-and-radiation-emitting-products/recent-final-medical-device-guidance-documents", desc: "美国FDA" },
         { name: "历史发布的医疗器械相关指南文件", url: "https://www.fda.gov/medical-devices/device-advice-comprehensive-regulatory-assistance/guidance-documents-medical-devices-and-radiation-emitting-products", desc: "美国FDA" },
         { name: "医疗器械数据库", url: "https://www.fda.gov/medical-devices/device-advice-comprehensive-regulatory-assistance/medical-device-databases", desc: "美国FDA" },
@@ -382,9 +412,10 @@ const RAW_DATA = [{
         { name: "加拿大医疗器械最新消息", url: "https://www.canada.ca/en/health-canada/services/drugs-health-products/medical-devices/what-new.html", desc: "关注加拿大医疗器械相关的最新动态" },
         { name: "日本PMDA（注册）", url: "https://www.pmda.go.jp/review-services/drug-reviews/foreign-mfr/0003.html", desc: "医疗器械注册查询" },
         { name: "日本法规翻译", url: "https://www.japaneselawtranslation.go.jp/en/laws", desc: "关注日本医疗器械法规的变化" },
-        { name: "厚生劳动省官网", url: "https://www.mhlw.go.jp/english/index.html", desc: "药品和医疗器械" },
-        { name: "英国医疗器械监管", url: "https://www.gov.uk/topic/medicines-medical-devices-blood/medical-devices-regulation-safety", desc: "关注英国医疗器械相关的最新动态" },
-        { name: "英国医疗器械指南", url: "https://www.gov.uk/government/collections/new-guidance-and-information-for-industry-from-the-mhra", desc: "关注英国医疗器械相关的最新动态" },
+        { name: "厚生劳动省官网", url: "https://www.mhlw.go.jp/english/index.html", desc: "日本药品和医疗器械" },
+        { name: "药品与医疗产品监管局", url: "https://www.gov.uk/government/organisations/medicines-and-healthcare-products-regulatory-agency", desc: "英国" },
+        { name: "医疗器械监管", url: "https://www.gov.uk/topic/medicines-medical-devices-blood/medical-devices-regulation-safety", desc: "关注英国医疗器械相关的最新动态" },
+        { name: "医疗器械指南", url: "https://www.gov.uk/government/collections/new-guidance-and-information-for-industry-from-the-mhra", desc: "关注英国医疗器械相关的最新动态" },
         { name: "TGA法规", url: "https://www.legislation.gov.au/Search/Therapeutic%20Goods", desc: "澳大利亚TGA法规" },
         { name: "TGA", url: "https://www.tga.gov.au/resources", desc: "所有指南文件的检索" },
         { name: "TAG公告", url: "https://www.tga.gov.au/resources/publication/publications", desc: "公告" },
@@ -440,6 +471,7 @@ const RAW_DATA = [{
     id: 10, title: "资质查询", icon: "fa-id-card", websites: [
         { name: "全国认证认可信息公共服务平台", url: "http://cx.cnca.cn/CertECloud/index/index/page", desc: "认证资质查询" },
         { name: "全国认证认可信息公共服务平台", url: "http://cx.cnca.cn/CertECloud/index/index/page", desc: "认证资质查询" },
+        { name: "绿色产品与标识认证信息平台", url: "https://www.chinagreenproduct.cn/GPIA/front", desc: "绿色产品" }, 
         { name: "CNAS", url: "https://www.cnas.org.cn/rkgf/rzjgrk/index.html", desc: "中国合格评定国家认可委员会-认证规则" },
         { name: "GLOBAC", url: "https://globalaccreditationcooperationincorporated.org/",  desc: "全球认可合作组织" },
         { name: "APAC", url: "https://www.apac-accreditation.org/", desc: "亚太认可合作组织" },
@@ -505,11 +537,12 @@ const RAW_DATA = [{
         { name: "TUVRheinland", url: "https://www.tuv.com/greater-china/cn/", desc: "莱茵认证机构" },
         { name: "intertek", url: "https://www.intertek.com.cn/", desc: "天祥认证机构" },
         { name: "CQC", url: "https://www.cqc.com.cn/www/index.html", desc: "中国质量认证中心" },
+        { name: "CCAA", url: "http://www.ccaa.org.cn/#/home", desc: "中国认证认可协会" },
+        { name: "CCIC", url: "https://www.ccic.com/", desc: "中国检验认证集团" },
         { name: "ESTS", url: "https://www.estsglobal.com/zh-CN/services/all", desc: "全球性的审核认证机构" },
     ]
 }, {
     id: 11, title: "国内法规", icon: "fa-gavel", websites: [
-        { name: "全球法规网", url: "https://policy.mofcom.gov.cn/law/index.shtml", desc: "全球法规网" },
         { name: "最高人民法院公报", url: "http://gongbao.court.gov.cn/?ref=https://szsyw.cn", desc: "最高人民法院公报" },
         { name: "国家法律法规数据库", url: "https://flk.npc.gov.cn/index", desc: "国家法律法规数据库" },
         { name: "国家规章库", url: "https://www.gov.cn/zhengce/xxgk/gjgzk/index.htm?searchWord=", desc: "国家规章库" },
@@ -524,6 +557,24 @@ const RAW_DATA = [{
         { name: "证券期货法规数据库系统", url: "https://neris.csrc.gov.cn/falvfagui/?ref=https://szsyw.cn", desc: "证券期货法规数据库系统" },
     ]
 }, {
+    id: 32, title: "国外法规", icon: "fa-gavel", websites: [
+        { name: "全球法规网", url: "https://policy.mofcom.gov.cn/law/index.shtml", desc: "全球法规网" },
+        { name: "正确包装与标识法案", url: "https://www.ftc.gov/legal-library/browse/statutes/fair-packaging-labeling-act", desc: "FPLA|美国" },       
+        { name: "安全化妆品法案 2011", url: "https://www.congress.gov/bill/112th-congress/house-bill/2359/text", desc: "H.R.2359|美国" },
+        { name: "度量衡(包装商品)规定2006", url: "https://www.legislation.gov.uk/uksi/2006/659/regulation/2", desc: "英国" },
+        { name: "度量衡法案", url: "https://laws-lois.justice.gc.ca/eng/acts/w-6/page-1.html", desc: "RS1985|加拿大" },
+        { name: "生物杀灭剂法规", url: "https://eur-lex.europa.eu/eli/reg/2012/528/oj/eng", desc: "(EU) No 528/2012|欧盟" },
+        { name: "化妆品指令", url: "https://eur-lex.europa.eu/eli/dir/1976/768/oj/eng", desc: "76/768/EEC|欧盟" },
+        { name: "化妆品产品新规定", url: "https://eur-lex.europa.eu/eli/reg/2009/1223/oj/eng", desc: "(EC)1223/2009|欧盟" },
+        { name: "通用产品安全法规", url: "https://eur-lex.europa.eu/eli/dec/1993/465/oj/eng", desc: " (EU) 2023/988|欧盟" }, 
+        { name: "一般产品安全指令", url: "https://eur-lex.europa.eu/eli/dir/2001/95/oj/eng", desc: "2001/95/EC|欧盟" },
+        { name: "合格评定程序与 CE 标志规定", url: "https://eur-lex.europa.eu/eli/dec/1993/465/oj/eng", desc: "93/465/EEC|欧盟" },  
+        { name: "加拿大环境保护法", url: "https://laws-lois.justice.gc.ca/eng/acts/c-15.31/index.html", desc: "加拿大" },
+        { name: "加拿大环境评估法", url: "https://laws-lois.justice.gc.ca/eng/acts/c-15.21/index.html", desc: "加拿大" },
+        { name: "新物质申报条例（化学品和聚合物）指南文件", url: "https://www.canada.ca/en/environment-climate-change/services/managing-pollution/evaluating-new-substances/chemicals-polymers/guidance.html", desc: "加拿大" },
+
+    ]
+},{
     id: 31, title: "其他国家平台", icon: "fa-gavel", websites: [
         { name: "中国人大网", url: "http://www.npc.gov.cn/npc/index.html", desc: "" },
         { name: "中国政协网", url: "http://www.cppcc.gov.cn/", desc: "" },
@@ -538,21 +589,50 @@ const RAW_DATA = [{
         { name: "国务院发展研究中心", url: "https://www.drc.gov.cn/default.aspx", desc: "" },
         { name: "国家体育总局体育器材装备中心", url: "https://www.sport.gov.cn/zbzx/", desc: "" },
         { name: "中国工程院", url: "https://www.cae.cn/", desc: "" },
-        { name: "中国社会科学网", url: "https://www.cssn.cn/", desc: "" },
         { name: "中国科学院", url: "https://www.cas.cn/", desc: "" },
+        { name: "中国社会科学网", url: "https://www.cssn.cn/", desc: "" },
         { name: "中国海洋信息网", url: "https://www.nmdis.org.cn/", desc: "" },
+        { name: "中国文艺网", url: "https://www.cflac.org.cn/", desc: "" },
+        { name: "中国作家网", url: "https://www.chinawriter.com.cn/", desc: "" },
         { name: "国务院参事室", url: "http://www.counsellor.gov.cn/", desc: "" },
         { name: "国家新闻出版署", url: "https://www.nppa.gov.cn/", desc: "" },
         { name: "中华全国妇女联合会", url: "https://www.women.org.cn/", desc: "" },
         { name: "中华全国归国华侨联合会", url: "https://www.chinaql.org/", desc: "" },
-        { name: "中国科学技术协会", url: "https://www.cast.org.cn/", desc: "" },
-        { name: "中国文艺网", url: "https://www.cflac.org.cn/", desc: "" },
-        { name: "中国作家网", url: "https://www.chinawriter.com.cn/", desc: "" },
         { name: "中华全国工商业联合会", url: "https://www.acfic.org.cn/", desc: "" },
+        { name: "中国电力企业联合会", url: "https://www.cec.org.cn/", desc: "" },
+        { name: "中国商业联合会", url: "https://m.cgcc.org.cn/", desc: "" },
+        { name: "中国物流与采购联合会", url: "http://www.chinawuliu.com.cn/", desc: "" },
+        { name: "中国机械工业联合会", url: "http://60.205.228.62/cmif-html/introduce.html", desc: "" },
+        { name: "中国石油和化学工业联合会", url: "http://www.cpcif.org.cn/", desc: "" },
+        { name: "中国轻工业联合会", url: "https://cnlic.org.cn/lists/14.html", desc: "" },
+        { name: "中国建筑材料联合会", url: "https://www.cbmf.org/", desc: "" },
+        { name: "中国煤炭工业协会", url: "https://www.coalchina.org.cn/", desc: "" },
+        { name: "中国有色金属工业协会", url: "https://www.chinania.org.cn/html/zhongguoyousejinshugongyexiehu/", desc: "" },
+        { name: "中国科学技术协会", url: "https://www.cast.org.cn/", desc: "" },
+        { name: "中国汽车工业协会", url: "http://www.caam.org.cn/", desc: "" },
+        { name: "中国电器工业协会", url: "https://www.ceeia.com/", desc: "" },
+        { name: "中国钢铁工业协会", url: "https://www.chinaisa.org.cn/gxportal/xfgl/portal/index.html", desc: "" },
+        { name: "中国船舶重工集团公司", url: "http://china-csicpower.com.cn/n8/n55/index.html", desc: "" },    
+        { name: "中国石化集团公司", url: "http://www.sinopecgroup.com/group/", desc: "" },
+        { name: "中国石油天然气集团有限公司", url: "https://www.cnpc.com.cn/cnpc/index.shtml", desc: "" },
+        { name: "中国核工业集团有限公司", url: "https://www.cnnc.com.cn/", desc: "" },
+        { name: "中国航空工业集团有限公司", url: "https://www.avic.com.cn/", desc: "" },
+        { name: "中国航天科技集团公司", url: "https://file.spacechina.com/n25/n142/index.html", desc: "" },
+        { name: "中国航天科工集团有限公司", url: "http://www.casic.com.cn/", desc: "" },
+        { name: "中国海洋石油集团有限公司", url: "https://www.cnooc.com.cn/index.html?qgklwqqepeixlwjc", desc: "" },
+        { name: "中国环境科学出版社", url: "https://www.cesp.com.cn/", desc: "" },
+        { name: "中国标准出版社", url: "https://www.spc.net.cn/about/introduce/", desc: "" },
+        { name: "中国发展改革出版社", url: "http://www.jhpress.com/Index.aspx", desc: "中国计划出版社" },
+        { name: "中国建筑工业出版社", url: "https://www.cabp.com.cn/index", desc: "" },
+        { name: "新华社", url: "https://www.news.cn/xinhuashe/", desc: "" },
+        { name: "中共中央党校", url: "https://www.ccps.gov.cn/", desc: "国家行政学院" },
+        { name: "国家语言文字工作委员会", url: "http://www.moe.gov.cn/jyb_sy/China_Language/", desc: "" },
+        { name: "国家市场监督管理总局认证认可技术研究中心", url: "https://www.ccai.org.cn/", desc: "" },
+        { name: "中国网络安全审查认证和市场监管大数据中心", url: "https://www.isccc.gov.cn/", desc: "" },
     ]
 }, {
     id: 12, title: "合同范本", icon: "fa-file-contract", websites: [
-       { name: "合同示范文本库", url: "https://htsfwb.samr.gov.cn/", desc: "国家市场监督总局合同范本" },
+        { name: "合同示范文本库", url: "https://htsfwb.samr.gov.cn/", desc: "国家市场监督总局合同范本" },
         { name: "广西合同格式", url: "http://221.7.197.159:8088/www/template_list.aspx?ref=https://szsyw.cn", desc: "合同范本" },
         { name: "武汉合同格式", url: "https://scjgj.wuhan.gov.cn/bsfw/htgl_65/htfb/?ref=https://szsyw.cn", desc: "合同范本" },
         { name: "河南合同格式", url: "https://scjg.henan.gov.cn/ztzl/htsfwb/", desc: "合同范本" },
@@ -593,7 +673,7 @@ const RAW_DATA = [{
     ]
 }, {
     id: 14, title: "招聘平台", icon: "fa-user-plus", websites: [
-       { name: "Boss直聘", url: "https://www.zhipin.com/shenzhen/?seoRefer=index", desc: "招聘平台" },
+        { name: "Boss直聘", url: "https://www.zhipin.com/shenzhen/?seoRefer=index", desc: "招聘平台" },
         { name: "智联招聘", url: "https://landing.zhaopin.com/register?identity=b&channel_name=baidu_sem_track&callback_id=glUmbr78&_data_version=0.6.1&channel_utm_content=jp&project=zlclient&channel_utm_medium=ocpc&tid=xTB&channel_link_type=web&channel_utm_source=baidusem_b&hash_key=MLJV6l8drfs4MKSgEAHR&sat_cf=2&channel_utm_term=19909&_channel_track_key=RLzoh25z&link_version=1&channel_keyword_id=700612665649&channel_ad_id=84616067013&channel_account_id=37244504&channel_keyword=%E6%99%BA%E8%81%94%E4%BA%BA%E6%89%8D%E7%BD%91%E6%8B%9B%E8%81%98%E7%BD%91%E5%AE%98%E7%BD%91&channel_adgroup_id=9149067349&channel_campaign_id=396370102&bd_vid=8629845013051779149", desc: "招聘平台" },
         { name: "前程无忧", url: "https://mkt.51job.com/tg/sem/lp2025/LP_2025_CB4.html?from=bingpz&partner=SEM_pcbingpz_02", desc: "招聘平台" },
         { name: "中国公共招聘网", url: "http://job.mohrss.gov.cn/", desc: "招聘平台" },
@@ -831,6 +911,11 @@ const RAW_DATA = [{
         { name: "易转换", url: "https://www.easeconvert.com/markdown/", desc: "Markdown转pdf" },
         { name: "Markdown Online", url: "https://www.markdownonline.net/zh/", desc: "Markdown编辑器" },
         { name: "文字转手写", url: "https://text-to-handwriting.org/zh", desc: "文字转手写" },
+        { name: "免费在线条形码生成器", url: "https://barcode-maker.com/zh", desc: "" },
+        { name: "宣羽手写生成器", url: "https://www.xuanyudev.cn/app/", desc: "手写转换" },
+        { name: "在线手写模拟器", url: "https://paper.itfox.net/handwriting", desc: "手写转换" },
+        { name: "字映", url: "https://s.owwa.dev/", desc: "手写转换" },
+        { name: "材料星", url: "https://paper.cailiaoxing.com/", desc: "手写转换" },
         { name: "白描网页版", url: "https://web.baimiaoapp.com/", desc: "文字提取工具" },
         { name: "ChartCube", url: "https://chartcube.alipay.com/", desc: "可视化图表制作" },
         { name: "富婆图表", url: "https://www.richcharts.com/", desc: "可视化图表制作" },
@@ -839,6 +924,8 @@ const RAW_DATA = [{
         { name: "网页转换助手", url: "http://mmhtml.com/zh/", desc: "网页转换助手" },
         { name: "pad ws交互白板", url: "https://pad.ws/", desc: "演示白板" },
         { name: "在线白板", url: "https://toolwa.com/whiteboard/", desc: "演示白板" },
+        { name: "tldraw", url: "https://www.tldraw.com/", desc: "无限画布" },
+        { name: "drawnix", url: "https://drawnix.com/", desc: "白板、画布" },
         { name: "FileCodeBox", url: "https://share.lanol.cn/#/", desc: "文件快递柜" },
         { name: "文叔叔", url: "https://www.wenshushu.cn/", desc: "文件快递柜" },
         { name: "MuseTransfer", url: "https://musetransfer.com/", desc: "文件快递柜" },
@@ -859,6 +946,7 @@ const RAW_DATA = [{
         { name: "兔兔图床", url: "https://tutu.to/#google_vignette", desc: "免费图片托管平台" },
         { name: "路过图床", url: "https://imgse.com/", desc: "免费图片托管平台（每日限8）" },
         { name: "黑猫图床", url: "https://img.hmvod.cc/", desc: "图床" },
+        { name: "SubHD", url: "https://subhd.tv/", desc: "字幕下载" },  
         { name: "VDA6.3", url: "https://vda.bosspim.com/", desc: "审核网页" },
         { name: "Inno Setup", url: "https://jrsoftware.org/isdl.php", desc: "网页转app" },
         { name: "PakePlus", url: "https://pakeplus.com/zh/", desc: "网页转app" },
@@ -877,7 +965,8 @@ const RAW_DATA = [{
         { name: "filecompress", url: "https://filecompress.org/zh-cn/documents-tools/compress-xlsx", desc: "excel文件体积压缩" },
         { name: "imgdiet", url: "https://www.imgdiet.com/zh-CN", desc: "图片压缩工具" },
         { name: "极速图片压缩器", url: "https://www.zgcoder.com/tic/", desc: "图片压缩工具" },
-        { name: "Free Tinypng", url: "https://free.tinypng.site/", desc: "图片压缩工具" },
+        { name: "TinyPNG", url: "https://tinypng.com/", desc: "图片压缩工具" },
+        { name: "removebg", url: "https://www.remove.bg/zh", desc: "在线抠图、去背景" },   
         { name: "照片转手绘", url: "https://www.picturetodrawing.org/zh", desc: "照片转手绘" },
         { name: "Copicseal", url: "https://copicseal.kohai.top/", desc: "照片加水印" },
         { name: "EXIF Frame", url: "https://exifframe.org/zh", desc: "照片加水印" },
@@ -942,10 +1031,22 @@ const RAW_DATA = [{
         { name: "在线育儿补贴计算器", url: "https://uutool.cn/children-allowance/", desc: "计算器" },
         { name: "劳法计算器", url: "https://web.laofa.com/calculator/?src=www.jspoo.com", desc: "计算器" },
         { name: "Bypass", url: "https://www.bypass.cn/", desc: "分流抢票" },
+        { name: "朋友圈转发截图", url: "https://akarin.dev/WechatMomentScreenshot/?ref=www.tboxn.com", desc: "点赞" },
+        { name: "微信转账截图", url: "https://jietuer.com/weixin-zhuanzhang.html", desc: "仅学习用途" },
+        { name: "在线生成余额宝余额", url: "https://www.imgml.com/balance-treasure", desc: "仅学习用途" },
+        { name: "微信扫码付款截图", url: "https://virtualchatgenerator.com/wxscan", desc: "仅学习用途" },
+        { name: "微信转账模拟器", url: "https://onboxdeer.com/wechat-pay/", desc: "仅学习用途" },  
+        { name: "模拟微信对话生成器", url: "https://www.tuya.dev/wechat/index.html", desc: "仅学习用途" },   
+        { name: "微信聊天模拟器1", url: "https://www.lanren-tools.com/wechat/", desc: "仅学习用途" },   
+        { name: "微信聊天模拟器2", url: "https://onboxdeer.com/wechat-simulator/", desc: "仅学习用途" },  
+        { name: "在线微信对话生成器", url: "https://www.wsjtxia.com/", desc: "仅学习用途" }, 
+        { name: "在线接收短信", url: "https://receive-sms.io/zh/#select-countries", desc: "手机号码" },   
+        { name: "写个字吧", url: "https://xgzb.top/#template", desc: "字帖生成" },
+        { name: "身份证图片生成", url: "https://idmaker.mageg.cn/", desc: "仅学习用途" },
     ]
 }, {
     id: 18, title: "专业软件", icon: "fa-cogs", websites: [
-       { name: "Visual Studio Code", url: "https://code.visualstudio.com/", desc: "代码编辑器" },
+        { name: "Visual Studio Code", url: "https://code.visualstudio.com/", desc: "代码编辑器" },
         { name: "Python", url: "https://www.python.org/", desc: "Python语言" },
         { name: "FMEA COACH", url: "https://www.fmeacoach.com/#/", desc: "免费版FMEA 软件（终身免费）" },
         { name: "FreeSPC", url: "https://www.comcw.cn/pcsoft/6534.html", desc: "开源免费的 SPC 软件" },
@@ -984,6 +1085,7 @@ const RAW_DATA = [{
         { name: "Reeden", url: "https://reeden.app/cn", desc: "电子书阅读器" },
         { name: "Office Tool Plus", url: "https://otp.landian.vip/zh-cn/#google_vignette", desc: "一键部署Office" },
         { name: "机查查", url: "https://devink.techartlife.com/zh/", desc: "机查查" },
+        { name: "分区助手", url: "https://www.disktool.cn/feature.html?ref=www.tboxn.com", desc: "软件" },      
         { name: "电脑系统office激活", url: "https://github.com/massgravel/Microsoft-Activation-Scripts", desc: "电脑系统" },
         { name: "极简系统", url: "https://www.sysmini.com/", desc: "电脑系统" },
         { name: "MSDN系统", url: "https://www.xitongku.com/?src=www.jspoo.com", desc: "电脑系统" },
@@ -1054,12 +1156,14 @@ const RAW_DATA = [{
 }, {
     id: 20, title: "AI模型", icon: "fa-robot", websites: [
         { name: "DeepSeek", url: "https://chat.deepseek.com/sign_in", desc: "在线AI" },
+        { name: "DeepSeek Harness", url: "https://www.deepseek.com/en/harness/", desc: "AI软件" },   
         { name: "ima", url: "https://ima.qq.com/?webFrom=10000028", desc: "在线AI" },
         { name: "豆包", url: "https://www.doubao.com/chat/?channel=baidu_pz&from_login=1", desc: "在线AI" },
         { name: "豆包工作", url: "https://www.doubao.com/work?channel=dbweb_bing_xhs_sem_pinp_dbgz_dbgz_dbgz_1&source=dbweb_bing_xhs_sem_pinp_dbgz_dbgz_dbgz_1&msclkid=ef9917bec3f4146e58da7d33f79c7de2", desc: "AI软件" },
         { name: "TRAE WORK", url: "https://work.trae.cn/?utm_source=content&utm_medium=doc_solo&utm_campaign=quickstart&mode=mtc", desc: "在线AI" },
         { name: "WorkBuddy", url: "https://www.codebuddy.cn/work/?fromSource=gwzcw.12117220.12117220.12117220&utm_medium=cpc&utm_id=gwzcw.12117220.12117220.12117220&msclkid=c334d204d0941fbf4f34b8417e9f9a37", desc: "自动化AI-软件" },
-        { name: "Agnes", url: "https://agnes-ai.com/", desc: "AI API" },  
+        { name: "Agnes", url: "https://agnes-ai.com/", desc: "AI API" }, 
+        { name: "Cline Desktop", url: "https://cline.bot/desktop", desc: "AI软件" },     
         { name: "智谱", url: "https://bigmodel.cn/usercenter/settings/auth", desc: "AI API" },  
         { name: "日日新", url: "https://www.sensenova.cn/token-plan", desc: "AI API" },    
         { name: "Agnes Code", url: "https://agnes-ai.com/agnescode", desc: "软件" },     
@@ -1072,6 +1176,7 @@ const RAW_DATA = [{
         { name: "Kimi", url: "https://www.kimi.com/?chat_enter_method=change_model", desc: "在线AI" },  
         { name: "Ollama", url: "https://ollama.com/", desc: "本地部署AI模型" },     
         { name: "千问", url: "https://www.qianwen.com/chat", desc: "在线AI" },
+        { name: "Qoder", url: "https://qoder.cn/?utm_content=se_1024169376", desc: "AI软件" },      
         { name: "WPS灵犀", url: "https://lingxi.wps.cn/echo", desc: "AI生成文档" },
         { name: "飞书多维表格", url: "https://acnkgpefayvj.feishu.cn/base", desc: "在线AI" },
         { name: "Xiaomi MlMo Studio", url: "https://aistudio.xiaomimimo.com/# ", desc: "小米AI" },
@@ -1105,7 +1210,7 @@ const RAW_DATA = [{
     ]
 }, {
     id: 21, title: "常用网站", icon: "fa-link", websites: [
-       { name: "GitHub", url: "https://github.com/", desc: "GitHud" },
+        { name: "GitHub", url: "https://github.com/", desc: "GitHud" },
         { name: "AxureShow", url: "https://www.axureshow.com/", desc: "HTML代码托管平台|艾可秀" },
         { name: "微软翻译", url: "https://cn.bing.com/translator", desc: "在线翻译" },
         { name: "DeepL翻译", url: "https://www.deepl.com/zh/translator", desc: "在线翻译" },
@@ -1129,11 +1234,12 @@ const RAW_DATA = [{
         { name: "123云盘", url: "https://www.123pan.com/", desc: "网盘" },
         { name: "夸克网盘", url: "https://pan.quark.cn/", desc: "网盘" },
         { name: "阿里云盘", url: "https://www.alipan.com/", desc: "网盘" },
+        { name: "腾讯网盘", url: "https://drive.tencent.com/login?redirect=%2Fdisk%2Fstorage", desc: "AI网盘" },   
         { name: "12306", url: "https://www.12306.cn/index/", desc: "中国铁路" },
     ]
 }, {
     id: 22, title: "资源网站", icon: "fa-folder-open", websites: [
-       { name: "科淘科研导航", url: "https://www.bioscitao.com/", desc: "资源合集" },
+        { name: "科淘科研导航", url: "https://www.bioscitao.com/", desc: "资源合集" },
         { name: "理白嫖资源站", url: "https://byepiao.com/", desc: "资源合集" },
         { name: "聚神铺导航", url: "https://www.jspoo.com/", desc: "资源合集" },
         { name: "吾爱破解", url: "https://www.52pojie.cn/", desc: "资源合集" },
@@ -1152,6 +1258,7 @@ const RAW_DATA = [{
         { name: "toolfk", url: "https://www.toolfk.com/", desc: "资源合集" },
         { name: "一糖导航", url: "https://iitang.com/#term-6115", desc: "资源合集" },
         { name: "slaw", url: "https://www.oslaw.cn/site-nav", desc: "资源合集" },
+        { name: "工具兔", url: "https://meetool.cn/generator/license-plate/", desc: "资源合集" },
     ]
 }, {
     id: 23, title: "图库", icon: "fa-images", websites: [
@@ -1170,7 +1277,6 @@ const RAW_DATA = [{
     ]
 }, {
     id: 24, title: "学教程", icon: "fa-graduation-cap", websites: [
-        { name: "技能看点", url: "https://wrf00123.github.io/tool6.html", desc: "教程查询" },
         { name: "懒人Excel", url: "https://www.lanrenexcel.com/", desc: "Excel教程" },
         { name: "Excel之家", url: "https://www.excelhome.net/", desc: "Excel教程" },
         { name: "Word联盟", url: "https://www.wordlm.cn/", desc: "Word教程" },
@@ -1267,6 +1373,7 @@ const RAW_DATA = [{
         { name: "各种测试", url: "https://www.zxgj.cn/?src=www.jspoo.com", desc: "测试" },
         { name: "EyeTest Online", url: "https://eyetestonline.org/?url=biiii.com", desc: "在线眼力测试" },       
         { name: "SBTI测试", url: "https://sbti.11ai.cn/#:~:text=SBTI%E4%BA%BA%E6%A0%BC%E6%B5%8B%E8%AF%95%E5%AE%98%E7%BD%91%E4%B8%BA%E4%BD%A0%E6%8F%90%E4%BE%9B%E5%85%8D%E8%B4%B9%E3%80%81%E5%BF%AB%E9%80%9F%E3%80%81%E9%AB%98%E7%B2%BE%E5%87%86%E7%9A%84%E6%80%A7%E6%A0%BC%E6%B5%8B%E8%AF%84%E6%9C%8D%E5%8A%A1%EF%BC%8C%E6%97%A0%E9%9C%80%E5%A4%8D%E6%9D%82%E6%AD%A5%E9%AA%A4%EF%BC%8C%E6%89%93%E5%BC%80%E5%85%A5%E5%8F%A3%E5%8D%B3%E5%8F%AF%E5%BC%80%E5%A7%8B%E6%B5%8B%E8%AF%95%E3%80%82,%E5%B9%B3%E5%8F%B0%E7%BB%93%E5%90%88%E7%8E%B0%E4%BB%A3%E5%BF%83%E7%90%86%E5%AD%A6%E4%B8%8E%E5%B9%B4%E8%BD%BB%E7%BE%A4%E4%BD%93%E7%89%B9%E7%82%B9%EF%BC%8C%E6%89%93%E9%80%A0%E8%BD%BB%E6%9D%BE%E6%98%93%E6%87%82%E7%9A%84%E6%80%A7%E6%A0%BC%E8%A7%A3%E8%AF%BB%E6%8A%A5%E5%91%8A%EF%BC%8C%E6%94%AF%E6%8C%81%E7%BB%93%E6%9E%9C%E4%BF%9D%E5%AD%98%E3%80%81%E7%A4%BE%E4%BA%A4%E5%88%86%E4%BA%AB%E4%B8%8E%E4%BA%BA%E6%A0%BC%E5%8C%B9%E9%85%8D%E5%8A%9F%E8%83%BD%E3%80%82%20%E6%97%A0%E8%AE%BA%E6%98%AF%E8%87%AA%E6%88%91%E8%AE%A4%E7%9F%A5%E3%80%81%E6%81%8B%E7%88%B1%E4%BA%A4%E5%8F%8B%E8%BF%98%E6%98%AF%E8%81%8C%E5%9C%BA%E6%B2%9F%E9%80%9A%EF%BC%8CSBTI%E9%83%BD%E8%83%BD%E4%B8%BA%E4%BD%A0%E6%8F%90%E4%BE%9B%E6%9C%89%E8%B6%A3%E5%8F%88%E5%AE%9E%E7%94%A8%E7%9A%84%E5%8F%82%E8%80%83%EF%BC%8C%E6%88%90%E4%B8%BA%E6%96%B0%E4%B8%80%E4%BB%A3%E5%B9%B4%E8%BD%BB%E4%BA%BA%E6%9C%80%E7%88%B1%E7%9A%84%E6%80%A7%E6%A0%BC%E6%8E%A2%E7%B4%A2%E7%A5%9E%E5%99%A8%E3%80%82", desc: "测试" },
+        { name: "wikiHow", url: "https://zh.wikihow.com/%E9%A6%96%E9%A1%B5", desc: "你可以信赖的万事指南" },   
         { name: "在线空调", url: "https://toolwa.com/ac/", desc: "模拟" },
         { name: "win12网页版", url: "https://tjy-gitnub.github.io/win12/desktop.html", desc: "模拟" },
         { name: "XP系统模拟器", url: "https://hackspoof.tonghei.com/windows-xp-simulator/", desc: "模拟" },
@@ -1281,6 +1388,7 @@ const RAW_DATA = [{
         { name: "自由钢琴", url: "https://www.autopiano.cn/#google_vignette", desc: "游戏" },
         { name: "Poki", url: "https://poki.com/zh", desc: "游戏" },
         { name: "千米游戏", url: "https://www.yikm.net/", desc: "游戏" },
+        { name: "FUUN.FUN", url: "http://weavesilk.com/", desc: "奇趣网站收藏家" },     
         { name: "Weave Silk", url: "http://weavesilk.com/", desc: "对称光影绘画工具" },
         { name: "Bongo Cat", url: "https://bongo.cat/", desc: "互动网站" },
         { name: "全球气候", url: "https://zoom.earth/", desc: "环境" },
@@ -1321,10 +1429,9 @@ const RAW_DATA = [{
         { name: "影视", url: "https://yinghezhinan.com/sites/zaixian/", desc: "影视" },
     ]
 }];
-
 const GROUP_MAP = {
     '标准': [1, 2, 3, 4, 5, 6, 7, 8, 9, 30],
-    '商务': [10, 11, 31, 12, 13, 14],
+    '商务': [10, 11, 31,32, 12, 13, 14],
     '工具': [15, 16, 17, 18],
     '资源': [19, 20, 21, 22, 23],
     '学习': [24, 25, 26, 27],
@@ -1346,6 +1453,48 @@ const STORAGE_KEY = 'bookmarks-app-state-v2';
 const SESSION_KEY = 'bookmarks-session-v1';   // 收藏 / 访问统计：仅当前会话，关闭浏览器清空
 const RECENT_KEY = 'bookmarks-recent-session-v1';
 const RECENT_MAX = 40;
+
+// ========================================================================
+//  皮肤（配色方案）
+//  - 只负责"配色"，与亮/暗模式正交：10 套皮肤 × 亮/暗 = 20 种观感
+//  - 具体的 CSS 变量在各皮肤对应的 `html[data-skin="xx"]` 规则里；
+//    这里只保存 id、显示名与预览渐变（用于设置菜单里的色板小圆点）
+//  - `aurora` 是默认皮肤，不需要额外的 CSS 覆盖块（就是 :root 的基色）
+// ========================================================================
+const SKINS = [
+    { id: 'aurora',   name: '极光',   preview: 'linear-gradient(140deg,#3e7eff,#60b2ff 46%,#2cc4d2)' },
+    { id: 'ocean',    name: '深海',   preview: 'linear-gradient(140deg,#1e5cdc,#2e82eb 46%,#1c9ebe)' },
+    { id: 'mint',     name: '薄荷',   preview: 'linear-gradient(140deg,#26b296,#54c8c4 46%,#2896c8)' },
+    { id: 'violet',   name: '紫罗兰', preview: 'linear-gradient(140deg,#7c5cf0,#9676ff 46%,#6082f5)' },
+    { id: 'sakura',   name: '樱花',   preview: 'linear-gradient(140deg,#f472b6,#fb9ec9 46%,#e2639e)' },
+    { id: 'forest',   name: '森林',   preview: 'linear-gradient(140deg,#2f9e56,#5cbf7e 46%,#1f8a70)' },
+    { id: 'sunset',   name: '暖阳',   preview: 'linear-gradient(140deg,#f89e3e,#fabe64 46%,#ee704e)' },
+    { id: 'midnight', name: '午夜',   preview: 'linear-gradient(140deg,#4f6ef7,#7e8df8 46%,#3a4ec9)' },
+    { id: 'cyber',    name: '赛博',   preview: 'linear-gradient(140deg,#c026d3,#e879f9 46%,#22d3ee)' },
+    { id: 'graphite', name: '石墨',   preview: 'linear-gradient(140deg,#788caa,#96a8c3 46%,#6e82a0)' }
+];
+const SKIN_IDS = SKINS.map(s => s.id);
+function skinName(id) {
+    const s = SKINS.find(x => x.id === id);
+    return s ? s.name : SKINS[0].name;
+}
+
+// ========================================================================
+//  视图模式：卡片 / 列表 / 杂志（大封面） / 彩带（渐变字母牌 + 域名扫读行）
+//  - 顶部视图按钮循环切换，设置菜单里可直接点选
+//  - id 保持 rows 不变，老存档里的 viewMode 无需迁移
+// ========================================================================
+const VIEW_MODES = [
+    { id: 'card', name: '卡片' },
+    { id: 'list', name: '列表' },
+    { id: 'mag',  name: '杂志' },
+    { id: 'rows', name: '彩带' },
+];
+const VIEW_MODE_IDS = VIEW_MODES.map(v => v.id);
+function viewModeName(id) {
+    const v = VIEW_MODES.find(x => x.id === id);
+    return v ? v.name : VIEW_MODES[0].name;
+}
 
 let state = null;
 let _uidSeq = 0;
@@ -1374,9 +1523,6 @@ function genCardChecks(site, category) {
 function genUid() {
     return 'u' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 }
-function genCatId() {
-    return 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-}
 
 function seedState() {
     const categories = RAW_DATA.map(cat => ({
@@ -1401,6 +1547,8 @@ function seedState() {
         deletedSeedUrls: [],
         settings: {
             theme: 'light',
+            skin: 'aurora',        // 皮肤（配色方案），见上方 SKINS
+            perfMode: false,       // 性能模式：关闭毛玻璃 / 动效 / 阴影，老机器用
             viewMode: 'card',
             density: 'comfort',
             showFavicons: false,
@@ -1410,15 +1558,46 @@ function seedState() {
     };
 }
 
+// ========================================================================
+//  RAW_DATA 顺序指纹
+//  卡片在页面上的先后顺序 = script.js 里 RAW_DATA 中网址出现的先后顺序。
+//  但存档（localStorage）里记的是上一次的顺序：在源码里插入 / 挪动网址后，
+//  存档不会自动跟着变（新补回的网址只会被追加到该分类末尾）。
+//  这里用一段指纹判断"源码顺序是否被改过"：
+//    · 指纹变了（含首次升级到本版本）→ 按 RAW_DATA 重排 seed 网址
+//    · 指纹没变 → 保留存档顺序，卡片拖拽排序的结果不会被覆盖
+//  指纹只存 32 位散列 + 长度，避免把上千条 URL 写进存档。
+// ========================================================================
+function rawOrderSignature() {
+    let str = '';
+    RAW_DATA.forEach(cat => {
+        str += cat.id + ':';
+        (cat.websites || []).forEach(w => { str += (w && w.url ? w.url.toLowerCase() : '') + ','; });
+        str += '|';
+    });
+    let h = 5381;
+    for (let i = 0; i < str.length; i++) h = ((h << 5) + h + str.charCodeAt(i)) | 0;
+    return (h >>> 0).toString(36) + '_' + str.length.toString(36);
+}
+
 function loadState() {
     try {
-        const raw = localStorage.getItem(STORAGE_KEY);
+        // localStorage 可能被浏览器禁用或空间已满（写入失败），此时回退读取会话级副本
+        let raw = null;
+        try { raw = localStorage.getItem(STORAGE_KEY); } catch (e) { raw = null; }
+        if (!raw) { try { raw = sessionStorage.getItem(STORAGE_KEY); } catch (e) { raw = null; } }
         if (!raw) return null;
         const s = JSON.parse(raw);
         if (!s || !Array.isArray(s.categories)) return null;
         // 补全 settings 默认值（def 中 showFavicons 默认 false，用户已有设置才覆盖默认）
         const def = seedState().settings;
         s.settings = Object.assign({}, def, s.settings || {});
+        // 容错：皮肤 id 可能来自旧版本或手改过的存档，非法值一律回到默认皮肤，
+        // 否则 data-skin 会指向一个不存在 CSS 规则的值，表现为"配色停留在默认款"
+        if (!SKIN_IDS.includes(s.settings.skin)) s.settings.skin = def.skin;
+        // 容错：视图模式 id 非法时回到默认卡片视图（同上，防止指向不存在的 CSS 规则）
+        if (!VIEW_MODE_IDS.includes(s.settings.viewMode)) s.settings.viewMode = def.viewMode;
+        s.settings.perfMode = !!s.settings.perfMode;
         // 版本化迁移：每次新版本希望"网站图标再次默认关"时，提升版本号即可
         //   对"从没见过此版本迁移标记"的用户，强制执行一次关；之后用户手动切换的偏好被保留
         try {
@@ -1544,6 +1723,32 @@ function loadState() {
         //    避免用户在 RAW_DATA 中先删 → 过段时间又加回来 时，因为旧的删除记录存在而无法重新显示
         s.deletedSeedUrls = s.deletedSeedUrls.filter(u => seedUrls.has((u || '').toLowerCase()));
 
+        // ========== 5) 卡片顺序与 script.js 源码（RAW_DATA）保持一致 ==========
+        //    见 rawOrderSignature() 的说明：只有"源码顺序被改过"时才重排，
+        //    平时完全保留存档顺序，用户拖拽排序的结果不会被冲掉。
+        const orderSig = rawOrderSignature();
+        if (s.settings.seedOrderSig !== orderSig) {
+            s.settings.seedOrderSig = orderSig;
+            s.categories.forEach(cat => {
+                const defCat = RAW_DATA.find(c => c.id === cat.id);
+                if (!defCat) return;
+                const pos = new Map();   // url(lower) -> 在 RAW_DATA 中的位置
+                (defCat.websites || []).forEach((w, i) => {
+                    if (w && w.url) pos.set(w.url.toLowerCase(), i);
+                });
+                const seeded = [];   // 来自 RAW_DATA 的网址：严格按源码顺序
+                const own = [];      // 用户自建网址：保持原相对顺序，统一排在后面
+                cat.websites.forEach(w => {
+                    const key = (w.url || '').toLowerCase();
+                    if (w.seed && pos.has(key)) seeded.push(w); else own.push(w);
+                });
+                if (!seeded.length) return;
+                seeded.sort((a, b) => pos.get(a.url.toLowerCase()) - pos.get(b.url.toLowerCase()));
+                cat.websites = seeded.concat(own);
+                cat.websites.forEach((w, i) => { w.order = i; });
+            });
+        }
+
         return s;
     } catch (e) {
         console.warn('读取本地数据失败，使用默认数据', e);
@@ -1551,23 +1756,141 @@ function loadState() {
     }
 }
 
-// ----------- saveState 异步化：150ms 内多次写入合并为一次，避免同步 localStorage 阻塞 UI -----------
+// ----------- saveState：150ms 去抖 + 存储空间不足 / 不可用时的多级降级 -----------
+// 背景：file:// 页面下所有本地 HTML 共用同一份 localStorage 配额，别的页面写满后
+//       本站写入会抛 QuotaExceededError。原来直接弹"保存失败"，每次操作都弹一遍。
+//       现在改为逐级降级，并且提示只出现一次。
+const _OBSOLETE_PREFIX = 'bookmarks-';
+// 本应用当前仍在使用的 key，清理遗留键时必须保留
+const _PERSIST_KEYS = [STORAGE_KEY, 'bookmarks-favicon-mig-v2'];
+
 let _saveStateTimer = null;
+let _storageLogged = false;        // 存储降级只往控制台记一次，不打扰用户
+
+// 当前生效的持久化层级：null=未知 / 'local' / 'session' / 'memory'
+// 一旦确认写不进 localStorage 就记住，后续直接走对应层级，不再反复“试错 + 抛异常”
+let _persistMode = null;
+
+/**
+ * 存储降级不再使用 toast 提示。
+ * 原因：file:// 协议下同一台机器上所有本地 HTML 共用一份 localStorage 配额，
+ * 别的工具页（或页面里加载的第三方脚本）把配额占满后，本站每次写入都会失败。
+ * 这是环境问题而非本站故障，反复弹窗只会打扰用户，因此只留在控制台备查。
+ */
+function _logStorageOnce(msg, detail) {
+    if (_storageLogged) return;
+    _storageLogged = true;
+    try { console.info('[存储降级] ' + msg, detail || ''); } catch (e) {}
+}
+
+// 探测 localStorage 是否可写（用于启动时确定层级，避免每次保存都走一遍失败流程）
+function _probeLocalStorage() {
+    try {
+        localStorage.setItem('__ls_probe__', '1');
+        localStorage.removeItem('__ls_probe__');
+        return true;
+    } catch (e) {
+        return false;
+    }
+}
+
+// 清理本应用历史版本遗留的键（同一 origin 下 bookmarks- 前缀的键都属于本应用）
+function purgeObsoleteKeys() {
+    let removed = 0;
+    try {
+        for (let i = localStorage.length - 1; i >= 0; i--) {
+            const k = localStorage.key(i);
+            if (k && k.indexOf(_OBSOLETE_PREFIX) === 0 && _PERSIST_KEYS.indexOf(k) === -1) {
+                localStorage.removeItem(k);
+                removed++;
+            }
+        }
+    } catch (e) { /* 忽略：清理失败不影响主流程 */ }
+    return removed;
+}
+
+// 序列化：compact=true 时丢掉一切可推导 / 可省略的字段，把体积压到最小
+function serializeState(compact) {
+    const cats = (state.categories || []).map(cat => ({
+        id: cat.id,
+        title: cat.title,
+        icon: cat.icon,
+        group: cat.group,
+        seed: !!cat.seed,
+        websites: (cat.websites || []).map(w => {
+            const o = { uid: w.uid, name: w.name, url: w.url, order: w.order | 0, seed: !!w.seed };
+            if (!compact && w.desc) o.desc = w.desc;
+            return o;
+        })
+    }));
+    const out = { v: 3, categories: cats, settings: state.settings };
+    const del = state.deletedSeedUrls;
+    if (!compact && Array.isArray(del) && del.length) out.deletedSeedUrls = del;
+    return JSON.stringify(out);
+}
+
+function _tryWrite(store, raw) {
+    try { store.setItem(STORAGE_KEY, raw); return true; } catch (e) { return false; }
+}
+
 function saveState(async = true) {
     const doWrite = () => {
-        try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify({
-                categories: state.categories,
-                deletedSeedUrls: state.deletedSeedUrls || [],
-                settings: state.settings
-            }));
-        } catch (e) {
-            toast('保存失败：本地存储可能已满', 'error');
-        }
-        saveSession();
         _saveStateTimer = null;
+
+        // 浏览器存储彻底不可用：只更新内存，不再做任何无谓的写入尝试
+        if (_persistMode === 'memory') { saveSession(); return; }
+
+        // 已降到会话级：用精简数据“试探”回归本地持久化，
+        // 用户清理掉浏览器存储空间后会自动恢复，不需要刷新或重开页面
+        if (_persistMode === 'session') {
+            if (_tryWrite(localStorage, serializeState(true))) {
+                _persistMode = 'local';
+                try { console.info('[存储降级] 已恢复本地持久化'); } catch (e) {}
+            }
+            saveSession();
+            return;
+        }
+
+        const full = serializeState(false);
+
+        // ① 正常写入
+        if (_tryWrite(localStorage, full)) { _persistMode = 'local'; saveSession(); return; }
+
+        // ② 清理本应用历史版本遗留的键腾出空间后重试
+        if (purgeObsoleteKeys() > 0 && _tryWrite(localStorage, full)) {
+            _persistMode = 'local';
+            saveSession();
+            return;
+        }
+
+        // ③ 精简写入（丢弃描述 / 删除记录等可推导信息）
+        const slim = serializeState(true);
+        if (_tryWrite(localStorage, slim)) {
+            _persistMode = 'local';
+            _logStorageOnce('空间紧张，已自动精简保存');
+            saveSession();
+            return;
+        }
+
+        // ④ localStorage 写不进 → 退回会话级：刷新不丢，关闭浏览器后回到默认数据
+        if (_tryWrite(sessionStorage, slim)) {
+            _persistMode = 'session';
+            _logStorageOnce('localStorage 空间不足（file:// 下所有本地页面共享同一份配额），已转为会话级保存：刷新不丢。');
+            saveSession();
+            return;
+        }
+
+        // ⑤ 全部不可用：数据只留在内存
+        _persistMode = 'memory';
+        _logStorageOnce('浏览器存储完全不可用，本次改动仅存在于当前页面。');
+        saveSession();
     };
-    if (!async) { doWrite(); return; }
+
+    if (!async) {
+        if (_saveStateTimer) clearTimeout(_saveStateTimer);
+        doWrite();
+        return;
+    }
     if (_saveStateTimer) clearTimeout(_saveStateTimer);
     // 去抖 150ms：连续操作（例如切换主题→切换密度→切视图）合并为一次写入
     _saveStateTimer = setTimeout(doWrite, 150);
@@ -1615,7 +1938,6 @@ let showFavorites = false;
 let pendingHighlight = null;
 let draggedUid = null;
 let editingUid = null;       // 编辑网址时的 uid
-let editingCatId = null;     // 编辑分类时的 id
 let contextTarget = null;    // 右键菜单目标 uid
 let recentUids = [];         // 最近访问（仅当前浏览器会话，关闭浏览器自动清空）
 
@@ -1632,10 +1954,12 @@ const searchClear = document.getElementById('searchClear');
 const searchHistoryEl = document.getElementById('searchHistory');
 const themeToggle = document.getElementById('themeToggle');
 const themeIcon = document.getElementById('themeIcon');
+const perfToggle = document.getElementById('perfToggle');
 const resultCount = document.getElementById('resultCount');
 const toastContainer = document.getElementById('toastContainer');
 const contextMenu = document.getElementById('contextMenu');
 const settingsMenuEl = document.getElementById('settingsMenu');
+const themeColorMeta = document.getElementById('themeColor');
 
 // ========================================================================
 //  手机端：顶栏（含 Logo + 搜索 + 一级菜单）整体 fixed 后的高度自适应
@@ -1720,7 +2044,11 @@ function recordVisit(uid) {
     if (recentUids.length > RECENT_MAX) recentUids.length = RECENT_MAX;
     saveRecent();
     saveSession();
-    renderRecentPanel();
+    // 仅当「最近访问」弹窗处于打开状态时才刷新，避免每次点击都做无用 DOM 操作
+    if (document.getElementById('recentModal')?.classList.contains('is-open')) {
+        renderRecentPanel();
+        renderRanking('recentRank');
+    }
 }
 
 function toggleFavorite(uid) {
@@ -1746,6 +2074,37 @@ function toggleFavorite(uid) {
 
 function getHostname(url) {
     try { return new URL(url).hostname; } catch (e) { return ''; }
+}
+
+// ========================================================================
+//  网站图标（favicon）多源回退
+//  原来只请求 Google 的 s2 服务，在部分网络环境下会整体不可达，导致图标永远加载不出来。
+//  现在按"Google → DuckDuckGo → 站点自身 /favicon.ico → 站点 origin"依次降级，
+//  全部失败才隐藏 <img>，露出底层自带的默认地球图标。
+// ========================================================================
+function attachFavicon(img, url, size, onFail) {
+    const host = getHostname(url);
+    if (!host) { if (onFail) onFail(); else img.style.display = 'none'; return; }
+    img.alt = '';
+    img.loading = 'lazy';
+    img.decoding = 'async';
+    img.referrerPolicy = 'no-referrer';
+    const list = [
+        'https://www.google.com/s2/favicons?domain=' + encodeURIComponent(host) + '&sz=' + (size || 128),
+        'https://icons.duckduckgo.com/ip3/' + host + '.ico',
+        'https://' + host + '/favicon.ico'
+    ];
+    try {
+        const origin = new URL(url).origin;
+        if (origin.indexOf('https://') === 0) list.push(origin + '/favicon.ico');
+    } catch (e) { /* URL 不合法时只用上面的候选 */ }
+    let i = 0;
+    img.onerror = () => {
+        i += 1;
+        if (i < list.length) img.src = list[i];
+        else { img.onerror = null; if (onFail) onFail(); else img.style.display = 'none'; }
+    };
+    img.src = list[0];
 }
 
 function normalizeUrl(url) {
@@ -1789,6 +2148,8 @@ function renderLevel1() {
                 const pill = document.querySelector('.nav-level1 .nav-item.fav-pill');
                 if (pill) pill.remove();
                 showFavorites = false;
+                // 【修复】退出收藏态时同步设置菜单文案，否则菜单里仍显示"退出仅看收藏"
+                updateSettingsMenu();
             }
             // 3) 记录当前分组 + 必要的分类修正
             currentGroup = name;
@@ -1859,7 +2220,12 @@ function renderLevel2() {
     categories.forEach(cat => {
         const item = document.createElement('span');
         item.className = 'sub-item' + (cat.id === currentCategory ? ' active' : '');
-        item.textContent = cat.title;
+        item.dataset.catId = cat.id;
+
+        const label = document.createElement('span');
+        label.textContent = cat.title;
+        item.appendChild(label);
+
         tap(item, () => {
             // --- 局部切换：不调用 renderAll ---
             document.querySelectorAll('.subnav-inner .sub-item').forEach(n => n.classList.remove('active'));
@@ -1978,7 +2344,6 @@ function draggableOn() {
 
 function renderCards() {
     // ===== 手机端渲染锁定：先隐藏 container，所有 DOM 变更后再显示（1 次 reflow 代替 N 次）=====
-    const prevDisplay = container.style.display;
     container.style.display = 'none';
 
     container.innerHTML = '';
@@ -2007,7 +2372,7 @@ function renderCards() {
         empty.innerHTML = `${ICONS.inbox}<h3>${msg}</h3><p>${sub}</p>`;
         container.appendChild(empty);
         // 解锁显示
-        container.style.display = prevDisplay || '';
+        container.style.display = '';
         return;
     }
 
@@ -2023,7 +2388,15 @@ function renderCards() {
         for (const [title, grp] of Object.entries(grouped)) {
             const h2 = document.createElement('h2');
             h2.className = 'category-title';
-            h2.innerHTML = `<span>${title} <span class="cat-count">(${grp.items.length})</span></span>`;
+            // 【修复】原来用 innerHTML 拼接分类标题，用户自建分类名里的 < > 会被解析成
+            // HTML（XSS 风险 + 布局错乱）。这里改为纯 DOM 构建，全部走 textContent。
+            const wrap = document.createElement('span');
+            wrap.textContent = title + ' ';
+            const cnt = document.createElement('span');
+            cnt.className = 'cat-count';
+            cnt.textContent = `(${grp.items.length})`;
+            wrap.appendChild(cnt);
+            h2.appendChild(wrap);
             frag.appendChild(h2);
             const grid = document.createElement('div');
             grid.className = 'bookmarks-grid';
@@ -2045,7 +2418,7 @@ function renderCards() {
     container.appendChild(frag);
 
     // ===== 解锁显示（只有到这里才触发一次完整 layout + paint）=====
-    container.style.display = prevDisplay || '';
+    container.style.display = '';
 
     // 处理待高亮
     if (pendingHighlight) {
@@ -2064,6 +2437,26 @@ function renderCards() {
             }
         }, 100));
     }
+    playViewSwitchAnim();
+}
+
+// 视图切换入场动画：给每张卡片写入序号 --i，再加 body.view-switch 触发交错淡入。
+// 只在 viewMode 真正变化的那一帧播放（_animToken 去重，普通搜索/翻页不重复放）。
+let _lastAnimView = null;
+function playViewSwitchAnim() {
+    const vm = state.settings.viewMode;
+    if (vm === _lastAnimView) return;         // 同一视图的重复渲染不播
+    _lastAnimView = vm;
+    if (state.settings.perfMode) return;      // 性能模式直接跳过
+    const cards = container.querySelectorAll('.bookmark-card');
+    const N = Math.min(cards.length, 40);     // 最多交错前 40 张，避免超长延迟
+    for (let i = 0; i < N; i++) cards[i].style.setProperty('--i', i);
+    document.body.classList.remove('view-switch');
+    // 强制 reflow，让下一次 add 重新触发动画
+    void document.body.offsetWidth;
+    document.body.classList.add('view-switch');
+    clearTimeout(playViewSwitchAnim._t);
+    playViewSwitchAnim._t = setTimeout(() => document.body.classList.remove('view-switch'), 900 + N * 26);
 }
 
 // 安全的高亮（防 XSS）
@@ -2099,10 +2492,29 @@ function createCard(site, category) {
         const prev = cached.checks;
         const el = cached.el;
 
+        // 0) 老节点可能没有封面元素（升级前创建的池节点），补一个
+        if (!el.querySelector('.card-cover')) {
+            const cover = document.createElement('div');
+            cover.className = 'card-cover';
+            cover.setAttribute('aria-hidden', 'true');
+            const cl = document.createElement('span');
+            cl.className = 'card-cover-letter';
+            cl.textContent = (site.name || '?').trim().charAt(0).toUpperCase();
+            cover.appendChild(cl);
+            el.insertBefore(cover, el.firstChild);
+        }
+        // 0b) 装饰性文字（封面栏目名）靠 CSS attr() 读取，
+        //     只写 dataset 不产生额外 DOM，手机端零开销
+        const coverEl = el.querySelector('.card-cover');
+        if (coverEl) coverEl.dataset.cat = category.title;
+
         // 1) URL / category 不变时 dataset 可不重写，但直接赋值成本极低，直接写
         el.dataset.url = site.url;
         el.dataset.catTitle = category.title;
         el.dataset.siteName = site.name;
+        if (prev.name !== newChecks.name || prev.desc !== newChecks.desc) {
+            el.setAttribute('aria-label', (site.name || '') + (site.desc ? '，' + site.desc : '') + '，在新标签页打开');
+        }
         if (el.href !== site.url) el.href = site.url; // 只有 URL 真的变了才重写 href
         if (prev.draggable !== newChecks.draggable) {
             if (draggableOn()) { el.draggable = true; bindCardDragHandlers(el, site); }
@@ -2113,6 +2525,11 @@ function createCard(site, category) {
         if (prev.name !== newChecks.name || prev.highlight !== newChecks.highlight) {
             const titleEl = el.querySelector('.bookmark-title');
             if (titleEl) setHighlighted(titleEl, newChecks.name, newChecks.highlight);
+        }
+        // 杂志封面字母：名称变化时同步首字（封面元素在 createCardFromScratch 中创建）
+        if (prev.name !== newChecks.name) {
+            const letterEl = el.querySelector('.card-cover-letter');
+            if (letterEl) letterEl.textContent = (site.name || '?').trim().charAt(0).toUpperCase();
         }
         if (prev.desc !== newChecks.desc || prev.highlight !== newChecks.highlight) {
             const descEl = el.querySelector('.bookmark-desc');
@@ -2143,11 +2560,7 @@ function createCard(site, category) {
                     const host = getHostname(site.url);
                     if (host) {
                         const img = document.createElement('img');
-                        img.alt = '';
-                        img.loading = 'lazy';
-                        img.decoding = 'async';
-                        img.src = 'https://www.google.com/s2/favicons?domain=' + encodeURIComponent(host) + '&sz=128';
-                        img.onerror = () => { img.style.display = 'none'; };
+                        attachFavicon(img, site.url, 128);
                         avatar.appendChild(img);
                     }
                 } else if (!newChecks.showFavicons && existingImg) {
@@ -2197,7 +2610,20 @@ function createCardFromScratch(site, category) {
     a.dataset.url = site.url;
     a.dataset.catTitle = category.title;
     a.dataset.siteName = site.name;
+    a.setAttribute('aria-label', (site.name || '') + (site.desc ? '，' + site.desc : '') + '，在新标签页打开');
     if (draggableOn()) a.draggable = true;
+
+    // 杂志视图封面横幅 / 彩带视图左侧字母牌（均由 CSS 决定显示与否）
+    const cover = document.createElement('div');
+    cover.className = 'card-cover';
+    cover.setAttribute('aria-hidden', 'true');
+    // 封面左上角的栏目名：CSS 用 attr() 读，不额外建节点
+    cover.dataset.cat = category.title;
+    const coverLetter = document.createElement('span');
+    coverLetter.className = 'card-cover-letter';
+    coverLetter.textContent = (site.name || '?').trim().charAt(0).toUpperCase();
+    cover.appendChild(coverLetter);
+    a.appendChild(cover);
 
     // 头像 / favicon
     const avatar = document.createElement('div');
@@ -2227,11 +2653,7 @@ function createCardFromScratch(site, category) {
         const host = getHostname(site.url);
         if (host) {
             const img = document.createElement('img');
-            img.alt = '';
-            img.loading = 'lazy';
-            img.decoding = 'async';
-            img.src = 'https://www.google.com/s2/favicons?domain=' + encodeURIComponent(host) + '&sz=128';
-            img.onerror = () => { img.style.display = 'none'; };
+            attachFavicon(img, site.url, 128);
             avatar.appendChild(img);
         }
     }
@@ -2384,11 +2806,18 @@ function sched(key, fn, debounceMs = 0) {
 // ========================================================================
 //  全部渲染
 // ========================================================================
+// 清理 DOM 池里已不存在的卡片节点，避免长时间反复增删网址后 Map 无限增长
+function pruneCardPool() {
+    const live = new Set();
+    state.categories.forEach(c => c.websites.forEach(s => live.add(s.uid)));
+    _cardPool.forEach((v, uid) => { if (!live.has(uid)) _cardPool.delete(uid); });
+}
+
 function renderAll() {
+    pruneCardPool();
     applySettings();
     renderLevel1();
     renderLevel2();
-    renderRecentPanel();
     renderCards();
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -2398,13 +2827,33 @@ function renderCardsOnly() {
 }
 
 // ========================================================================
-//  最近访问条
+//  最近访问 弹窗（含"访问排行榜"）
 // ========================================================================
 /**
- * 渲染最近访问 chip
- * @param {string} [targetId] 目标容器 id，默认 'recentPanelItems'（桌面），可传 'dataRecentItems'（移动端数据菜单内）
+ * 打开「最近访问」弹窗
+ *  - 上半部分：本次会话访问过的网址（chip）
+ *  - 下半部分：访问排行榜（原在"数据统计"里，现挪到这里，统计面板只留数据分布）
  */
-function renderRecentPanel(targetId = 'recentPanelItems') {
+function openRecent() {
+    const body = document.getElementById('recentBody');
+    if (!body) return;
+    body.innerHTML = `
+        <h4 class="stat-h">最近访问（本次会话）</h4>
+        <div class="recent-panel-items" id="recentChips"></div>
+        <h4 class="stat-h">访问排行榜</h4>
+        <div id="recentRank"></div>
+    `;
+    renderRecentPanel('recentChips');
+    renderRanking('recentRank');
+    openModal('recentModal');
+}
+
+/**
+ * 渲染最近访问 chip
+ * @param {string} [targetId] 目标容器 id，默认 'recentChips'（最近访问弹窗内的容器；
+ *                            弹窗未打开时该容器不存在，函数直接返回，不会报错）
+ */
+function renderRecentPanel(targetId = 'recentChips') {
     const byUid = new Map(getAllSites().map(x => [x.site.uid, x]));
     const items = recentUids.map(u => byUid.get(u)).filter(Boolean).slice(0, 20);
     const panel = document.getElementById(targetId);
@@ -2422,18 +2871,13 @@ function renderRecentPanel(targetId = 'recentPanelItems') {
         chip.title = site.name + '\n' + site.url;
         chip.addEventListener('click', () => {
             recordVisit(site.uid);
-            // 同时关闭两个可能的父面板（桌面 recentPanel + 移动端 dataRecentPanel）
-            const rp = document.getElementById('recentPanel');
-            if (rp) rp.classList.remove('open');
             const dm = document.getElementById('dataMenu');
             if (dm) dm.classList.remove('open');
         });
         const host = getHostname(site.url);
         if (state.settings.showFavicons && host) {
             const img = document.createElement('img');
-            img.alt = ''; img.loading = 'lazy';
-            img.src = 'https://www.google.com/s2/favicons?domain=' + encodeURIComponent(host) + '&sz=32';
-            img.onerror = () => img.remove();
+            attachFavicon(img, site.url, 32, () => img.remove());
             chip.appendChild(img);
         }
         const span = document.createElement('span');
@@ -2443,9 +2887,54 @@ function renderRecentPanel(targetId = 'recentPanelItems') {
     });
 }
 
+/** 渲染访问排行榜（按访问次数降序，取前 10） */
+function renderRanking(targetId) {
+    const panel = document.getElementById(targetId);
+    if (!panel) return;
+    const top = getAllSites()
+        .map(({ site, category }) => ({ site, category, st: getStat(site.uid) }))
+        .filter(x => x.st && x.st.visits)
+        .sort((a, b) => b.st.visits - a.st.visits)
+        .slice(0, 10);
+    if (!top.length) {
+        panel.innerHTML = '<p class="stat-empty">还没有访问记录，去逛逛吧～</p>';
+        return;
+    }
+    const ul = document.createElement('ul');
+    ul.className = 'stat-rank';
+    top.forEach((x, i) => {
+        const li = document.createElement('li');
+        const no = document.createElement('span');
+        no.className = 'rank-no'; no.textContent = i + 1;
+        const name = document.createElement('span');
+        name.className = 'rank-name'; name.textContent = x.site.name;
+        const cat = document.createElement('span');
+        cat.className = 'rank-cat'; cat.textContent = x.category.title;
+        const vis = document.createElement('span');
+        vis.className = 'rank-visits'; vis.textContent = x.st.visits + ' 次';
+        li.append(no, name, cat, vis);
+        ul.appendChild(li);
+    });
+    panel.innerHTML = '';
+    panel.appendChild(ul);
+}
+
 // ========================================================================
 //  设置应用
 // ========================================================================
+// 同步移动端浏览器地址栏 / 状态栏配色（顶栏配色跟随应用主题，而非系统偏好）
+// 颜色来源改为 CSS 变量 --meta-color：每套皮肤 × 亮/暗 都有自己的取值，
+// 这样地址栏永远和页面顶部底色一致，不会出现"皮肤是绿的可地址栏还是蓝的"。
+// 注意：必须在 dark-mode / data-skin / perf-mode 都写到 <html> 之后再调用。
+function syncThemeColor() {
+    if (!themeColorMeta) return;
+    let v = '';
+    try {
+        v = getComputedStyle(document.documentElement).getPropertyValue('--meta-color').trim();
+    } catch (e) { v = ''; }
+    themeColorMeta.setAttribute('content', v || (state.settings.theme === 'dark' ? '#05070e' : '#eef2fa'));
+}
+
 // applySettings 缓存：避免每次都重新赋值大段 SVG innerHTML（手机端 innerHTML 解析较慢）
 let _appliedTheme = null;
 let _appliedViewMode = null;
@@ -2457,10 +2946,23 @@ function applySettings() {
     };
 
     const s = state.settings;
-    document.body.classList.toggle('view-list', s.viewMode === 'list');
+    // 视图模式：移除全部旧类再加当前类（card 为默认，不加类）
+    VIEW_MODE_IDS.forEach(id => { if (id !== 'card') document.body.classList.remove('view-' + id); });
+    if (s.viewMode !== 'card') document.body.classList.add('view-' + s.viewMode);
     document.body.classList.toggle('density-compact', s.density === 'compact');
     document.body.classList.toggle('no-favicons', !s.showFavicons);
-    document.body.classList.toggle('dark-mode', s.theme === 'dark');
+    // 主题类只挂 <html>（不要同时给 body 也加上）。
+    // 玻璃材质变量定义在 `html.dark-mode` 中，只声明在根元素上才能被整棵文档继承；
+    // 若 body 也带 dark-mode，body 会自己声明这一整组变量，从而覆盖掉皮肤
+    // （html.dark-mode[data-skin=x]）的覆盖值 —— 症状是换暗色皮肤后极光层不变色。
+    document.documentElement.classList.toggle('dark-mode', s.theme === 'dark');
+    document.body.classList.remove('dark-mode');   // 清掉可能由旧版本存档/旧代码残留的类
+    // 皮肤与性能模式同样作用于根元素：
+    //   · data-skin  → CSS 里 `html[data-skin="xx"]` 覆盖配色变量
+    //   · perf-mode  → CSS 第 19 节，关闭毛玻璃 / 动画 / 过渡 / 阴影
+    document.documentElement.setAttribute('data-skin', SKIN_IDS.includes(s.skin) ? s.skin : SKINS[0].id);
+    document.documentElement.classList.toggle('perf-mode', !!s.perfMode);
+    syncThemeColor();
 
     // 只有主题真的变了才重新赋值主题图标 innerHTML
     if (_appliedTheme !== s.theme) {
@@ -2469,12 +2971,21 @@ function applySettings() {
             ? '<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><line x1="12" y1="2" x2="12" y2="5"></line><line x1="12" y1="19" x2="12" y2="22"></line><line x1="2" y1="12" x2="5" y2="12"></line><line x1="19" y1="12" x2="22" y2="12"></line><line x1="4.5" y1="4.5" x2="6.5" y2="6.5"></line><line x1="17.5" y1="17.5" x2="19.5" y2="19.5"></line><line x1="4.5" y1="19.5" x2="6.5" y2="17.5"></line><line x1="17.5" y1="6.5" x2="19.5" y2="4.5"></line></svg>'
             : '<svg class="icon-svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>';
     }
-    // 只有视图模式真的变了才重新赋值视图图标 innerHTML
+    // 只有视图模式真的变了才重新赋值视图图标 innerHTML（图标显示"当前模式"）
     if (_appliedViewMode !== s.viewMode) {
         _appliedViewMode = s.viewMode;
-        document.getElementById('viewIcon').innerHTML = s.viewMode === 'list'
-            ? '<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect></svg>'
-            : '<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="8" y1="6" x2="20" y2="6"></line><line x1="8" y1="12" x2="20" y2="12"></line><line x1="8" y1="18" x2="20" y2="18"></line><line x1="3.5" y1="6" x2="3.5" y2="6"></line><line x1="3.5" y1="12" x2="3.5" y2="12"></line><line x1="3.5" y1="18" x2="3.5" y2="18"></line></svg>';
+        const viewIcons = {
+            card: '<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.6"></rect><rect x="14" y="3" width="7" height="7" rx="1.6"></rect><rect x="3" y="14" width="7" height="7" rx="1.6"></rect><rect x="14" y="14" width="7" height="7" rx="1.6"></rect></svg>',
+            list: '<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="8" y1="6" x2="20" y2="6"></line><line x1="8" y1="12" x2="20" y2="12"></line><line x1="8" y1="18" x2="20" y2="18"></line><line x1="3.5" y1="6" x2="3.5" y2="6"></line><line x1="3.5" y1="12" x2="3.5" y2="12"></line><line x1="3.5" y1="18" x2="3.5" y2="18"></line></svg>',
+            mag:  '<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="10" rx="2"></rect><line x1="3.5" y1="17.5" x2="12" y2="17.5"></line><line x1="3.5" y1="21" x2="9" y2="21"></line><rect x="15" y="15.5" width="6" height="5.5" rx="1.4"></rect></svg>',
+            rows: '<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="3.5" y1="5" x2="20.5" y2="5"></line><line x1="3.5" y1="9.5" x2="20.5" y2="9.5"></line><line x1="3.5" y1="14" x2="20.5" y2="14"></line><line x1="3.5" y1="18.5" x2="20.5" y2="18.5"></line></svg>'
+        };
+        document.getElementById('viewIcon').innerHTML = viewIcons[s.viewMode] || viewIcons.card;
+        const vb = document.getElementById('viewBtn');
+        if (vb) {
+            const next = VIEW_MODES[(VIEW_MODE_IDS.indexOf(s.viewMode) + 1) % VIEW_MODES.length];
+            vb.title = '当前：' + viewModeName(s.viewMode) + '视图，点击切换到' + next.name + ' (V)';
+        }
     }
 
     updateSettingsMenu();
@@ -2487,6 +2998,13 @@ function updateSettingsMenu() {
     const d = settingsMenuEl.querySelector('[data-action="density"]');
     const f = settingsMenuEl.querySelector('[data-action="favicon"]');
     const ff = settingsMenuEl.querySelector('[data-action="favfilter"]');
+    const pf = settingsMenuEl.querySelector('[data-action="perf"]');
+    const vm = settingsMenuEl.querySelector('[data-action="viewmode"]');
+    if (vm) {
+        const cur = VIEW_MODES.find(v => v.id === s.viewMode) || VIEW_MODES[0];
+        const next = VIEW_MODES[(VIEW_MODE_IDS.indexOf(s.viewMode) + 1) % VIEW_MODES.length];
+        vm.querySelector('span').textContent = '视图：' + cur.name + '（点击切' + next.name + '）';
+    }
     if (d) {
         d.classList.toggle('active', s.density === 'compact');
         d.querySelector('span').textContent = s.density === 'compact' ? '密度：紧凑' : '密度：舒适';
@@ -2499,15 +3017,132 @@ function updateSettingsMenu() {
         ff.classList.toggle('active', showFavorites);
         ff.querySelector('span').textContent = showFavorites ? '退出仅看收藏' : '仅看收藏';
     }
+    if (pf) {
+        pf.classList.toggle('active', !!s.perfMode);
+        pf.querySelector('span').textContent = s.perfMode ? '性能模式：开' : '性能模式：关';
+    }
+    updatePerfToggle();
+    renderSkinPicker();
+    renderViewPicker();
 }
+
+// ------------------------------------------------------------------------
+//  性能模式（老机器专用）：一键关掉毛玻璃 / 动画 / 过渡 / 阴影
+//  实现全部在 style.css 第 19 节（html.perf-mode），JS 只负责切状态与同步按钮
+// ------------------------------------------------------------------------
+function updatePerfToggle() {
+    if (!perfToggle) return;
+    const on = !!state.settings.perfMode;
+    perfToggle.classList.toggle('is-on', on);
+    perfToggle.setAttribute('aria-pressed', on ? 'true' : 'false');
+    perfToggle.title = on ? '性能模式：已开启（点击恢复完整渲染）' : '性能模式：关闭毛玻璃与动效，老机器更流畅 (P)';
+    perfToggle.setAttribute('aria-label', on ? '关闭性能模式' : '开启性能模式');
+}
+
+function togglePerfMode() {
+    const on = !state.settings.perfMode;
+    state.settings.perfMode = on;
+    saveState();
+    applySettings();
+    toast(on ? '已开启性能模式：关闭毛玻璃与动效' : '已恢复完整玻璃渲染', on ? 'info' : 'success');
+}
+
+// ------------------------------------------------------------------------
+//  皮肤色板（设置菜单内）
+// ------------------------------------------------------------------------
+function renderSkinPicker() {
+    const box = document.getElementById('skinDots');
+    if (!box) return;
+    const cur = state.settings.skin || SKINS[0].id;
+    // 只在"需要重建"时重建：皮肤数量固定，仅需同步选中态
+    if (box.childElementCount !== SKINS.length) {
+        box.innerHTML = '';
+        SKINS.forEach(sk => {
+            const b = document.createElement('button');
+            b.type = 'button';
+            b.className = 'skin-dot';
+            b.dataset.skin = sk.id;
+            b.dataset.name = sk.name;   // CSS ::after 用它显示名称标签
+            b.title = sk.name;
+            b.setAttribute('aria-label', '皮肤：' + sk.name);
+            b.style.background = sk.preview;
+            const tick = document.createElement('span');
+            tick.className = 'skin-tick';
+            tick.innerHTML = ICONS.tick;
+            b.appendChild(tick);
+            box.appendChild(b);
+        });
+    }
+    box.querySelectorAll('.skin-dot').forEach(b => {
+        const on = b.dataset.skin === cur;
+        b.classList.toggle('active', on);
+        b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+}
+
+function setSkin(id) {
+    if (!SKIN_IDS.includes(id) || state.settings.skin === id) return;
+    state.settings.skin = id;
+    saveState();
+    applySettings();
+    toast('皮肤已切换为「' + skinName(id) + '」', 'success');
+}
+
+// ------------------------------------------------------------------------
+//  视图选择网格（设置菜单内）：卡片 / 列表 / 杂志 / 彩带，带缩略预览
+// ------------------------------------------------------------------------
+function renderViewPicker() {
+    const box = document.getElementById('viewGrid');
+    if (!box) return;
+    const cur = state.settings.viewMode || 'card';
+    if (box.childElementCount !== VIEW_MODES.length) {
+        box.innerHTML = '';
+        VIEW_MODES.forEach(vm => {
+            const b = document.createElement('button');
+            b.type = 'button';
+            b.className = 'view-opt';
+            b.dataset.view = vm.id;
+            b.setAttribute('aria-label', '视图：' + vm.name);
+            // 缩略预览（纯 HTML 小块拼出各视图的大致轮廓，比 SVG 直观）
+            const prev = document.createElement('span');
+            prev.className = 'view-prev view-prev-' + vm.id;
+            prev.setAttribute('aria-hidden', 'true');
+            const label = document.createElement('span');
+            label.className = 'view-opt-name';
+            label.textContent = vm.name;
+            const tick = document.createElement('span');
+            tick.className = 'view-tick';
+            tick.innerHTML = ICONS.tick;
+            b.appendChild(prev); b.appendChild(label); b.appendChild(tick);
+            box.appendChild(b);
+        });
+    }
+    box.querySelectorAll('.view-opt').forEach(b => {
+        const on = b.dataset.view === cur;
+        b.classList.toggle('active', on);
+        b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+}
+
 
 function toggleTheme() {
     state.settings.theme = state.settings.theme === 'dark' ? 'light' : 'dark';
     saveState(); applySettings();
 }
+// 顶部视图按钮：按 VIEW_MODES 顺序循环切换（卡片 → 列表 → 杂志 → 彩带 → 卡片）
 function toggleView() {
-    state.settings.viewMode = state.settings.viewMode === 'card' ? 'list' : 'card';
+    const cur = VIEW_MODE_IDS.indexOf(state.settings.viewMode);
+    const next = VIEW_MODES[(cur < 0 ? 0 : cur + 1) % VIEW_MODES.length];
+    state.settings.viewMode = next.id;
     saveState(); applySettings(); renderCards();
+    toast('已切换到「' + next.name + '」视图', 'success');
+}
+// 设置菜单里直接点选某种视图
+function setViewMode(id) {
+    if (!VIEW_MODE_IDS.includes(id) || state.settings.viewMode === id) return;
+    state.settings.viewMode = id;
+    saveState(); applySettings(); renderCards();
+    toast('已切换到「' + viewModeName(id) + '」视图', 'success');
 }
 function toggleDensity() {
     state.settings.density = state.settings.density === 'comfort' ? 'compact' : 'comfort';
@@ -2552,35 +3187,33 @@ function fallbackCopy(text) {
 }
 
 // ========================================================================
-//  一键打开全部可见网址
-// ========================================================================
-function openAllVisible() {
-    const list = getVisibleWebsites();
-    if (list.length === 0) return;
-    if (list.length > 15 && !confirm(`将打开 ${list.length} 个网址，确定继续？`)) return;
-    toast(`正在打开 ${list.length} 个网址`, 'info');
-    list.forEach(({ site }, i) => {
-        setTimeout(() => { recordVisit(site.uid); window.open(site.url, '_blank', 'noopener'); }, i * 120);
-    });
-}
-
-// ========================================================================
 //  弹窗通用
 // ========================================================================
 function openModal(id) {
-    document.getElementById(id).style.display = 'flex';
+    const m = document.getElementById(id);
+    if (!m) return;
+    m.style.display = 'flex';
+    m.classList.add('is-open');
     document.body.classList.add('modal-open');
 }
 function closeModal(id) {
-    document.getElementById(id).style.display = 'none';
-    if (!document.querySelector('.modal-overlay[style*="flex"]')) document.body.classList.remove('modal-open');
+    const m = document.getElementById(id);
+    if (!m) return;
+    m.style.display = 'none';
+    m.classList.remove('is-open');
+    // 【修复】原来靠 `[style*="flex"]` 属性选择器判断"是否还有弹窗打开"，
+    // 依赖内联样式的字符串序列化结果，很脆弱。改为用 is-open 类判断。
+    if (!document.querySelector('.modal-overlay.is-open')) document.body.classList.remove('modal-open');
 }
 function closeAllModals() {
-    document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none');
+    document.querySelectorAll('.modal-overlay').forEach(m => {
+        m.style.display = 'none';
+        m.classList.remove('is-open');
+    });
     document.body.classList.remove('modal-open');
 }
 function anyModalOpen() {
-    return !!document.querySelector('.modal-overlay[style*="flex"]');
+    return !!document.querySelector('.modal-overlay.is-open');
 }
 
 // ========================================================================
@@ -2602,25 +3235,6 @@ function populateCategorySelect(group, selectedCatId) {
     if (selectedCatId != null) sel.value = selectedCatId;
 }
 
-function openAddSiteModal() {
-    editingUid = null;
-    document.getElementById('siteModalTitle').textContent = '添加网址';
-    document.getElementById('fName').value = '';
-    document.getElementById('fUrl').value = '';
-    document.getElementById('fDesc').value = '';
-    document.getElementById('urlHint').textContent = '';
-    const fNewCat = document.getElementById('fNewCat');
-    fNewCat.checked = false;
-    document.getElementById('fNewCatName').style.display = 'none';
-    document.getElementById('fNewCatIcon').style.display = 'none';
-    document.getElementById('fCategory').style.display = 'block';
-    const grp = (currentCategory !== 0) ? (state.categories.find(c => c.id === currentCategory)?.group || '其他') : (currentGroup !== '全部' ? currentGroup : '其他');
-    populateGroupSelect(document.getElementById('fGroup'), grp);
-    populateCategorySelect(grp, currentCategory !== 0 ? currentCategory : undefined);
-    openModal('siteModal');
-    setTimeout(() => document.getElementById('fName').focus(), 50);
-}
-
 function openEditSiteModal(uid) {
     const found = findSite(uid);
     if (!found) return;
@@ -2631,11 +3245,6 @@ function openEditSiteModal(uid) {
     document.getElementById('fUrl').value = site.url;
     document.getElementById('fDesc').value = site.desc || '';
     document.getElementById('urlHint').textContent = '';
-    const fNewCat = document.getElementById('fNewCat');
-    fNewCat.checked = false;
-    document.getElementById('fNewCatName').style.display = 'none';
-    document.getElementById('fNewCatIcon').style.display = 'none';
-    document.getElementById('fCategory').style.display = 'block';
     populateGroupSelect(document.getElementById('fGroup'), category.group);
     populateCategorySelect(category.group, category.id);
     openModal('siteModal');
@@ -2655,29 +3264,23 @@ function saveSite() {
     const dup = getAllSites().find(({ site }) => site.url.toLowerCase() === url.toLowerCase() && site.uid !== editingUid);
     if (dup) { urlHint.textContent = '⚠ 该网址已存在（' + dup.site.name + '）'; toast('该网址已存在', 'error'); return; }
 
-    const fNewCat = document.getElementById('fNewCat');
-    let catId;
-    if (fNewCat.checked) {
-        const ncName = document.getElementById('fNewCatName').value.trim() || (name + '的分类');
-        const nc = { id: genCatId(), title: ncName, icon: document.getElementById('fNewCatIcon').value, group: document.getElementById('fGroup').value, websites: [] };
-        state.categories.push(nc); catId = nc.id;
-    } else {
-        catId = parseInt(document.getElementById('fCategory').value, 10);
+    // 目标分类可能不存在（例：所选分组下已没有任何分类，下拉框为空时
+    // parseInt('') 得到 NaN），这里做兜底并明确提示，避免"点保存没反应"。
+    const catId = parseInt(document.getElementById('fCategory').value, 10);
+    const target = state.categories.find(c => c.id === catId);
+    if (!target) {
+        toast('该分组下暂无分类，请在「所属分组」中选择其他分组', 'error');
+        return;
     }
 
     const site = { uid: editingUid || genUid(), name, url, desc, order: 0, seed: false };
 
     if (editingUid) {
         const found = findSite(editingUid);
-        found.category.websites = found.category.websites.filter(s => s.uid !== editingUid);
-        const target = state.categories.find(c => c.id === catId);
-        site.order = target.websites.length;
-        target.websites.push(site);
-    } else {
-        const target = state.categories.find(c => c.id === catId);
-        site.order = target.websites.length;
-        target.websites.push(site);
+        if (found) found.category.websites = found.category.websites.filter(s => s.uid !== editingUid);
     }
+    site.order = target.websites.length;
+    target.websites.push(site);
 
     saveState();
     closeModal('siteModal');
@@ -2707,63 +3310,6 @@ function deleteSite(uid) {
 }
 
 // ========================================================================
-//  分类 新增 / 编辑 / 删除
-// ========================================================================
-function openAddCatModal() {
-    editingCatId = null;
-    document.getElementById('catModalTitle').textContent = '添加分类';
-    document.getElementById('cName').value = '';
-    populateGroupSelect(document.getElementById('cGroup'),
-        currentGroup !== '全部' ? currentGroup : '其他');
-    openModal('catModal');
-    setTimeout(() => document.getElementById('cName').focus(), 50);
-}
-
-function openEditCatModal(catId) {
-    const cat = state.categories.find(c => c.id === catId);
-    if (!cat) return;
-    editingCatId = catId;
-    document.getElementById('catModalTitle').textContent = '编辑分类';
-    document.getElementById('cName').value = cat.title;
-    populateGroupSelect(document.getElementById('cGroup'), cat.group);
-    document.getElementById('cIcon').value = cat.icon;
-    openModal('catModal');
-}
-
-function saveCategory() {
-    const name = document.getElementById('cName').value.trim();
-    const group = document.getElementById('cGroup').value;
-    const icon = document.getElementById('cIcon').value;
-    if (!name) { toast('请填写分类名称', 'error'); return; }
-
-    if (editingCatId) {
-        const cat = state.categories.find(c => c.id === editingCatId);
-        cat.title = name; cat.group = group; cat.icon = icon;
-        toast('已更新分类', 'success');
-    } else {
-        state.categories.push({ id: genCatId(), title: name, icon, group, websites: [] });
-        toast('已添加分类', 'success');
-    }
-    saveState();
-    closeModal('catModal');
-    editingCatId = null;
-    renderAll();
-}
-
-function deleteCategory(catId) {
-    const cat = state.categories.find(c => c.id === catId);
-    if (!cat) return;
-    if (cat.websites.length && !confirm(`分类「${cat.title}」包含 ${cat.websites.length} 个网址，删除后这些网址也会一并删除。确定？`)) return;
-    if (cat.websites.length === 0 && !confirm(`确定删除分类「${cat.title}」？`)) return;
-    cat.websites.forEach(s => { delete state.favorites[s.uid]; delete state.stats[s.uid]; });
-    state.categories = state.categories.filter(c => c.id !== catId);
-    if (currentCategory === catId) currentCategory = 0;
-    saveState();
-    renderAll();
-    toast('已删除分类', 'success');
-}
-
-// ========================================================================
 //  统计面板
 // ========================================================================
 function openStats() {
@@ -2773,16 +3319,22 @@ function openStats() {
     const favCount = Object.keys(state.favorites).length;
     const visitedCount = all.filter(({ site }) => getStat(site.uid)?.visits).length;
 
-    const top = all.map(({ site, category }) => ({ site, category, st: getStat(site.uid) }))
-        .filter(x => x.st && x.st.visits)
-        .sort((a, b) => b.st.visits - a.st.visits)
-        .slice(0, 8);
-
     const byGroup = GROUP_NAMES.filter(g => g !== '全部').map(g => ({
         g, n: getCategoriesByGroup(g).reduce((s, c) => s + c.websites.length, 0)
     })).filter(x => x.n > 0);
 
     const maxGroup = Math.max(1, ...byGroup.map(x => x.n));
+
+    // 二级菜单（分类）网址数量：按一级菜单归拢，组内按数量降序
+    const catGroups = GROUP_NAMES.filter(g => g !== '全部').map(g => {
+        const items = getCategoriesByGroup(g)
+            .map(c => ({ title: c.title, n: c.websites.length }))
+            .filter(x => x.n > 0)
+            .sort((a, b) => b.n - a.n || a.title.localeCompare(b.title, 'zh'));
+        return { g, items, total: items.reduce((s, x) => s + x.n, 0) };
+    }).filter(x => x.items.length);
+
+    const maxCat = Math.max(1, ...catGroups.flatMap(x => x.items.map(i => i.n)));
 
     let html = `
         <div class="stat-cards">
@@ -2791,7 +3343,7 @@ function openStats() {
             <div class="stat-card"><div class="stat-num">${favCount}</div><div class="stat-lbl">收藏数</div></div>
             <div class="stat-card"><div class="stat-num">${visitedCount}</div><div class="stat-lbl">已访问网址</div></div>
         </div>
-        <h4 class="stat-h">各分组网址分布</h4>
+        <h4 class="stat-h">一级菜单</h4>
         <div class="stat-bars">
             ${byGroup.map(x => `
                 <div class="stat-bar-row">
@@ -2800,14 +3352,24 @@ function openStats() {
                     <span class="stat-bar-val">${x.n}</span>
                 </div>`).join('')}
         </div>
-        <h4 class="stat-h">访问排行榜</h4>
-        ${top.length ? `<ul class="stat-rank">
-            ${top.map((x, i) => `
-                <li><span class="rank-no">${i + 1}</span>
-                <span class="rank-name">${escapeHtml(x.site.name)}</span>
-                <span class="rank-cat">${escapeHtml(x.category.title)}</span>
-                <span class="rank-visits">${x.st.visits} 次</span></li>`).join('')}
-        </ul>` : '<p class="stat-empty">还没有访问记录，去逛逛吧～</p>'}
+        <h4 class="stat-h">二级菜单</h4>
+        ${catGroups.length ? `<div class="stat-cats">
+            ${catGroups.map(x => `
+                <div class="stat-cat-group">
+                    <div class="stat-cat-head">
+                        <span class="stat-cat-name">${escapeHtml(x.g)}</span>
+                        <span class="stat-cat-total">${x.items.length} 个分类 · ${x.total} 个网址</span>
+                    </div>
+                    <div class="stat-bars stat-bars-cats">
+                        ${x.items.map(i => `
+                            <div class="stat-bar-row">
+                                <span class="stat-bar-lbl" title="${escapeHtml(i.title)}">${escapeHtml(i.title)}</span>
+                                <div class="stat-bar-track"><div class="stat-bar-fill" style="width:${(i.n / maxCat * 100).toFixed(1)}%"></div></div>
+                                <span class="stat-bar-val">${i.n}</span>
+                            </div>`).join('')}
+                    </div>
+                </div>`).join('')}
+        </div>` : '<p class="stat-empty">暂无分类数据</p>'}
     `;
     document.getElementById('statsBody').innerHTML = html;
     openModal('statsModal');
@@ -2818,48 +3380,18 @@ function escapeHtml(str) {
 }
 
 // ========================================================================
-//  导入 / 导出 / 重置
+//  恢复默认数据
 // ========================================================================
-function exportData() {
-    const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    const ts = new Date().toISOString().slice(0, 10);
-    a.href = url; a.download = `网址库备份_${ts}.json`;
-    document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    toast('已导出备份', 'success');
-}
-
-function importData(file) {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-        try {
-            const data = JSON.parse(e.target.result);
-            if (!data || !Array.isArray(data.categories)) throw new Error('格式不正确');
-            // 补全字段
-            data.favorites = data.favorites || {};
-            data.stats = data.stats || {};
-            data.settings = Object.assign(seedState().settings, data.settings || {});
-            state = data;
-            saveState();
-            currentGroup = '全部'; currentCategory = 0; searchQuery = ''; showFavorites = false;
-            searchInput.value = '';
-            renderAll();
-            toast('导入成功', 'success');
-        } catch (err) {
-            toast('导入失败：' + err.message, 'error');
-        }
-    };
-    reader.readAsText(file);
-}
-
 function resetData() {
     if (!confirm('确定恢复为默认数据？当前所有改动（新增/编辑/收藏/访问记录）将被清空。')) return;
     state = seedState();
+    _cardPool.clear();
+    recentUids = [];
+    saveRecent();
     saveState();
     currentGroup = '全部'; currentCategory = 0; searchQuery = ''; showFavorites = false;
     searchInput.value = '';
+    hideSearchHistory();
     renderAll();
     toast('已恢复默认数据', 'success');
 }
@@ -2870,12 +3402,22 @@ function resetData() {
 function showContextMenu(e, uid) {
     contextTarget = uid;
     contextMenu.style.display = 'block';
-    const x = Math.min(e.clientX, window.innerWidth - 180);
-    const y = Math.min(e.clientY, window.innerHeight - 200);
+    contextMenu.classList.add('open');
+    // 【修复】原来用固定值 180 / 200 估算菜单尺寸，菜单变高变宽后会被裁掉。
+    // 现在先显示再实测尺寸，并保证不越出视口（含 8px 边距）。
+    const w = contextMenu.offsetWidth || 176;
+    // 菜单项由 5 项调整为 4 项（去掉编辑 / 删除，新增定位到该分类），实测高度约 200px
+    const h = contextMenu.offsetHeight || 200;
+    const x = Math.max(8, Math.min(e.clientX, window.innerWidth - w - 8));
+    const y = Math.max(8, Math.min(e.clientY, window.innerHeight - h - 8));
     contextMenu.style.left = x + 'px';
     contextMenu.style.top = y + 'px';
 }
-function hideContextMenu() { contextMenu.style.display = 'none'; contextTarget = null; }
+function hideContextMenu() {
+    contextMenu.style.display = 'none';
+    contextMenu.classList.remove('open');
+    contextTarget = null;
+}
 
 contextMenu.addEventListener('click', (e) => {
     const action = e.target.closest('button')?.dataset.action;
@@ -2885,9 +3427,11 @@ contextMenu.addEventListener('click', (e) => {
     if (!found) { hideContextMenu(); return; }
     if (action === 'open') { recordVisit(uid); window.open(found.site.url, '_blank', 'noopener'); }
     else if (action === 'copy') copyUrl(found.site.url);
+    // 定位到该分类：切到卡片所属分类（清掉搜索/收藏筛选），并高亮这张卡片
+    else if (action === 'locate') locateCard(found.category.title, found.site.name);
     else if (action === 'fav') toggleFavorite(uid);
-    else if (action === 'edit') openEditSiteModal(uid);
-    else if (action === 'delete') deleteSite(uid);
+    // 注：右键菜单已按要求移除「编辑」「删除」两项，
+    // 对应的 openEditSiteModal() / deleteSite() 保留在代码中备用（当前无 UI 入口）。
     hideContextMenu();
 });
 
@@ -2901,25 +3445,37 @@ function addSearchHistory(q) {
     state.settings.searchHistory = next;
     saveState();
 }
+function showSearchHistory() {
+    if (!searchHistoryEl) return;
+    searchHistoryEl.style.display = 'block';
+    searchHistoryEl.classList.add('is-open');
+}
+function hideSearchHistory() {
+    if (!searchHistoryEl) return;
+    searchHistoryEl.style.display = 'none';
+    searchHistoryEl.classList.remove('is-open');
+}
 function renderSearchHistory() {
     const h = state.settings.searchHistory || [];
-    if (!h.length || searchInput.value.trim()) { searchHistoryEl.style.display = 'none'; return; }
+    if (!h.length || searchInput.value.trim()) { hideSearchHistory(); return; }
     searchHistoryEl.innerHTML = '';
     h.forEach(q => {
         const item = document.createElement('div');
         item.className = 'sh-item';
         item.innerHTML = `${ICONS.history}<span>${escapeHtml(q)}</span><span class="sh-del" title="删除">${ICONS.times}</span>`;
         item.addEventListener('click', (e) => {
-            if (e.target.classList.contains('sh-del')) {
+            // 【修复】原判断只看点击目标自身是否有 sh-del 类，
+            // 点到删除图标里的 <svg>/<path> 时会命中不到，变成"误执行搜索"。
+            if (e.target.closest && e.target.closest('.sh-del')) {
                 state.settings.searchHistory = h.filter(x => x !== q); saveState(); renderSearchHistory(); return;
             }
-            searchInput.value = q; searchQuery = q; searchHistoryEl.style.display = 'none';
+            searchInput.value = q; searchQuery = q; hideSearchHistory();
             // 改用 renderCardsOnly，不重建整个页面
             sched('cards', renderCardsOnly);
         });
         searchHistoryEl.appendChild(item);
     });
-    searchHistoryEl.style.display = 'block';
+    showSearchHistory();
 }
 
 // ========================================================================
@@ -2990,24 +3546,40 @@ function tap(el, handler) {
 function bindEvents() {
     // ==== 预先声明所有 DOM 变量（避免暂时性死区问题） ====
     const settingsBtn   = document.getElementById('settingsBtn');
-    const recentBtn     = document.getElementById('recentBtn');
-    const recentPanel   = document.getElementById('recentPanel');
     const dataBtn       = document.getElementById('dataBtn');
     const dataMenuEl    = document.getElementById('dataMenu');
 
     // ==== 高频按钮全部改用 tap()：移动端 touchend 直触，比 click 快 100~300ms ====
     tap(themeToggle, toggleTheme);
-    tap(document.getElementById('statsBtn'), openStats);
+    tap(perfToggle, togglePerfMode);
     tap(document.getElementById('viewBtn'), toggleView);
 
-    // 设置下拉：显示密度 / 网站图标 / 视图切换 / 网址征集 / 快捷键
+    // 设置下拉：仅看收藏 / 密度 / 网站图标 / 视图切换 / 皮肤 / 快捷键 / 网址征集 / 恢复默认
     tap(settingsBtn, () => {
         // 关闭其他可能打开的下拉
-        recentPanel?.classList.remove('open');
         dataMenuEl?.classList.remove('open');
         updateSettingsMenu();
         requestAnimationFrame(() => settingsMenuEl.classList.toggle('open'));
     });
+    // 皮肤色板：单独委托（色板项没有 data-action，避免被上面那条委托误判）
+    const skinDotsEl = document.getElementById('skinDots');
+    if (skinDotsEl) {
+        skinDotsEl.addEventListener('click', (e) => {
+            const dot = e.target.closest('.skin-dot');
+            if (dot && dot.dataset.skin) setSkin(dot.dataset.skin);
+        });
+    }
+    // 视图选择网格：单独委托（同皮肤色板，点选后收起菜单）
+    const viewGridEl = document.getElementById('viewGrid');
+    if (viewGridEl) {
+        viewGridEl.addEventListener('click', (e) => {
+            const opt = e.target.closest('.view-opt');
+            if (opt && opt.dataset.view) {
+                settingsMenuEl.classList.remove('open');
+                setViewMode(opt.dataset.view);
+            }
+        });
+    }
     // settingsMenu 委托：点击其中按钮/链接时处理（用 click 兜底即可，上层按钮已经 tap）
     settingsMenuEl.addEventListener('click', (e) => {
         // 兼容 button[data-action] 与 a.menu-link[data-action]
@@ -3019,24 +3591,16 @@ function bindEvents() {
         else if (action === 'favicon') toggleFavicons();
         else if (action === 'favfilter') toggleFavFilter();
         else if (action === 'viewmode') toggleView();
+        else if (action === 'perf') togglePerfMode();
         else if (action === 'shortcut') openModal('helpModal');
+        else if (action === 'reset') resetData();
         // solicit（网址征集）是 <a target="_blank">，浏览器原生打开新标签页，无需额外处理
     });
 
-    // 最近访问（桌面端：按钮 + 下拉面板）
-    tap(recentBtn, () => {
-        // 关闭其他下拉
-        settingsMenuEl?.classList.remove('open');
-        dataMenuEl?.classList.remove('open');
-        renderRecentPanel('recentPanelItems');
-        requestAnimationFrame(() => recentPanel?.classList.toggle('open'));
-    });
-
-    // 手机端数据按钮（合并数据统计 + 最近访问）
+    // 数据按钮（数据统计 + 最近访问，手机端与桌面端共用同一入口）
     tap(dataBtn, () => {
         // 关闭其他下拉
         settingsMenuEl?.classList.remove('open');
-        recentPanel?.classList.remove('open');
         requestAnimationFrame(() => dataMenuEl?.classList.toggle('open'));
     });
     // 数据菜单内委托
@@ -3049,16 +3613,9 @@ function bindEvents() {
                 dataMenuEl.classList.remove('open');
                 openStats();
             } else if (a === 'recent') {
-                // 切换最近访问子面板显示
-                const sub = document.getElementById('dataRecentPanel');
-                if (sub) {
-                    const shown = sub.style.display !== 'none';
-                    sub.style.display = shown ? 'none' : 'block';
-                    if (!shown) {
-                        // 展开时才渲染一次
-                        renderRecentPanel('dataRecentItems');
-                    }
-                }
+                // 改为独立弹窗展示（含访问排行榜），不再在菜单里展开子面板
+                dataMenuEl.classList.remove('open');
+                openRecent();
             }
         });
     }
@@ -3067,13 +3624,13 @@ function bindEvents() {
     searchInput.addEventListener('input', (e) => {
         searchQuery = e.target.value;
         searchClear.style.display = searchQuery ? 'flex' : 'none';
-        searchHistoryEl.style.display = 'none';
+        hideSearchHistory();
         pendingHighlight = null;
         sched('cards', renderCardsOnly, 120);
     });
     searchInput.addEventListener('focus', renderSearchHistory);
     searchInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') { addSearchHistory(searchInput.value); searchHistoryEl.style.display = 'none'; }
+        if (e.key === 'Enter') { addSearchHistory(searchInput.value); hideSearchHistory(); }
     });
     tap(searchClear, () => {
         searchInput.value = ''; searchQuery = '';
@@ -3129,22 +3686,16 @@ function bindEvents() {
         if (e.target === o) closeModal(o.id);
     }));
     document.getElementById('siteSaveBtn').addEventListener('click', saveSite);
-    document.getElementById('catSaveBtn').addEventListener('click', saveCategory);
 
-    // 新建分类勾选联动
-    document.getElementById('fNewCat').addEventListener('change', (e) => {
-        const show = e.target.checked;
-        document.getElementById('fNewCatName').style.display = show ? 'block' : 'none';
-        document.getElementById('fNewCatIcon').style.display = show ? 'block' : 'none';
-        document.getElementById('fCategory').style.display = show ? 'none' : 'block';
-    });
+    // 切换分组时联动刷新"所属分类"下拉
     document.getElementById('fGroup').addEventListener('change', (e) => populateCategorySelect(e.target.value));
 
     // 全局点击：关闭下拉 / 右键菜单
     document.addEventListener('click', (e) => {
-        if (!e.target.closest('#recentDropdown')) document.getElementById('recentPanel').classList.remove('open');
         if (!e.target.closest('#settingsDropdown')) settingsMenuEl.classList.remove('open');
-        if (!e.target.closest('#dataDropdown')) document.getElementById('dataMenu')?.classList.remove('open');
+        if (!e.target.closest('#dataDropdown')) dataMenuEl?.classList.remove('open');
+        // 【修复】原来点击页面其它地方不会收起搜索历史面板，会一直悬浮在卡片上方
+        if (!e.target.closest('.search-wrap')) hideSearchHistory();
         hideContextMenu();
     });
     document.addEventListener('scroll', hideContextMenu, true);
@@ -3162,8 +3713,8 @@ function bindEvents() {
         if (e.metaKey || e.ctrlKey || e.altKey) return;
         const k = e.key.toLowerCase();
         if (e.key === '/') { e.preventDefault(); searchInput.focus(); }
-        else         if (k === 'n') { e.preventDefault(); openAddSiteModal(); }
         else if (k === 't') { toggleTheme(); }
+        else if (k === 'p') { togglePerfMode(); }
         else if (k === 'f') { toggleFavFilter(); }
         else if (k === 'v') { toggleView(); }
         else if (e.key === '?') { e.preventDefault(); openModal('helpModal'); }
@@ -3174,6 +3725,10 @@ function bindEvents() {
 //  初始化
 // ========================================================================
 function init() {
+    // 启动时先确认 localStorage 是否可写：不可写就直接标记为会话级，
+    // 避免每次保存都重复走一遍「失败 → 清理 → 仍失败」的流程
+    if (!_probeLocalStorage()) _persistMode = 'session';
+
     const loaded = loadState();
     state = loaded || seedState();
     loadSession();
