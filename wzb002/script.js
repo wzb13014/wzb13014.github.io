@@ -470,7 +470,10 @@ const RAW_DATA = [{
 }, {
     id: 10, title: "资质查询", icon: "fa-id-card", websites: [
         { name: "全国认证认可信息公共服务平台", url: "http://cx.cnca.cn/CertECloud/index/index/page", desc: "认证资质查询" },
-        { name: "全国认证认可信息公共服务平台", url: "http://cx.cnca.cn/CertECloud/index/index/page", desc: "认证资质查询" },
+        { name: "SAI", url: "https://sa-intl.org/sa8000-search/", desc: "SA8000证书查询" },     
+        { name: "IAF体系证书查询", url: "https://www.iafcertsearch.org/search/certified-entities", desc: "认证资质查询" },
+        { name: "ESD认证查询1", url: "https://www.esda.org/zh_CN/certification/certified-professionals/", desc: "适用ESDA认可" },
+        { name: "ESD认证查询2", url: "https://certificates.iecq.org/#/search/all", desc: "适用IECQ认可" },
         { name: "绿色产品与标识认证信息平台", url: "https://www.chinagreenproduct.cn/GPIA/front", desc: "绿色产品" }, 
         { name: "CNAS", url: "https://www.cnas.org.cn/rkgf/rzjgrk/index.html", desc: "中国合格评定国家认可委员会-认证规则" },
         { name: "GLOBAC", url: "https://globalaccreditationcooperationincorporated.org/",  desc: "全球认可合作组织" },
