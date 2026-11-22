@@ -1076,6 +1076,7 @@ const RAW_DATA = [{
         { name: "Python", url: "https://www.python.org/", desc: "Python语言" },
         { name: "FMEA COACH", url: "https://www.fmeacoach.com/#/", desc: "免费版FMEA 软件（终身免费）" },
         { name: "FreeSPC", url: "https://www.comcw.cn/pcsoft/6534.html", desc: "开源免费的 SPC 软件" },
+        { name: "白嫖机场", url: "https://yes3.xn--mesv7f5toqlp.biz/register?code=hmhokA6B", desc: "VPN" },    
         { name: "格式工厂", url: "http://pcgeshi.com/", desc: "格式转换" },
         { name: "ev录屏", url: "https://www.sootool.net/nexus/bi1/evluping.shtml?msclkid=1ea8e3bd237c12b4823d8b092c630dd1", desc: "录屏" },
         { name: "Everything", url: "https://www.voidtools.com/zh-cn/downloads/", desc: "文件检索" },
@@ -1314,6 +1315,7 @@ const RAW_DATA = [{
     ]
 }, {
     id: 25, title: "学习网站", icon: "fa-book-open", websites: [
+        { name: "小鹦看看", url: "https://video.pollykann.com/ted", desc: "英语学习" },   
         { name: "TREA知识库", url: "https://bytedance.larkoffice.com/wiki/RxVXweukSi7JtIkhOKBcuSlbnfC", desc: "AI知识库" },
         { name: "中国高等教育学生信息网", url: "https://www.chsi.com.cn/", desc: "学信网" },
         { name: "国家智慧教育公共服务平台", url: "https://www.smartedu.cn/", desc: "教育" },    
@@ -1453,6 +1455,9 @@ const RAW_DATA = [{
         { name: "全国房价行情", url: "https://m.creprice.cn/", desc: "查询" },
         { name: "天下老照片", url: "http://www.laozhaopian5.com/", desc: "老照片" },
         { name: "影视", url: "https://yinghezhinan.com/sites/zaixian/", desc: "影视" },
+        { name: "看剧AI", url: "https://kanju43.com/", desc: "影视" },
+        { name: "番茄酱影视", url: "https://fanqe.cc/", desc: "影视" },
+        { name: "Epic Games", url: "https://www.epicgames.com/site/home/?lang=zh-CN", desc: "游戏" }, 
     ]
 }];
 const GROUP_MAP = {
