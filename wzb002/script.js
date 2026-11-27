@@ -335,6 +335,7 @@ const RAW_DATA = [{
         { name: "CEN", url: "https://www.cencenelec.eu/about-cen/", desc: "欧洲标淮学会" },
         { name: "ISTA", url: "https://www.ista.org/", desc: "国际安全运输协会" },
         { name: "NSTA", url: "https://www.nsta.org/", desc: "美国科学教学协会" },
+        { name: "CSA", url: "https://www.csastandards.org/", desc: "加拿大标准协会" },  
         { name: "中关村材料试验技术联盟", url: "https://www.ccs.org.cn/ccswz/special?columnid=201900002000000016&id=0", desc: "标准" },
         { name: "碳中和", url: "https://www.ccn.ac.cn/", desc: "碳标准" },
         { name: "互联网信息服务算法备案系统", url: "https://beian.cac.gov.cn/#/notice", desc: "碳标准" },    
@@ -568,7 +569,9 @@ const RAW_DATA = [{
         { name: "CCAA", url: "http://www.ccaa.org.cn/#/home", desc: "中国认证认可协会" },
         { name: "CCIC", url: "https://www.ccic.com/", desc: "中国检验认证集团" },
         { name: "ESTS", url: "https://www.estsglobal.com/zh-CN/services/all", desc: "全球性的审核认证机构" },
-        
+        { name: "NOA", url: "https://www.noagroup.com/resource/query", desc: "挪亚集团证书信息查询" },   
+        { name: "中安质环", url: "https://www.zazh.com/query.html", desc: "中安质环证书信息查询" },    
+        { name: "AENOR", url: "https://www.aenor.cn/", desc: "安诺尔证书信息查询" }, 
     ]
 }, {
     id: 11, title: "国内法规", icon: "fa-gavel", websites: [
